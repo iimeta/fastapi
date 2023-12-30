@@ -8,6 +8,5 @@ import (
 	_ "github.com/iimeta/fastapi/internal/logic/auth"
 	_ "github.com/iimeta/fastapi/internal/logic/chat"
 	_ "github.com/iimeta/fastapi/internal/logic/common"
-	_ "github.com/iimeta/fastapi/internal/logic/user"
-	_ "github.com/iimeta/fastapi/internal/logic/vip"
+	_ "github.com/iimeta/fastapi/internal/logic/session"
 )

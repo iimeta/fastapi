@@ -7,6 +7,7 @@ import (
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/gogf/gf/v2/util/gmeta"
 	"github.com/iimeta/fastapi/internal/errors"
+	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/db"
 	"github.com/iimeta/fastapi/utility/util"
 	"go.mongodb.org/mongo-driver/bson"
@@ -158,6 +159,10 @@ func Insert(ctx context.Context, database string, document interface{}) (string,
 	// 统一主键成int类型的string格式, 雪花ID
 	value["_id"] = util.GenerateId()
 
+	if value["creator"] == nil || value["creator"] == "" {
+		value["creator"] = service.Session().GetKey(ctx)
+	}
+
 	if value["created_at"] == nil || gconv.Int(value["created_at"]) == 0 {
 		value["created_at"] = gtime.Timestamp()
 	}
@@ -206,6 +211,10 @@ func Inserts(ctx context.Context, database string, documents []interface{}) ([]s
 
 		// 统一主键成int类型的string格式, 雪花ID
 		value["_id"] = util.GenerateId()
+
+		if value["creator"] == nil || value["creator"] == "" {
+			value["creator"] = service.Session().GetKey(ctx)
+		}
 
 		if value["created_at"] == nil || gconv.Int(value["created_at"]) == 0 {
 			value["created_at"] = gtime.Timestamp()
@@ -264,6 +273,10 @@ func UpdateOne(ctx context.Context, database, collection string, filter map[stri
 			return err
 		}
 
+		if value["updater"] == nil || value["updater"] == "" {
+			value["updater"] = service.Session().GetKey(ctx)
+		}
+
 		if value["updated_at"] == nil || gconv.Int(value["updated_at"]) == 0 {
 			value["updated_at"] = gtime.Timestamp()
 		}
@@ -285,6 +298,21 @@ func UpdateOne(ctx context.Context, database, collection string, filter map[stri
 		}
 
 		if containKey {
+
+			if value["updater"] == nil || value["updater"] == "" {
+				if value["$set"] != nil {
+					setValues := gconv.Map(value["$set"])
+					if setValues["updater"] == nil || setValues["updater"] == "" {
+						setValues["updater"] = service.Session().GetKey(ctx)
+						value["$set"] = setValues
+					}
+				} else {
+					value["$set"] = bson.M{
+						"updater": service.Session().GetKey(ctx),
+					}
+				}
+			}
+
 			if value["updated_at"] == nil || gconv.Int(value["updated_at"]) == 0 {
 				if value["$set"] != nil {
 					setValues := gconv.Map(value["$set"])
@@ -299,6 +327,11 @@ func UpdateOne(ctx context.Context, database, collection string, filter map[stri
 				}
 			}
 		} else {
+
+			if value["updater"] == nil || value["updater"] == "" {
+				value["updater"] = service.Session().GetKey(ctx)
+			}
+
 			if value["updated_at"] == nil || gconv.Int(value["updated_at"]) == 0 {
 				value["updated_at"] = gtime.Timestamp()
 			}
@@ -432,6 +465,20 @@ func CountDocuments(ctx context.Context, database, collection string, filter map
 	}
 
 	return m.CountDocuments(ctx)
+}
+
+func (m *MongoDB[T]) EstimatedDocumentCount(ctx context.Context) (int64, error) {
+	return EstimatedDocumentCount(ctx, m.Database, m.Collection)
+}
+
+func EstimatedDocumentCount(ctx context.Context, database, collection string) (int64, error) {
+
+	m := &db.MongoDB{
+		Database:   database,
+		Collection: collection,
+	}
+
+	return m.EstimatedDocumentCount(ctx)
 }
 
 func (m *MongoDB[T]) Aggregate(ctx context.Context, pipeline []bson.M, result interface{}) error {

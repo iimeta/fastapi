@@ -10,7 +10,7 @@ import (
 	"github.com/gogf/gf/v2/os/gcfg"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/text/gstr"
-	"github.com/iimeta/fastapi-admin/utility/logger"
+	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -163,6 +163,10 @@ func HGetInt(ctx context.Context, key, field string) (int, error) {
 		return 0, err
 	}
 	return reply.Int(), nil
+}
+
+func HIncrBy(ctx context.Context, key, field string, increment int64) (int64, error) {
+	return master.HIncrBy(ctx, key, field, increment)
 }
 
 func SetEX(ctx context.Context, key string, value interface{}, ttlInSeconds int64) error {

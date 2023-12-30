@@ -2,14 +2,16 @@ package util
 
 import (
 	"context"
+	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
+	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/gclient"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtimer"
 	"github.com/gorilla/websocket"
-	"github.com/iimeta/fastapi-admin/internal/config"
-	"github.com/iimeta/fastapi-admin/utility/logger"
+	"github.com/iimeta/fastapi/internal/config"
+	"github.com/iimeta/fastapi/utility/logger"
 	"net/http"
 	"net/url"
 	"time"
@@ -272,4 +274,28 @@ func HttpDownloadFile(ctx context.Context, fileURL string, proxyURL ...string) [
 	}
 
 	return client.GetBytes(ctx, fileURL)
+}
+
+func SSEServer(ctx context.Context, event string, content any) error {
+
+	r := g.RequestFromCtx(ctx)
+	rw := r.Response.RawWriter()
+	flusher, ok := rw.(http.Flusher)
+	if !ok {
+		http.Error(rw, "Streaming unsupported!", http.StatusInternalServerError)
+		return gerror.New("Streaming unsupported!")
+	}
+
+	r.Response.Header().Set("Content-Type", "text/event-stream")
+	r.Response.Header().Set("Cache-Control", "no-cache")
+	r.Response.Header().Set("Connection", "keep-alive")
+
+	_, err := fmt.Fprintf(rw, "event: %s\ndata: %s\n\n", event, content)
+	if err != nil {
+		return err
+	}
+
+	flusher.Flush()
+
+	return nil
 }

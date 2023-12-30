@@ -3,8 +3,8 @@ package db
 import (
 	"fmt"
 	"github.com/gogf/gf/v2/os/gctx"
-	"github.com/iimeta/fastapi-admin/internal/config"
-	"github.com/iimeta/fastapi-admin/utility/logger"
+	"github.com/iimeta/fastapi/internal/config"
+	"github.com/iimeta/fastapi/utility/logger"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
