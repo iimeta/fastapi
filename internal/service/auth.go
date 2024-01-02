@@ -11,8 +11,8 @@ import (
 
 type (
 	IAuth interface {
+		VerifySecretKey(ctx context.Context, secretKey string) (bool, error)
 		GetUid(ctx context.Context) int
-		VerifyToken(ctx context.Context, token string) (bool, error)
 		GetToken(ctx context.Context) string
 		CheckUsage(ctx context.Context) bool
 	}

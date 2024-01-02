@@ -12,23 +12,25 @@ import (
 )
 
 type (
-	IUser interface {
-		// 根据userId获取用户信息
-		GetUserByUid(ctx context.Context, userId int) (*model.User, error)
+	IKey interface {
+		// 根据secretKey获取密钥信息
+		GetKeyBySecretKey(ctx context.Context, secretKey string) (*model.Key, error)
+		// 密钥列表
+		List(ctx context.Context) ([]*model.Key, error)
 	}
 )
 
 var (
-	localUser IUser
+	localKey IKey
 )
 
-func User() IUser {
-	if localUser == nil {
-		panic("implement not found for interface IUser, forgot register?")
+func Key() IKey {
+	if localKey == nil {
+		panic("implement not found for interface IKey, forgot register?")
 	}
-	return localUser
+	return localKey
 }
 
-func RegisterUser(i IUser) {
-	localUser = i
+func RegisterKey(i IKey) {
+	localKey = i
 }

@@ -2,9 +2,10 @@ package auth
 
 import (
 	"context"
+	"fmt"
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/iimeta/fastapi/internal/consts"
-	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 )
@@ -19,6 +20,38 @@ func New() service.IAuth {
 	return &sAuth{}
 }
 
+func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) (bool, error) {
+
+	uid, appid, err := service.Common().ParseSecretKey(ctx, secretKey)
+	if err != nil {
+		logger.Error(ctx, err)
+		return false, err
+	}
+
+	user, err := service.User().GetUserByUid(ctx, uid)
+	if err != nil {
+		logger.Error(ctx, err)
+		return false, err
+	}
+	fmt.Println(gjson.MustEncodeString(user))
+
+	app, err := service.App().GetAppByAppid(ctx, appid)
+	if err != nil {
+		logger.Error(ctx, err)
+		return false, err
+	}
+
+	fmt.Println(gjson.MustEncodeString(app))
+
+	r := g.RequestFromCtx(ctx)
+
+	r.SetCtxVar(consts.UID_KEY, uid)
+	r.SetCtxVar(consts.APPID_KEY, appid)
+	r.SetCtxVar(consts.SECRET_KEY, secretKey)
+
+	return service.Common().VerifySecretKey(ctx, secretKey)
+}
+
 func (s *sAuth) GetUid(ctx context.Context) int {
 
 	uid := ctx.Value(consts.UID_KEY)
@@ -28,20 +61,6 @@ func (s *sAuth) GetUid(ctx context.Context) int {
 	}
 
 	return uid.(int)
-}
-
-func (s *sAuth) VerifyToken(ctx context.Context, token string) (bool, error) {
-
-	if token == "" {
-		return false, errors.New("token is nil")
-	}
-
-	if !s.CheckUsage(ctx) {
-		logger.Errorf(ctx, "token: %s usage exhausted", token)
-		return false, nil
-	}
-
-	return service.Vip().CheckUserVipPermissions(ctx, token, g.RequestFromCtx(ctx).GetForm("model").String()), nil
 }
 
 func (s *sAuth) GetToken(ctx context.Context) string {

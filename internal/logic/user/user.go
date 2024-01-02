@@ -19,7 +19,7 @@ func New() service.IUser {
 }
 
 // 根据userId获取用户信息
-func (s *sUser) GetUserById(ctx context.Context, userId int) (*model.User, error) {
+func (s *sUser) GetUserByUid(ctx context.Context, userId int) (*model.User, error) {
 
 	user, err := dao.User.FindUserByUserId(ctx, userId)
 	if err != nil {

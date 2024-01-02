@@ -12,23 +12,25 @@ import (
 )
 
 type (
-	IUser interface {
-		// 根据userId获取用户信息
-		GetUserByUid(ctx context.Context, userId int) (*model.User, error)
+	IApp interface {
+		// 根据appid获取应用信息
+		GetAppByAppid(ctx context.Context, appid int) (*model.App, error)
+		// 应用列表
+		List(ctx context.Context) ([]*model.App, error)
 	}
 )
 
 var (
-	localUser IUser
+	localApp IApp
 )
 
-func User() IUser {
-	if localUser == nil {
-		panic("implement not found for interface IUser, forgot register?")
+func App() IApp {
+	if localApp == nil {
+		panic("implement not found for interface IApp, forgot register?")
 	}
-	return localUser
+	return localApp
 }
 
-func RegisterUser(i IUser) {
-	localUser = i
+func RegisterApp(i IApp) {
+	localApp = i
 }

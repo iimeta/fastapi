@@ -8,10 +8,7 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gcmd"
-	"github.com/gogf/gf/v2/text/gregex"
 	"github.com/gogf/gf/v2/text/gstr"
-	"github.com/gogf/gf/v2/util/gconv"
-	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/controller/chat"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
@@ -42,7 +39,7 @@ var (
 
 			s.Group("/v1", func(v1 *ghttp.RouterGroup) {
 
-				v1.Middleware(MiddlewareAuth)
+				v1.Middleware(middleware)
 				v1.Middleware(MiddlewareHandlerResponse)
 
 				v1.Group("/chat", func(g *ghttp.RouterGroup) {
@@ -59,51 +56,26 @@ var (
 )
 
 func beforeServeHook(r *ghttp.Request) {
-	logger.Debugf(r.GetCtx(), "beforeServeHook [isFile: %v] URI: %s", r.IsFileRequest(), r.RequestURI)
+	logger.Debugf(r.GetCtx(), "beforeServeHook [isFile: %t] URI: %s", r.IsFileRequest(), r.RequestURI)
 	r.Response.CORSDefault()
 }
 
-func MiddlewareAuth(r *ghttp.Request) {
-	Auth(r)
-}
+func middleware(r *ghttp.Request) {
 
-type JSession struct {
-	Uid       int    `json:"uid"`
-	Token     string `json:"token"`
-	ExpiresAt int64  `json:"expires_at"`
-}
-
-func Auth(r *ghttp.Request) {
-
-	token := AuthHeaderToken(r)
-
-	uid, err := gregex.ReplaceString("[a-zA-Z-]*", "", token)
-	if err != nil {
-		r.Response.WriteStatus(http.StatusInternalServerError, g.Map{"code": 500, "message": "解析 sk 失败"})
+	secretKey := strings.TrimPrefix(r.GetHeader("Authorization"), "Bearer ")
+	if secretKey == "" {
+		r.Response.Header().Set("Content-Type", "application/json")
+		r.Response.WriteStatus(http.StatusUnauthorized, g.Map{"code": 401, "message": "Unauthorized"})
 		r.Exit()
 		return
 	}
 
-	r.SetCtxVar(consts.UID_KEY, gconv.Int(uid))
-
-	if gstr.HasPrefix(r.URL.Path, "/v1/token/usage") {
-		if !service.Common().VerifyToken(r.GetCtx(), token) {
-			r.Response.Header().Set("Content-Type", "application/json")
-			r.Response.WriteStatus(http.StatusUnauthorized, g.Map{"code": 401, "message": "Unauthorized"})
-			r.Exit()
-			return
-		}
-	} else {
-		pass, err := service.Auth().VerifyToken(r.GetCtx(), token)
-		if err != nil || !pass {
-			r.Response.Header().Set("Content-Type", "application/json")
-			r.Response.WriteStatus(http.StatusUnauthorized, g.Map{"code": 401, "message": "Unauthorized"})
-			r.Exit()
-			return
-		}
+	if pass, err := service.Auth().VerifySecretKey(r.GetCtx(), secretKey); err != nil || !pass {
+		r.Response.Header().Set("Content-Type", "application/json")
+		r.Response.WriteStatus(http.StatusUnauthorized, g.Map{"code": 401, "message": "Unauthorized"})
+		r.Exit()
+		return
 	}
-
-	r.SetCtxVar(consts.SECRET_KEY, token)
 
 	if gstr.HasPrefix(r.GetHeader("Content-Type"), "application/json") {
 		logger.Debugf(r.GetCtx(), "url: %s, request body: %s", r.GetUrl(), r.GetBodyString())
@@ -112,19 +84,6 @@ func Auth(r *ghttp.Request) {
 	}
 
 	r.Middleware.Next()
-}
-
-func AuthHeaderToken(r *ghttp.Request) string {
-
-	token := r.GetHeader("Authorization")
-	token = strings.TrimSpace(strings.TrimPrefix(token, "Bearer"))
-
-	// Headers 中没有授权信息则读取 url 中的 token
-	if token == "" {
-		token = r.Get("token", "").String()
-	}
-
-	return token
 }
 
 // DefaultHandlerResponse is the default implementation of HandlerResponse.
