@@ -10,6 +10,7 @@ import (
 	_ "github.com/iimeta/fastapi/internal/logic/chat"
 	_ "github.com/iimeta/fastapi/internal/logic/common"
 	_ "github.com/iimeta/fastapi/internal/logic/key"
+	_ "github.com/iimeta/fastapi/internal/logic/model"
 	_ "github.com/iimeta/fastapi/internal/logic/session"
 	_ "github.com/iimeta/fastapi/internal/logic/user"
 )

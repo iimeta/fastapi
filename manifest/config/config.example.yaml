@@ -1,5 +1,5 @@
 server:
-  address:     ":11000"
+  address:     ":8000"
   openapiPath: "/api.json"
   swaggerPath: "/swagger"
   clientMaxBodySize: 100m
@@ -9,7 +9,7 @@ redis:
   default:
     address: 127.0.0.1:6379
     db: 1
-    pass: iim666
+    pass: fastapi666
 #    masterName: default  # 哨兵模式必填
     minIdle: 2
     maxIdle: 5
@@ -21,7 +21,7 @@ redis:
 #  slave:
 #    address: 127.0.0.1:6379
 #    db: 1
-#    pass: iim666!
+#    pass: fastapi666
 #    minIdle: 2
 #    maxIdle: 5
 #    maxActive: 100
@@ -31,172 +31,29 @@ redis:
 #    writeTimeout: 60
 
 mongodb:
-  uri: mongodb://admin:iim666@127.0.0.1:27017/?authSource=admin
-  database: iim
+  uri: mongodb://admin:fastapi666@127.0.0.1:27017/?authSource=admin
+  database: fastapi
 
 # 日志配置
 logger:
-  path: "./log/"              # 日志文件路径。默认为空，表示关闭，仅输出到终端
-  file: "{Ymd_H}.log"         # 日志文件格式。默认为"{Y-m-d}.log"
-  prefix: ""                  # 日志内容输出前缀。默认为空
-  level: "debug"              # 日志输出级别, debug, info, error, all
-  ctxKeys: [ "uid" ]          # 自定义Context上下文变量名称，自动打印Context的变量到日志中。默认为空
-  header: true                # 是否打印日志的头信息。默认true
-  stdout: true                # 日志是否同时输出到终端。默认true
-  rotateSize: 0               # 按照日志文件大小对文件进行滚动切分。默认为0，表示关闭滚动切分特性
-  rotateExpire: 0             # 按照日志文件时间间隔对文件滚动切分。默认为0，表示关闭滚动切分特性
-  rotateBackupLimit: 0        # 按照切分的文件数量清理切分文件，当滚动切分特性开启时有效。默认为0，表示不备份，切分则删除
-  rotateBackupExpire: 0       # 按照切分的文件有效期清理切分文件，当滚动切分特性开启时有效。默认为0，表示不备份，切分则删除
-  rotateBackupCompress: 0     # 滚动切分文件的压缩比（0-9）。默认为0，表示不压缩
-  rotateCheckInterval: "1h"   # 滚动切分的时间检测间隔，一般不需要设置。默认为1小时
-  stdoutColorDisabled: false  # 关闭终端的颜色打印。默认开启
-  writerColorEnable: false    # 日志文件是否带上颜色。默认false，表示不带颜色
-
-# 文件系统配置【oss,qiniu 暂不支持】
-filesystem:
-  default: local
-  local:
-    root: "./resource/"
-    domain: http://localhost:8000
-  oss:
-    access_id:
-    access_secret:
-    bucket:
-    endpoint:
-    security_token:
-  qiniu:
-    access_key:
-    secret_key:
-    bucket:
-    domain:
-  cos:
-    secret_id:
-    secret_key:
-    bucket: im-xxx
-    region: ap-shanghai
+  path: "./log/"                     # 日志文件路径。默认为空，表示关闭，仅输出到终端
+  file: "{Ymd_H}.log"                # 日志文件格式。默认为"{Y-m-d}.log"
+  prefix: ""                         # 日志内容输出前缀。默认为空
+  level: "debug"                     # 日志输出级别, debug, info, error, all
+  ctxKeys: [ "uid", "appid", "sk" ]  # 自定义Context上下文变量名称，自动打印Context的变量到日志中。默认为空
+  header: true                       # 是否打印日志的头信息。默认true
+  stdout: true                       # 日志是否同时输出到终端。默认true
+  rotateSize: 0                      # 按照日志文件大小对文件进行滚动切分。默认为0，表示关闭滚动切分特性
+  rotateExpire: 0                    # 按照日志文件时间间隔对文件滚动切分。默认为0，表示关闭滚动切分特性
+  rotateBackupLimit: 0               # 按照切分的文件数量清理切分文件，当滚动切分特性开启时有效。默认为0，表示不备份，切分则删除
+  rotateBackupExpire: 0              # 按照切分的文件有效期清理切分文件，当滚动切分特性开启时有效。默认为0，表示不备份，切分则删除
+  rotateBackupCompress: 0            # 滚动切分文件的压缩比（0-9）。默认为0，表示不压缩
+  rotateCheckInterval: "1h"          # 滚动切分的时间检测间隔，一般不需要设置。默认为1小时
+  stdoutColorDisabled: false         # 关闭终端的颜色打印。默认开启
+  writerColorEnable: false           # 日志文件是否带上颜色。默认false，表示不带颜色
 
 # http配置
 http:
   timeout: 60  # 单位秒
   proxy_open: false
   proxy_url: http://localhost:7890
-
-# sdk配置
-sdk:
-  openai:  # OpenAI
-    models:
-      gpt-3.5-turbo-16k:
-        base_url: https://api.openai.com/v1
-#        proxy_url: http://localhost:7890
-        api_keys:
-          - sk-111
-          - sk-222
-      gpt-4:
-        base_url: https://api.openai.com/v1
-#        proxy_url: http://localhost:7890
-        api_keys:
-          - sk-111
-          - sk-222
-      dall-e-2:
-        base_url: https://api.openai.com/v1
-#        proxy_url: http://localhost:7890
-        api_keys:
-          - sk-111
-          - sk-222
-      dall-e-3:
-        base_url: https://api.openai.com/v1
-#        proxy_url: http://localhost:7890
-        api_keys:
-          - sk-111
-          - sk-222
-
-  baidu:  # 文心一言
-    access_token:
-      base_url: https://aip.baidubce.com
-      path: /oauth/2.0/token
-      proxy_url:
-    models:
-      ernie-bot-turbo:
-        base_url: https://aip.baidubce.com
-        path: /rpc/2.0/ai_custom/v1/wenxinworkshop/chat/eb-instant
-        proxy_url:
-        apps:
-          - {id: "111", key: aaa, secret: bbb}
-          - {id: "222", key: ccc, secret: ddd}
-      ernie-bot:
-        base_url: https://aip.baidubce.com
-        path: /rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions
-        proxy_url:
-        apps:
-          - {id: "111", key: aaa, secret: bbb}
-          - {id: "222", key: ccc, secret: ddd}
-      ernie-bot-4:
-        base_url: https://aip.baidubce.com
-        path: /rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro
-        proxy_url:
-        apps:
-          - {id: "111", key: aaa, secret: bbb}
-          - {id: "222", key: ccc, secret: ddd}
-
-  xfyun:  # 讯飞星火
-    original_url: https://spark-api.xf-yun.com
-    models:
-      spark-v1:
-        base_url: https://spark-api.xf-yun.com
-        path: /v1.1/chat
-        proxy_url:
-        domain: generalv1  # v1传general, v2传generalv2, v3传generalv3
-        max_tokens: 4096  # v1.5取值为[1,4096], v2/v3取值为[1,8192]。默认为2048
-        apps:
-          - {id: aaa, key: ccc, secret: ddd}
-          - {id: bbb, key: eee, secret: fff}
-      spark-v2:
-        base_url: https://spark-api.xf-yun.com
-        path: /v2.1/chat
-        proxy_url:
-        domain: generalv2  # v1传general, v2传generalv2, v3传generalv3
-        max_tokens: 8192  # v1.5取值为[1,4096], v2/v3取值为[1,8192]。默认为2048
-        apps:
-          - {id: aaa, key: ccc, secret: ddd}
-          - {id: bbb, key: eee, secret: fff}
-      spark-v3:
-        base_url: https://spark-api.xf-yun.com
-        path: /v3.1/chat
-        proxy_url:
-        domain: generalv3  # v1传general, v2传generalv2, v3传generalv3
-        max_tokens: 8192  # v1.5取值为[1,4096], v2/v3取值为[1,8192]。默认为2048
-        apps:
-          - {id: aaa, key: ccc, secret: ddd}
-          - {id: bbb, key: eee, secret: fff}
-
-  aliyun:  # 通义千问
-    models:
-      qwen-v1:
-        base_url: https://dashscope.aliyuncs.com
-        path: /api/v1/services/aigc/text-generation/generation
-        proxy_url:
-        api_keys:
-          - sk-111
-          - sk-222
-      qwen-7b-chat-v1:
-        base_url: https://dashscope.aliyuncs.com
-        path: /api/v1/services/aigc/text-generation/generation
-        proxy_url:
-        api_keys:
-          - sk-111
-          - sk-222
-
-  midjourney:  # Midjourney
-    cdn_url: https://cdn.xxx.com
-    proxy_url:
-    midjourney_proxy:
-      cdn_proxy_url: https://cdn.xxx.com
-      cdn_original_url: https://cdn.discordapp.com
-      api_secret: xxx
-      api_secret_header: mj-api-secret
-      imagine_url: http://xxx/mj/submit/imagine
-      simple_change_url: http://xxx/mj/submit/simple-change
-      change_url: http://xxx/mj/submit/change
-      describe_url: http://xxx/mj/submit/describe
-      blend_url: http://xxx/mj/submit/blend
-      fetch_url: http://xxx/mj/task/${task_id}/fetch

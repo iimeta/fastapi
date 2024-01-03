@@ -35,7 +35,7 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) (bool, er
 	}
 	fmt.Println(gjson.MustEncodeString(user))
 
-	app, err := service.App().GetAppByAppid(ctx, appid)
+	app, err := service.App().GetApp(ctx, appid)
 	if err != nil {
 		logger.Error(ctx, err)
 		return false, err

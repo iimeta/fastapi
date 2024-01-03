@@ -20,9 +20,33 @@ func New() service.IKey {
 }
 
 // 根据secretKey获取密钥信息
-func (s *sKey) GetKeyBySecretKey(ctx context.Context, secretKey string) (*model.Key, error) {
+func (s *sKey) GetKey(ctx context.Context, secretKey string) (*model.Key, error) {
 
 	key, err := dao.Key.FindOne(ctx, bson.M{"key": secretKey})
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	return &model.Key{
+		Id:          key.Id,
+		AppId:       key.AppId,
+		Corp:        key.Corp,
+		Key:         key.Key,
+		Type:        key.Type,
+		Models:      key.Models,
+		Quota:       key.Quota,
+		IpWhitelist: key.IpWhitelist,
+		IpBlacklist: key.IpBlacklist,
+		Remark:      key.Remark,
+		Status:      key.Status,
+	}, nil
+}
+
+// 根据model获取密钥信息
+func (s *sKey) GetModelKey(ctx context.Context, m string) (*model.Key, error) {
+
+	key, err := dao.Key.FindOne(ctx, bson.M{"models": bson.M{"$in": []string{m}}})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err

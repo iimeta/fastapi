@@ -20,7 +20,7 @@ func New() service.IApp {
 }
 
 // 根据appid获取应用信息
-func (s *sApp) GetAppByAppid(ctx context.Context, appid int) (*model.App, error) {
+func (s *sApp) GetApp(ctx context.Context, appid int) (*model.App, error) {
 
 	app, err := dao.App.FindOne(ctx, bson.M{"app_id": appid})
 	if err != nil {

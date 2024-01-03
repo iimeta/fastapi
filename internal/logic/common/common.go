@@ -26,7 +26,7 @@ func New() service.ICommon {
 
 func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) (bool, error) {
 
-	key, err := service.Key().GetKeyBySecretKey(ctx, secretKey)
+	key, err := service.Key().GetKey(ctx, secretKey)
 	if err != nil {
 		logger.Error(ctx, err)
 		return false, err

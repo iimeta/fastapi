@@ -12,25 +12,25 @@ import (
 )
 
 type (
-	IApp interface {
-		// 根据appid获取应用信息
-		GetApp(ctx context.Context, appid int) (*model.App, error)
-		// 应用列表
-		List(ctx context.Context) ([]*model.App, error)
+	IModel interface {
+		// 根据model获取模型信息
+		GetModel(ctx context.Context, m string) (*model.Model, error)
+		// 模型列表
+		List(ctx context.Context) ([]*model.Model, error)
 	}
 )
 
 var (
-	localApp IApp
+	localModel IModel
 )
 
-func App() IApp {
-	if localApp == nil {
-		panic("implement not found for interface IApp, forgot register?")
+func Model() IModel {
+	if localModel == nil {
+		panic("implement not found for interface IModel, forgot register?")
 	}
-	return localApp
+	return localModel
 }
 
-func RegisterApp(i IApp) {
-	localApp = i
+func RegisterModel(i IModel) {
+	localModel = i
 }

@@ -3,12 +3,12 @@ package chat
 import (
 	"context"
 	"github.com/gogf/gf/v2/encoding/gjson"
+	"github.com/iimeta/fastapi-sdk"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
-	"github.com/iimeta/iim-sdk/sdk"
 	"github.com/sashabaranov/go-openai"
 	"reflect"
 )
@@ -33,12 +33,21 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq) (r
 		}
 	}()
 
-	chat := sdk.NewChat()
-	chat.Corp = sdk.CORP_OPENAI
-	chat.Model = params.Model
-	chat.Messages = params.Messages
+	m, err := service.Model().GetModel(ctx, params.Model)
+	if err != nil {
+		return openai.ChatCompletionResponse{}, err
+	}
 
-	response, err = sdk.Chat.Chat(ctx, chat)
+	key, err := service.Key().GetModelKey(ctx, m.Model)
+	if err != nil {
+		return openai.ChatCompletionResponse{}, err
+	}
+
+	client := sdk.NewClient(ctx, params.Model, key.Key, m.BaseUrl)
+	response, err = sdk.ChatCompletion(ctx, client, openai.ChatCompletionRequest{
+		Model:    params.Model,
+		Messages: params.Messages,
+	})
 	if err != nil {
 		e := &openai.APIError{}
 		if errors.As(err, &e) && !reflect.DeepEqual(response, openai.ChatCompletionResponse{}) {
@@ -62,12 +71,21 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 		}
 	}()
 
-	chat := sdk.NewChat()
-	chat.Corp = sdk.CORP_OPENAI
-	chat.Model = params.Model
-	chat.Messages = params.Messages
+	m, err := service.Model().GetModel(ctx, params.Model)
+	if err != nil {
+		return err
+	}
 
-	response, err := sdk.Chat.ChatStream(ctx, chat)
+	key, err := service.Key().GetModelKey(ctx, m.Model)
+	if err != nil {
+		return err
+	}
+
+	client := sdk.NewClient(ctx, params.Model, key.Key, m.BaseUrl)
+	response, err := sdk.ChatCompletionStream(ctx, client, openai.ChatCompletionRequest{
+		Model:    params.Model,
+		Messages: params.Messages,
+	})
 	defer close(response)
 	if err != nil {
 		logger.Error(ctx, err)
