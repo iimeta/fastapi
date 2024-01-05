@@ -33,22 +33,25 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq) (r
 		}
 	}()
 
-	m, err := service.Model().GetModel(ctx, params.Model)
+	model, err := service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetKey(ctx))
 	if err != nil {
+		logger.Error(ctx, err)
 		return openai.ChatCompletionResponse{}, err
 	}
 
-	key, err := service.Key().GetModelKey(ctx, m.Model)
+	key, err := service.Key().GetModelKey(ctx, model.Id)
 	if err != nil {
+		logger.Error(ctx, err)
 		return openai.ChatCompletionResponse{}, err
 	}
 
-	client := sdk.NewClient(ctx, params.Model, key.Key, m.BaseUrl)
+	client := sdk.NewClient(ctx, model.Model, key.Key, model.BaseUrl)
 	response, err = sdk.ChatCompletion(ctx, client, openai.ChatCompletionRequest{
-		Model:    params.Model,
+		Model:    model.Model,
 		Messages: params.Messages,
 	})
 	if err != nil {
+		logger.Error(ctx, err)
 		e := &openai.APIError{}
 		if errors.As(err, &e) && !reflect.DeepEqual(response, openai.ChatCompletionResponse{}) {
 			return response, nil
@@ -71,22 +74,26 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 		}
 	}()
 
-	m, err := service.Model().GetModel(ctx, params.Model)
+	model, err := service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetKey(ctx))
 	if err != nil {
+		logger.Error(ctx, err)
 		return err
 	}
 
-	key, err := service.Key().GetModelKey(ctx, m.Model)
+	key, err := service.Key().GetModelKey(ctx, model.Id)
 	if err != nil {
+		logger.Error(ctx, err)
 		return err
 	}
 
-	client := sdk.NewClient(ctx, params.Model, key.Key, m.BaseUrl)
+	client := sdk.NewClient(ctx, model.Model, key.Key, model.BaseUrl)
 	response, err := sdk.ChatCompletionStream(ctx, client, openai.ChatCompletionRequest{
-		Model:    params.Model,
+		Model:    model.Model,
 		Messages: params.Messages,
 	})
+
 	defer close(response)
+
 	if err != nil {
 		logger.Error(ctx, err)
 		return err

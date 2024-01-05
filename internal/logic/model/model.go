@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"github.com/iimeta/fastapi/internal/dao"
+	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
@@ -46,10 +47,138 @@ func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 	}, nil
 }
 
-// 模型列表
-func (s *sModel) List(ctx context.Context) ([]*model.Model, error) {
+// 根据model和secretKey获取模型信息
+func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (*model.Model, error) {
 
-	filter := bson.M{}
+	key, err := service.Key().GetKey(ctx, secretKey)
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	if len(key.Models) > 0 {
+
+		models, err := s.List(ctx, key.Models)
+		if err != nil {
+			logger.Error(ctx, err)
+			return nil, err
+		}
+
+		for _, v := range models {
+			if v.Name == m {
+				return &model.Model{
+					Id:              v.Id,
+					Corp:            v.Corp,
+					Name:            v.Name,
+					Model:           v.Model,
+					Type:            v.Type,
+					PromptRatio:     v.PromptRatio,
+					CompletionRatio: v.CompletionRatio,
+					DataFormat:      v.DataFormat,
+					BaseUrl:         v.BaseUrl,
+					Path:            v.Path,
+					Proxy:           v.Proxy,
+					IsPublic:        v.IsPublic,
+					Remark:          v.Remark,
+					Status:          v.Status,
+				}, nil
+			}
+		}
+
+		for _, v := range models {
+			if v.Model == m {
+				return &model.Model{
+					Id:              v.Id,
+					Corp:            v.Corp,
+					Name:            v.Name,
+					Model:           v.Model,
+					Type:            v.Type,
+					PromptRatio:     v.PromptRatio,
+					CompletionRatio: v.CompletionRatio,
+					DataFormat:      v.DataFormat,
+					BaseUrl:         v.BaseUrl,
+					Path:            v.Path,
+					Proxy:           v.Proxy,
+					IsPublic:        v.IsPublic,
+					Remark:          v.Remark,
+					Status:          v.Status,
+				}, nil
+			}
+		}
+
+		return nil, errors.ERR_PERMISSION_DENIED
+	}
+
+	app, err := service.App().GetApp(ctx, key.AppId)
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	if len(app.Models) > 0 {
+
+		models, err := s.List(ctx, app.Models)
+		if err != nil {
+			logger.Error(ctx, err)
+			return nil, err
+		}
+
+		for _, v := range models {
+			if v.Name == m {
+				return &model.Model{
+					Id:              v.Id,
+					Corp:            v.Corp,
+					Name:            v.Name,
+					Model:           v.Model,
+					Type:            v.Type,
+					PromptRatio:     v.PromptRatio,
+					CompletionRatio: v.CompletionRatio,
+					DataFormat:      v.DataFormat,
+					BaseUrl:         v.BaseUrl,
+					Path:            v.Path,
+					Proxy:           v.Proxy,
+					IsPublic:        v.IsPublic,
+					Remark:          v.Remark,
+					Status:          v.Status,
+				}, nil
+			}
+		}
+
+		for _, v := range models {
+			if v.Model == m {
+				return &model.Model{
+					Id:              v.Id,
+					Corp:            v.Corp,
+					Name:            v.Name,
+					Model:           v.Model,
+					Type:            v.Type,
+					PromptRatio:     v.PromptRatio,
+					CompletionRatio: v.CompletionRatio,
+					DataFormat:      v.DataFormat,
+					BaseUrl:         v.BaseUrl,
+					Path:            v.Path,
+					Proxy:           v.Proxy,
+					IsPublic:        v.IsPublic,
+					Remark:          v.Remark,
+					Status:          v.Status,
+				}, nil
+			}
+		}
+
+		return nil, errors.ERR_PERMISSION_DENIED
+	}
+
+	return nil, errors.ERR_PERMISSION_DENIED
+}
+
+// 模型列表
+func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error) {
+
+	filter := bson.M{
+		"_id": bson.M{
+			"$in": ids,
+		},
+	}
 
 	results, err := dao.Model.Find(ctx, filter, "-updated_at")
 	if err != nil {

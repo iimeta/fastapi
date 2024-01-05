@@ -49,7 +49,21 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) (bool, er
 	r.SetCtxVar(consts.APPID_KEY, appid)
 	r.SetCtxVar(consts.SECRET_KEY, secretKey)
 
-	return service.Common().VerifySecretKey(ctx, secretKey)
+	pass, err := service.Common().VerifySecretKey(ctx, secretKey)
+	if err != nil {
+		logger.Error(ctx, err)
+		return false, err
+	}
+
+	if pass {
+		err = service.Session().SaveKey(ctx, secretKey)
+		if err != nil {
+			logger.Error(ctx, err)
+			return false, err
+		}
+	}
+
+	return pass, nil
 }
 
 func (s *sAuth) GetUid(ctx context.Context) int {
@@ -61,17 +75,6 @@ func (s *sAuth) GetUid(ctx context.Context) int {
 	}
 
 	return uid.(int)
-}
-
-func (s *sAuth) GetToken(ctx context.Context) string {
-
-	sk := ctx.Value(consts.SECRET_KEY)
-	if sk == nil {
-		logger.Error(ctx, "sk is nil")
-		return ""
-	}
-
-	return sk.(string)
 }
 
 func (s *sAuth) CheckUsage(ctx context.Context) bool {

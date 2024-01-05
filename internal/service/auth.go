@@ -13,7 +13,6 @@ type (
 	IAuth interface {
 		VerifySecretKey(ctx context.Context, secretKey string) (bool, error)
 		GetUid(ctx context.Context) int
-		GetToken(ctx context.Context) string
 		CheckUsage(ctx context.Context) bool
 	}
 )

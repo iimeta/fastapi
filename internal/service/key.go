@@ -15,8 +15,8 @@ type (
 	IKey interface {
 		// 根据secretKey获取密钥信息
 		GetKey(ctx context.Context, secretKey string) (*model.Key, error)
-		// 根据model获取密钥信息
-		GetModelKey(ctx context.Context, m string) (*model.Key, error)
+		// 根据模型ID获取密钥信息
+		GetModelKey(ctx context.Context, id string) (*model.Key, error)
 		// 密钥列表
 		List(ctx context.Context) ([]*model.Key, error)
 	}

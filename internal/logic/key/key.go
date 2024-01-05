@@ -43,10 +43,10 @@ func (s *sKey) GetKey(ctx context.Context, secretKey string) (*model.Key, error)
 	}, nil
 }
 
-// 根据model获取密钥信息
-func (s *sKey) GetModelKey(ctx context.Context, m string) (*model.Key, error) {
+// 根据模型ID获取密钥信息
+func (s *sKey) GetModelKey(ctx context.Context, id string) (*model.Key, error) {
 
-	key, err := dao.Key.FindOne(ctx, bson.M{"models": bson.M{"$in": []string{m}}})
+	key, err := dao.Key.FindOne(ctx, bson.M{"models": bson.M{"$in": []string{id}}})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
