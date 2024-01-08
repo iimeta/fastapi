@@ -14,8 +14,8 @@ import (
 
 type (
 	IChat interface {
-		Completions(ctx context.Context, params model.CompletionsReq) (response openai.ChatCompletionResponse, err error)
-		CompletionsStream(ctx context.Context, params model.CompletionsReq) (err error)
+		Completions(ctx context.Context, params model.CompletionsReq, retry ...int) (response openai.ChatCompletionResponse, err error)
+		CompletionsStream(ctx context.Context, params model.CompletionsReq, retry ...int) (err error)
 	}
 )
 

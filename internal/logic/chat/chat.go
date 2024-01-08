@@ -23,7 +23,7 @@ func New() service.IChat {
 	return &sChat{}
 }
 
-func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq) (response openai.ChatCompletionResponse, err error) {
+func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, retry ...int) (response openai.ChatCompletionResponse, err error) {
 
 	defer func() {
 		if err == nil {
@@ -39,7 +39,7 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq) (r
 		return openai.ChatCompletionResponse{}, err
 	}
 
-	key, err := service.Key().GetModelKey(ctx, model.Id)
+	keys, err := service.Key().GetModelKeys(ctx, model.Id)
 	if err != nil {
 		logger.Error(ctx, err)
 		return openai.ChatCompletionResponse{}, err
@@ -62,7 +62,7 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq) (r
 	return response, nil
 }
 
-func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsReq) (err error) {
+func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsReq, retry ...int) (err error) {
 
 	totalTokens := 0
 
@@ -80,7 +80,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 		return err
 	}
 
-	key, err := service.Key().GetModelKey(ctx, model.Id)
+	keys, err := service.Key().GetModelKeys(ctx, model.Id)
 	if err != nil {
 		logger.Error(ctx, err)
 		return err
