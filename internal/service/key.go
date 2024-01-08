@@ -19,8 +19,8 @@ type (
 		GetModelKeys(ctx context.Context, id string) ([]*model.Key, error)
 		// 密钥列表
 		List(ctx context.Context, t int) ([]*model.Key, error)
-		// 根据模型ID获取密钥信息
-		PickModelKey(ctx context.Context, id string) (*model.Key, error)
+		// 根据模型ID挑选密钥
+		PickModelKey(ctx context.Context, id string) (key *model.Key, err error)
 	}
 )
 

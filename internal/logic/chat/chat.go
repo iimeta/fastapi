@@ -3,6 +3,7 @@ package chat
 import (
 	"context"
 	"github.com/gogf/gf/v2/encoding/gjson"
+	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi-sdk"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
@@ -10,7 +11,7 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
 	"github.com/sashabaranov/go-openai"
-	"reflect"
+	"time"
 )
 
 type sChat struct{}
@@ -39,7 +40,7 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 		return openai.ChatCompletionResponse{}, err
 	}
 
-	keys, err := service.Key().GetModelKeys(ctx, model.Id)
+	key, err := service.Key().PickModelKey(ctx, model.Id)
 	if err != nil {
 		logger.Error(ctx, err)
 		return openai.ChatCompletionResponse{}, err
@@ -53,9 +54,53 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 	if err != nil {
 		logger.Error(ctx, err)
 		e := &openai.APIError{}
-		if errors.As(err, &e) && !reflect.DeepEqual(response, openai.ChatCompletionResponse{}) {
-			return response, nil
+		if errors.As(err, &e) {
+
+			if len(retry) == 10 {
+				response = openai.ChatCompletionResponse{
+					ID:      "error",
+					Object:  "chat.completion",
+					Created: time.Now().Unix(),
+					Model:   params.Model,
+					Choices: []openai.ChatCompletionChoice{{
+						FinishReason: "stop",
+						Message: openai.ChatCompletionMessage{
+							Role:    openai.ChatMessageRoleAssistant,
+							Content: err.Error(),
+						},
+					}},
+				}
+				return
+			}
+
+			switch e.HTTPStatusCode {
+			case 400:
+				if gstr.Contains(err.Error(), "Please reduce the length of the messages") {
+					response = openai.ChatCompletionResponse{
+						ID:      "error",
+						Object:  "chat.completion",
+						Created: time.Now().Unix(),
+						Model:   params.Model,
+						Choices: []openai.ChatCompletionChoice{{
+							FinishReason: "stop",
+							Message: openai.ChatCompletionMessage{
+								Role:    openai.ChatMessageRoleAssistant,
+								Content: err.Error(),
+							},
+						}},
+					}
+					return
+				}
+				response, err = s.Completions(ctx, params, append(retry, 1)...)
+			case 429:
+				response, err = s.Completions(ctx, params, append(retry, 1)...)
+			default:
+				response, err = s.Completions(ctx, params, append(retry, 1)...)
+			}
+
+			return response, err
 		}
+
 		return openai.ChatCompletionResponse{}, err
 	}
 
@@ -80,7 +125,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 		return err
 	}
 
-	keys, err := service.Key().GetModelKeys(ctx, model.Id)
+	key, err := service.Key().PickModelKey(ctx, model.Id)
 	if err != nil {
 		logger.Error(ctx, err)
 		return err
@@ -96,6 +141,76 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 
 	if err != nil {
 		logger.Error(ctx, err)
+		e := &openai.APIError{}
+		if errors.As(err, &e) {
+
+			if len(retry) == 10 {
+
+				response := openai.ChatCompletionStreamResponse{
+					ID:      "error",
+					Object:  "chat.completion.chunk",
+					Created: time.Now().Unix(),
+					Model:   params.Model,
+					Choices: []openai.ChatCompletionStreamChoice{{
+						FinishReason: "stop",
+						Delta: openai.ChatCompletionStreamChoiceDelta{
+							Content: err.Error(),
+						},
+					}},
+				}
+
+				if err = util.SSEServer(ctx, "", gjson.MustEncode(response)); err != nil {
+					logger.Error(ctx, err)
+					return err
+				}
+
+				if err = util.SSEServer(ctx, "", "[DONE]"); err != nil {
+					logger.Error(ctx, err)
+					return err
+				}
+
+				return nil
+			}
+
+			switch e.HTTPStatusCode {
+			case 400:
+				if gstr.Contains(err.Error(), "Please reduce the length of the messages") {
+
+					response := openai.ChatCompletionStreamResponse{
+						ID:      "error",
+						Object:  "chat.completion.chunk",
+						Created: time.Now().Unix(),
+						Model:   params.Model,
+						Choices: []openai.ChatCompletionStreamChoice{{
+							FinishReason: "stop",
+							Delta: openai.ChatCompletionStreamChoiceDelta{
+								Content: err.Error(),
+							},
+						}},
+					}
+
+					if err = util.SSEServer(ctx, "", gjson.MustEncode(response)); err != nil {
+						logger.Error(ctx, err)
+						return err
+					}
+
+					if err = util.SSEServer(ctx, "", "[DONE]"); err != nil {
+						logger.Error(ctx, err)
+						return err
+					}
+
+					return nil
+				}
+				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
+			case 429:
+				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
+			default:
+				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
+			}
+
+			return err
+		}
+
 		return err
 	}
 
