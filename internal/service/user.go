@@ -15,6 +15,8 @@ type (
 	IUser interface {
 		// 根据userId获取用户信息
 		GetUserByUid(ctx context.Context, userId int) (*model.User, error)
+		// 用户列表
+		List(ctx context.Context) ([]*model.User, error)
 	}
 )
 

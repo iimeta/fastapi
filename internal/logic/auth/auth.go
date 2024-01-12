@@ -22,20 +22,20 @@ func New() service.IAuth {
 
 func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) (bool, error) {
 
-	uid, appid, err := service.Common().ParseSecretKey(ctx, secretKey)
+	userId, appId, err := service.Common().ParseSecretKey(ctx, secretKey)
 	if err != nil {
 		logger.Error(ctx, err)
 		return false, err
 	}
 
-	user, err := service.User().GetUserByUid(ctx, uid)
+	user, err := service.User().GetUserByUid(ctx, userId)
 	if err != nil {
 		logger.Error(ctx, err)
 		return false, err
 	}
 	fmt.Println(gjson.MustEncodeString(user))
 
-	app, err := service.App().GetApp(ctx, appid)
+	app, err := service.App().GetApp(ctx, appId)
 	if err != nil {
 		logger.Error(ctx, err)
 		return false, err
@@ -45,8 +45,8 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) (bool, er
 
 	r := g.RequestFromCtx(ctx)
 
-	r.SetCtxVar(consts.UID_KEY, uid)
-	r.SetCtxVar(consts.APPID_KEY, appid)
+	r.SetCtxVar(consts.USER_ID_KEY, userId)
+	r.SetCtxVar(consts.APP_ID_KEY, appId)
 	r.SetCtxVar(consts.SECRET_KEY, secretKey)
 
 	pass, err := service.Common().VerifySecretKey(ctx, secretKey)
@@ -66,15 +66,15 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) (bool, er
 	return pass, nil
 }
 
-func (s *sAuth) GetUid(ctx context.Context) int {
+func (s *sAuth) GetUserId(ctx context.Context) int {
 
-	uid := ctx.Value(consts.UID_KEY)
-	if uid == nil {
-		logger.Error(ctx, "uid is nil")
+	userId := ctx.Value(consts.USER_ID_KEY)
+	if userId == nil {
+		logger.Error(ctx, "user_id is nil")
 		return 0
 	}
 
-	return uid.(int)
+	return userId.(int)
 }
 
 func (s *sAuth) CheckUsage(ctx context.Context) bool {

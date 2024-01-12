@@ -82,10 +82,10 @@ func (s *sKey) GetModelKeys(ctx context.Context, id string) ([]*model.Key, error
 }
 
 // 密钥列表
-func (s *sKey) List(ctx context.Context, t int) ([]*model.Key, error) {
+func (s *sKey) List(ctx context.Context, Type int) ([]*model.Key, error) {
 
 	filter := bson.M{
-		"type": t,
+		"type": Type,
 	}
 
 	results, err := dao.Key.Find(ctx, filter, "-updated_at")
@@ -97,13 +97,18 @@ func (s *sKey) List(ctx context.Context, t int) ([]*model.Key, error) {
 	items := make([]*model.Key, 0)
 	for _, result := range results {
 		items = append(items, &model.Key{
-			Id:     result.Id,
-			Corp:   result.Corp,
-			Key:    result.Key,
-			Type:   result.Type,
-			Models: result.Models,
-			Remark: result.Remark,
-			Status: result.Status,
+			Id:           result.Id,
+			AppId:        result.AppId,
+			Corp:         result.Corp,
+			Key:          result.Key,
+			Type:         result.Type,
+			Models:       result.Models,
+			IsLimitQuota: result.IsLimitQuota,
+			Quota:        result.Quota,
+			IpWhitelist:  result.IpWhitelist,
+			IpBlacklist:  result.IpBlacklist,
+			Remark:       result.Remark,
+			Status:       result.Status,
 		})
 	}
 

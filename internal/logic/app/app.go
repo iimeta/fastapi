@@ -55,15 +55,18 @@ func (s *sApp) List(ctx context.Context) ([]*model.App, error) {
 	items := make([]*model.App, 0)
 	for _, result := range results {
 		items = append(items, &model.App{
-			Id:          result.Id,
-			AppId:       result.AppId,
-			Name:        result.Name,
-			Type:        result.Type,
-			Models:      result.Models,
-			IpWhitelist: result.IpWhitelist,
-			IpBlacklist: result.IpBlacklist,
-			Remark:      result.Remark,
-			Status:      result.Status,
+			Id:           result.Id,
+			AppId:        result.AppId,
+			Name:         result.Name,
+			Type:         result.Type,
+			Models:       result.Models,
+			IsLimitQuota: result.IsLimitQuota,
+			Quota:        result.Quota,
+			IpWhitelist:  result.IpWhitelist,
+			IpBlacklist:  result.IpBlacklist,
+			Remark:       result.Remark,
+			Status:       result.Status,
+			UserId:       result.UserId,
 		})
 	}
 

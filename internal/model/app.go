@@ -12,6 +12,7 @@ type App struct {
 	IpBlacklist  []string `json:"ip_blacklist,omitempty"`   // IP黑名单
 	Remark       string   `json:"remark,omitempty"`         // 备注
 	Status       int      `json:"status,omitempty"`         // 状态[1:正常, 2:禁用, -1:删除]
+	UserId       int      `json:"user_id,omitempty"`        // 用户ID
 	Creator      string   `json:"creator,omitempty"`        // 创建人
 	Updater      string   `json:"updater,omitempty"`        // 更新人
 	CreatedAt    string   `json:"created_at,omitempty"`     // 创建时间

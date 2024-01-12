@@ -20,6 +20,7 @@ type App struct {
 	IpBlacklist  []string `bson:"ip_blacklist,omitempty"`   // IP黑名单
 	Remark       string   `bson:"remark,omitempty"`         // 备注
 	Status       int      `bson:"status,omitempty"`         // 状态[1:正常, 2:禁用, -1:删除]
+	UserId       int      `bson:"user_id,omitempty"`        // 用户ID
 	Creator      string   `bson:"creator,omitempty"`        // 创建人
 	Updater      string   `bson:"updater,omitempty"`        // 更新人
 	CreatedAt    int64    `bson:"created_at,omitempty"`     // 创建时间

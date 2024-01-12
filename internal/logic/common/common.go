@@ -11,7 +11,6 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
 	"strings"
-	"time"
 )
 
 type sCommon struct{}
@@ -42,7 +41,7 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) (bool, 
 }
 
 func (s *sCommon) GetUidUsageKey(ctx context.Context) string {
-	return fmt.Sprintf(consts.UID_USAGE_KEY, service.Auth().GetUid(ctx), time.Now().Format("20060102"))
+	return fmt.Sprintf(consts.API_USAGE_KEY, service.Auth().GetUserId(ctx))
 }
 
 func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int) error {
@@ -76,17 +75,17 @@ func (s *sCommon) ParseSecretKey(ctx context.Context, secretKey string) (int, in
 
 	secretKey = strings.TrimPrefix(secretKey, "sk-FastAPI")
 
-	uid, err := gregex.ReplaceString("[a-zA-Z-]*", "", secretKey[:len(secretKey)/2])
+	userId, err := gregex.ReplaceString("[a-zA-Z-]*", "", secretKey[:len(secretKey)/2])
 	if err != nil {
 		logger.Error(ctx, err)
 		return 0, 0, err
 	}
 
-	appid, err := gregex.ReplaceString("[a-zA-Z-]*", "", secretKey[len(secretKey)/2:])
+	appId, err := gregex.ReplaceString("[a-zA-Z-]*", "", secretKey[len(secretKey)/2:])
 	if err != nil {
 		logger.Error(ctx, err)
 		return 0, 0, err
 	}
 
-	return gconv.Int(uid), gconv.Int(appid), nil
+	return gconv.Int(userId), gconv.Int(appId), nil
 }
