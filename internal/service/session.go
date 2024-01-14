@@ -11,10 +11,14 @@ import (
 
 type (
 	ISession interface {
-		// 保存密钥
-		SaveKey(ctx context.Context, key string) error
+		// 保存会话
+		Save(ctx context.Context, secretKey string) error
+		// 获取用户ID
+		GetUserId(ctx context.Context) int
+		// 获取应用ID
+		GetAppId(ctx context.Context) int
 		// 获取密钥
-		GetKey(ctx context.Context) string
+		GetSecretKey(ctx context.Context) string
 	}
 )
 

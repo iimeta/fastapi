@@ -82,10 +82,10 @@ func (s *sKey) GetModelKeys(ctx context.Context, id string) ([]*model.Key, error
 }
 
 // 密钥列表
-func (s *sKey) List(ctx context.Context, Type int) ([]*model.Key, error) {
+func (s *sKey) List(ctx context.Context, typ int) ([]*model.Key, error) {
 
 	filter := bson.M{
-		"type": Type,
+		"type": typ,
 	}
 
 	results, err := dao.Key.Find(ctx, filter, "-updated_at")

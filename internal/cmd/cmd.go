@@ -3,13 +3,12 @@ package cmd
 import (
 	"context"
 	"github.com/gogf/gf/v2/encoding/gjson"
-	"github.com/gogf/gf/v2/errors/gcode"
-	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gcmd"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi/internal/controller/chat"
+	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"net/http"
@@ -40,7 +39,7 @@ var (
 			s.Group("/v1", func(v1 *ghttp.RouterGroup) {
 
 				v1.Middleware(middleware)
-				v1.Middleware(MiddlewareHandlerResponse)
+				v1.Middleware(middlewareHandlerResponse)
 
 				v1.Group("/chat", func(g *ghttp.RouterGroup) {
 					g.Bind(
@@ -64,15 +63,17 @@ func middleware(r *ghttp.Request) {
 
 	secretKey := strings.TrimPrefix(r.GetHeader("Authorization"), "Bearer ")
 	if secretKey == "" {
+		err := errors.Error(errors.ERR_NOT_API_KEY)
 		r.Response.Header().Set("Content-Type", "application/json")
-		r.Response.WriteStatus(http.StatusUnauthorized, g.Map{"code": 401, "message": "Unauthorized"})
+		r.Response.WriteStatus(err.Status(), gjson.MustEncodeString(err))
 		r.Exit()
 		return
 	}
 
 	if pass, err := service.Auth().VerifySecretKey(r.GetCtx(), secretKey); err != nil || !pass {
+		err := errors.Error(err)
 		r.Response.Header().Set("Content-Type", "application/json")
-		r.Response.WriteStatus(http.StatusUnauthorized, g.Map{"code": 401, "message": "Unauthorized"})
+		r.Response.WriteStatus(err.Status(), gjson.MustEncodeString(err))
 		r.Exit()
 		return
 	}
@@ -86,15 +87,13 @@ func middleware(r *ghttp.Request) {
 	r.Middleware.Next()
 }
 
-// DefaultHandlerResponse is the default implementation of HandlerResponse.
-type DefaultHandlerResponse struct {
-	Code    int         `json:"code"    dc:"Error code"`
+type defaultHandlerResponse struct {
+	Code    any         `json:"code"    dc:"Error code"`
 	Message string      `json:"message" dc:"Error message"`
 	Data    interface{} `json:"data"    dc:"Result data for certain request according API definition"`
 }
 
-// MiddlewareHandlerResponse is the default middleware handling handler response object and its error.
-func MiddlewareHandlerResponse(r *ghttp.Request) {
+func middlewareHandlerResponse(r *ghttp.Request) {
 
 	r.Middleware.Next()
 
@@ -107,35 +106,38 @@ func MiddlewareHandlerResponse(r *ghttp.Request) {
 		msg  string
 		err  = r.GetError()
 		res  = r.GetHandlerResponse()
-		code = gerror.Code(err)
+		code = errors.Error(err)
 	)
 	if err != nil {
-		if code == gcode.CodeNil {
-			code = gcode.CodeInternalError
+		if code == errors.Error(errors.ERR_NIL) {
+			code = errors.Error(errors.ERR_INTERNAL_ERROR)
 		}
 		msg = err.Error()
 	} else {
 		if r.Response.Status > 0 && r.Response.Status != http.StatusOK {
+
 			msg = http.StatusText(r.Response.Status)
+
 			switch r.Response.Status {
 			case http.StatusNotFound:
-				code = gcode.CodeNotFound
+				code = errors.Error(errors.ERR_NOT_FOUND)
 			case http.StatusForbidden:
-				code = gcode.CodeNotAuthorized
+				code = errors.Error(errors.ERR_NOT_AUTHORIZED)
 			default:
-				code = gcode.CodeUnknown
+				code = errors.Error(errors.ERR_UNKNOWN)
 			}
-			// It creates error as it can be retrieved by other middlewares.
-			err = gerror.NewCode(code, msg)
+
+			err = code.Unwrap()
 			r.SetError(err)
+
 		} else {
-			code = gcode.New(0, "success", "success")
-			msg = code.Message()
+			code = errors.Error(errors.NewError(200, 0, "success", "success"))
+			msg = code.ErrMessage()
 		}
 	}
 
-	data := DefaultHandlerResponse{
-		Code:    code.Code(),
+	data := defaultHandlerResponse{
+		Code:    code.ErrCode(),
 		Message: msg,
 		Data:    res,
 	}

@@ -160,7 +160,7 @@ func Insert(ctx context.Context, database string, document interface{}) (string,
 	value["_id"] = util.GenerateId()
 
 	if value["creator"] == nil || value["creator"] == "" {
-		value["creator"] = service.Session().GetKey(ctx)
+		value["creator"] = service.Session().GetSecretKey(ctx)
 	}
 
 	if value["created_at"] == nil || gconv.Int(value["created_at"]) == 0 {
@@ -213,7 +213,7 @@ func Inserts(ctx context.Context, database string, documents []interface{}) ([]s
 		value["_id"] = util.GenerateId()
 
 		if value["creator"] == nil || value["creator"] == "" {
-			value["creator"] = service.Session().GetKey(ctx)
+			value["creator"] = service.Session().GetSecretKey(ctx)
 		}
 
 		if value["created_at"] == nil || gconv.Int(value["created_at"]) == 0 {
@@ -274,7 +274,7 @@ func UpdateOne(ctx context.Context, database, collection string, filter map[stri
 		}
 
 		if value["updater"] == nil || value["updater"] == "" {
-			value["updater"] = service.Session().GetKey(ctx)
+			value["updater"] = service.Session().GetSecretKey(ctx)
 		}
 
 		if value["updated_at"] == nil || gconv.Int(value["updated_at"]) == 0 {
@@ -303,12 +303,12 @@ func UpdateOne(ctx context.Context, database, collection string, filter map[stri
 				if value["$set"] != nil {
 					setValues := gconv.Map(value["$set"])
 					if setValues["updater"] == nil || setValues["updater"] == "" {
-						setValues["updater"] = service.Session().GetKey(ctx)
+						setValues["updater"] = service.Session().GetSecretKey(ctx)
 						value["$set"] = setValues
 					}
 				} else {
 					value["$set"] = bson.M{
-						"updater": service.Session().GetKey(ctx),
+						"updater": service.Session().GetSecretKey(ctx),
 					}
 				}
 			}
@@ -329,7 +329,7 @@ func UpdateOne(ctx context.Context, database, collection string, filter map[stri
 		} else {
 
 			if value["updater"] == nil || value["updater"] == "" {
-				value["updater"] = service.Session().GetKey(ctx)
+				value["updater"] = service.Session().GetSecretKey(ctx)
 			}
 
 			if value["updated_at"] == nil || gconv.Int(value["updated_at"]) == 0 {

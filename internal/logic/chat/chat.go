@@ -26,15 +26,17 @@ func New() service.IChat {
 
 func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, retry ...int) (response openai.ChatCompletionResponse, err error) {
 
+	var model *model.Model
+
 	defer func() {
 		if err == nil {
-			if err = service.Common().RecordUsage(ctx, response.Usage.TotalTokens); err != nil {
+			if err = service.Common().RecordUsage(ctx, model, response.Usage); err != nil {
 				logger.Error(ctx, err)
 			}
 		}
 	}()
 
-	model, err := service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetKey(ctx))
+	model, err = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx))
 	if err != nil {
 		logger.Error(ctx, err)
 		return openai.ChatCompletionResponse{}, err
@@ -109,17 +111,18 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 
 func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsReq, retry ...int) (err error) {
 
-	totalTokens := 0
+	var model *model.Model
+	var usage openai.Usage
 
 	defer func() {
-		if totalTokens != 0 {
-			if err = service.Common().RecordUsage(ctx, totalTokens); err != nil {
+		if usage.TotalTokens != 0 {
+			if err = service.Common().RecordUsage(ctx, model, usage); err != nil {
 				logger.Error(ctx, err)
 			}
 		}
 	}()
 
-	model, err := service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetKey(ctx))
+	model, err = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx))
 	if err != nil {
 		logger.Error(ctx, err)
 		return err
@@ -218,7 +221,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 		select {
 		case response := <-response:
 
-			totalTokens = response.Usage.TotalTokens
+			usage = response.Usage
 
 			if response.Choices[0].FinishReason == "stop" {
 
