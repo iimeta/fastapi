@@ -19,25 +19,28 @@ func New() service.IApp {
 	return &sApp{}
 }
 
-// 根据appid获取应用信息
-func (s *sApp) GetApp(ctx context.Context, appid int) (*model.App, error) {
+// 根据应用ID获取应用信息
+func (s *sApp) GetApp(ctx context.Context, appId int) (*model.App, error) {
 
-	app, err := dao.App.FindOne(ctx, bson.M{"app_id": appid})
+	app, err := dao.App.FindOne(ctx, bson.M{"app_id": appId})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
 	}
 
 	return &model.App{
-		Id:          app.Id,
-		AppId:       app.AppId,
-		Name:        app.Name,
-		Type:        app.Type,
-		Models:      app.Models,
-		IpWhitelist: app.IpWhitelist,
-		IpBlacklist: app.IpBlacklist,
-		Remark:      app.Remark,
-		Status:      app.Status,
+		Id:           app.Id,
+		AppId:        app.AppId,
+		Name:         app.Name,
+		Type:         app.Type,
+		Models:       app.Models,
+		IsLimitQuota: app.IsLimitQuota,
+		Quota:        app.Quota,
+		IpWhitelist:  app.IpWhitelist,
+		IpBlacklist:  app.IpBlacklist,
+		Remark:       app.Remark,
+		Status:       app.Status,
+		UserId:       app.UserId,
 	}, nil
 }
 
@@ -71,4 +74,19 @@ func (s *sApp) List(ctx context.Context) ([]*model.App, error) {
 	}
 
 	return items, nil
+}
+
+// 根据应用ID更新额度
+func (s *sApp) UpdateQuota(ctx context.Context, appId, quota int) (err error) {
+
+	if err := dao.App.UpdateOne(ctx, bson.M{"app_id": appId}, bson.M{
+		"$inc": bson.M{
+			"quota": quota,
+		},
+	}); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	return nil
 }

@@ -69,3 +69,18 @@ func (s *sUser) List(ctx context.Context) ([]*model.User, error) {
 
 	return items, nil
 }
+
+// 根据用户ID更新额度
+func (s *sUser) UpdateQuota(ctx context.Context, userId, quota int) (err error) {
+
+	if err := dao.User.UpdateOne(ctx, bson.M{"user_id": userId}, bson.M{
+		"$inc": bson.M{
+			"quota": quota,
+		},
+	}); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	return nil
+}

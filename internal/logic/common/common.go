@@ -3,6 +3,8 @@ package common
 import (
 	"context"
 	"fmt"
+	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/text/gregex"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/iimeta/fastapi/internal/consts"
@@ -12,6 +14,7 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
 	"github.com/sashabaranov/go-openai"
+	"go.mongodb.org/mongo-driver/mongo"
 	"strings"
 )
 
@@ -30,17 +33,14 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) (bool, 
 	key, err := service.Key().GetKey(ctx, secretKey)
 	if err != nil {
 		logger.Error(ctx, err)
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return false, errors.ERR_INVALID_API_KEY
+		}
 		return false, err
 	}
 
 	if key == nil || key.Key != secretKey {
 		err = errors.ERR_INVALID_API_KEY
-		logger.Error(ctx, err)
-		return false, err
-	}
-
-	userUsedTokens, err := s.GetUserUsedTokens(ctx)
-	if err != nil {
 		logger.Error(ctx, err)
 		return false, err
 	}
@@ -51,7 +51,7 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) (bool, 
 		return false, err
 	}
 
-	if userTotalTokens <= 0 || userUsedTokens > userTotalTokens {
+	if userTotalTokens <= 0 {
 		err = errors.ERR_INSUFFICIENT_QUOTA
 		logger.Error(ctx, err)
 		return false, err
@@ -60,16 +60,13 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) (bool, 
 	app, err := service.App().GetApp(ctx, key.AppId)
 	if err != nil {
 		logger.Error(ctx, err)
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return false, errors.ERR_INVALID_API_KEY
+		}
 		return false, err
 	}
 
 	if key.IsLimitQuota {
-
-		keyUsedTokens, err := s.GetKeyUsedTokens(ctx)
-		if err != nil {
-			logger.Error(ctx, err)
-			return false, err
-		}
 
 		keyTotalTokens, err := s.GetKeyTotalTokens(ctx)
 		if err != nil {
@@ -77,7 +74,7 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) (bool, 
 			return false, err
 		}
 
-		if keyTotalTokens <= 0 || keyUsedTokens > keyTotalTokens {
+		if keyTotalTokens <= 0 {
 			err = errors.ERR_INSUFFICIENT_QUOTA
 			logger.Error(ctx, err)
 			return false, err
@@ -86,23 +83,23 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) (bool, 
 
 	if app.IsLimitQuota {
 
-		appUsedTokens, err := s.GetAppUsedTokens(ctx)
-		if err != nil {
-			logger.Error(ctx, err)
-			return false, err
-		}
-
 		appTotalTokens, err := s.GetAppTotalTokens(ctx)
 		if err != nil {
 			logger.Error(ctx, err)
 			return false, err
 		}
 
-		if appTotalTokens <= 0 || appUsedTokens > appTotalTokens {
+		if appTotalTokens <= 0 {
 			err = errors.ERR_INSUFFICIENT_QUOTA
 			logger.Error(ctx, err)
 			return false, err
 		}
+	}
+
+	err = service.Session().SaveIsLimitQuota(ctx, app.IsLimitQuota, key.IsLimitQuota)
+	if err != nil {
+		logger.Error(ctx, err)
+		return false, err
 	}
 
 	return true, nil
@@ -118,32 +115,68 @@ func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage ope
 
 	if _, err := redis.HIncrBy(ctx, usageKey, consts.USER_USAGE_COUNT_FIELD, 1); err != nil {
 		logger.Error(ctx, err)
-		return err
 	}
 
 	if _, err := redis.HIncrBy(ctx, usageKey, consts.USER_USED_TOKENS_FIELD, int64(totalTokens)); err != nil {
 		logger.Error(ctx, err)
-		return err
+	}
+
+	if _, err := redis.HIncrBy(ctx, usageKey, consts.USER_TOTAL_TOKENS_FIELD, int64(-totalTokens)); err != nil {
+		logger.Error(ctx, err)
+	}
+
+	if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+		if err := service.User().UpdateQuota(ctx, service.Session().GetUserId(ctx), int(-totalTokens)); err != nil {
+			logger.Error(ctx, err)
+		}
+	}, nil); err != nil {
+		logger.Error(ctx, err)
 	}
 
 	if _, err := redis.HIncrBy(ctx, usageKey, s.GetAppUsageCountField(ctx), 1); err != nil {
 		logger.Error(ctx, err)
-		return err
 	}
 
 	if _, err := redis.HIncrBy(ctx, usageKey, s.GetAppUsedTokensField(ctx), int64(totalTokens)); err != nil {
 		logger.Error(ctx, err)
-		return err
+	}
+
+	if service.Session().GetAppIsLimitQuota(ctx) {
+
+		if _, err := redis.HIncrBy(ctx, usageKey, s.GetAppTotalTokensField(ctx), int64(-totalTokens)); err != nil {
+			logger.Error(ctx, err)
+		}
+
+		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+			if err := service.App().UpdateQuota(ctx, service.Session().GetAppId(ctx), int(-totalTokens)); err != nil {
+				logger.Error(ctx, err)
+			}
+		}, nil); err != nil {
+			logger.Error(ctx, err)
+		}
 	}
 
 	if _, err := redis.HIncrBy(ctx, usageKey, s.GetKeyUsageCountField(ctx), 1); err != nil {
 		logger.Error(ctx, err)
-		return err
 	}
 
 	if _, err := redis.HIncrBy(ctx, usageKey, s.GetKeyUsedTokensField(ctx), int64(totalTokens)); err != nil {
 		logger.Error(ctx, err)
-		return err
+	}
+
+	if service.Session().GetKeyIsLimitQuota(ctx) {
+
+		if _, err := redis.HIncrBy(ctx, usageKey, s.GetKeyTotalTokensField(ctx), int64(-totalTokens)); err != nil {
+			logger.Error(ctx, err)
+		}
+
+		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+			if err := service.Key().UpdateQuota(ctx, service.Session().GetSecretKey(ctx), int(-totalTokens)); err != nil {
+				logger.Error(ctx, err)
+			}
+		}, nil); err != nil {
+			logger.Error(ctx, err)
+		}
 	}
 
 	return nil

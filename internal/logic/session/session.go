@@ -36,6 +36,17 @@ func (s *sSession) Save(ctx context.Context, secretKey string) error {
 	return nil
 }
 
+// 保存应用和秘钥是否限制额度
+func (s *sSession) SaveIsLimitQuota(ctx context.Context, app, key bool) error {
+
+	r := g.RequestFromCtx(ctx)
+
+	r.SetCtxVar(consts.APP_IS_LIMIT_QUOTA_KEY, app)
+	r.SetCtxVar(consts.KEY_IS_LIMIT_QUOTA_KEY, key)
+
+	return nil
+}
+
 // 获取用户ID
 func (s *sSession) GetUserId(ctx context.Context) int {
 
@@ -70,4 +81,28 @@ func (s *sSession) GetSecretKey(ctx context.Context) string {
 	}
 
 	return secretKey.(string)
+}
+
+// 获取应用是否限制额度
+func (s *sSession) GetAppIsLimitQuota(ctx context.Context) bool {
+
+	isLimitQuota := ctx.Value(consts.APP_IS_LIMIT_QUOTA_KEY)
+	if isLimitQuota == nil {
+		logger.Error(ctx, "app isLimitQuota is nil")
+		return true
+	}
+
+	return isLimitQuota.(bool)
+}
+
+// 获取秘钥是否限制额度
+func (s *sSession) GetKeyIsLimitQuota(ctx context.Context) bool {
+
+	isLimitQuota := ctx.Value(consts.KEY_IS_LIMIT_QUOTA_KEY)
+	if isLimitQuota == nil {
+		logger.Error(ctx, "key isLimitQuota is nil")
+		return true
+	}
+
+	return isLimitQuota.(bool)
 }

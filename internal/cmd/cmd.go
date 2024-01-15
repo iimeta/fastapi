@@ -136,13 +136,24 @@ func middlewareHandlerResponse(r *ghttp.Request) {
 		}
 	}
 
-	data := defaultHandlerResponse{
-		Code:    code.ErrCode(),
-		Message: msg,
-		Data:    res,
+	if err != nil {
+
+		logger.Debugf(r.GetCtx(), "url: %s, response body: %s", r.GetUrl(), gjson.MustEncodeString(err))
+
+		err := errors.Error(err)
+		r.Response.Header().Set("Content-Type", "application/json")
+		r.Response.WriteStatus(err.Status(), gjson.MustEncodeString(err))
+
+	} else {
+
+		data := defaultHandlerResponse{
+			Code:    code.ErrCode(),
+			Message: msg,
+			Data:    res,
+		}
+
+		logger.Debugf(r.GetCtx(), "url: %s, response body: %s", r.GetUrl(), gjson.MustEncodeString(data))
+
+		r.Response.WriteJson(data)
 	}
-
-	logger.Debugf(r.GetCtx(), "url: %s, response body: %s", r.GetUrl(), gjson.MustEncodeString(data))
-
-	r.Response.WriteJson(data)
 }

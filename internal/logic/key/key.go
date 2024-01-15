@@ -38,17 +38,18 @@ func (s *sKey) GetKey(ctx context.Context, secretKey string) (*model.Key, error)
 	}
 
 	return &model.Key{
-		Id:          key.Id,
-		AppId:       key.AppId,
-		Corp:        key.Corp,
-		Key:         key.Key,
-		Type:        key.Type,
-		Models:      key.Models,
-		Quota:       key.Quota,
-		IpWhitelist: key.IpWhitelist,
-		IpBlacklist: key.IpBlacklist,
-		Remark:      key.Remark,
-		Status:      key.Status,
+		Id:           key.Id,
+		AppId:        key.AppId,
+		Corp:         key.Corp,
+		Key:          key.Key,
+		Type:         key.Type,
+		Models:       key.Models,
+		IsLimitQuota: key.IsLimitQuota,
+		Quota:        key.Quota,
+		IpWhitelist:  key.IpWhitelist,
+		IpBlacklist:  key.IpBlacklist,
+		Remark:       key.Remark,
+		Status:       key.Status,
 	}, nil
 }
 
@@ -64,17 +65,18 @@ func (s *sKey) GetModelKeys(ctx context.Context, id string) ([]*model.Key, error
 	items := make([]*model.Key, 0)
 	for _, result := range results {
 		items = append(items, &model.Key{
-			Id:          result.Id,
-			AppId:       result.AppId,
-			Corp:        result.Corp,
-			Key:         result.Key,
-			Type:        result.Type,
-			Models:      result.Models,
-			Quota:       result.Quota,
-			IpWhitelist: result.IpWhitelist,
-			IpBlacklist: result.IpBlacklist,
-			Remark:      result.Remark,
-			Status:      result.Status,
+			Id:           result.Id,
+			AppId:        result.AppId,
+			Corp:         result.Corp,
+			Key:          result.Key,
+			Type:         result.Type,
+			Models:       result.Models,
+			IsLimitQuota: result.IsLimitQuota,
+			Quota:        result.Quota,
+			IpWhitelist:  result.IpWhitelist,
+			IpBlacklist:  result.IpBlacklist,
+			Remark:       result.Remark,
+			Status:       result.Status,
 		})
 	}
 
@@ -153,4 +155,19 @@ func (s *sKey) PickModelKey(ctx context.Context, id string) (key *model.Key, err
 	}
 
 	return keys[roundRobin.Index(len(keys))], nil
+}
+
+// 根据密钥更新额度
+func (s *sKey) UpdateQuota(ctx context.Context, secretKey string, quota int) (err error) {
+
+	if err := dao.Key.UpdateOne(ctx, bson.M{"key": secretKey}, bson.M{
+		"$inc": bson.M{
+			"quota": quota,
+		},
+	}); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	return nil
 }
