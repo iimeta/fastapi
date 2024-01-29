@@ -7,6 +7,7 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/gclient"
+	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtimer"
 	"github.com/gorilla/websocket"
@@ -286,6 +287,7 @@ func SSEServer(ctx context.Context, event string, content any) error {
 		return gerror.New("Streaming unsupported!")
 	}
 
+	r.Response.Header().Set("Trace-Id", gctx.CtxId(ctx))
 	r.Response.Header().Set("Content-Type", "text/event-stream")
 	r.Response.Header().Set("Cache-Control", "no-cache")
 	r.Response.Header().Set("Connection", "keep-alive")

@@ -1,13 +1,7 @@
-package do
-
-import "github.com/gogf/gf/v2/util/gmeta"
-
-const (
-	CHAT_COLLECTION = "chat"
-)
+package entity
 
 type Chat struct {
-	gmeta.Meta       `collection:"chat" bson:"-"`
+	Id               string    `bson:"_id,omitempty"`               // ID
 	TraceId          string    `bson:"trace_id,omitempty"`          // 日志ID
 	Corp             string    `bson:"corp,omitempty"`              // 公司[OpenAI;Baidu;Xfyun;Aliyun;Midjourney]
 	ModelId          string    `bson:"model_id,omitempty"`          // 模型ID
@@ -26,11 +20,10 @@ type Chat struct {
 	PromptTokens     int       `bson:"prompt_tokens,omitempty"`     // 提示令牌数(提问令牌数)
 	CompletionTokens int       `bson:"completion_tokens,omitempty"` // 补全令牌数(回答令牌数)
 	TotalTokens      int       `bson:"total_tokens,omitempty"`      // 总令牌数
-	ConnTime         int64     `bson:"conn_time,omitempty"`         // 连接时间
-	Duration         int64     `bson:"duration,omitempty"`          // 持续时间
-	TotalTime        int64     `bson:"total_time,omitempty"`        // 总时间
-	ClientIp         string    `bson:"client_ip,omitempty"`         // 客户端IP
-	RemoteIp         string    `bson:"remote_ip,omitempty"`         // 远程IP
+	ConnTime         int       `bson:"conn_time,omitempty"`         // 连接时间
+	Duration         int       `bson:"duration,omitempty"`          // 持续时间
+	TotalTime        int       `bson:"total_time,omitempty"`        // 总时间
+	Ip               string    `bson:"ip,omitempty"`                // IP
 	ErrMsg           string    `bson:"err_msg,omitempty"`           // 错误信息
 	Status           int       `bson:"status,omitempty"`            // 状态[1:成功, -1:失败]
 	Creator          string    `bson:"creator,omitempty"`           // 创建人

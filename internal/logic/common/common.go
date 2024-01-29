@@ -3,7 +3,6 @@ package common
 import (
 	"context"
 	"fmt"
-	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/text/gregex"
 	"github.com/gogf/gf/v2/util/gconv"
@@ -125,7 +124,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage ope
 		logger.Error(ctx, err)
 	}
 
-	if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+	if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
 		if err := service.User().UpdateQuota(ctx, service.Session().GetUserId(ctx), int(-totalTokens)); err != nil {
 			logger.Error(ctx, err)
 		}
@@ -147,7 +146,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage ope
 			logger.Error(ctx, err)
 		}
 
-		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+		if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
 			if err := service.App().UpdateQuota(ctx, service.Session().GetAppId(ctx), int(-totalTokens)); err != nil {
 				logger.Error(ctx, err)
 			}
@@ -170,7 +169,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage ope
 			logger.Error(ctx, err)
 		}
 
-		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+		if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
 			if err := service.Key().UpdateQuota(ctx, service.Session().GetSecretKey(ctx), int(-totalTokens)); err != nil {
 				logger.Error(ctx, err)
 			}
