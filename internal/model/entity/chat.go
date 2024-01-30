@@ -3,6 +3,8 @@ package entity
 type Chat struct {
 	Id               string    `bson:"_id,omitempty"`               // ID
 	TraceId          string    `bson:"trace_id,omitempty"`          // 日志ID
+	UserId           int       `bson:"user_id,omitempty"`           // 用户ID
+	AppId            int       `bson:"app_id,omitempty"`            // 应用ID
 	Corp             string    `bson:"corp,omitempty"`              // 公司[OpenAI;Baidu;Xfyun;Aliyun;Midjourney]
 	ModelId          string    `bson:"model_id,omitempty"`          // 模型ID
 	Name             string    `bson:"name,omitempty"`              // 模型名称
@@ -20,10 +22,13 @@ type Chat struct {
 	PromptTokens     int       `bson:"prompt_tokens,omitempty"`     // 提示令牌数(提问令牌数)
 	CompletionTokens int       `bson:"completion_tokens,omitempty"` // 补全令牌数(回答令牌数)
 	TotalTokens      int       `bson:"total_tokens,omitempty"`      // 总令牌数
-	ConnTime         int       `bson:"conn_time,omitempty"`         // 连接时间
-	Duration         int       `bson:"duration,omitempty"`          // 持续时间
-	TotalTime        int       `bson:"total_time,omitempty"`        // 总时间
-	Ip               string    `bson:"ip,omitempty"`                // IP
+	ConnTime         int64     `bson:"conn_time,omitempty"`         // 连接时间
+	Duration         int64     `bson:"duration,omitempty"`          // 持续时间
+	TotalTime        int64     `bson:"total_time,omitempty"`        // 总时间
+	ReqTime          int64     `bson:"req_time,omitempty"`          // 请求时间
+	ReqDate          string    `bson:"req_date,omitempty"`          // 请求日期
+	ClientIp         string    `bson:"client_ip,omitempty"`         // 客户端IP
+	RemoteIp         string    `bson:"remote_ip,omitempty"`         // 远程IP
 	ErrMsg           string    `bson:"err_msg,omitempty"`           // 错误信息
 	Status           int       `bson:"status,omitempty"`            // 状态[1:成功, -1:失败]
 	Creator          string    `bson:"creator,omitempty"`           // 创建人

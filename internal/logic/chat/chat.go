@@ -6,6 +6,7 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
+	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
@@ -303,6 +304,8 @@ func (s *sChat) SaveChat(ctx context.Context, m *model.Model, completionsReq mod
 
 	chat := do.Chat{
 		TraceId:         gctx.CtxId(ctx),
+		UserId:          service.Session().GetUserId(ctx),
+		AppId:           service.Session().GetAppId(ctx),
 		Corp:            m.Corp,
 		ModelId:         m.Id,
 		Name:            m.Name,
@@ -319,6 +322,8 @@ func (s *sChat) SaveChat(ctx context.Context, m *model.Model, completionsReq mod
 		ConnTime:        completionsRes.ConnTime,
 		Duration:        completionsRes.Duration,
 		TotalTime:       completionsRes.TotalTime,
+		ReqTime:         g.RequestFromCtx(ctx).EnterTime,
+		ReqDate:         gtime.NewFromTimeStamp(g.RequestFromCtx(ctx).EnterTime).Format("Y-m-d"),
 		ClientIp:        g.RequestFromCtx(ctx).GetClientIp(),
 		RemoteIp:        g.RequestFromCtx(ctx).GetRemoteIp(),
 		Status:          1,
@@ -342,7 +347,7 @@ func (s *sChat) SaveChat(ctx context.Context, m *model.Model, completionsReq mod
 		})
 	}
 
-	if _, err := dao.Chat.InsertOne(ctx, chat); err != nil {
+	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
 		logger.Error(ctx, err)
 	}
 }
