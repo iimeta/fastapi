@@ -31,6 +31,7 @@ type Chat struct {
 	ConnTime         int64     `bson:"conn_time,omitempty"`         // 连接时间
 	Duration         int64     `bson:"duration,omitempty"`          // 持续时间
 	TotalTime        int64     `bson:"total_time,omitempty"`        // 总时间
+	InternalTime     int64     `bson:"internal_time,omitempty"`     // 内耗时间
 	ReqTime          int64     `bson:"req_time,omitempty"`          // 请求时间
 	ReqDate          string    `bson:"req_date,omitempty"`          // 请求日期
 	ClientIp         string    `bson:"client_ip,omitempty"`         // 客户端IP

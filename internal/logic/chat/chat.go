@@ -47,12 +47,16 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 			}
 		}
 
+		enterTime := g.RequestFromCtx(ctx).EnterTime
+		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		if err = grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 			s.SaveChat(ctx, m, params, model.CompletionsRes{
-				Completion: response.Choices[0].Message.Content,
-				Usage:      response.Usage,
-				Error:      err,
-				TotalTime:  response.TotalTime,
+				Completion:   response.Choices[0].Message.Content,
+				Usage:        response.Usage,
+				Error:        err,
+				TotalTime:    response.TotalTime,
+				InternalTime: internalTime,
+				EnterTime:    enterTime,
 			})
 		}, nil); err != nil {
 			logger.Error(ctx, err)
@@ -153,14 +157,18 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 			logger.Error(ctx, err)
 		}
 
+		enterTime := g.RequestFromCtx(ctx).EnterTime
+		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 		if err = grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 			s.SaveChat(ctx, m, params, model.CompletionsRes{
-				Completion: completion,
-				Usage:      usage,
-				Error:      err,
-				ConnTime:   connTime,
-				Duration:   duration,
-				TotalTime:  totalTime,
+				Completion:   completion,
+				Usage:        usage,
+				Error:        err,
+				ConnTime:     connTime,
+				Duration:     duration,
+				TotalTime:    totalTime,
+				InternalTime: internalTime,
+				EnterTime:    enterTime,
 			})
 		}, nil); err != nil {
 			logger.Error(ctx, err)
@@ -322,8 +330,9 @@ func (s *sChat) SaveChat(ctx context.Context, m *model.Model, completionsReq mod
 		ConnTime:        completionsRes.ConnTime,
 		Duration:        completionsRes.Duration,
 		TotalTime:       completionsRes.TotalTime,
-		ReqTime:         g.RequestFromCtx(ctx).EnterTime,
-		ReqDate:         gtime.NewFromTimeStamp(g.RequestFromCtx(ctx).EnterTime).Format("Y-m-d"),
+		InternalTime:    completionsRes.InternalTime,
+		ReqTime:         completionsRes.EnterTime,
+		ReqDate:         gtime.NewFromTimeStamp(completionsRes.EnterTime).Format("Y-m-d"),
 		ClientIp:        g.RequestFromCtx(ctx).GetClientIp(),
 		RemoteIp:        g.RequestFromCtx(ctx).GetRemoteIp(),
 		Status:          1,
