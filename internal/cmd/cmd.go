@@ -6,12 +6,12 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gcmd"
-	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi/internal/controller/chat"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"net/http"
+	"runtime"
 	"strings"
 )
 
@@ -22,7 +22,11 @@ var (
 		Brief: "start http server",
 		Func: func(ctx context.Context, parser *gcmd.Parser) (err error) {
 
+			runtime.SetMutexProfileFraction(1) // (非必需)开启对锁调用的跟踪
+			runtime.SetBlockProfileRate(1)     // (非必需)开启对阻塞操作的跟踪
+
 			s := g.Server()
+			s.EnablePProf()
 
 			s.BindHookHandler("/*", ghttp.HookBeforeServe, beforeServeHook)
 
@@ -78,12 +82,6 @@ func middleware(r *ghttp.Request) {
 		return
 	}
 
-	if gstr.HasPrefix(r.GetHeader("Content-Type"), "application/json") {
-		logger.Debugf(r.GetCtx(), "url: %s, request body: %s", r.GetUrl(), r.GetBodyString())
-	} else {
-		logger.Debugf(r.GetCtx(), "url: %s, Content-Type: %s", r.GetUrl(), r.GetHeader("Content-Type"))
-	}
-
 	r.Middleware.Next()
 }
 
@@ -137,23 +135,14 @@ func middlewareHandlerResponse(r *ghttp.Request) {
 	}
 
 	if err != nil {
-
-		logger.Debugf(r.GetCtx(), "url: %s, response body: %s", r.GetUrl(), gjson.MustEncodeString(err))
-
 		err := errors.Error(err)
 		r.Response.Header().Set("Content-Type", "application/json")
 		r.Response.WriteStatus(err.Status(), gjson.MustEncodeString(err))
-
 	} else {
-
-		data := defaultHandlerResponse{
+		r.Response.WriteJson(defaultHandlerResponse{
 			Code:    code.ErrCode(),
 			Message: msg,
 			Data:    res,
-		}
-
-		logger.Debugf(r.GetCtx(), "url: %s, response body: %s", r.GetUrl(), gjson.MustEncodeString(data))
-
-		r.Response.WriteJson(data)
+		})
 	}
 }
