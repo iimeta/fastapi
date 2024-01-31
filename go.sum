@@ -37,8 +37,8 @@ github.com/gorilla/websocket v1.5.1 h1:gmztn0JnHVt9JZquRuzLw3g4wouNVzKL15iLr/zn/
 github.com/gorilla/websocket v1.5.1/go.mod h1:x3kM2JMyaluk02fnUJpQuwD2dCS5NDG2ZHL0uE0tcaY=
 github.com/grokify/html-strip-tags-go v0.0.1 h1:0fThFwLbW7P/kOiTBs03FsJSV9RM2M/Q/MOnCQxKMo0=
 github.com/grokify/html-strip-tags-go v0.0.1/go.mod h1:2Su6romC5/1VXOQMaWL2yb618ARB8iVo6/DR99A6d78=
-github.com/iimeta/fastapi-sdk v0.0.0-20240129165737-3d007c9a89bb h1:B9kBbKUuD5EjW0VG3xGOjMea+vidVDfq8fiHaYL5F84=
-github.com/iimeta/fastapi-sdk v0.0.0-20240129165737-3d007c9a89bb/go.mod h1:ckcgdzTlG3OTc5eD86EH/Wwr7zm+/YN2sASxAHgRzPw=
+github.com/iimeta/fastapi-sdk v0.0.0-20240131160605-6e7f3bacbbfc h1:ySzXzyUnlKYI6EI2coppAeS8MXFtUwDPRX/Mzxdzv40=
+github.com/iimeta/fastapi-sdk v0.0.0-20240131160605-6e7f3bacbbfc/go.mod h1:ckcgdzTlG3OTc5eD86EH/Wwr7zm+/YN2sASxAHgRzPw=
 github.com/klauspost/compress v1.13.6 h1:P76CopJELS0TiO2mebmnzgWaajssP/EszplttgQxcgc=
 github.com/klauspost/compress v1.13.6/go.mod h1:/3/Vjq9QcHkK5uEr5lBEmyoZ1iFhe47etQ6QUkpK6sk=
 github.com/magiconair/properties v1.8.6 h1:5ibWZ6iY0NctNGWo87LalDlEZ6R41TqbbDamhfG/Qzo=

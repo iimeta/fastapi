@@ -271,39 +271,33 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 	}
 
 	for {
-		select {
-		case response := <-response:
 
-			usage = response.Usage
-			completion += response.Choices[0].Delta.Content
-			connTime = response.ConnTime
-			duration = response.Duration
-			totalTime = response.TotalTime
+		response := <-response
 
-			if response.Choices[0].FinishReason == "stop" {
+		usage = response.Usage
+		completion += response.Choices[0].Delta.Content
+		connTime = response.ConnTime
+		duration = response.Duration
+		totalTime = response.TotalTime
 
-				if err = util.SSEServer(ctx, "", gjson.MustEncode(response)); err != nil {
-					logger.Error(ctx, err)
-					return err
-				}
-
-				if err = util.SSEServer(ctx, "", "[DONE]"); err != nil {
-					logger.Error(ctx, err)
-					return err
-				}
-
-				return nil
-			}
+		if response.Choices[0].FinishReason == "stop" {
 
 			if err = util.SSEServer(ctx, "", gjson.MustEncode(response)); err != nil {
 				logger.Error(ctx, err)
 				return err
 			}
-		default:
-			if err != nil {
+
+			if err = util.SSEServer(ctx, "", "[DONE]"); err != nil {
 				logger.Error(ctx, err)
 				return err
 			}
+
+			return nil
+		}
+
+		if err = util.SSEServer(ctx, "", gjson.MustEncode(response)); err != nil {
+			logger.Error(ctx, err)
+			return err
 		}
 	}
 }
