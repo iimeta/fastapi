@@ -136,10 +136,9 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 	return response, nil
 }
 
-func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsReq, retry ...int) (err error) {
+func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsReq, retry ...int) (e error) {
 
 	var m *model.Model
-	var usage openai.Usage
 	var completion string
 	var connTime int64
 	var duration int64
@@ -147,38 +146,64 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 
 	defer func() {
 
-		if err = grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-			if usage.TotalTokens != 0 {
-				if err = service.Common().RecordUsage(ctx, m, usage); err != nil {
-					logger.Error(ctx, err)
-				}
-			}
-		}, nil); err != nil {
-			logger.Error(ctx, err)
-		}
+		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime
-		internalTime := gtime.TimestampMilli() - enterTime - totalTime
-		if err = grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-			s.SaveChat(ctx, m, params, model.CompletionsRes{
-				Completion:   completion,
-				Usage:        usage,
-				Error:        err,
-				ConnTime:     connTime,
-				Duration:     duration,
-				TotalTime:    totalTime,
-				InternalTime: internalTime,
-				EnterTime:    enterTime,
-			})
+			completionTokens := 0
+			usage := openai.Usage{}
+
+			promptTokens, err := sdk.NumTokensFromMessages(params.Model, params.Messages)
+			if err != nil {
+				logger.Error(ctx, err)
+			}
+
+			if completion != "" {
+
+				if usage.CompletionTokens, err = sdk.NumTokensFromString(params.Model, completion); err != nil {
+					logger.Errorf(ctx, "CompletionsStream model: %s, completion: %s, NumTokensFromString error: %v", params.Model, completion, err)
+				}
+
+				completionTokens += usage.CompletionTokens
+				usage.PromptTokens = promptTokens
+				usage.CompletionTokens = completionTokens
+				usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+			}
+
+			if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
+				if usage.TotalTokens != 0 {
+					if err = service.Common().RecordUsage(ctx, m, usage); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
+			}, nil); err != nil {
+				logger.Error(ctx, err)
+			}
+
+			enterTime := g.RequestFromCtx(ctx).EnterTime
+			internalTime := gtime.TimestampMilli() - enterTime - totalTime
+			if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
+				s.SaveChat(ctx, m, params, model.CompletionsRes{
+					Completion:   completion,
+					Usage:        usage,
+					Error:        e,
+					ConnTime:     connTime,
+					Duration:     duration,
+					TotalTime:    totalTime,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
+				})
+			}, nil); err != nil {
+				logger.Error(ctx, err)
+			}
+
 		}, nil); err != nil {
 			logger.Error(ctx, err)
 		}
 	}()
 
-	m, err = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx))
-	if err != nil {
-		logger.Error(ctx, err)
-		return err
+	m, e = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx))
+	if e != nil {
+		logger.Error(ctx, e)
+		return e
 	}
 
 	key, err := service.Key().PickModelKey(ctx, m.Id)
@@ -215,17 +240,17 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 					}},
 				}
 
-				if err = util.SSEServer(ctx, "", gjson.MustEncode(response)); err != nil {
+				if err := util.SSEServer(ctx, "", gjson.MustEncode(response)); err != nil {
 					logger.Error(ctx, err)
 					return err
 				}
 
-				if err = util.SSEServer(ctx, "", "[DONE]"); err != nil {
+				if err := util.SSEServer(ctx, "", "[DONE]"); err != nil {
 					logger.Error(ctx, err)
 					return err
 				}
 
-				return nil
+				return err
 			}
 
 			switch e.HTTPStatusCode {
@@ -245,17 +270,17 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 						}},
 					}
 
-					if err = util.SSEServer(ctx, "", gjson.MustEncode(response)); err != nil {
+					if err := util.SSEServer(ctx, "", gjson.MustEncode(response)); err != nil {
 						logger.Error(ctx, err)
 						return err
 					}
 
-					if err = util.SSEServer(ctx, "", "[DONE]"); err != nil {
+					if err := util.SSEServer(ctx, "", "[DONE]"); err != nil {
 						logger.Error(ctx, err)
 						return err
 					}
 
-					return nil
+					return err
 				}
 				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
 			case 429:
@@ -274,7 +299,10 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 
 		response := <-response
 
-		usage = response.Usage
+		if response == nil {
+			return nil
+		}
+
 		completion += response.Choices[0].Delta.Content
 		connTime = response.ConnTime
 		duration = response.Duration
