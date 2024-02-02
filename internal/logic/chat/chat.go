@@ -10,6 +10,7 @@ import (
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
+	"github.com/iimeta/fastapi-sdk/tiktoken"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
@@ -18,7 +19,6 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
 	"github.com/sashabaranov/go-openai"
-	"time"
 )
 
 type sChat struct{}
@@ -37,27 +37,40 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 
 	defer func() {
 
-		if err == nil {
-			if err = grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err = service.Common().RecordUsage(ctx, m, response.Usage); err != nil {
+		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+			if err == nil {
+				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+					if err := service.Common().RecordUsage(ctx, m, response.Usage); err != nil {
+						logger.Error(ctx, err)
+					}
+				}, nil); err != nil {
 					logger.Error(ctx, err)
 				}
+			}
+
+			enterTime := g.RequestFromCtx(ctx).EnterTime
+			internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
+			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+
+				completionsRes := model.CompletionsRes{
+					Usage:        response.Usage,
+					TotalTime:    response.TotalTime,
+					Error:        err,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
+				}
+
+				if len(response.Choices) > 0 {
+					completionsRes.Completion = response.Choices[0].Message.Content
+				}
+
+				s.SaveChat(ctx, m, params, completionsRes)
+
 			}, nil); err != nil {
 				logger.Error(ctx, err)
 			}
-		}
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		if err = grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-			s.SaveChat(ctx, m, params, model.CompletionsRes{
-				Completion:   response.Choices[0].Message.Content,
-				Usage:        response.Usage,
-				Error:        err,
-				TotalTime:    response.TotalTime,
-				InternalTime: internalTime,
-				EnterTime:    enterTime,
-			})
 		}, nil); err != nil {
 			logger.Error(ctx, err)
 		}
@@ -66,59 +79,33 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 	m, err = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx))
 	if err != nil {
 		logger.Error(ctx, err)
-		return sdkm.ChatCompletionResponse{}, err
+		return response, err
 	}
 
 	key, err := service.Key().PickModelKey(ctx, m.Id)
 	if err != nil {
 		logger.Error(ctx, err)
-		return sdkm.ChatCompletionResponse{}, err
+		return response, err
 	}
 
 	client := sdk.NewClient(ctx, m.Model, key.Key, m.BaseUrl)
-	response, err = sdk.ChatCompletion(ctx, client, openai.ChatCompletionRequest{
+	if response, err = sdk.ChatCompletion(ctx, client, openai.ChatCompletionRequest{
 		Model:    m.Model,
 		Messages: params.Messages,
-	})
-	if err != nil {
+	}); err != nil {
 		logger.Error(ctx, err)
+
+		if len(retry) == 10 {
+			return response, err
+		}
+
 		e := &openai.APIError{}
 		if errors.As(err, &e) {
-
-			if len(retry) == 10 {
-				response = sdkm.ChatCompletionResponse{
-					ID:      "error",
-					Object:  "chat.completion",
-					Created: time.Now().Unix(),
-					Model:   params.Model,
-					Choices: []openai.ChatCompletionChoice{{
-						FinishReason: "stop",
-						Message: openai.ChatCompletionMessage{
-							Role:    openai.ChatMessageRoleAssistant,
-							Content: err.Error(),
-						},
-					}},
-				}
-				return
-			}
 
 			switch e.HTTPStatusCode {
 			case 400:
 				if gstr.Contains(err.Error(), "Please reduce the length of the messages") {
-					response = sdkm.ChatCompletionResponse{
-						ID:      "error",
-						Object:  "chat.completion",
-						Created: time.Now().Unix(),
-						Model:   params.Model,
-						Choices: []openai.ChatCompletionChoice{{
-							FinishReason: "stop",
-							Message: openai.ChatCompletionMessage{
-								Role:    openai.ChatMessageRoleAssistant,
-								Content: err.Error(),
-							},
-						}},
-					}
-					return
+					return response, err
 				}
 				response, err = s.Completions(ctx, params, append(retry, 1)...)
 			case 429:
@@ -130,13 +117,13 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 			return response, err
 		}
 
-		return sdkm.ChatCompletionResponse{}, err
+		return response, err
 	}
 
 	return response, nil
 }
 
-func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsReq, retry ...int) (e error) {
+func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsReq, retry ...int) (err error) {
 
 	var m *model.Model
 	var completion string
@@ -148,43 +135,40 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-			completionTokens := 0
 			usage := openai.Usage{}
-
-			promptTokens, err := sdk.NumTokensFromMessages(params.Model, params.Messages)
-			if err != nil {
-				logger.Error(ctx, err)
-			}
 
 			if completion != "" {
 
-				if usage.CompletionTokens, err = sdk.NumTokensFromString(params.Model, completion); err != nil {
-					logger.Errorf(ctx, "CompletionsStream model: %s, completion: %s, NumTokensFromString error: %v", params.Model, completion, err)
+				if promptTokens, err := tiktoken.NumTokensFromMessages(params.Model, params.Messages); err != nil {
+					logger.Errorf(ctx, "CompletionsStream model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
+				} else {
+					usage.PromptTokens = promptTokens
 				}
 
-				completionTokens += usage.CompletionTokens
-				usage.PromptTokens = promptTokens
-				usage.CompletionTokens = completionTokens
-				usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-			}
+				if completionTokens, err := tiktoken.NumTokensFromString(params.Model, completion); err != nil {
+					logger.Errorf(ctx, "CompletionsStream model: %s, completion: %s, NumTokensFromString error: %v", params.Model, completion, err)
+				} else {
 
-			if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
-				if usage.TotalTokens != 0 {
-					if err = service.Common().RecordUsage(ctx, m, usage); err != nil {
+					usage.CompletionTokens = completionTokens
+					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+
+					if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+						if err := service.Common().RecordUsage(ctx, m, usage); err != nil {
+							logger.Error(ctx, err)
+						}
+					}, nil); err != nil {
 						logger.Error(ctx, err)
 					}
 				}
-			}, nil); err != nil {
-				logger.Error(ctx, err)
 			}
 
 			enterTime := g.RequestFromCtx(ctx).EnterTime
 			internalTime := gtime.TimestampMilli() - enterTime - totalTime
-			if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
+			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
 				s.SaveChat(ctx, m, params, model.CompletionsRes{
 					Completion:   completion,
 					Usage:        usage,
-					Error:        e,
+					Error:        err,
 					ConnTime:     connTime,
 					Duration:     duration,
 					TotalTime:    totalTime,
@@ -200,10 +184,10 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 		}
 	}()
 
-	m, e = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx))
-	if e != nil {
-		logger.Error(ctx, e)
-		return e
+	m, err = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx))
+	if err != nil {
+		logger.Error(ctx, err)
+		return err
 	}
 
 	key, err := service.Key().PickModelKey(ctx, m.Id)
@@ -218,68 +202,19 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 		Messages: params.Messages,
 	})
 
-	defer close(response)
-
 	if err != nil {
 		logger.Error(ctx, err)
+
+		if len(retry) == 10 {
+			return err
+		}
+
 		e := &openai.APIError{}
 		if errors.As(err, &e) {
-
-			if len(retry) == 10 {
-
-				response := openai.ChatCompletionStreamResponse{
-					ID:      "error",
-					Object:  "chat.completion.chunk",
-					Created: time.Now().Unix(),
-					Model:   params.Model,
-					Choices: []openai.ChatCompletionStreamChoice{{
-						FinishReason: "stop",
-						Delta: openai.ChatCompletionStreamChoiceDelta{
-							Content: err.Error(),
-						},
-					}},
-				}
-
-				if err := util.SSEServer(ctx, "", gjson.MustEncode(response)); err != nil {
-					logger.Error(ctx, err)
-					return err
-				}
-
-				if err := util.SSEServer(ctx, "", "[DONE]"); err != nil {
-					logger.Error(ctx, err)
-					return err
-				}
-
-				return err
-			}
 
 			switch e.HTTPStatusCode {
 			case 400:
 				if gstr.Contains(err.Error(), "Please reduce the length of the messages") {
-
-					response := openai.ChatCompletionStreamResponse{
-						ID:      "error",
-						Object:  "chat.completion.chunk",
-						Created: time.Now().Unix(),
-						Model:   params.Model,
-						Choices: []openai.ChatCompletionStreamChoice{{
-							FinishReason: "stop",
-							Delta: openai.ChatCompletionStreamChoiceDelta{
-								Content: err.Error(),
-							},
-						}},
-					}
-
-					if err := util.SSEServer(ctx, "", gjson.MustEncode(response)); err != nil {
-						logger.Error(ctx, err)
-						return err
-					}
-
-					if err := util.SSEServer(ctx, "", "[DONE]"); err != nil {
-						logger.Error(ctx, err)
-						return err
-					}
-
 					return err
 				}
 				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
@@ -294,6 +229,8 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 
 		return err
 	}
+
+	defer close(response)
 
 	for {
 
@@ -330,34 +267,37 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 	}
 }
 
-func (s *sChat) SaveChat(ctx context.Context, m *model.Model, completionsReq model.CompletionsReq, completionsRes model.CompletionsRes) {
+func (s *sChat) SaveChat(ctx context.Context, model *model.Model, completionsReq model.CompletionsReq, completionsRes model.CompletionsRes) {
 
 	chat := do.Chat{
-		TraceId:         gctx.CtxId(ctx),
-		UserId:          service.Session().GetUserId(ctx),
-		AppId:           service.Session().GetAppId(ctx),
-		Corp:            m.Corp,
-		ModelId:         m.Id,
-		Name:            m.Name,
-		Model:           m.Model,
-		Type:            m.Type,
-		BaseUrl:         m.BaseUrl,
-		Path:            m.Path,
-		Proxy:           m.Proxy,
-		Stream:          completionsReq.Stream,
-		Prompt:          completionsReq.Messages[len(completionsReq.Messages)-1].Content,
-		Completion:      completionsRes.Completion,
-		PromptRatio:     m.PromptRatio,
-		CompletionRatio: m.CompletionRatio,
-		ConnTime:        completionsRes.ConnTime,
-		Duration:        completionsRes.Duration,
-		TotalTime:       completionsRes.TotalTime,
-		InternalTime:    completionsRes.InternalTime,
-		ReqTime:         completionsRes.EnterTime,
-		ReqDate:         gtime.NewFromTimeStamp(completionsRes.EnterTime).Format("Y-m-d"),
-		ClientIp:        g.RequestFromCtx(ctx).GetClientIp(),
-		RemoteIp:        g.RequestFromCtx(ctx).GetRemoteIp(),
-		Status:          1,
+		TraceId:      gctx.CtxId(ctx),
+		UserId:       service.Session().GetUserId(ctx),
+		AppId:        service.Session().GetAppId(ctx),
+		Stream:       completionsReq.Stream,
+		Prompt:       completionsReq.Messages[len(completionsReq.Messages)-1].Content,
+		Completion:   completionsRes.Completion,
+		ConnTime:     completionsRes.ConnTime,
+		Duration:     completionsRes.Duration,
+		TotalTime:    completionsRes.TotalTime,
+		InternalTime: completionsRes.InternalTime,
+		ReqTime:      completionsRes.EnterTime,
+		ReqDate:      gtime.NewFromTimeStamp(completionsRes.EnterTime).Format("Y-m-d"),
+		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
+		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
+		Status:       1,
+	}
+
+	if model != nil {
+		chat.Corp = model.Corp
+		chat.ModelId = model.Id
+		chat.Name = model.Name
+		chat.Model = model.Model
+		chat.Type = model.Type
+		chat.BaseUrl = model.BaseUrl
+		chat.Path = model.Path
+		chat.Proxy = model.Proxy
+		chat.PromptRatio = model.PromptRatio
+		chat.CompletionRatio = model.CompletionRatio
 	}
 
 	if completionsRes.Usage.TotalTokens != 0 {
