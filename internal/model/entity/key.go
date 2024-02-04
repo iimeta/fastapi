@@ -2,6 +2,7 @@ package entity
 
 type Key struct {
 	Id           string   `bson:"_id,omitempty"`            // ID
+	UserId       int      `bson:"user_id,omitempty"`        // 用户ID
 	AppId        int      `bson:"app_id,omitempty"`         // 应用ID
 	Corp         string   `bson:"corp,omitempty"`           // 公司[OpenAI;Baidu;Xfyun;Aliyun;Midjourney]
 	Key          string   `bson:"key,omitempty"`            // 密钥
