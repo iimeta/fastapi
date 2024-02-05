@@ -17,3 +17,7 @@ const (
 	KEY_TOTAL_TOKENS_FIELD   = "key.%d.%s.total_tokens"
 	KEY_IS_LIMIT_QUOTA_FIELD = "key.%d.%s.is_limit_quota"
 )
+
+const (
+	ERROR_MODEL_KEY = "api:error:model:key:%s"
+)

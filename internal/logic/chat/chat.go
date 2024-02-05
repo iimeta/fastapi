@@ -107,10 +107,13 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 				if gstr.Contains(err.Error(), "Please reduce the length of the messages") {
 					return response, err
 				}
+				service.Key().RecordModelErrorKey(ctx, m, key)
 				response, err = s.Completions(ctx, params, append(retry, 1)...)
 			case 429:
+				service.Key().RecordModelErrorKey(ctx, m, key)
 				response, err = s.Completions(ctx, params, append(retry, 1)...)
 			default:
+				service.Key().RecordModelErrorKey(ctx, m, key)
 				response, err = s.Completions(ctx, params, append(retry, 1)...)
 			}
 
@@ -217,10 +220,13 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 				if gstr.Contains(err.Error(), "Please reduce the length of the messages") {
 					return err
 				}
+				service.Key().RecordModelErrorKey(ctx, m, key)
 				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
 			case 429:
+				service.Key().RecordModelErrorKey(ctx, m, key)
 				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
 			default:
+				service.Key().RecordModelErrorKey(ctx, m, key)
 				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
 			}
 

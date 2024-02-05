@@ -23,6 +23,7 @@ var (
 	ERR_NIL                = NewError(500, -1, "", "fastapi_error")
 	ERR_UNKNOWN            = NewError(500, -1, "Unknown Error", "fastapi_error")
 	ERR_INTERNAL_ERROR     = NewError(500, 500, "Internal Error", "fastapi_error")
+	ERR_NO_AVAILABLE_KEY   = NewError(500, "fastapi_error", "No available key", "fastapi_error")
 	ERR_NOT_AUTHORIZED     = NewError(403, "fastapi_error", "Not Authorized", "fastapi_error")
 	ERR_NOT_FOUND          = NewError(404, "unknown_url", "Unknown request URL", "invalid_request_error")
 	ERR_PERMISSION_DENIED  = NewError(401, "fastapi_request_error", "Unauthorized", "fastapi_request_error")

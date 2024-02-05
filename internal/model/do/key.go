@@ -8,6 +8,7 @@ const (
 
 type Key struct {
 	gmeta.Meta   `collection:"key" bson:"-"`
+	UserId       int      `bson:"user_id,omitempty"`        // 用户ID
 	AppId        int      `bson:"app_id,omitempty"`         // 应用ID
 	Corp         string   `bson:"corp,omitempty"`           // 公司[OpenAI;Baidu;Xfyun;Aliyun;Midjourney]
 	Key          string   `bson:"key,omitempty"`            // 密钥

@@ -21,8 +21,12 @@ type (
 		List(ctx context.Context, typ int) ([]*model.Key, error)
 		// 根据模型ID挑选密钥
 		PickModelKey(ctx context.Context, id string) (key *model.Key, err error)
+		// 根据模型ID移除密钥
+		RemoveModelKey(ctx context.Context, m *model.Model, key *model.Key)
+		// 记录模型错误密钥
+		RecordModelErrorKey(ctx context.Context, m *model.Model, key *model.Key)
 		// 根据密钥更新额度
-		UpdateQuota(ctx context.Context, secretKey string, quota int) (err error)
+		UpdateQuota(ctx context.Context, secretKey string, quota int) error
 	}
 )
 
