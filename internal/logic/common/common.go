@@ -60,7 +60,7 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) (bool, 
 	if err != nil {
 		logger.Error(ctx, err)
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return false, errors.ERR_INVALID_API_KEY
+			return false, errors.ERR_INVALID_APP
 		}
 		return false, err
 	}

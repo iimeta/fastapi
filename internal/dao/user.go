@@ -27,5 +27,5 @@ func NewUserDao(database ...string) *UserDao {
 
 // 根据userId查询用户
 func (d *UserDao) FindUserByUserId(ctx context.Context, userId int) (*entity.User, error) {
-	return d.FindOne(ctx, bson.M{"user_id": userId})
+	return d.FindOne(ctx, bson.M{"user_id": userId, "status": 1})
 }

@@ -22,7 +22,7 @@ func New() service.IApp {
 // 根据应用ID获取应用信息
 func (s *sApp) GetApp(ctx context.Context, appId int) (*model.App, error) {
 
-	app, err := dao.App.FindOne(ctx, bson.M{"app_id": appId})
+	app, err := dao.App.FindOne(ctx, bson.M{"app_id": appId, "status": 1})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err

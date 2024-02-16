@@ -4,13 +4,13 @@ go 1.20
 
 require (
 	github.com/bwmarrin/snowflake v0.3.0
-	github.com/gogf/gf/contrib/nosql/redis/v2 v2.6.2
-	github.com/gogf/gf/v2 v2.6.2
+	github.com/gogf/gf/contrib/nosql/redis/v2 v2.6.3
+	github.com/gogf/gf/v2 v2.6.3
 	github.com/gorilla/websocket v1.5.1
-	github.com/iimeta/fastapi-sdk v0.0.0-20240202152407-aa2634e888a4
+	github.com/iimeta/fastapi-sdk v0.0.0-20240216153034-a8b2b3289643
 	github.com/redis/go-redis/v9 v9.4.0
-	github.com/sashabaranov/go-openai v1.19.2
-	go.mongodb.org/mongo-driver v1.13.1
+	github.com/sashabaranov/go-openai v1.19.4
+	go.mongodb.org/mongo-driver v1.14.0
 )
 
 require (
@@ -44,7 +44,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	golang.org/x/crypto v0.18.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
-	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
+	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

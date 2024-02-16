@@ -34,7 +34,7 @@ func New() service.IKey {
 // 根据secretKey获取密钥信息
 func (s *sKey) GetKey(ctx context.Context, secretKey string) (*model.Key, error) {
 
-	key, err := dao.Key.FindOne(ctx, bson.M{"key": secretKey})
+	key, err := dao.Key.FindOne(ctx, bson.M{"key": secretKey, "status": 1})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err

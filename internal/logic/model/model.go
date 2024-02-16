@@ -23,7 +23,7 @@ func New() service.IModel {
 // 根据model获取模型信息
 func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 
-	res, err := dao.Model.FindOne(ctx, bson.M{"model": m})
+	res, err := dao.Model.FindOne(ctx, bson.M{"model": m, "status": 1})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
