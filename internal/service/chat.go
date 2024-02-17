@@ -16,7 +16,7 @@ type (
 	IChat interface {
 		Completions(ctx context.Context, params model.CompletionsReq, retry ...int) (response sdkm.ChatCompletionResponse, err error)
 		CompletionsStream(ctx context.Context, params model.CompletionsReq, retry ...int) (err error)
-		SaveChat(ctx context.Context, model *model.Model, completionsReq model.CompletionsReq, completionsRes model.CompletionsRes)
+		SaveChat(ctx context.Context, model *model.Model, key *model.Key, completionsReq model.CompletionsReq, completionsRes model.CompletionsRes)
 	}
 )
 

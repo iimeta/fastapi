@@ -23,27 +23,26 @@ func New() service.IModel {
 // 根据model获取模型信息
 func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 
-	res, err := dao.Model.FindOne(ctx, bson.M{"model": m, "status": 1})
+	result, err := dao.Model.FindOne(ctx, bson.M{"model": m, "status": 1})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
 	}
 
 	return &model.Model{
-		Id:              res.Id,
-		Corp:            res.Corp,
-		Name:            res.Name,
-		Model:           res.Model,
-		Type:            res.Type,
-		PromptRatio:     res.PromptRatio,
-		CompletionRatio: res.CompletionRatio,
-		DataFormat:      res.DataFormat,
-		BaseUrl:         res.BaseUrl,
-		Path:            res.Path,
-		Proxy:           res.Proxy,
-		IsPublic:        res.IsPublic,
-		Remark:          res.Remark,
-		Status:          res.Status,
+		Id:                 result.Id,
+		Corp:               result.Corp,
+		Name:               result.Name,
+		Model:              result.Model,
+		Type:               result.Type,
+		PromptRatio:        result.PromptRatio,
+		CompletionRatio:    result.CompletionRatio,
+		DataFormat:         result.DataFormat,
+		IsEnableModelAgent: result.IsEnableModelAgent,
+		ModelAgents:        result.ModelAgents,
+		IsPublic:           result.IsPublic,
+		Remark:             result.Remark,
+		Status:             result.Status,
 	}, nil
 }
 
@@ -67,20 +66,19 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		for _, v := range models {
 			if v.Name == m {
 				return &model.Model{
-					Id:              v.Id,
-					Corp:            v.Corp,
-					Name:            v.Name,
-					Model:           v.Model,
-					Type:            v.Type,
-					PromptRatio:     v.PromptRatio,
-					CompletionRatio: v.CompletionRatio,
-					DataFormat:      v.DataFormat,
-					BaseUrl:         v.BaseUrl,
-					Path:            v.Path,
-					Proxy:           v.Proxy,
-					IsPublic:        v.IsPublic,
-					Remark:          v.Remark,
-					Status:          v.Status,
+					Id:                 v.Id,
+					Corp:               v.Corp,
+					Name:               v.Name,
+					Model:              v.Model,
+					Type:               v.Type,
+					PromptRatio:        v.PromptRatio,
+					CompletionRatio:    v.CompletionRatio,
+					DataFormat:         v.DataFormat,
+					IsEnableModelAgent: v.IsEnableModelAgent,
+					ModelAgents:        v.ModelAgents,
+					IsPublic:           v.IsPublic,
+					Remark:             v.Remark,
+					Status:             v.Status,
 				}, nil
 			}
 		}
@@ -88,20 +86,19 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		for _, v := range models {
 			if v.Model == m {
 				return &model.Model{
-					Id:              v.Id,
-					Corp:            v.Corp,
-					Name:            v.Name,
-					Model:           v.Model,
-					Type:            v.Type,
-					PromptRatio:     v.PromptRatio,
-					CompletionRatio: v.CompletionRatio,
-					DataFormat:      v.DataFormat,
-					BaseUrl:         v.BaseUrl,
-					Path:            v.Path,
-					Proxy:           v.Proxy,
-					IsPublic:        v.IsPublic,
-					Remark:          v.Remark,
-					Status:          v.Status,
+					Id:                 v.Id,
+					Corp:               v.Corp,
+					Name:               v.Name,
+					Model:              v.Model,
+					Type:               v.Type,
+					PromptRatio:        v.PromptRatio,
+					CompletionRatio:    v.CompletionRatio,
+					DataFormat:         v.DataFormat,
+					IsEnableModelAgent: v.IsEnableModelAgent,
+					ModelAgents:        v.ModelAgents,
+					IsPublic:           v.IsPublic,
+					Remark:             v.Remark,
+					Status:             v.Status,
 				}, nil
 			}
 		}
@@ -126,20 +123,19 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		for _, v := range models {
 			if v.Name == m {
 				return &model.Model{
-					Id:              v.Id,
-					Corp:            v.Corp,
-					Name:            v.Name,
-					Model:           v.Model,
-					Type:            v.Type,
-					PromptRatio:     v.PromptRatio,
-					CompletionRatio: v.CompletionRatio,
-					DataFormat:      v.DataFormat,
-					BaseUrl:         v.BaseUrl,
-					Path:            v.Path,
-					Proxy:           v.Proxy,
-					IsPublic:        v.IsPublic,
-					Remark:          v.Remark,
-					Status:          v.Status,
+					Id:                 v.Id,
+					Corp:               v.Corp,
+					Name:               v.Name,
+					Model:              v.Model,
+					Type:               v.Type,
+					PromptRatio:        v.PromptRatio,
+					CompletionRatio:    v.CompletionRatio,
+					DataFormat:         v.DataFormat,
+					IsEnableModelAgent: v.IsEnableModelAgent,
+					ModelAgents:        v.ModelAgents,
+					IsPublic:           v.IsPublic,
+					Remark:             v.Remark,
+					Status:             v.Status,
 				}, nil
 			}
 		}
@@ -147,20 +143,19 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		for _, v := range models {
 			if v.Model == m {
 				return &model.Model{
-					Id:              v.Id,
-					Corp:            v.Corp,
-					Name:            v.Name,
-					Model:           v.Model,
-					Type:            v.Type,
-					PromptRatio:     v.PromptRatio,
-					CompletionRatio: v.CompletionRatio,
-					DataFormat:      v.DataFormat,
-					BaseUrl:         v.BaseUrl,
-					Path:            v.Path,
-					Proxy:           v.Proxy,
-					IsPublic:        v.IsPublic,
-					Remark:          v.Remark,
-					Status:          v.Status,
+					Id:                 v.Id,
+					Corp:               v.Corp,
+					Name:               v.Name,
+					Model:              v.Model,
+					Type:               v.Type,
+					PromptRatio:        v.PromptRatio,
+					CompletionRatio:    v.CompletionRatio,
+					DataFormat:         v.DataFormat,
+					IsEnableModelAgent: v.IsEnableModelAgent,
+					ModelAgents:        v.ModelAgents,
+					IsPublic:           v.IsPublic,
+					Remark:             v.Remark,
+					Status:             v.Status,
 				}, nil
 			}
 		}
@@ -189,19 +184,18 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 	items := make([]*model.Model, 0)
 	for _, result := range results {
 		items = append(items, &model.Model{
-			Id:              result.Id,
-			Corp:            result.Corp,
-			Name:            result.Name,
-			Model:           result.Model,
-			Type:            result.Type,
-			PromptRatio:     result.PromptRatio,
-			CompletionRatio: result.CompletionRatio,
-			DataFormat:      result.DataFormat,
-			BaseUrl:         result.BaseUrl,
-			Path:            result.Path,
-			Proxy:           result.Proxy,
-			Remark:          result.Remark,
-			Status:          result.Status,
+			Id:                 result.Id,
+			Corp:               result.Corp,
+			Name:               result.Name,
+			Model:              result.Model,
+			Type:               result.Type,
+			PromptRatio:        result.PromptRatio,
+			CompletionRatio:    result.CompletionRatio,
+			DataFormat:         result.DataFormat,
+			IsEnableModelAgent: result.IsEnableModelAgent,
+			ModelAgents:        result.ModelAgents,
+			Remark:             result.Remark,
+			Status:             result.Status,
 		})
 	}
 

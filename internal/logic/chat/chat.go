@@ -34,6 +34,8 @@ func New() service.IChat {
 func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, retry ...int) (response sdkm.ChatCompletionResponse, err error) {
 
 	var m *model.Model
+	var key *model.Key
+	var baseUrl string
 
 	defer func() {
 
@@ -65,7 +67,7 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 					completionsRes.Completion = response.Choices[0].Message.Content
 				}
 
-				s.SaveChat(ctx, m, params, completionsRes)
+				s.SaveChat(ctx, m, key, params, completionsRes)
 
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -82,7 +84,7 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 		return response, err
 	}
 
-	key, err := service.Key().PickModelKey(ctx, m.Id)
+	key, err = service.Key().PickModelKey(ctx, m.Id)
 	if err != nil {
 		logger.Error(ctx, err)
 		return response, err
@@ -129,6 +131,8 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsReq, retry ...int) (err error) {
 
 	var m *model.Model
+	var key *model.Key
+	var baseUrl string
 	var completion string
 	var connTime int64
 	var duration int64
@@ -168,7 +172,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 			enterTime := g.RequestFromCtx(ctx).EnterTime
 			internalTime := gtime.TimestampMilli() - enterTime - totalTime
 			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-				s.SaveChat(ctx, m, params, model.CompletionsRes{
+				s.SaveChat(ctx, m, key, params, model.CompletionsRes{
 					Completion:   completion,
 					Usage:        usage,
 					Error:        err,
@@ -193,7 +197,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 		return err
 	}
 
-	key, err := service.Key().PickModelKey(ctx, m.Id)
+	key, err = service.Key().PickModelKey(ctx, m.Id)
 	if err != nil {
 		logger.Error(ctx, err)
 		return err
@@ -273,7 +277,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 	}
 }
 
-func (s *sChat) SaveChat(ctx context.Context, model *model.Model, completionsReq model.CompletionsReq, completionsRes model.CompletionsRes) {
+func (s *sChat) SaveChat(ctx context.Context, model *model.Model, key *model.Key, completionsReq model.CompletionsReq, completionsRes model.CompletionsRes) {
 
 	chat := do.Chat{
 		TraceId:      gctx.CtxId(ctx),
@@ -299,11 +303,24 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, completionsReq
 		chat.Name = model.Name
 		chat.Model = model.Model
 		chat.Type = model.Type
-		chat.BaseUrl = model.BaseUrl
-		chat.Path = model.Path
-		chat.Proxy = model.Proxy
 		chat.PromptRatio = model.PromptRatio
 		chat.CompletionRatio = model.CompletionRatio
+		chat.IsEnableModelAgent = model.IsEnableModelAgent
+		if chat.IsEnableModelAgent {
+			chat.ModelAgentId = model.ModelAgent.Id
+			chat.ModelAgent = &do.ModelAgent{
+				Name:    model.ModelAgent.Name,
+				BaseUrl: model.ModelAgent.BaseUrl,
+				Path:    model.ModelAgent.Path,
+				Weight:  model.ModelAgent.Weight,
+				Remark:  model.ModelAgent.Remark,
+				Status:  model.ModelAgent.Status,
+			}
+		}
+	}
+
+	if key != nil {
+		chat.Key = key.Key
 	}
 
 	if completionsRes.Usage.TotalTokens != 0 {

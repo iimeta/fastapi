@@ -12,6 +12,7 @@ import (
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/redis/go-redis/v9"
+	"time"
 )
 
 var (
@@ -182,6 +183,10 @@ func SetNX(ctx context.Context, key string, value interface{}) (bool, error) {
 
 func Expire(ctx context.Context, key string, seconds int64, option ...gredis.ExpireOption) (int64, error) {
 	return master.Expire(ctx, key, seconds, option...)
+}
+
+func ExpireAt(ctx context.Context, key string, time time.Time, option ...gredis.ExpireOption) (int64, error) {
+	return master.ExpireAt(ctx, key, time, option...)
 }
 
 func Pipeline(ctx context.Context) redis.Pipeliner {

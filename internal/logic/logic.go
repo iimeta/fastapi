@@ -11,6 +11,7 @@ import (
 	_ "github.com/iimeta/fastapi/internal/logic/common"
 	_ "github.com/iimeta/fastapi/internal/logic/key"
 	_ "github.com/iimeta/fastapi/internal/logic/model"
+	_ "github.com/iimeta/fastapi/internal/logic/model_agent"
 	_ "github.com/iimeta/fastapi/internal/logic/session"
 	_ "github.com/iimeta/fastapi/internal/logic/user"
 )

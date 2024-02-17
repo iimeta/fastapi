@@ -1,6 +1,6 @@
 module github.com/iimeta/fastapi
 
-go 1.20
+go 1.22
 
 require (
 	github.com/bwmarrin/snowflake v0.3.0
