@@ -17,8 +17,10 @@ import (
 )
 
 type sModelAgent struct {
-	modelAgentsMap *gmap.StrAnyMap
-	roundRobinMap  *gmap.StrAnyMap
+	modelAgentsMap              *gmap.StrAnyMap
+	modelAgentsRoundRobinMap    *gmap.StrAnyMap
+	modelAgentKeysMap           *gmap.StrAnyMap
+	modelAgentKeysRoundRobinMap *gmap.StrAnyMap
 }
 
 func init() {
@@ -27,8 +29,10 @@ func init() {
 
 func New() service.IModelAgent {
 	return &sModelAgent{
-		modelAgentsMap: gmap.NewStrAnyMap(true),
-		roundRobinMap:  gmap.NewStrAnyMap(true),
+		modelAgentsMap:              gmap.NewStrAnyMap(true),
+		modelAgentsRoundRobinMap:    gmap.NewStrAnyMap(true),
+		modelAgentKeysMap:           gmap.NewStrAnyMap(true),
+		modelAgentKeysRoundRobinMap: gmap.NewStrAnyMap(true),
 	}
 }
 
@@ -84,6 +88,36 @@ func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAge
 	return items, nil
 }
 
+// 根据模型代理ID获取密钥列表
+func (s *sModelAgent) GetModelAgentKeys(ctx context.Context, id string) ([]*model.Key, error) {
+
+	results, err := dao.Key.Find(ctx, bson.M{"type": 2, "status": 1, "model_agents": bson.M{"$in": []string{id}}})
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	items := make([]*model.Key, 0)
+	for _, result := range results {
+		items = append(items, &model.Key{
+			Id:           result.Id,
+			AppId:        result.AppId,
+			Corp:         result.Corp,
+			Key:          result.Key,
+			Type:         result.Type,
+			Models:       result.Models,
+			IsLimitQuota: result.IsLimitQuota,
+			Quota:        result.Quota,
+			IpWhitelist:  result.IpWhitelist,
+			IpBlacklist:  result.IpBlacklist,
+			Remark:       result.Remark,
+			Status:       result.Status,
+		})
+	}
+
+	return items, nil
+}
+
 // 挑选模型代理
 func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (modelAgent *model.ModelAgent, err error) {
 
@@ -91,7 +125,7 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (model
 	var roundRobin *util.RoundRobin
 
 	modelAgentsValue := s.modelAgentsMap.Get(m.Id)
-	roundRobinValue := s.roundRobinMap.Get(m.Id)
+	roundRobinValue := s.modelAgentsRoundRobinMap.Get(m.Id)
 
 	if modelAgentsValue != nil {
 		modelAgents = modelAgentsValue.([]*model.ModelAgent)
@@ -118,7 +152,7 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (model
 
 	if roundRobin == nil {
 		roundRobin = new(util.RoundRobin)
-		s.roundRobinMap.Set(m.Id, roundRobin)
+		s.modelAgentsRoundRobinMap.Set(m.Id, roundRobin)
 	}
 
 	return modelAgents[roundRobin.Index(len(modelAgents))], nil
@@ -166,5 +200,90 @@ func (s *sModelAgent) RecordErrorModelAgent(ctx context.Context, m *model.Model,
 
 	if reply >= 10 {
 		s.RemoveModelAgent(ctx, m, modelAgent)
+	}
+}
+
+// 挑选模型代理密钥
+func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent) (key *model.Key, err error) {
+
+	var keys []*model.Key
+	var roundRobin *util.RoundRobin
+
+	keysValue := s.modelAgentKeysMap.Get(modelAgent.Id)
+	roundRobinValue := s.modelAgentKeysRoundRobinMap.Get(modelAgent.Id)
+
+	if keysValue != nil {
+		keys = keysValue.([]*model.Key)
+	}
+
+	if len(keys) == 0 {
+
+		keys, err = s.GetModelAgentKeys(ctx, modelAgent.Id)
+		if err != nil {
+			logger.Error(ctx, err)
+			return nil, err
+		}
+
+		if len(keys) == 0 {
+			return nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY
+		}
+
+		s.modelAgentKeysMap.Set(modelAgent.Id, keys)
+	}
+
+	if roundRobinValue != nil {
+		roundRobin = roundRobinValue.(*util.RoundRobin)
+	}
+
+	if roundRobin == nil {
+		roundRobin = new(util.RoundRobin)
+		s.modelAgentKeysRoundRobinMap.Set(modelAgent.Id, roundRobin)
+	}
+
+	return keys[roundRobin.Index(len(keys))], nil
+}
+
+// 移除模型代理密钥
+func (s *sModelAgent) RemoveModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent, key *model.Key) {
+
+	keysValue := s.modelAgentKeysMap.Get(modelAgent.Id)
+	if keysValue != nil {
+
+		keys := keysValue.([]*model.Key)
+
+		if len(keys) > 0 {
+
+			newKeys := make([]*model.Key, 0)
+
+			for _, k := range keys {
+				if k.Id != key.Id {
+					newKeys = append(newKeys, k)
+				}
+			}
+
+			s.modelAgentKeysMap.Set(modelAgent.Id, newKeys)
+		}
+
+		if err := dao.Key.UpdateById(ctx, key.Id, bson.M{"status": 2}); err != nil {
+			logger.Error(ctx, err)
+		}
+	}
+}
+
+// 记录错误模型代理密钥
+func (s *sModelAgent) RecordErrorModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent, key *model.Key) {
+
+	reply, err := redis.HIncrBy(ctx, fmt.Sprintf(consts.ERROR_MODEL_AGENT_KEY, modelAgent.Id), key.Key, 1)
+	if err != nil {
+		logger.Error(ctx, err)
+	}
+
+	_, err = redis.ExpireAt(ctx, fmt.Sprintf(consts.ERROR_MODEL_AGENT_KEY, modelAgent.Id), gtime.Now().EndOfDay().Time)
+	if err != nil {
+		logger.Error(ctx, err)
+	}
+
+	if reply >= 10 {
+		s.RemoveModelAgentKey(ctx, modelAgent, key)
 	}
 }

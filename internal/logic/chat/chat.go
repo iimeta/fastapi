@@ -35,6 +35,7 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 
 	var m *model.Model
 	var key *model.Key
+	var modelAgent *model.ModelAgent
 	var baseUrl string
 
 	defer func() {
@@ -54,6 +55,8 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 			enterTime := g.RequestFromCtx(ctx).EnterTime
 			internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+
+				m.ModelAgent = modelAgent
 
 				completionsRes := model.CompletionsRes{
 					Usage:        response.Usage,
@@ -78,28 +81,32 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 		}
 	}()
 
-	m, err = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx))
-	if err != nil {
-		logger.Error(ctx, err)
-		return response, err
-	}
-
-	key, err = service.Key().PickModelKey(ctx, m)
-	if err != nil {
+	if m, err = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx)); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
 	if m.IsEnableModelAgent {
 
-		modelAgent, err := service.ModelAgent().PickModelAgent(ctx, m)
-		if err != nil {
+		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
 			logger.Error(ctx, err)
 			return response, err
 		}
 
 		if modelAgent != nil {
+
 			baseUrl = modelAgent.BaseUrl
+
+			if key, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
+				logger.Error(ctx, err)
+				return response, err
+			}
+		}
+
+	} else {
+		if key, err = service.Key().PickModelKey(ctx, m); err != nil {
+			logger.Error(ctx, err)
+			return response, err
 		}
 	}
 
@@ -119,16 +126,37 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 
 			switch e.HTTPStatusCode {
 			case 400:
+
 				if gstr.Contains(err.Error(), "Please reduce the length of the messages") {
 					return response, err
 				}
-				service.Key().RecordErrorModelKey(ctx, m, key)
+
+				if m.IsEnableModelAgent {
+					service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
+				} else {
+					service.Key().RecordErrorModelKey(ctx, m, key)
+				}
+
 				response, err = s.Completions(ctx, params, append(retry, 1)...)
+
 			case 429:
-				service.Key().RecordErrorModelKey(ctx, m, key)
+
+				if m.IsEnableModelAgent {
+					service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
+				} else {
+					service.Key().RecordErrorModelKey(ctx, m, key)
+				}
+
 				response, err = s.Completions(ctx, params, append(retry, 1)...)
+
 			default:
-				service.Key().RecordErrorModelKey(ctx, m, key)
+
+				if m.IsEnableModelAgent {
+					service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
+				} else {
+					service.Key().RecordErrorModelKey(ctx, m, key)
+				}
+
 				response, err = s.Completions(ctx, params, append(retry, 1)...)
 			}
 
@@ -145,6 +173,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 
 	var m *model.Model
 	var key *model.Key
+	var modelAgent *model.ModelAgent
 	var baseUrl string
 	var completion string
 	var connTime int64
@@ -185,6 +214,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 			enterTime := g.RequestFromCtx(ctx).EnterTime
 			internalTime := gtime.TimestampMilli() - enterTime - totalTime
 			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+				m.ModelAgent = modelAgent
 				s.SaveChat(ctx, m, key, params, model.CompletionsRes{
 					Completion:   completion,
 					Usage:        usage,
@@ -204,28 +234,32 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 		}
 	}()
 
-	m, err = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx))
-	if err != nil {
-		logger.Error(ctx, err)
-		return err
-	}
-
-	key, err = service.Key().PickModelKey(ctx, m)
-	if err != nil {
+	if m, err = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx)); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
 
 	if m.IsEnableModelAgent {
 
-		modelAgent, err := service.ModelAgent().PickModelAgent(ctx, m)
-		if err != nil {
+		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
 
 		if modelAgent != nil {
+
 			baseUrl = modelAgent.BaseUrl
+
+			if key, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
+				logger.Error(ctx, err)
+				return err
+			}
+		}
+
+	} else {
+		if key, err = service.Key().PickModelKey(ctx, m); err != nil {
+			logger.Error(ctx, err)
+			return err
 		}
 	}
 
@@ -247,16 +281,37 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 
 			switch e.HTTPStatusCode {
 			case 400:
+
 				if gstr.Contains(err.Error(), "Please reduce the length of the messages") {
 					return err
 				}
-				service.Key().RecordErrorModelKey(ctx, m, key)
+
+				if m.IsEnableModelAgent {
+					service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
+				} else {
+					service.Key().RecordErrorModelKey(ctx, m, key)
+				}
+
 				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
+
 			case 429:
-				service.Key().RecordErrorModelKey(ctx, m, key)
+
+				if m.IsEnableModelAgent {
+					service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
+				} else {
+					service.Key().RecordErrorModelKey(ctx, m, key)
+				}
+
 				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
+
 			default:
-				service.Key().RecordErrorModelKey(ctx, m, key)
+
+				if m.IsEnableModelAgent {
+					service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
+				} else {
+					service.Key().RecordErrorModelKey(ctx, m, key)
+				}
+
 				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
 			}
 
