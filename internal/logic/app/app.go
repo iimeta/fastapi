@@ -47,7 +47,9 @@ func (s *sApp) GetApp(ctx context.Context, appId int) (*model.App, error) {
 // 应用列表
 func (s *sApp) List(ctx context.Context) ([]*model.App, error) {
 
-	filter := bson.M{}
+	filter := bson.M{
+		"status": 1,
+	}
 
 	results, err := dao.App.Find(ctx, filter, "-updated_at")
 	if err != nil {
@@ -76,8 +78,8 @@ func (s *sApp) List(ctx context.Context) ([]*model.App, error) {
 	return items, nil
 }
 
-// 根据应用ID更新额度
-func (s *sApp) UpdateQuota(ctx context.Context, appId, quota int) (err error) {
+// 更改应用额度
+func (s *sApp) ChangeQuota(ctx context.Context, appId, quota int) (err error) {
 
 	if err := dao.App.UpdateOne(ctx, bson.M{"app_id": appId}, bson.M{
 		"$inc": bson.M{

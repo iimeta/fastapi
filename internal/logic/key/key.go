@@ -91,7 +91,8 @@ func (s *sKey) GetModelKeys(ctx context.Context, id string) ([]*model.Key, error
 func (s *sKey) List(ctx context.Context, typ int) ([]*model.Key, error) {
 
 	filter := bson.M{
-		"type": typ,
+		"type":   typ,
+		"status": 1,
 	}
 
 	results, err := dao.Key.Find(ctx, filter, "-updated_at")
@@ -121,14 +122,14 @@ func (s *sKey) List(ctx context.Context, typ int) ([]*model.Key, error) {
 	return items, nil
 }
 
-// 根据模型ID挑选密钥
-func (s *sKey) PickModelKey(ctx context.Context, id string) (key *model.Key, err error) {
+// 挑选模型密钥
+func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (key *model.Key, err error) {
 
 	var keys []*model.Key
 	var roundRobin *util.RoundRobin
 
-	keysValue := s.keysMap.Get(id)
-	roundRobinValue := s.roundRobinMap.Get(id)
+	keysValue := s.keysMap.Get(m.Id)
+	roundRobinValue := s.roundRobinMap.Get(m.Id)
 
 	if keysValue != nil {
 		keys = keysValue.([]*model.Key)
@@ -136,7 +137,7 @@ func (s *sKey) PickModelKey(ctx context.Context, id string) (key *model.Key, err
 
 	if len(keys) == 0 {
 
-		keys, err = s.GetModelKeys(ctx, id)
+		keys, err = s.GetModelKeys(ctx, m.Id)
 		if err != nil {
 			logger.Error(ctx, err)
 			return nil, err
@@ -146,7 +147,7 @@ func (s *sKey) PickModelKey(ctx context.Context, id string) (key *model.Key, err
 			return nil, errors.ERR_NO_AVAILABLE_KEY
 		}
 
-		s.keysMap.Set(id, keys)
+		s.keysMap.Set(m.Id, keys)
 	}
 
 	if roundRobinValue != nil {
@@ -155,13 +156,13 @@ func (s *sKey) PickModelKey(ctx context.Context, id string) (key *model.Key, err
 
 	if roundRobin == nil {
 		roundRobin = new(util.RoundRobin)
-		s.roundRobinMap.Set(id, roundRobin)
+		s.roundRobinMap.Set(m.Id, roundRobin)
 	}
 
 	return keys[roundRobin.Index(len(keys))], nil
 }
 
-// 根据模型ID移除密钥
+// 移除模型密钥
 func (s *sKey) RemoveModelKey(ctx context.Context, m *model.Model, key *model.Key) {
 
 	keysValue := s.keysMap.Get(m.Id)
@@ -188,8 +189,8 @@ func (s *sKey) RemoveModelKey(ctx context.Context, m *model.Model, key *model.Ke
 	}
 }
 
-// 记录模型错误密钥
-func (s *sKey) RecordModelErrorKey(ctx context.Context, m *model.Model, key *model.Key) {
+// 记录错误模型密钥
+func (s *sKey) RecordErrorModelKey(ctx context.Context, m *model.Model, key *model.Key) {
 
 	reply, err := redis.HIncrBy(ctx, fmt.Sprintf(consts.ERROR_MODEL_KEY, m.Model), key.Key, 1)
 	if err != nil {
@@ -206,8 +207,8 @@ func (s *sKey) RecordModelErrorKey(ctx context.Context, m *model.Model, key *mod
 	}
 }
 
-// 根据密钥更新额度
-func (s *sKey) UpdateQuota(ctx context.Context, secretKey string, quota int) error {
+// 更改密钥额度
+func (s *sKey) ChangeQuota(ctx context.Context, secretKey string, quota int) error {
 
 	if err := dao.Key.UpdateOne(ctx, bson.M{"key": secretKey}, bson.M{
 		"$inc": bson.M{

@@ -44,7 +44,9 @@ func (s *sUser) GetUserByUid(ctx context.Context, userId int) (*model.User, erro
 // 用户列表
 func (s *sUser) List(ctx context.Context) ([]*model.User, error) {
 
-	filter := bson.M{}
+	filter := bson.M{
+		"status": 1,
+	}
 
 	results, err := dao.User.Find(ctx, filter)
 	if err != nil {
@@ -70,8 +72,8 @@ func (s *sUser) List(ctx context.Context) ([]*model.User, error) {
 	return items, nil
 }
 
-// 根据用户ID更新额度
-func (s *sUser) UpdateQuota(ctx context.Context, userId, quota int) (err error) {
+// 更改用户额度
+func (s *sUser) ChangeQuota(ctx context.Context, userId, quota int) (err error) {
 
 	if err := dao.User.UpdateOne(ctx, bson.M{"user_id": userId}, bson.M{
 		"$inc": bson.M{

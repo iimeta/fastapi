@@ -17,8 +17,8 @@ type (
 		GetUserByUid(ctx context.Context, userId int) (*model.User, error)
 		// 用户列表
 		List(ctx context.Context) ([]*model.User, error)
-		// 根据用户ID更新额度
-		UpdateQuota(ctx context.Context, userId, quota int) (err error)
+		// 更改用户额度
+		ChangeQuota(ctx context.Context, userId, quota int) (err error)
 	}
 )
 

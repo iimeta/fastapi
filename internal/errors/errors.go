@@ -20,18 +20,19 @@ type FastAPIError struct {
 }
 
 var (
-	ERR_NIL                = NewError(500, -1, "", "fastapi_error")
-	ERR_UNKNOWN            = NewError(500, -1, "Unknown Error", "fastapi_error")
-	ERR_INTERNAL_ERROR     = NewError(500, 500, "Internal Error", "fastapi_error")
-	ERR_NO_AVAILABLE_KEY   = NewError(500, "fastapi_error", "No available key", "fastapi_error")
-	ERR_NOT_AUTHORIZED     = NewError(403, "fastapi_error", "Not Authorized", "fastapi_error")
-	ERR_NOT_FOUND          = NewError(404, "unknown_url", "Unknown request URL", "invalid_request_error")
-	ERR_PERMISSION_DENIED  = NewError(401, "fastapi_request_error", "Unauthorized", "fastapi_request_error")
-	ERR_NOT_API_KEY        = NewError(401, "invalid_request_error", "You didn't provide an API key.", "invalid_request_error")
-	ERR_INVALID_API_KEY    = NewError(401, "invalid_api_key", "Incorrect API key provided or has been disabled.", "invalid_request_error")
-	ERR_INVALID_USER       = NewError(401, "invalid_user", "User does not exist or has been disabled.", "invalid_request_error")
-	ERR_INVALID_APP        = NewError(401, "invalid_app", "App does not exist or has been disabled.", "invalid_request_error")
-	ERR_INSUFFICIENT_QUOTA = NewError(429, "insufficient_quota", "You exceeded your current quota.", "insufficient_quota")
+	ERR_NIL                      = NewError(500, -1, "", "fastapi_error")
+	ERR_UNKNOWN                  = NewError(500, -1, "Unknown Error", "fastapi_error")
+	ERR_INTERNAL_ERROR           = NewError(500, 500, "Internal Error", "fastapi_error")
+	ERR_NO_AVAILABLE_KEY         = NewError(500, "fastapi_error", "No available key", "fastapi_error")
+	ERR_NO_AVAILABLE_MODEL_AGENT = NewError(500, "fastapi_error", "No available model agent", "fastapi_error")
+	ERR_NOT_AUTHORIZED           = NewError(403, "fastapi_error", "Not Authorized", "fastapi_error")
+	ERR_NOT_FOUND                = NewError(404, "unknown_url", "Unknown request URL", "invalid_request_error")
+	ERR_PERMISSION_DENIED        = NewError(401, "fastapi_request_error", "Unauthorized", "fastapi_request_error")
+	ERR_NOT_API_KEY              = NewError(401, "invalid_request_error", "You didn't provide an API key.", "invalid_request_error")
+	ERR_INVALID_API_KEY          = NewError(401, "invalid_api_key", "Incorrect API key provided or has been disabled.", "invalid_request_error")
+	ERR_INVALID_USER             = NewError(401, "invalid_user", "User does not exist or has been disabled.", "invalid_request_error")
+	ERR_INVALID_APP              = NewError(401, "invalid_app", "App does not exist or has been disabled.", "invalid_request_error")
+	ERR_INSUFFICIENT_QUOTA       = NewError(429, "insufficient_quota", "You exceeded your current quota.", "insufficient_quota")
 )
 
 func New(text string) error {

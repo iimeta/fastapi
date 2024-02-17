@@ -84,13 +84,26 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 		return response, err
 	}
 
-	key, err = service.Key().PickModelKey(ctx, m.Id)
+	key, err = service.Key().PickModelKey(ctx, m)
 	if err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
-	client := sdk.NewClient(ctx, m.Model, key.Key, m.BaseUrl)
+	if m.IsEnableModelAgent {
+
+		modelAgent, err := service.ModelAgent().PickModelAgent(ctx, m)
+		if err != nil {
+			logger.Error(ctx, err)
+			return response, err
+		}
+
+		if modelAgent != nil {
+			baseUrl = modelAgent.BaseUrl
+		}
+	}
+
+	client := sdk.NewClient(ctx, m.Model, key.Key, baseUrl)
 	if response, err = sdk.ChatCompletion(ctx, client, openai.ChatCompletionRequest{
 		Model:    m.Model,
 		Messages: params.Messages,
@@ -109,13 +122,13 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 				if gstr.Contains(err.Error(), "Please reduce the length of the messages") {
 					return response, err
 				}
-				service.Key().RecordModelErrorKey(ctx, m, key)
+				service.Key().RecordErrorModelKey(ctx, m, key)
 				response, err = s.Completions(ctx, params, append(retry, 1)...)
 			case 429:
-				service.Key().RecordModelErrorKey(ctx, m, key)
+				service.Key().RecordErrorModelKey(ctx, m, key)
 				response, err = s.Completions(ctx, params, append(retry, 1)...)
 			default:
-				service.Key().RecordModelErrorKey(ctx, m, key)
+				service.Key().RecordErrorModelKey(ctx, m, key)
 				response, err = s.Completions(ctx, params, append(retry, 1)...)
 			}
 
@@ -197,13 +210,26 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 		return err
 	}
 
-	key, err = service.Key().PickModelKey(ctx, m.Id)
+	key, err = service.Key().PickModelKey(ctx, m)
 	if err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
 
-	client := sdk.NewClient(ctx, m.Model, key.Key, m.BaseUrl)
+	if m.IsEnableModelAgent {
+
+		modelAgent, err := service.ModelAgent().PickModelAgent(ctx, m)
+		if err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+
+		if modelAgent != nil {
+			baseUrl = modelAgent.BaseUrl
+		}
+	}
+
+	client := sdk.NewClient(ctx, m.Model, key.Key, baseUrl)
 	response, err := sdk.ChatCompletionStream(ctx, client, openai.ChatCompletionRequest{
 		Model:    m.Model,
 		Messages: params.Messages,
@@ -224,13 +250,13 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 				if gstr.Contains(err.Error(), "Please reduce the length of the messages") {
 					return err
 				}
-				service.Key().RecordModelErrorKey(ctx, m, key)
+				service.Key().RecordErrorModelKey(ctx, m, key)
 				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
 			case 429:
-				service.Key().RecordModelErrorKey(ctx, m, key)
+				service.Key().RecordErrorModelKey(ctx, m, key)
 				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
 			default:
-				service.Key().RecordModelErrorKey(ctx, m, key)
+				service.Key().RecordErrorModelKey(ctx, m, key)
 				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
 			}
 

@@ -13,10 +13,16 @@ import (
 
 type (
 	IModelAgent interface {
-		// 根据model获取模型信息
+		// 根据模型代理ID获取模型代理信息
 		GetModelAgent(ctx context.Context, id string) (*model.ModelAgent, error)
 		// 模型代理列表
 		List(ctx context.Context, ids []string) ([]*model.ModelAgent, error)
+		// 挑选模型代理
+		PickModelAgent(ctx context.Context, m *model.Model) (modelAgent *model.ModelAgent, err error)
+		// 移除模型代理
+		RemoveModelAgent(ctx context.Context, m *model.Model, modelAgent *model.ModelAgent)
+		// 记录错误模型代理
+		RecordErrorModelAgent(ctx context.Context, m *model.Model, modelAgent *model.ModelAgent)
 	}
 )
 

@@ -17,8 +17,8 @@ type (
 		GetApp(ctx context.Context, appId int) (*model.App, error)
 		// 应用列表
 		List(ctx context.Context) ([]*model.App, error)
-		// 根据应用ID更新额度
-		UpdateQuota(ctx context.Context, appId, quota int) (err error)
+		// 更改应用额度
+		ChangeQuota(ctx context.Context, appId, quota int) (err error)
 	}
 )
 

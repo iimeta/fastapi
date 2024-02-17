@@ -19,14 +19,14 @@ type (
 		GetModelKeys(ctx context.Context, id string) ([]*model.Key, error)
 		// 密钥列表
 		List(ctx context.Context, typ int) ([]*model.Key, error)
-		// 根据模型ID挑选密钥
-		PickModelKey(ctx context.Context, id string) (key *model.Key, err error)
-		// 根据模型ID移除密钥
+		// 挑选模型密钥
+		PickModelKey(ctx context.Context, m *model.Model) (key *model.Key, err error)
+		// 移除模型密钥
 		RemoveModelKey(ctx context.Context, m *model.Model, key *model.Key)
-		// 记录模型错误密钥
-		RecordModelErrorKey(ctx context.Context, m *model.Model, key *model.Key)
+		// 记录错误模型密钥
+		RecordErrorModelKey(ctx context.Context, m *model.Model, key *model.Key)
 		// 根据密钥更新额度
-		UpdateQuota(ctx context.Context, secretKey string, quota int) error
+		ChangeQuota(ctx context.Context, secretKey string, quota int) error
 	}
 )
 

@@ -36,7 +36,7 @@ func (s *sSession) Save(ctx context.Context, secretKey string) error {
 	return nil
 }
 
-// 保存应用和秘钥是否限制额度
+// 保存应用和密钥是否限制额度
 func (s *sSession) SaveIsLimitQuota(ctx context.Context, app, key bool) error {
 
 	r := g.RequestFromCtx(ctx)
@@ -95,7 +95,7 @@ func (s *sSession) GetAppIsLimitQuota(ctx context.Context) bool {
 	return isLimitQuota.(bool)
 }
 
-// 获取秘钥是否限制额度
+// 获取密钥是否限制额度
 func (s *sSession) GetKeyIsLimitQuota(ctx context.Context) bool {
 
 	isLimitQuota := ctx.Value(consts.KEY_IS_LIMIT_QUOTA_KEY)
