@@ -15,6 +15,7 @@ type Key struct {
 	Type         int      `bson:"type,omitempty"`         // 密钥类型[1:应用, 2:模型]
 	Models       []string `bson:"models,omitempty"`       // 模型
 	ModelAgents  []string `bson:"model_agents,omitempty"` // 模型代理
+	IsAgentsOnly bool     `bson:"is_agents_only"`         // 是否代理专用
 	IsLimitQuota bool     `bson:"is_limit_quota"`         // 是否限制额度
 	Quota        int      `bson:"quota"`                  // 额度
 	RPM          int      `bson:"rpm,omitempty"`          // 每分钟请求数

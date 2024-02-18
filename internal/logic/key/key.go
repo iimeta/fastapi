@@ -60,7 +60,7 @@ func (s *sKey) GetKey(ctx context.Context, secretKey string) (*model.Key, error)
 // 根据模型ID获取密钥列表
 func (s *sKey) GetModelKeys(ctx context.Context, id string) ([]*model.Key, error) {
 
-	results, err := dao.Key.Find(ctx, bson.M{"type": 2, "status": 1, "models": bson.M{"$in": []string{id}}})
+	results, err := dao.Key.Find(ctx, bson.M{"type": 2, "is_agents_only": false, "status": 1, "models": bson.M{"$in": []string{id}}})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
