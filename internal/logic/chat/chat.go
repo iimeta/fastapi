@@ -188,13 +188,13 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 
 			if completion != "" {
 
-				if promptTokens, err := tiktoken.NumTokensFromMessages(params.Model, params.Messages); err != nil {
+				if promptTokens, err := tiktoken.NumTokensFromMessages(m.Model, params.Messages); err != nil {
 					logger.Errorf(ctx, "CompletionsStream model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
 				} else {
 					usage.PromptTokens = promptTokens
 				}
 
-				if completionTokens, err := tiktoken.NumTokensFromString(params.Model, completion); err != nil {
+				if completionTokens, err := tiktoken.NumTokensFromString(m.Model, completion); err != nil {
 					logger.Errorf(ctx, "CompletionsStream model: %s, completion: %s, NumTokensFromString error: %v", params.Model, completion, err)
 				} else {
 
