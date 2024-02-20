@@ -3,10 +3,10 @@ package entity
 type User struct {
 	Id        string `bson:"_id,omitempty"`        // ID
 	UserId    int    `bson:"user_id,omitempty"`    // 用户ID
-	Nickname  string `bson:"nickname,omitempty"`   // 昵称
+	Name      string `bson:"name,omitempty"`       // 姓名
 	Avatar    string `bson:"avatar,omitempty"`     // 头像
 	Gender    int    `bson:"gender,omitempty"`     // 性别[0:保密, 1:男, 2:女]
-	Mobile    string `bson:"mobile,omitempty"`     // 手机号
+	Phone     string `bson:"phone,omitempty"`      // 手机号
 	Email     string `bson:"email,omitempty"`      // 邮箱
 	VipLevel  int    `bson:"vip_level,omitempty"`  // 会员等级
 	Quota     int    `bson:"quota,omitempty"`      // 额度

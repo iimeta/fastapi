@@ -1,13 +1,16 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/iimeta/fastapi/internal/consts"
 	_ "github.com/iimeta/fastapi/internal/logic"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
+	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
 	"github.com/iimeta/fastapi/utility/util"
 )
@@ -42,21 +45,55 @@ func init() {
 
 	for _, app := range apps {
 
-		fields := g.Map{
-			consts.USER_TOTAL_TOKENS_FIELD:                          userMap[app.UserId].Quota,
-			fmt.Sprintf(consts.APP_TOTAL_TOKENS_FIELD, app.AppId):   app.Quota,
-			fmt.Sprintf(consts.APP_IS_LIMIT_QUOTA_FIELD, app.AppId): app.IsLimitQuota,
-		}
+		user := userMap[app.UserId]
+		if user != nil {
+			fields := g.Map{
+				consts.USER_TOTAL_TOKENS_FIELD:                          user.Quota,
+				fmt.Sprintf(consts.APP_TOTAL_TOKENS_FIELD, app.AppId):   app.Quota,
+				fmt.Sprintf(consts.APP_IS_LIMIT_QUOTA_FIELD, app.AppId): app.IsLimitQuota,
+			}
 
-		keys := keyMap[app.AppId]
-		for _, key := range keys {
-			fields[fmt.Sprintf(consts.KEY_TOTAL_TOKENS_FIELD, key.AppId, key.Key)] = key.Quota
-			fields[fmt.Sprintf(consts.KEY_IS_LIMIT_QUOTA_FIELD, key.AppId, key.Key)] = key.IsLimitQuota
-		}
+			keys := keyMap[app.AppId]
+			for _, key := range keys {
+				fields[fmt.Sprintf(consts.KEY_TOTAL_TOKENS_FIELD, key.AppId, key.Key)] = key.Quota
+				fields[fmt.Sprintf(consts.KEY_IS_LIMIT_QUOTA_FIELD, key.AppId, key.Key)] = key.IsLimitQuota
+			}
 
-		_, err = redis.HSet(ctx, fmt.Sprintf(consts.API_USAGE_KEY, app.UserId), fields)
-		if err != nil {
-			panic(err)
+			_, err = redis.HSet(ctx, fmt.Sprintf(consts.API_USAGE_KEY, app.UserId), fields)
+			if err != nil {
+				panic(err)
+			}
 		}
+	}
+
+	conn, _, err := redis.Subscribe(ctx, consts.CHANGE_CHANNEL_USER, consts.CHANGE_CHANNEL_APP, consts.CHANGE_CHANNEL_MODEL, consts.CHANGE_CHANNEL_KEY, consts.CHANGE_CHANNEL_AGENT)
+	if err != nil {
+		panic(err)
+	}
+
+	if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
+		for {
+
+			msg, err := conn.ReceiveMessage(ctx)
+			if err != nil {
+				logger.Error(ctx, err)
+				continue
+			}
+
+			switch msg.Channel {
+			case consts.CHANGE_CHANNEL_USER:
+				_ = service.User().Subscribe(ctx, msg.Payload)
+			case consts.CHANGE_CHANNEL_APP:
+				_ = service.App().Subscribe(ctx, msg.Payload)
+			case consts.CHANGE_CHANNEL_MODEL:
+				_ = service.Model().Subscribe(ctx, msg.Payload)
+			case consts.CHANGE_CHANNEL_KEY:
+				_ = service.Key().Subscribe(ctx, msg.Payload)
+			case consts.CHANGE_CHANNEL_AGENT:
+				_ = service.ModelAgent().Subscribe(ctx, msg.Payload)
+			}
+		}
+	}, nil); err != nil {
+		panic(err)
 	}
 }

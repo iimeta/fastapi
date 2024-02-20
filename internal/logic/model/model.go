@@ -2,9 +2,12 @@ package model
 
 import (
 	"context"
+	"fmt"
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
+	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"go.mongodb.org/mongo-driver/bson"
@@ -201,4 +204,18 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 	}
 
 	return items, nil
+}
+
+// 变更订阅
+func (s *sModel) Subscribe(ctx context.Context, msg string) error {
+
+	model := new(entity.Model)
+	err := gjson.Unmarshal([]byte(msg), &model)
+	if err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+	fmt.Println(gjson.MustEncodeString(model))
+
+	return nil
 }

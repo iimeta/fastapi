@@ -2,8 +2,11 @@ package model
 
 import (
 	"context"
+	"fmt"
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/model"
+	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"go.mongodb.org/mongo-driver/bson"
@@ -79,7 +82,7 @@ func (s *sApp) List(ctx context.Context) ([]*model.App, error) {
 }
 
 // 更改应用额度
-func (s *sApp) ChangeQuota(ctx context.Context, appId, quota int) (err error) {
+func (s *sApp) ChangeQuota(ctx context.Context, appId, quota int) error {
 
 	if err := dao.App.UpdateOne(ctx, bson.M{"app_id": appId}, bson.M{
 		"$inc": bson.M{
@@ -89,6 +92,20 @@ func (s *sApp) ChangeQuota(ctx context.Context, appId, quota int) (err error) {
 		logger.Error(ctx, err)
 		return err
 	}
+
+	return nil
+}
+
+// 变更订阅
+func (s *sApp) Subscribe(ctx context.Context, msg string) error {
+
+	app := new(entity.App)
+	err := gjson.Unmarshal([]byte(msg), &app)
+	if err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+	fmt.Println(gjson.MustEncodeString(app))
 
 	return nil
 }

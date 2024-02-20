@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/container/gmap"
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
+	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
@@ -286,4 +288,18 @@ func (s *sModelAgent) RecordErrorModelAgentKey(ctx context.Context, modelAgent *
 	if reply >= 10 {
 		s.RemoveModelAgentKey(ctx, modelAgent, key)
 	}
+}
+
+// 变更订阅
+func (s *sModelAgent) Subscribe(ctx context.Context, msg string) error {
+
+	modelAgent := new(entity.ModelAgent)
+	err := gjson.Unmarshal([]byte(msg), &modelAgent)
+	if err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+	fmt.Println(gjson.MustEncodeString(modelAgent))
+
+	return nil
 }

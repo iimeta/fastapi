@@ -18,7 +18,9 @@ type (
 		// 应用列表
 		List(ctx context.Context) ([]*model.App, error)
 		// 更改应用额度
-		ChangeQuota(ctx context.Context, appId, quota int) (err error)
+		ChangeQuota(ctx context.Context, appId, quota int) error
+		// 变更订阅
+		Subscribe(ctx context.Context, msg string) error
 	}
 )
 

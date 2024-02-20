@@ -18,7 +18,9 @@ type (
 		// 用户列表
 		List(ctx context.Context) ([]*model.User, error)
 		// 更改用户额度
-		ChangeQuota(ctx context.Context, userId, quota int) (err error)
+		ChangeQuota(ctx context.Context, userId, quota int) error
+		// 更新订阅
+		Subscribe(ctx context.Context, msg string) error
 	}
 )
 

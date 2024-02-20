@@ -25,8 +25,10 @@ type (
 		RemoveModelKey(ctx context.Context, m *model.Model, key *model.Key)
 		// 记录错误模型密钥
 		RecordErrorModelKey(ctx context.Context, m *model.Model, key *model.Key)
-		// 根据密钥更新额度
+		// 更改密钥额度
 		ChangeQuota(ctx context.Context, secretKey string, quota int) error
+		// 变更订阅
+		Subscribe(ctx context.Context, msg string) error
 	}
 )
 

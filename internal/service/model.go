@@ -19,6 +19,8 @@ type (
 		GetModelBySecretKey(ctx context.Context, m, secretKey string) (*model.Model, error)
 		// 模型列表
 		List(ctx context.Context, ids []string) ([]*model.Model, error)
+		// 变更订阅
+		Subscribe(ctx context.Context, msg string) error
 	}
 )
 

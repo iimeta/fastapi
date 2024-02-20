@@ -191,6 +191,7 @@ func WebSocketClientOnlyReceive(ctx context.Context, wsURL string, result chan [
 		defer entry.Close()
 
 		for {
+
 			messageType, message, err := conn.ReadMessage()
 			if err != nil {
 				logger.Error(ctx, err)
@@ -246,6 +247,7 @@ func WebSocketClient(ctx context.Context, wsURL string, messageType int, message
 	_ = grpool.AddWithRecover(ctx, func(ctx context.Context) {
 
 		for {
+
 			messageType, message, err := conn.ReadMessage()
 			if err != nil {
 				logger.Error(ctx, err)

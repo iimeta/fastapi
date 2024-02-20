@@ -31,6 +31,8 @@ type (
 		RemoveModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent, key *model.Key)
 		// 记录错误模型代理密钥
 		RecordErrorModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent, key *model.Key)
+		// 变更订阅
+		Subscribe(ctx context.Context, msg string) error
 	}
 )
 
