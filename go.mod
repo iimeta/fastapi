@@ -8,8 +8,8 @@ require (
 	github.com/gogf/gf/v2 v2.6.3
 	github.com/gorilla/websocket v1.5.1
 	github.com/iimeta/fastapi-sdk v0.0.0-20240218153302-c3ed1e299717
-	github.com/redis/go-redis/v9 v9.4.0
-	github.com/sashabaranov/go-openai v1.19.4
+	github.com/redis/go-redis/v9 v9.5.1
+	github.com/sashabaranov/go-openai v1.20.0
 	go.mongodb.org/mongo-driver v1.14.0
 )
 
@@ -42,10 +42,10 @@ require (
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.14.0 // indirect
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect
-	golang.org/x/crypto v0.18.0 // indirect
+	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
