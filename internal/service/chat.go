@@ -10,13 +10,14 @@ import (
 
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/model"
+	"github.com/sashabaranov/go-openai"
 )
 
 type (
 	IChat interface {
-		Completions(ctx context.Context, params model.CompletionsReq, retry ...int) (response sdkm.ChatCompletionResponse, err error)
-		CompletionsStream(ctx context.Context, params model.CompletionsReq, retry ...int) (err error)
-		SaveChat(ctx context.Context, model *model.Model, key *model.Key, completionsReq model.CompletionsReq, completionsRes model.CompletionsRes)
+		Completions(ctx context.Context, params openai.ChatCompletionRequest, retry ...int) (response sdkm.ChatCompletionResponse, err error)
+		CompletionsStream(ctx context.Context, params openai.ChatCompletionRequest, retry ...int) (err error)
+		SaveChat(ctx context.Context, model *model.Model, key *model.Key, completionsReq openai.ChatCompletionRequest, completionsRes model.CompletionsRes)
 	}
 )
 

@@ -297,10 +297,10 @@ func SSEServer(ctx context.Context, event string, content any) error {
 
 	r.Response.Header().Set("Trace-Id", gctx.CtxId(ctx))
 	r.Response.Header().Set("Content-Type", "text/event-stream")
-	r.Response.Header().Set("Cache-Control", "no-cache")
+	r.Response.Header().Set("Cache-Control", "no-cache, must-revalidate")
 	r.Response.Header().Set("Connection", "keep-alive")
 
-	_, err := fmt.Fprintf(rw, "event: %s\ndata: %s\n\n", event, content)
+	_, err := fmt.Fprintf(rw, "data: %s\n\n", content)
 	if err != nil {
 		return err
 	}

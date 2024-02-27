@@ -31,7 +31,7 @@ func New() service.IChat {
 	return &sChat{}
 }
 
-func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, retry ...int) (response sdkm.ChatCompletionResponse, err error) {
+func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionRequest, retry ...int) (response sdkm.ChatCompletionResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -117,10 +117,7 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 	}
 
 	client := sdk.NewClient(ctx, m.Model, key.Key, baseUrl)
-	if response, err = sdk.ChatCompletion(ctx, client, openai.ChatCompletionRequest{
-		Model:    m.Model,
-		Messages: params.Messages,
-	}); err != nil {
+	if response, err = sdk.ChatCompletion(ctx, client, params); err != nil {
 		logger.Error(ctx, err)
 
 		if len(retry) == 10 {
@@ -175,7 +172,7 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 	return response, nil
 }
 
-func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsReq, retry ...int) (err error) {
+func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatCompletionRequest, retry ...int) (err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -280,11 +277,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 	}
 
 	client := sdk.NewClient(ctx, m.Model, key.Key, baseUrl)
-	response, err := sdk.ChatCompletionStream(ctx, client, openai.ChatCompletionRequest{
-		Model:    m.Model,
-		Messages: params.Messages,
-	})
-
+	response, err := sdk.ChatCompletionStream(ctx, client, params)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -374,7 +367,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 	}
 }
 
-func (s *sChat) SaveChat(ctx context.Context, model *model.Model, key *model.Key, completionsReq model.CompletionsReq, completionsRes model.CompletionsRes) {
+func (s *sChat) SaveChat(ctx context.Context, model *model.Model, key *model.Key, completionsReq openai.ChatCompletionRequest, completionsRes model.CompletionsRes) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
