@@ -33,12 +33,20 @@ func New() service.IChat {
 
 func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, retry ...int) (response sdkm.ChatCompletionResponse, err error) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "Completions time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	var m *model.Model
 	var key *model.Key
 	var modelAgent *model.ModelAgent
 	var baseUrl string
 
 	defer func() {
+
+		enterTime := g.RequestFromCtx(ctx).EnterTime
+		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
@@ -52,8 +60,6 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 				}
 			}
 
-			enterTime := g.RequestFromCtx(ctx).EnterTime
-			internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
 
 				m.ModelAgent = modelAgent
@@ -171,6 +177,11 @@ func (s *sChat) Completions(ctx context.Context, params model.CompletionsReq, re
 
 func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsReq, retry ...int) (err error) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "CompletionsStream time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	var m *model.Model
 	var key *model.Key
 	var modelAgent *model.ModelAgent
@@ -182,21 +193,28 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 
 	defer func() {
 
+		enterTime := g.RequestFromCtx(ctx).EnterTime
+		internalTime := gtime.TimestampMilli() - enterTime - totalTime
+
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 			usage := openai.Usage{}
 
 			if completion != "" {
 
+				numTokensFromMessagesTime := gtime.TimestampMilli()
 				if promptTokens, err := tiktoken.NumTokensFromMessages(m.Model, params.Messages); err != nil {
 					logger.Errorf(ctx, "CompletionsStream model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
 				} else {
 					usage.PromptTokens = promptTokens
 				}
+				logger.Debugf(ctx, "NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-numTokensFromMessagesTime)
 
+				completionTime := gtime.TimestampMilli()
 				if completionTokens, err := tiktoken.NumTokensFromString(m.Model, completion); err != nil {
 					logger.Errorf(ctx, "CompletionsStream model: %s, completion: %s, NumTokensFromString error: %v", params.Model, completion, err)
 				} else {
+					logger.Debugf(ctx, "NumTokensFromString len(completion): %d, time: %d", len(completion), gtime.TimestampMilli()-completionTime)
 
 					usage.CompletionTokens = completionTokens
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
@@ -211,8 +229,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 				}
 			}
 
-			enterTime := g.RequestFromCtx(ctx).EnterTime
-			internalTime := gtime.TimestampMilli() - enterTime - totalTime
 			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
 				m.ModelAgent = modelAgent
 				s.SaveChat(ctx, m, key, params, model.CompletionsRes{
@@ -359,6 +375,11 @@ func (s *sChat) CompletionsStream(ctx context.Context, params model.CompletionsR
 }
 
 func (s *sChat) SaveChat(ctx context.Context, model *model.Model, key *model.Key, completionsReq model.CompletionsReq, completionsRes model.CompletionsRes) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "SaveChat time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	chat := do.Chat{
 		TraceId:      gctx.CtxId(ctx),

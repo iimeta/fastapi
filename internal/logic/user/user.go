@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
+	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/model/entity"
@@ -25,6 +26,11 @@ func New() service.IUser {
 // 根据userId获取用户信息
 func (s *sUser) GetUserByUid(ctx context.Context, userId int) (*model.User, error) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "GetUserByUid time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	user, err := dao.User.FindUserByUserId(ctx, userId)
 	if err != nil {
 		logger.Error(ctx, err)
@@ -43,6 +49,11 @@ func (s *sUser) GetUserByUid(ctx context.Context, userId int) (*model.User, erro
 
 // 用户列表
 func (s *sUser) List(ctx context.Context) ([]*model.User, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sUser List time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	filter := bson.M{
 		"status": 1,
@@ -73,6 +84,11 @@ func (s *sUser) List(ctx context.Context) ([]*model.User, error) {
 
 // 更改用户额度
 func (s *sUser) ChangeQuota(ctx context.Context, userId, quota int) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sUser ChangeQuota time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	if err := dao.User.UpdateOne(ctx, bson.M{"user_id": userId}, bson.M{
 		"$inc": bson.M{

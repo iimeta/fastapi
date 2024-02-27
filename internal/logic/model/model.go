@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
+	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
@@ -25,6 +26,11 @@ func New() service.IModel {
 
 // 根据model获取模型信息
 func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "GetModel time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	result, err := dao.Model.FindOne(ctx, bson.M{"model": m, "status": 1})
 	if err != nil {
@@ -51,6 +57,11 @@ func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 
 // 根据model和secretKey获取模型信息
 func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (*model.Model, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "GetModelBySecretKey time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	key, err := service.Key().GetKey(ctx, secretKey)
 	if err != nil {
@@ -171,6 +182,11 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 
 // 模型列表
 func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModel List time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	filter := bson.M{
 		"_id": bson.M{

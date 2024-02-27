@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/os/grpool"
+	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gregex"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/iimeta/fastapi/internal/consts"
@@ -29,6 +30,12 @@ func New() service.ICommon {
 
 func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) (bool, error) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "VerifySecretKey time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	getKeyTime := gtime.TimestampMilli()
 	key, err := service.Key().GetKey(ctx, secretKey)
 	if err != nil {
 		logger.Error(ctx, err)
@@ -37,6 +44,7 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) (bool, 
 		}
 		return false, err
 	}
+	logger.Debugf(ctx, "GetKey time: %d", gtime.TimestampMilli()-getKeyTime)
 
 	if key == nil || key.Key != secretKey {
 		err = errors.ERR_INVALID_API_KEY
@@ -44,11 +52,13 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) (bool, 
 		return false, err
 	}
 
+	getUserTotalTokensTime := gtime.TimestampMilli()
 	userTotalTokens, err := s.GetUserTotalTokens(ctx)
 	if err != nil {
 		logger.Error(ctx, err)
 		return false, err
 	}
+	logger.Debugf(ctx, "GetUserTotalTokens time: %d", gtime.TimestampMilli()-getUserTotalTokensTime)
 
 	if userTotalTokens <= 0 {
 		err = errors.ERR_INSUFFICIENT_QUOTA
@@ -56,6 +66,7 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) (bool, 
 		return false, err
 	}
 
+	getAppTime := gtime.TimestampMilli()
 	app, err := service.App().GetApp(ctx, key.AppId)
 	if err != nil {
 		logger.Error(ctx, err)
@@ -64,14 +75,17 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) (bool, 
 		}
 		return false, err
 	}
+	logger.Debugf(ctx, "GetApp time: %d", gtime.TimestampMilli()-getAppTime)
 
 	if key.IsLimitQuota {
 
+		getKeyTotalTokensTime := gtime.TimestampMilli()
 		keyTotalTokens, err := s.GetKeyTotalTokens(ctx)
 		if err != nil {
 			logger.Error(ctx, err)
 			return false, err
 		}
+		logger.Debugf(ctx, "GetKeyTotalTokens time: %d", gtime.TimestampMilli()-getKeyTotalTokensTime)
 
 		if keyTotalTokens <= 0 {
 			err = errors.ERR_INSUFFICIENT_QUOTA
@@ -82,11 +96,13 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) (bool, 
 
 	if app.IsLimitQuota {
 
+		getAppTotalTokensTime := gtime.TimestampMilli()
 		appTotalTokens, err := s.GetAppTotalTokens(ctx)
 		if err != nil {
 			logger.Error(ctx, err)
 			return false, err
 		}
+		logger.Debugf(ctx, "GetAppTotalTokens time: %d", gtime.TimestampMilli()-getAppTotalTokensTime)
 
 		if appTotalTokens <= 0 {
 			err = errors.ERR_INSUFFICIENT_QUOTA

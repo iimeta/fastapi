@@ -41,6 +41,11 @@ func New() service.IModelAgent {
 // 根据模型代理ID获取模型代理信息
 func (s *sModelAgent) GetModelAgent(ctx context.Context, id string) (*model.ModelAgent, error) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "GetModelAgent time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	modelAgent, err := dao.ModelAgent.FindOne(ctx, bson.M{"_id": id, "status": 1})
 	if err != nil {
 		logger.Error(ctx, err)
@@ -60,6 +65,11 @@ func (s *sModelAgent) GetModelAgent(ctx context.Context, id string) (*model.Mode
 
 // 模型代理列表
 func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAgent, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModelAgent List time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	filter := bson.M{
 		"_id": bson.M{
@@ -93,6 +103,11 @@ func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAge
 // 根据模型代理ID获取密钥列表
 func (s *sModelAgent) GetModelAgentKeys(ctx context.Context, id string) ([]*model.Key, error) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "GetModelAgentKeys time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	results, err := dao.Key.Find(ctx, bson.M{"type": 2, "status": 1, "model_agents": bson.M{"$in": []string{id}}})
 	if err != nil {
 		logger.Error(ctx, err)
@@ -122,6 +137,11 @@ func (s *sModelAgent) GetModelAgentKeys(ctx context.Context, id string) ([]*mode
 
 // 挑选模型代理
 func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (modelAgent *model.ModelAgent, err error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "PickModelAgent time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	var modelAgents []*model.ModelAgent
 	var roundRobin *util.RoundRobin
@@ -163,6 +183,11 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (model
 // 移除模型代理
 func (s *sModelAgent) RemoveModelAgent(ctx context.Context, m *model.Model, modelAgent *model.ModelAgent) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "RemoveModelAgent time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	modelAgentsValue := s.modelAgentsMap.Get(m.Id)
 	if modelAgentsValue != nil {
 
@@ -190,6 +215,11 @@ func (s *sModelAgent) RemoveModelAgent(ctx context.Context, m *model.Model, mode
 // 记录错误模型代理
 func (s *sModelAgent) RecordErrorModelAgent(ctx context.Context, m *model.Model, modelAgent *model.ModelAgent) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "RecordErrorModelAgent time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	reply, err := redis.HIncrBy(ctx, fmt.Sprintf(consts.ERROR_MODEL_AGENT, m.Model), modelAgent.Id, 1)
 	if err != nil {
 		logger.Error(ctx, err)
@@ -207,6 +237,11 @@ func (s *sModelAgent) RecordErrorModelAgent(ctx context.Context, m *model.Model,
 
 // 挑选模型代理密钥
 func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent) (key *model.Key, err error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "PickModelAgentKey time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	var keys []*model.Key
 	var roundRobin *util.RoundRobin
@@ -248,6 +283,11 @@ func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.M
 // 移除模型代理密钥
 func (s *sModelAgent) RemoveModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent, key *model.Key) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "RemoveModelAgentKey time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	keysValue := s.modelAgentKeysMap.Get(modelAgent.Id)
 	if keysValue != nil {
 
@@ -274,6 +314,11 @@ func (s *sModelAgent) RemoveModelAgentKey(ctx context.Context, modelAgent *model
 
 // 记录错误模型代理密钥
 func (s *sModelAgent) RecordErrorModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent, key *model.Key) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "RecordErrorModelAgentKey time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	reply, err := redis.HIncrBy(ctx, fmt.Sprintf(consts.ERROR_MODEL_AGENT_KEY, modelAgent.Id), key.Key, 1)
 	if err != nil {

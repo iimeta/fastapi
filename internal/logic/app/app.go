@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
+	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/model/entity"
@@ -24,6 +25,11 @@ func New() service.IApp {
 
 // 根据应用ID获取应用信息
 func (s *sApp) GetApp(ctx context.Context, appId int) (*model.App, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "GetApp time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	app, err := dao.App.FindOne(ctx, bson.M{"app_id": appId, "status": 1})
 	if err != nil {

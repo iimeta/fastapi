@@ -37,6 +37,11 @@ func New() service.IKey {
 // 根据secretKey获取密钥信息
 func (s *sKey) GetKey(ctx context.Context, secretKey string) (*model.Key, error) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "GetKey time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	key, err := dao.Key.FindOne(ctx, bson.M{"key": secretKey, "status": 1})
 	if err != nil {
 		logger.Error(ctx, err)
@@ -61,6 +66,11 @@ func (s *sKey) GetKey(ctx context.Context, secretKey string) (*model.Key, error)
 
 // 根据模型ID获取密钥列表
 func (s *sKey) GetModelKeys(ctx context.Context, id string) ([]*model.Key, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "GetModelKeys time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	results, err := dao.Key.Find(ctx, bson.M{"type": 2, "is_agents_only": false, "status": 1, "models": bson.M{"$in": []string{id}}})
 	if err != nil {
@@ -91,6 +101,11 @@ func (s *sKey) GetModelKeys(ctx context.Context, id string) ([]*model.Key, error
 
 // 密钥列表
 func (s *sKey) List(ctx context.Context, typ int) ([]*model.Key, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sKey List time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	filter := bson.M{
 		"type":   typ,
@@ -126,6 +141,11 @@ func (s *sKey) List(ctx context.Context, typ int) ([]*model.Key, error) {
 
 // 挑选模型密钥
 func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (key *model.Key, err error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "PickModelKey time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	var keys []*model.Key
 	var roundRobin *util.RoundRobin
@@ -167,6 +187,11 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (key *model.Key
 // 移除模型密钥
 func (s *sKey) RemoveModelKey(ctx context.Context, m *model.Model, key *model.Key) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "RemoveModelKey time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	keysValue := s.keysMap.Get(m.Id)
 	if keysValue != nil {
 
@@ -194,6 +219,11 @@ func (s *sKey) RemoveModelKey(ctx context.Context, m *model.Model, key *model.Ke
 // 记录错误模型密钥
 func (s *sKey) RecordErrorModelKey(ctx context.Context, m *model.Model, key *model.Key) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "RecordErrorModelKey time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	reply, err := redis.HIncrBy(ctx, fmt.Sprintf(consts.ERROR_MODEL_KEY, m.Model), key.Key, 1)
 	if err != nil {
 		logger.Error(ctx, err)
@@ -211,6 +241,11 @@ func (s *sKey) RecordErrorModelKey(ctx context.Context, m *model.Model, key *mod
 
 // 更改密钥额度
 func (s *sKey) ChangeQuota(ctx context.Context, secretKey string, quota int) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sKey ChangeQuota time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	if err := dao.Key.UpdateOne(ctx, bson.M{"key": secretKey}, bson.M{
 		"$inc": bson.M{
