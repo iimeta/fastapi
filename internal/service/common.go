@@ -32,12 +32,20 @@ type (
 		GetKeyUsageCount(ctx context.Context) (int, error)
 		GetKeyUsedTokens(ctx context.Context) (int, error)
 		GetKeyTotalTokens(ctx context.Context) (int, error)
-		// 分析密钥
+		// 解析密钥
 		ParseSecretKey(ctx context.Context, secretKey string) (int, int, error)
 		// 保存用户信息到缓存
 		SaveCacheUser(ctx context.Context, user *model.User) error
 		// 获取缓存中的用户信息
 		GetCacheUser(ctx context.Context, userId int) (*model.User, error)
+		// 保存应用信息到缓存
+		SaveCacheApp(ctx context.Context, app *model.App) error
+		// 获取缓存中的应用信息
+		GetCacheApp(ctx context.Context, appId int) (*model.App, error)
+		// 保存密钥信息到缓存
+		SaveCacheKey(ctx context.Context, key *model.Key) error
+		// 获取缓存中的密钥信息
+		GetCacheKey(ctx context.Context, secretKey string) (*model.Key, error)
 	}
 )
 

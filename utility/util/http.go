@@ -9,7 +9,6 @@ import (
 	"github.com/gogf/gf/v2/net/gclient"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
-	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/os/gtimer"
 	"github.com/gorilla/websocket"
 	"github.com/iimeta/fastapi/internal/config"
@@ -281,11 +280,6 @@ func HttpDownloadFile(ctx context.Context, fileURL string, proxyURL ...string) [
 }
 
 func SSEServer(ctx context.Context, event string, content any) error {
-
-	now := gtime.TimestampMilli()
-	defer func() {
-		logger.Debugf(ctx, "SSEServer time: %d", gtime.TimestampMilli()-now)
-	}()
 
 	r := g.RequestFromCtx(ctx)
 	rw := r.Response.RawWriter()

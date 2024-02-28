@@ -7,6 +7,8 @@ package service
 
 import (
 	"context"
+
+	"github.com/iimeta/fastapi/internal/model"
 )
 
 type (
@@ -25,6 +27,18 @@ type (
 		GetAppIsLimitQuota(ctx context.Context) bool
 		// 获取密钥是否限制额度
 		GetKeyIsLimitQuota(ctx context.Context) bool
+		// 保存用户信息到会话中
+		SaveUser(ctx context.Context, user *model.User)
+		// 获取会话中的用户信息
+		GetUser(ctx context.Context) *model.User
+		// 保存应用信息到会话中
+		SaveApp(ctx context.Context, app *model.App)
+		// 获取会话中的应用信息
+		GetApp(ctx context.Context) *model.App
+		// 保存密钥信息到会话中
+		SaveKey(ctx context.Context, key *model.Key)
+		// 获取会话中的密钥信息
+		GetKey(ctx context.Context) *model.Key
 	}
 )
 

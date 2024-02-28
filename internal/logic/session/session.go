@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/iimeta/fastapi/internal/consts"
+	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 )
@@ -105,4 +106,55 @@ func (s *sSession) GetKeyIsLimitQuota(ctx context.Context) bool {
 	}
 
 	return isLimitQuota.(bool)
+}
+
+// 保存用户信息到会话中
+func (s *sSession) SaveUser(ctx context.Context, user *model.User) {
+	g.RequestFromCtx(ctx).SetCtxVar(consts.SESSION_USER, user)
+}
+
+// 获取会话中的用户信息
+func (s *sSession) GetUser(ctx context.Context) *model.User {
+
+	user := ctx.Value(consts.SESSION_USER)
+	if user == nil {
+		logger.Debug(ctx, "user is nil")
+		return nil
+	}
+
+	return user.(*model.User)
+}
+
+// 保存应用信息到会话中
+func (s *sSession) SaveApp(ctx context.Context, app *model.App) {
+	g.RequestFromCtx(ctx).SetCtxVar(consts.SESSION_APP, app)
+}
+
+// 获取会话中的应用信息
+func (s *sSession) GetApp(ctx context.Context) *model.App {
+
+	app := ctx.Value(consts.SESSION_APP)
+	if app == nil {
+		logger.Debug(ctx, "app is nil")
+		return nil
+	}
+
+	return app.(*model.App)
+}
+
+// 保存密钥信息到会话中
+func (s *sSession) SaveKey(ctx context.Context, key *model.Key) {
+	g.RequestFromCtx(ctx).SetCtxVar(consts.SESSION_KEY, key)
+}
+
+// 获取会话中的密钥信息
+func (s *sSession) GetKey(ctx context.Context) *model.Key {
+
+	key := ctx.Value(consts.SESSION_KEY)
+	if key == nil {
+		logger.Debug(ctx, "key is nil")
+		return nil
+	}
+
+	return key.(*model.Key)
 }

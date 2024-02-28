@@ -14,7 +14,6 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
 	"github.com/sashabaranov/go-openai"
-	"go.mongodb.org/mongo-driver/mongo"
 	"strings"
 )
 
@@ -35,16 +34,20 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) error {
 		logger.Debugf(ctx, "VerifySecretKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	getKeyTime := gtime.TimestampMilli()
-	key, err := service.Key().GetKey(ctx, secretKey)
-	if err != nil {
-		logger.Error(ctx, err)
-		if errors.Is(err, mongo.ErrNoDocuments) {
+	key, err := s.GetCacheKey(ctx, secretKey)
+	if err != nil || key == nil {
+
+		key, err = service.Key().GetKey(ctx, secretKey)
+		if err != nil {
+			logger.Error(ctx, err)
 			return errors.ERR_INVALID_API_KEY
 		}
-		return err
+
+		if err = s.SaveCacheKey(ctx, key); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
 	}
-	logger.Debugf(ctx, "GetKey time: %d", gtime.TimestampMilli()-getKeyTime)
 
 	if key == nil || key.Key != secretKey {
 		err = errors.ERR_INVALID_API_KEY
@@ -66,16 +69,20 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) error {
 		return err
 	}
 
-	getAppTime := gtime.TimestampMilli()
-	app, err := service.App().GetApp(ctx, key.AppId)
-	if err != nil {
-		logger.Error(ctx, err)
-		if errors.Is(err, mongo.ErrNoDocuments) {
+	app, err := s.GetCacheApp(ctx, key.AppId)
+	if err != nil || app == nil {
+
+		app, err = service.App().GetApp(ctx, key.AppId)
+		if err != nil {
+			logger.Error(ctx, err)
 			return errors.ERR_INVALID_APP
 		}
-		return err
+
+		if err = s.SaveCacheApp(ctx, app); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
 	}
-	logger.Debugf(ctx, "GetApp time: %d", gtime.TimestampMilli()-getAppTime)
 
 	if key.IsLimitQuota {
 
@@ -261,7 +268,7 @@ func (s *sCommon) GetKeyTotalTokens(ctx context.Context) (int, error) {
 	return redis.HGetInt(ctx, s.GetUserUsageKey(ctx), s.GetKeyTotalTokensField(ctx))
 }
 
-// 分析密钥
+// 解析密钥
 func (s *sCommon) ParseSecretKey(ctx context.Context, secretKey string) (int, int, error) {
 
 	secretKey = strings.TrimPrefix(secretKey, "sk-FastAPI")
@@ -294,11 +301,22 @@ func (s *sCommon) SaveCacheUser(ctx context.Context, user *model.User) error {
 		return err
 	}
 
+	service.Session().SaveUser(ctx, user)
+
 	return nil
 }
 
 // 获取缓存中的用户信息
 func (s *sCommon) GetCacheUser(ctx context.Context, userId int) (*model.User, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "GetCacheUser time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	if user := service.Session().GetUser(ctx); user != nil {
+		return user, nil
+	}
 
 	reply, err := redis.Get(ctx, fmt.Sprintf(consts.API_USER_KEY, userId))
 	if err != nil {
@@ -318,5 +336,113 @@ func (s *sCommon) GetCacheUser(ctx context.Context, userId int) (*model.User, er
 		return nil, err
 	}
 
+	service.Session().SaveUser(ctx, user)
+
 	return user, nil
+}
+
+// 保存应用信息到缓存
+func (s *sCommon) SaveCacheApp(ctx context.Context, app *model.App) error {
+
+	if app == nil {
+		return errors.New("app is nil")
+	}
+
+	_, err := redis.Set(ctx, fmt.Sprintf(consts.API_APP_KEY, app.AppId), app)
+	if err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	service.Session().SaveApp(ctx, app)
+
+	return nil
+}
+
+// 获取缓存中的应用信息
+func (s *sCommon) GetCacheApp(ctx context.Context, appId int) (*model.App, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "GetCacheApp time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	if app := service.Session().GetApp(ctx); app != nil {
+		return app, nil
+	}
+
+	reply, err := redis.Get(ctx, fmt.Sprintf(consts.API_APP_KEY, appId))
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	if reply == nil || reply.IsNil() {
+		return nil, errors.New("app is nil")
+	}
+
+	app := new(model.App)
+
+	err = reply.Struct(&app)
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	service.Session().SaveApp(ctx, app)
+
+	return app, nil
+}
+
+// 保存密钥信息到缓存
+func (s *sCommon) SaveCacheKey(ctx context.Context, key *model.Key) error {
+
+	if key == nil {
+		return errors.New("key is nil")
+	}
+
+	_, err := redis.Set(ctx, fmt.Sprintf(consts.API_KEY_KEY, key.Key), key)
+	if err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	service.Session().SaveKey(ctx, key)
+
+	return nil
+}
+
+// 获取缓存中的密钥信息
+func (s *sCommon) GetCacheKey(ctx context.Context, secretKey string) (*model.Key, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "GetCacheKey time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	if key := service.Session().GetKey(ctx); key != nil {
+		return key, nil
+	}
+
+	reply, err := redis.Get(ctx, fmt.Sprintf(consts.API_KEY_KEY, secretKey))
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	if reply == nil || reply.IsNil() {
+		return nil, errors.New("key is nil")
+	}
+
+	key := new(model.Key)
+
+	err = reply.Struct(&key)
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	service.Session().SaveKey(ctx, key)
+
+	return key, nil
 }

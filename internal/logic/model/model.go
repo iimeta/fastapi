@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
@@ -63,7 +64,7 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		logger.Debugf(ctx, "GetModelBySecretKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	key, err := service.Key().GetKey(ctx, secretKey)
+	key, err := service.Common().GetCacheKey(g.RequestFromCtx(ctx).GetCtx(), secretKey)
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -120,7 +121,7 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		return nil, errors.ERR_PERMISSION_DENIED
 	}
 
-	app, err := service.App().GetApp(ctx, key.AppId)
+	app, err := service.Common().GetCacheApp(ctx, key.AppId)
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err

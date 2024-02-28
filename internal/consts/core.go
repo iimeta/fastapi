@@ -35,6 +35,12 @@ const (
 )
 
 const (
+	SESSION_USER = "session_user"
+	SESSION_APP  = "session_app"
+	SESSION_KEY  = "session_key"
+)
+
+const (
 	ERROR_MODEL_KEY       = "api:error:model:key:%s"
 	ERROR_MODEL_AGENT     = "api:error:model:agent:%s"
 	ERROR_MODEL_AGENT_KEY = "api:error:model:agent:key:%s"
