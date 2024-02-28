@@ -14,7 +14,7 @@ import (
 
 type (
 	ICommon interface {
-		VerifySecretKey(ctx context.Context, secretKey string) (bool, error)
+		VerifySecretKey(ctx context.Context, secretKey string) error
 		RecordUsage(ctx context.Context, model *model.Model, usage openai.Usage) error
 		GetUserUsageKey(ctx context.Context) string
 		GetAppUsageCountField(ctx context.Context) string
@@ -32,7 +32,12 @@ type (
 		GetKeyUsageCount(ctx context.Context) (int, error)
 		GetKeyUsedTokens(ctx context.Context) (int, error)
 		GetKeyTotalTokens(ctx context.Context) (int, error)
+		// 分析密钥
 		ParseSecretKey(ctx context.Context, secretKey string) (int, int, error)
+		// 保存用户信息到缓存
+		SaveCacheUser(ctx context.Context, user *model.User) error
+		// 获取缓存中的用户信息
+		GetCacheUser(ctx context.Context, userId int) (*model.User, error)
 	}
 )
 

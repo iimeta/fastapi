@@ -24,11 +24,11 @@ func New() service.IUser {
 }
 
 // 根据userId获取用户信息
-func (s *sUser) GetUserByUid(ctx context.Context, userId int) (*model.User, error) {
+func (s *sUser) GetUserByUserId(ctx context.Context, userId int) (*model.User, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "GetUserByUid time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "GetUserByUserId time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	user, err := dao.User.FindUserByUserId(ctx, userId)

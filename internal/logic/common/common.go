@@ -28,7 +28,7 @@ func New() service.ICommon {
 	return &sCommon{}
 }
 
-func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) (bool, error) {
+func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -40,30 +40,30 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) (bool, 
 	if err != nil {
 		logger.Error(ctx, err)
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return false, errors.ERR_INVALID_API_KEY
+			return errors.ERR_INVALID_API_KEY
 		}
-		return false, err
+		return err
 	}
 	logger.Debugf(ctx, "GetKey time: %d", gtime.TimestampMilli()-getKeyTime)
 
 	if key == nil || key.Key != secretKey {
 		err = errors.ERR_INVALID_API_KEY
 		logger.Error(ctx, err)
-		return false, err
+		return err
 	}
 
 	getUserTotalTokensTime := gtime.TimestampMilli()
 	userTotalTokens, err := s.GetUserTotalTokens(ctx)
 	if err != nil {
 		logger.Error(ctx, err)
-		return false, err
+		return err
 	}
 	logger.Debugf(ctx, "GetUserTotalTokens time: %d", gtime.TimestampMilli()-getUserTotalTokensTime)
 
 	if userTotalTokens <= 0 {
 		err = errors.ERR_INSUFFICIENT_QUOTA
 		logger.Error(ctx, err)
-		return false, err
+		return err
 	}
 
 	getAppTime := gtime.TimestampMilli()
@@ -71,9 +71,9 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) (bool, 
 	if err != nil {
 		logger.Error(ctx, err)
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return false, errors.ERR_INVALID_APP
+			return errors.ERR_INVALID_APP
 		}
-		return false, err
+		return err
 	}
 	logger.Debugf(ctx, "GetApp time: %d", gtime.TimestampMilli()-getAppTime)
 
@@ -83,14 +83,14 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) (bool, 
 		keyTotalTokens, err := s.GetKeyTotalTokens(ctx)
 		if err != nil {
 			logger.Error(ctx, err)
-			return false, err
+			return err
 		}
 		logger.Debugf(ctx, "GetKeyTotalTokens time: %d", gtime.TimestampMilli()-getKeyTotalTokensTime)
 
 		if keyTotalTokens <= 0 {
 			err = errors.ERR_INSUFFICIENT_QUOTA
 			logger.Error(ctx, err)
-			return false, err
+			return err
 		}
 	}
 
@@ -100,24 +100,24 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) (bool, 
 		appTotalTokens, err := s.GetAppTotalTokens(ctx)
 		if err != nil {
 			logger.Error(ctx, err)
-			return false, err
+			return err
 		}
 		logger.Debugf(ctx, "GetAppTotalTokens time: %d", gtime.TimestampMilli()-getAppTotalTokensTime)
 
 		if appTotalTokens <= 0 {
 			err = errors.ERR_INSUFFICIENT_QUOTA
 			logger.Error(ctx, err)
-			return false, err
+			return err
 		}
 	}
 
 	err = service.Session().SaveIsLimitQuota(ctx, app.IsLimitQuota, key.IsLimitQuota)
 	if err != nil {
 		logger.Error(ctx, err)
-		return false, err
+		return err
 	}
 
-	return true, nil
+	return nil
 }
 
 func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage openai.Usage) error {
@@ -261,6 +261,7 @@ func (s *sCommon) GetKeyTotalTokens(ctx context.Context) (int, error) {
 	return redis.HGetInt(ctx, s.GetUserUsageKey(ctx), s.GetKeyTotalTokensField(ctx))
 }
 
+// 分析密钥
 func (s *sCommon) ParseSecretKey(ctx context.Context, secretKey string) (int, int, error) {
 
 	secretKey = strings.TrimPrefix(secretKey, "sk-FastAPI")
@@ -278,4 +279,44 @@ func (s *sCommon) ParseSecretKey(ctx context.Context, secretKey string) (int, in
 	}
 
 	return gconv.Int(userId), gconv.Int(appId), nil
+}
+
+// 保存用户信息到缓存
+func (s *sCommon) SaveCacheUser(ctx context.Context, user *model.User) error {
+
+	if user == nil {
+		return errors.New("user is nil")
+	}
+
+	_, err := redis.Set(ctx, fmt.Sprintf(consts.API_USER_KEY, user.UserId), user)
+	if err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	return nil
+}
+
+// 获取缓存中的用户信息
+func (s *sCommon) GetCacheUser(ctx context.Context, userId int) (*model.User, error) {
+
+	reply, err := redis.Get(ctx, fmt.Sprintf(consts.API_USER_KEY, userId))
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	if reply == nil || reply.IsNil() {
+		return nil, errors.New("user is nil")
+	}
+
+	user := new(model.User)
+
+	err = reply.Struct(&user)
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	return user, nil
 }

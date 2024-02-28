@@ -74,7 +74,7 @@ func middleware(r *ghttp.Request) {
 		return
 	}
 
-	if pass, err := service.Auth().VerifySecretKey(r.GetCtx(), secretKey); err != nil || !pass {
+	if err := service.Auth().VerifySecretKey(r.GetCtx(), secretKey); err != nil {
 		err := errors.Error(err)
 		r.Response.Header().Set("Content-Type", "application/json")
 		r.Response.WriteStatus(err.Status(), gjson.MustEncodeString(err))
