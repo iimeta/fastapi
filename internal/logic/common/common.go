@@ -64,6 +64,12 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) error {
 		return err
 	}
 
+	if key.Status == 2 {
+		err = errors.ERR_API_KEY_DISABLED
+		logger.Error(ctx, err)
+		return err
+	}
+
 	getUserTotalTokensTime := gtime.TimestampMilli()
 	userTotalTokens, err := s.GetUserTotalTokens(ctx)
 	if err != nil {
@@ -91,6 +97,12 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) error {
 			logger.Error(ctx, err)
 			return err
 		}
+	}
+
+	if app.Status == 2 {
+		err = errors.ERR_APP_DISABLED
+		logger.Error(ctx, err)
+		return err
 	}
 
 	if key.IsLimitQuota {
@@ -359,6 +371,16 @@ func (s *sCommon) GetCacheUser(ctx context.Context, userId int) (*model.User, er
 	return user, nil
 }
 
+// 移除缓存中的用户信息
+func (s *sCommon) RemoveCacheUser(ctx context.Context, userId int) {
+
+	s.userCacheMap.Remove(userId)
+
+	if _, err := redis.Del(ctx, fmt.Sprintf(consts.API_USER_KEY, userId)); err != nil {
+		logger.Error(ctx, err)
+	}
+}
+
 // 保存应用信息到缓存
 func (s *sCommon) SaveCacheApp(ctx context.Context, app *model.App) error {
 
@@ -421,6 +443,16 @@ func (s *sCommon) GetCacheApp(ctx context.Context, appId int) (*model.App, error
 	return app, nil
 }
 
+// 移除缓存中的应用信息
+func (s *sCommon) RemoveCacheApp(ctx context.Context, appId int) {
+
+	s.appCacheMap.Remove(appId)
+
+	if _, err := redis.Del(ctx, fmt.Sprintf(consts.API_APP_KEY, appId)); err != nil {
+		logger.Error(ctx, err)
+	}
+}
+
 // 保存密钥信息到缓存
 func (s *sCommon) SaveCacheKey(ctx context.Context, key *model.Key) error {
 
@@ -481,4 +513,14 @@ func (s *sCommon) GetCacheKey(ctx context.Context, secretKey string) (*model.Key
 	s.keyCacheMap.Set(key.Key, key)
 
 	return key, nil
+}
+
+// 移除缓存中的密钥信息
+func (s *sCommon) RemoveCacheKey(ctx context.Context, secretKey string) {
+
+	s.keyCacheMap.Remove(secretKey)
+
+	if _, err := redis.Del(ctx, fmt.Sprintf(consts.API_KEY_KEY, secretKey)); err != nil {
+		logger.Error(ctx, err)
+	}
 }

@@ -2,7 +2,6 @@ package model
 
 import (
 	"context"
-	"fmt"
 	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
@@ -126,10 +125,12 @@ func (s *sApp) SaveCacheList(ctx context.Context, apps []*model.App) error {
 		s.appCacheMap.Set(gconv.String(app.AppId), app)
 	}
 
-	_, err := redis.HSet(ctx, consts.API_APPS_KEY, fields)
-	if err != nil {
-		logger.Error(ctx, err)
-		return err
+	if len(fields) > 0 {
+		_, err := redis.HSet(ctx, consts.API_APPS_KEY, fields)
+		if err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
 	}
 
 	return nil
@@ -152,8 +153,7 @@ func (s *sApp) GetCacheList(ctx context.Context, appIds ...string) ([]*model.App
 		}
 	}
 
-	// todo 可能跟ids长度不一致情况, 需再查下
-	if len(items) > 0 {
+	if len(items) == len(appIds) {
 		return items, nil
 	}
 
@@ -164,6 +164,9 @@ func (s *sApp) GetCacheList(ctx context.Context, appIds ...string) ([]*model.App
 	}
 
 	if reply == nil || len(reply) == 0 {
+		if len(items) != 0 {
+			return items, nil
+		}
 		return nil, errors.New("apps is nil")
 	}
 
@@ -178,6 +181,10 @@ func (s *sApp) GetCacheList(ctx context.Context, appIds ...string) ([]*model.App
 		if err != nil {
 			logger.Error(ctx, err)
 			return nil, err
+		}
+
+		if s.appCacheMap.Get(gconv.String(result.AppId)) != nil {
+			continue
 		}
 
 		if result.Status == 1 {
@@ -202,7 +209,10 @@ func (s *sApp) Subscribe(ctx context.Context, msg string) error {
 		logger.Error(ctx, err)
 		return err
 	}
-	fmt.Println(gjson.MustEncodeString(app))
+
+	logger.Infof(ctx, "sApp Subscribe: %s", gjson.MustEncodeString(app))
+
+	service.Common().RemoveCacheApp(ctx, app.AppId)
 
 	return nil
 }

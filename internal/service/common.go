@@ -38,14 +38,20 @@ type (
 		SaveCacheUser(ctx context.Context, user *model.User) error
 		// 获取缓存中的用户信息
 		GetCacheUser(ctx context.Context, userId int) (*model.User, error)
+		// 移除缓存中的用户信息
+		RemoveCacheUser(ctx context.Context, userId int)
 		// 保存应用信息到缓存
 		SaveCacheApp(ctx context.Context, app *model.App) error
 		// 获取缓存中的应用信息
 		GetCacheApp(ctx context.Context, appId int) (*model.App, error)
+		// 移除缓存中的应用信息
+		RemoveCacheApp(ctx context.Context, appId int)
 		// 保存密钥信息到缓存
 		SaveCacheKey(ctx context.Context, key *model.Key) error
 		// 获取缓存中的密钥信息
 		GetCacheKey(ctx context.Context, secretKey string) (*model.Key, error)
+		// 移除缓存中的密钥信息
+		RemoveCacheKey(ctx context.Context, secretKey string)
 	}
 )
 

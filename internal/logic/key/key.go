@@ -289,10 +289,12 @@ func (s *sKey) SaveCacheList(ctx context.Context, keys []*model.Key) error {
 		s.keyCacheMap.Set(key.Id, key)
 	}
 
-	_, err := redis.HSet(ctx, consts.API_KEYS_KEY, fields)
-	if err != nil {
-		logger.Error(ctx, err)
-		return err
+	if len(fields) > 0 {
+		_, err := redis.HSet(ctx, consts.API_KEYS_KEY, fields)
+		if err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
 	}
 
 	return nil
@@ -315,8 +317,7 @@ func (s *sKey) GetCacheList(ctx context.Context, ids ...string) ([]*model.Key, e
 		}
 	}
 
-	// todo 可能跟ids长度不一致情况, 需再查下
-	if len(items) > 0 {
+	if len(items) == len(ids) {
 		return items, nil
 	}
 
@@ -327,6 +328,9 @@ func (s *sKey) GetCacheList(ctx context.Context, ids ...string) ([]*model.Key, e
 	}
 
 	if reply == nil || len(reply) == 0 {
+		if len(items) != 0 {
+			return items, nil
+		}
 		return nil, errors.New("keys is nil")
 	}
 
@@ -341,6 +345,10 @@ func (s *sKey) GetCacheList(ctx context.Context, ids ...string) ([]*model.Key, e
 		if err != nil {
 			logger.Error(ctx, err)
 			return nil, err
+		}
+
+		if s.keyCacheMap.Get(result.Id) != nil {
+			continue
 		}
 
 		if result.Status == 1 {
@@ -373,13 +381,16 @@ func (s *sKey) SaveCacheModelKeys(ctx context.Context, id string, keys []*model.
 		fields[key.Id] = key
 	}
 
-	_, err := redis.HSet(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id), fields)
-	if err != nil {
-		logger.Error(ctx, err)
-		return err
-	}
+	if len(fields) > 0 {
 
-	s.modelKeysCacheMap.Set(id, keys)
+		_, err := redis.HSet(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id), fields)
+		if err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+
+		s.modelKeysCacheMap.Set(id, keys)
+	}
 
 	return nil
 }
@@ -448,7 +459,10 @@ func (s *sKey) Subscribe(ctx context.Context, msg string) error {
 		logger.Error(ctx, err)
 		return err
 	}
-	fmt.Println(gjson.MustEncodeString(key))
+
+	logger.Infof(ctx, "sKey Subscribe: %s", gjson.MustEncodeString(key))
+
+	service.Common().RemoveCacheKey(ctx, key.Key)
 
 	return nil
 }

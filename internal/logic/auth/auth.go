@@ -64,8 +64,16 @@ func (s *sAuth) CheckUser(ctx context.Context, userId int) error {
 		}
 	}
 
-	if user == nil || user.Status == 2 {
-		return errors.ERR_INVALID_USER
+	if user == nil {
+		err = errors.ERR_INVALID_USER
+		logger.Error(ctx, err)
+		return err
+	}
+
+	if user.Status == 2 {
+		err = errors.ERR_USER_DISABLED
+		logger.Error(ctx, err)
+		return err
 	}
 
 	return nil

@@ -64,12 +64,24 @@ func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 }
 
 // 根据model和secretKey获取模型信息
-func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (*model.Model, error) {
+func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (md *model.Model, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "GetModelBySecretKey time: %d", gtime.TimestampMilli()-now)
 	}()
+
+	app, err := service.Common().GetCacheApp(ctx, service.Session().GetAppId(ctx))
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	if len(app.Models) == 0 {
+		err = errors.ERR_PERMISSION_DENIED
+		logger.Error(ctx, err)
+		return nil, err
+	}
 
 	key, err := service.Common().GetCacheKey(g.RequestFromCtx(ctx).GetCtx(), secretKey)
 	if err != nil {
@@ -96,7 +108,7 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 
 		for _, v := range models {
 			if v.Name == m {
-				return &model.Model{
+				md = &model.Model{
 					Id:                 v.Id,
 					Corp:               v.Corp,
 					Name:               v.Name,
@@ -110,97 +122,108 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 					IsPublic:           v.IsPublic,
 					Remark:             v.Remark,
 					Status:             v.Status,
-				}, nil
+				}
+				break
 			}
 		}
 
-		for _, v := range models {
-			if v.Model == m {
-				return &model.Model{
-					Id:                 v.Id,
-					Corp:               v.Corp,
-					Name:               v.Name,
-					Model:              v.Model,
-					Type:               v.Type,
-					PromptRatio:        v.PromptRatio,
-					CompletionRatio:    v.CompletionRatio,
-					DataFormat:         v.DataFormat,
-					IsEnableModelAgent: v.IsEnableModelAgent,
-					ModelAgents:        v.ModelAgents,
-					IsPublic:           v.IsPublic,
-					Remark:             v.Remark,
-					Status:             v.Status,
-				}, nil
+		if md == nil {
+			for _, v := range models {
+				if v.Model == m {
+					md = &model.Model{
+						Id:                 v.Id,
+						Corp:               v.Corp,
+						Name:               v.Name,
+						Model:              v.Model,
+						Type:               v.Type,
+						PromptRatio:        v.PromptRatio,
+						CompletionRatio:    v.CompletionRatio,
+						DataFormat:         v.DataFormat,
+						IsEnableModelAgent: v.IsEnableModelAgent,
+						ModelAgents:        v.ModelAgents,
+						IsPublic:           v.IsPublic,
+						Remark:             v.Remark,
+						Status:             v.Status,
+					}
+					break
+				}
 			}
 		}
 
-		return nil, errors.ERR_PERMISSION_DENIED
+		if md == nil {
+			return nil, errors.ERR_PERMISSION_DENIED
+		}
 	}
 
-	app, err := service.Common().GetCacheApp(ctx, key.AppId)
+	models, err := s.GetCacheList(ctx, app.Models...)
 	if err != nil {
+
+		models, err = s.List(ctx, app.Models)
+		if err != nil {
+			logger.Error(ctx, err)
+			return nil, err
+		}
+
+		if err = s.SaveCacheList(ctx, models); err != nil {
+			logger.Error(ctx, err)
+			return nil, err
+		}
+	}
+
+	if len(models) == 0 {
+		err = errors.ERR_PERMISSION_DENIED
 		logger.Error(ctx, err)
 		return nil, err
 	}
 
-	if len(app.Models) > 0 {
+	for _, v := range models {
 
-		models, err := s.GetCacheList(ctx, app.Models...)
-		if err != nil {
-
-			models, err = s.List(ctx, app.Models)
-			if err != nil {
-				logger.Error(ctx, err)
-				return nil, err
-			}
-
-			if err = s.SaveCacheList(ctx, models); err != nil {
-				logger.Error(ctx, err)
-				return nil, err
-			}
+		if md != nil && md.Id == v.Id {
+			return md, nil
 		}
 
-		for _, v := range models {
-			if v.Name == m {
-				return &model.Model{
-					Id:                 v.Id,
-					Corp:               v.Corp,
-					Name:               v.Name,
-					Model:              v.Model,
-					Type:               v.Type,
-					PromptRatio:        v.PromptRatio,
-					CompletionRatio:    v.CompletionRatio,
-					DataFormat:         v.DataFormat,
-					IsEnableModelAgent: v.IsEnableModelAgent,
-					ModelAgents:        v.ModelAgents,
-					IsPublic:           v.IsPublic,
-					Remark:             v.Remark,
-					Status:             v.Status,
-				}, nil
-			}
+		if v.Name == m {
+			return &model.Model{
+				Id:                 v.Id,
+				Corp:               v.Corp,
+				Name:               v.Name,
+				Model:              v.Model,
+				Type:               v.Type,
+				PromptRatio:        v.PromptRatio,
+				CompletionRatio:    v.CompletionRatio,
+				DataFormat:         v.DataFormat,
+				IsEnableModelAgent: v.IsEnableModelAgent,
+				ModelAgents:        v.ModelAgents,
+				IsPublic:           v.IsPublic,
+				Remark:             v.Remark,
+				Status:             v.Status,
+			}, nil
+		}
+	}
+
+	for _, v := range models {
+
+		if md != nil && md.Id == v.Id {
+			return md, nil
 		}
 
-		for _, v := range models {
-			if v.Model == m {
-				return &model.Model{
-					Id:                 v.Id,
-					Corp:               v.Corp,
-					Name:               v.Name,
-					Model:              v.Model,
-					Type:               v.Type,
-					PromptRatio:        v.PromptRatio,
-					CompletionRatio:    v.CompletionRatio,
-					DataFormat:         v.DataFormat,
-					IsEnableModelAgent: v.IsEnableModelAgent,
-					ModelAgents:        v.ModelAgents,
-					IsPublic:           v.IsPublic,
-					Remark:             v.Remark,
-					Status:             v.Status,
-				}, nil
-			}
+		if v.Model == m {
+			return &model.Model{
+				Id:                 v.Id,
+				Corp:               v.Corp,
+				Name:               v.Name,
+				Model:              v.Model,
+				Type:               v.Type,
+				PromptRatio:        v.PromptRatio,
+				CompletionRatio:    v.CompletionRatio,
+				DataFormat:         v.DataFormat,
+				IsEnableModelAgent: v.IsEnableModelAgent,
+				ModelAgents:        v.ModelAgents,
+				IsPublic:           v.IsPublic,
+				Remark:             v.Remark,
+				Status:             v.Status,
+			}, nil
 		}
-
-		return nil, errors.ERR_PERMISSION_DENIED
 	}
 
 	return nil, errors.ERR_PERMISSION_DENIED
@@ -262,10 +285,12 @@ func (s *sModel) SaveCacheList(ctx context.Context, models []*model.Model) error
 		s.modelCacheMap.Set(model.Id, model)
 	}
 
-	_, err := redis.HSet(ctx, consts.API_MODELS_KEY, fields)
-	if err != nil {
-		logger.Error(ctx, err)
-		return err
+	if len(fields) > 0 {
+		_, err := redis.HSet(ctx, consts.API_MODELS_KEY, fields)
+		if err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
 	}
 
 	return nil
@@ -288,8 +313,7 @@ func (s *sModel) GetCacheList(ctx context.Context, ids ...string) ([]*model.Mode
 		}
 	}
 
-	// todo 可能跟ids长度不一致情况, 需再查下
-	if len(items) > 0 {
+	if len(items) == len(ids) {
 		return items, nil
 	}
 
@@ -300,6 +324,9 @@ func (s *sModel) GetCacheList(ctx context.Context, ids ...string) ([]*model.Mode
 	}
 
 	if reply == nil || len(reply) == 0 {
+		if len(items) != 0 {
+			return items, nil
+		}
 		return nil, errors.New("models is nil")
 	}
 
@@ -314,6 +341,10 @@ func (s *sModel) GetCacheList(ctx context.Context, ids ...string) ([]*model.Mode
 		if err != nil {
 			logger.Error(ctx, err)
 			return nil, err
+		}
+
+		if s.modelCacheMap.Get(result.Id) != nil {
+			continue
 		}
 
 		if result.Status == 1 {

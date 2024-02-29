@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/dao"
@@ -111,7 +110,10 @@ func (s *sUser) Subscribe(ctx context.Context, msg string) error {
 		logger.Error(ctx, err)
 		return err
 	}
-	fmt.Println(gjson.MustEncodeString(user))
+
+	logger.Infof(ctx, "sUser Subscribe: %s", gjson.MustEncodeString(user))
+
+	service.Common().RemoveCacheUser(ctx, user.UserId)
 
 	return nil
 }

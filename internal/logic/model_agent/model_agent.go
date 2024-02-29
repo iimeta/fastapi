@@ -374,10 +374,12 @@ func (s *sModelAgent) SaveCacheList(ctx context.Context, modelAgents []*model.Mo
 		s.modelAgentCacheMap.Set(modelAgent.Id, modelAgent)
 	}
 
-	_, err := redis.HSet(ctx, consts.API_MODEL_AGENTS_KEY, fields)
-	if err != nil {
-		logger.Error(ctx, err)
-		return err
+	if len(fields) > 0 {
+		_, err := redis.HSet(ctx, consts.API_MODEL_AGENTS_KEY, fields)
+		if err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
 	}
 
 	return nil
@@ -400,8 +402,7 @@ func (s *sModelAgent) GetCacheList(ctx context.Context, ids ...string) ([]*model
 		}
 	}
 
-	// todo 可能跟ids长度不一致情况, 需再查下
-	if len(items) > 0 {
+	if len(items) == len(ids) {
 		return items, nil
 	}
 
@@ -412,6 +413,9 @@ func (s *sModelAgent) GetCacheList(ctx context.Context, ids ...string) ([]*model
 	}
 
 	if reply == nil || len(reply) == 0 {
+		if len(items) != 0 {
+			return items, nil
+		}
 		return nil, errors.New("modelAgents is nil")
 	}
 
@@ -426,6 +430,10 @@ func (s *sModelAgent) GetCacheList(ctx context.Context, ids ...string) ([]*model
 		if err != nil {
 			logger.Error(ctx, err)
 			return nil, err
+		}
+
+		if s.modelAgentCacheMap.Get(result.Id) != nil {
+			continue
 		}
 
 		if result.Status == 1 {
@@ -454,13 +462,16 @@ func (s *sModelAgent) SaveCacheModelAgentKeys(ctx context.Context, id string, ke
 		fields[key.Id] = key
 	}
 
-	_, err := redis.HSet(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id), fields)
-	if err != nil {
-		logger.Error(ctx, err)
-		return err
-	}
+	if len(fields) > 0 {
 
-	s.modelAgentKeysCacheMap.Set(id, keys)
+		_, err := redis.HSet(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id), fields)
+		if err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+
+		s.modelAgentKeysCacheMap.Set(id, keys)
+	}
 
 	return nil
 }

@@ -31,8 +31,11 @@ var (
 	ERR_PERMISSION_DENIED            = NewError(401, "fastapi_request_error", "Unauthorized", "fastapi_request_error")
 	ERR_NOT_API_KEY                  = NewError(401, "invalid_request_error", "You didn't provide an API key.", "invalid_request_error")
 	ERR_INVALID_API_KEY              = NewError(401, "invalid_api_key", "Incorrect API key provided or has been disabled.", "invalid_request_error")
+	ERR_API_KEY_DISABLED             = NewError(401, "invalid_api_key", "Key has been disabled.", "invalid_request_error")
 	ERR_INVALID_USER                 = NewError(401, "invalid_user", "User does not exist or has been disabled.", "invalid_request_error")
+	ERR_USER_DISABLED                = NewError(401, "invalid_user", "User has been disabled.", "invalid_request_error")
 	ERR_INVALID_APP                  = NewError(401, "invalid_app", "App does not exist or has been disabled.", "invalid_request_error")
+	ERR_APP_DISABLED                 = NewError(401, "invalid_app", "App has been disabled.", "invalid_request_error")
 	ERR_INSUFFICIENT_QUOTA           = NewError(429, "insufficient_quota", "You exceeded your current quota.", "insufficient_quota")
 )
 
