@@ -149,6 +149,14 @@ func HGet(ctx context.Context, key, field string) (*gvar.Var, error) {
 	return slave.HGet(ctx, key, field)
 }
 
+func HMGet(ctx context.Context, key string, fields ...string) (gvar.Vars, error) {
+	return slave.HMGet(ctx, key, fields...)
+}
+
+func HVals(ctx context.Context, key string) (gvar.Vars, error) {
+	return slave.HVals(ctx, key)
+}
+
 func HSetStr(ctx context.Context, key string, field, value string) (int64, error) {
 	return HSet(ctx, key, g.MapStrAny{field: value})
 }

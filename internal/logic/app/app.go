@@ -3,24 +3,34 @@ package model
 import (
 	"context"
 	"fmt"
+	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/encoding/gjson"
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/gogf/gf/v2/util/gconv"
+	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
+	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
+	"github.com/iimeta/fastapi/utility/redis"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-type sApp struct{}
+type sApp struct {
+	appCacheMap *gmap.StrAnyMap
+}
 
 func init() {
 	service.RegisterApp(New())
 }
 
 func New() service.IApp {
-	return &sApp{}
+	return &sApp{
+		appCacheMap: gmap.NewStrAnyMap(true),
+	}
 }
 
 // 根据应用ID获取应用信息
@@ -100,6 +110,87 @@ func (s *sApp) ChangeQuota(ctx context.Context, appId, quota int) error {
 	}
 
 	return nil
+}
+
+// 保存应用列表到缓存
+func (s *sApp) SaveCacheList(ctx context.Context, apps []*model.App) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sApp SaveCacheList time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	fields := g.Map{}
+	for _, app := range apps {
+		fields[gconv.String(app.AppId)] = app
+		s.appCacheMap.Set(gconv.String(app.AppId), app)
+	}
+
+	_, err := redis.HSet(ctx, consts.API_APPS_KEY, fields)
+	if err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	return nil
+}
+
+// 获取缓存中的应用列表
+func (s *sApp) GetCacheList(ctx context.Context, appIds ...string) ([]*model.App, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sApp GetCacheList time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	items := make([]*model.App, 0)
+
+	for _, id := range appIds {
+		appCacheValue := s.appCacheMap.Get(id)
+		if appCacheValue != nil {
+			items = append(items, appCacheValue.(*model.App))
+		}
+	}
+
+	// todo 可能跟ids长度不一致情况, 需再查下
+	if len(items) > 0 {
+		return items, nil
+	}
+
+	reply, err := redis.HMGet(ctx, consts.API_APPS_KEY, appIds...)
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	if reply == nil || len(reply) == 0 {
+		return nil, errors.New("apps is nil")
+	}
+
+	for _, str := range reply.Strings() {
+
+		if str == "" {
+			continue
+		}
+
+		result := new(model.App)
+		err = gjson.Unmarshal([]byte(str), &result)
+		if err != nil {
+			logger.Error(ctx, err)
+			return nil, err
+		}
+
+		if result.Status == 1 {
+			items = append(items, result)
+			s.appCacheMap.Set(gconv.String(result.AppId), result)
+		}
+	}
+
+	if len(items) == 0 {
+		return nil, errors.New("apps is nil")
+	}
+
+	return items, nil
 }
 
 // 变更订阅

@@ -21,6 +21,10 @@ type (
 		List(ctx context.Context, ids []string) ([]*model.Model, error)
 		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
+		// 保存模型列表到缓存
+		SaveCacheList(ctx context.Context, models []*model.Model) error
+		// 获取缓存中的模型列表
+		GetCacheList(ctx context.Context, ids ...string) ([]*model.Model, error)
 	}
 )
 

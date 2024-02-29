@@ -19,6 +19,10 @@ type (
 		List(ctx context.Context) ([]*model.App, error)
 		// 更改应用额度
 		ChangeQuota(ctx context.Context, appId, quota int) error
+		// 保存应用列表到缓存
+		SaveCacheList(ctx context.Context, apps []*model.App) error
+		// 获取缓存中的应用列表
+		GetCacheList(ctx context.Context, appIds ...string) ([]*model.App, error)
 		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
 	}

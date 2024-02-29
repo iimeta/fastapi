@@ -35,6 +35,16 @@ const (
 )
 
 const (
+	API_USERS_KEY            = "api:users"
+	API_APPS_KEY             = "api:apps"
+	API_KEYS_KEY             = "api:keys"
+	API_MODELS_KEY           = "api:models"
+	API_MODEL_KEYS_KEY       = "api:model:keys:%s"
+	API_MODEL_AGENTS_KEY     = "api:model_agents"
+	API_MODEL_AGENT_KEYS_KEY = "api:model_agent:keys:%s"
+)
+
+const (
 	SESSION_USER = "session_user"
 	SESSION_APP  = "session_app"
 	SESSION_KEY  = "session_key"

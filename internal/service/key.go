@@ -27,6 +27,14 @@ type (
 		RecordErrorModelKey(ctx context.Context, m *model.Model, key *model.Key)
 		// 更改密钥额度
 		ChangeQuota(ctx context.Context, secretKey string, quota int) error
+		// 保存密钥列表到缓存
+		SaveCacheList(ctx context.Context, keys []*model.Key) error
+		// 获取缓存中的密钥列表
+		GetCacheList(ctx context.Context, ids ...string) ([]*model.Key, error)
+		// 保存模型密钥列表到缓存
+		SaveCacheModelKeys(ctx context.Context, id string, keys []*model.Key) error
+		// 获取缓存中的模型密钥列表
+		GetCacheModelKeys(ctx context.Context, id string) ([]*model.Key, error)
 		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
 	}

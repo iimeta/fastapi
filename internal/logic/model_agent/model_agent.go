@@ -1,10 +1,12 @@
 package model
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/encoding/gjson"
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
@@ -16,6 +18,7 @@ import (
 	"github.com/iimeta/fastapi/utility/redis"
 	"github.com/iimeta/fastapi/utility/util"
 	"go.mongodb.org/mongo-driver/bson"
+	"slices"
 )
 
 type sModelAgent struct {
@@ -23,6 +26,8 @@ type sModelAgent struct {
 	modelAgentsRoundRobinMap    *gmap.StrAnyMap
 	modelAgentKeysMap           *gmap.StrAnyMap
 	modelAgentKeysRoundRobinMap *gmap.StrAnyMap
+	modelAgentCacheMap          *gmap.StrAnyMap
+	modelAgentKeysCacheMap      *gmap.StrAnyMap
 }
 
 func init() {
@@ -35,6 +40,8 @@ func New() service.IModelAgent {
 		modelAgentsRoundRobinMap:    gmap.NewStrAnyMap(true),
 		modelAgentKeysMap:           gmap.NewStrAnyMap(true),
 		modelAgentKeysRoundRobinMap: gmap.NewStrAnyMap(true),
+		modelAgentCacheMap:          gmap.NewStrAnyMap(true),
+		modelAgentKeysCacheMap:      gmap.NewStrAnyMap(true),
 	}
 }
 
@@ -155,10 +162,19 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (model
 
 	if len(modelAgents) == 0 {
 
-		modelAgents, err = s.List(ctx, m.ModelAgents)
+		modelAgents, err = s.GetCacheList(ctx, m.ModelAgents...)
 		if err != nil {
-			logger.Error(ctx, err)
-			return nil, err
+
+			modelAgents, err = s.List(ctx, m.ModelAgents)
+			if err != nil {
+				logger.Error(ctx, err)
+				return nil, err
+			}
+
+			if err = s.SaveCacheList(ctx, modelAgents); err != nil {
+				logger.Error(ctx, err)
+				return nil, err
+			}
 		}
 
 		if len(modelAgents) == 0 {
@@ -255,10 +271,19 @@ func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.M
 
 	if len(keys) == 0 {
 
-		keys, err = s.GetModelAgentKeys(ctx, modelAgent.Id)
+		keys, err = s.GetCacheModelAgentKeys(ctx, modelAgent.Id)
 		if err != nil {
-			logger.Error(ctx, err)
-			return nil, err
+
+			keys, err = s.GetModelAgentKeys(ctx, modelAgent.Id)
+			if err != nil {
+				logger.Error(ctx, err)
+				return nil, err
+			}
+
+			if err = s.SaveCacheModelAgentKeys(ctx, modelAgent.Id, keys); err != nil {
+				logger.Error(ctx, err)
+				return nil, err
+			}
 		}
 
 		if len(keys) == 0 {
@@ -333,6 +358,166 @@ func (s *sModelAgent) RecordErrorModelAgentKey(ctx context.Context, modelAgent *
 	if reply >= 10 {
 		s.RemoveModelAgentKey(ctx, modelAgent, key)
 	}
+}
+
+// 保存模型代理列表到缓存
+func (s *sModelAgent) SaveCacheList(ctx context.Context, modelAgents []*model.ModelAgent) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModelAgent SaveCacheList time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	fields := g.Map{}
+	for _, modelAgent := range modelAgents {
+		fields[modelAgent.Id] = modelAgent
+		s.modelAgentCacheMap.Set(modelAgent.Id, modelAgent)
+	}
+
+	_, err := redis.HSet(ctx, consts.API_MODEL_AGENTS_KEY, fields)
+	if err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	return nil
+}
+
+// 获取缓存中的模型代理列表
+func (s *sModelAgent) GetCacheList(ctx context.Context, ids ...string) ([]*model.ModelAgent, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModelAgent GetCacheList time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	items := make([]*model.ModelAgent, 0)
+
+	for _, id := range ids {
+		modelAgentCacheValue := s.modelAgentCacheMap.Get(id)
+		if modelAgentCacheValue != nil {
+			items = append(items, modelAgentCacheValue.(*model.ModelAgent))
+		}
+	}
+
+	// todo 可能跟ids长度不一致情况, 需再查下
+	if len(items) > 0 {
+		return items, nil
+	}
+
+	reply, err := redis.HMGet(ctx, consts.API_MODEL_AGENTS_KEY, ids...)
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	if reply == nil || len(reply) == 0 {
+		return nil, errors.New("modelAgents is nil")
+	}
+
+	for _, str := range reply.Strings() {
+
+		if str == "" {
+			continue
+		}
+
+		result := new(model.ModelAgent)
+		err = gjson.Unmarshal([]byte(str), &result)
+		if err != nil {
+			logger.Error(ctx, err)
+			return nil, err
+		}
+
+		if result.Status == 1 {
+			items = append(items, result)
+			s.modelAgentCacheMap.Set(result.Id, result)
+		}
+	}
+
+	if len(items) == 0 {
+		return nil, errors.New("modelAgents is nil")
+	}
+
+	return items, nil
+}
+
+// 保存模型代理密钥列表到缓存
+func (s *sModelAgent) SaveCacheModelAgentKeys(ctx context.Context, id string, keys []*model.Key) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModelAgent SaveCacheModelAgentKeys time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	fields := g.Map{}
+	for _, key := range keys {
+		fields[key.Id] = key
+	}
+
+	_, err := redis.HSet(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id), fields)
+	if err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	s.modelAgentKeysCacheMap.Set(id, keys)
+
+	return nil
+}
+
+// 获取缓存中的模型代理密钥列表
+func (s *sModelAgent) GetCacheModelAgentKeys(ctx context.Context, id string) ([]*model.Key, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModelAgent GetCacheModelAgentKeys time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	modelAgentKeysCacheValue := s.modelAgentKeysCacheMap.Get(id)
+	if modelAgentKeysCacheValue != nil {
+		return modelAgentKeysCacheValue.([]*model.Key), nil
+	}
+
+	reply, err := redis.HVals(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id))
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	if reply == nil || len(reply) == 0 {
+		return nil, errors.New("modelAgentKeys is nil")
+	}
+
+	items := make([]*model.Key, 0)
+	for _, str := range reply.Strings() {
+
+		if str == "" {
+			continue
+		}
+
+		result := new(model.Key)
+		err = gjson.Unmarshal([]byte(str), &result)
+		if err != nil {
+			logger.Error(ctx, err)
+			return nil, err
+		}
+
+		if result.Status == 1 {
+			items = append(items, result)
+		}
+	}
+
+	if len(items) == 0 {
+		return nil, errors.New("modelAgentKeys is nil")
+	}
+
+	slices.SortFunc(items, func(k1, k2 *model.Key) int {
+		return cmp.Compare(k1.Id, k2.Id)
+	})
+
+	s.modelAgentKeysCacheMap.Set(id, items)
+
+	return items, nil
 }
 
 // 变更订阅

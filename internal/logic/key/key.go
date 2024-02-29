@@ -1,10 +1,12 @@
 package key
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/encoding/gjson"
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
@@ -16,11 +18,14 @@ import (
 	"github.com/iimeta/fastapi/utility/redis"
 	"github.com/iimeta/fastapi/utility/util"
 	"go.mongodb.org/mongo-driver/bson"
+	"slices"
 )
 
 type sKey struct {
-	keysMap       *gmap.StrAnyMap
-	roundRobinMap *gmap.StrAnyMap
+	keysMap           *gmap.StrAnyMap
+	roundRobinMap     *gmap.StrAnyMap
+	keyCacheMap       *gmap.StrAnyMap
+	modelKeysCacheMap *gmap.StrAnyMap
 }
 
 func init() {
@@ -29,8 +34,10 @@ func init() {
 
 func New() service.IKey {
 	return &sKey{
-		keysMap:       gmap.NewStrAnyMap(true),
-		roundRobinMap: gmap.NewStrAnyMap(true),
+		keysMap:           gmap.NewStrAnyMap(true),
+		roundRobinMap:     gmap.NewStrAnyMap(true),
+		keyCacheMap:       gmap.NewStrAnyMap(true),
+		modelKeysCacheMap: gmap.NewStrAnyMap(true),
 	}
 }
 
@@ -159,10 +166,19 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (key *model.Key
 
 	if len(keys) == 0 {
 
-		keys, err = s.GetModelKeys(ctx, m.Id)
+		keys, err = s.GetCacheModelKeys(ctx, m.Id)
 		if err != nil {
-			logger.Error(ctx, err)
-			return nil, err
+
+			keys, err = s.GetModelKeys(ctx, m.Id)
+			if err != nil {
+				logger.Error(ctx, err)
+				return nil, err
+			}
+
+			if err = s.SaveCacheModelKeys(ctx, m.Id, keys); err != nil {
+				logger.Error(ctx, err)
+				return nil, err
+			}
 		}
 
 		if len(keys) == 0 {
@@ -257,6 +273,170 @@ func (s *sKey) ChangeQuota(ctx context.Context, secretKey string, quota int) err
 	}
 
 	return nil
+}
+
+// 保存密钥列表到缓存
+func (s *sKey) SaveCacheList(ctx context.Context, keys []*model.Key) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sKey SaveCacheList time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	fields := g.Map{}
+	for _, key := range keys {
+		fields[key.Id] = key
+		s.keyCacheMap.Set(key.Id, key)
+	}
+
+	_, err := redis.HSet(ctx, consts.API_KEYS_KEY, fields)
+	if err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	return nil
+}
+
+// 获取缓存中的密钥列表
+func (s *sKey) GetCacheList(ctx context.Context, ids ...string) ([]*model.Key, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sKey GetCacheList time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	items := make([]*model.Key, 0)
+
+	for _, id := range ids {
+		keyCacheValue := s.keyCacheMap.Get(id)
+		if keyCacheValue != nil {
+			items = append(items, keyCacheValue.(*model.Key))
+		}
+	}
+
+	// todo 可能跟ids长度不一致情况, 需再查下
+	if len(items) > 0 {
+		return items, nil
+	}
+
+	reply, err := redis.HMGet(ctx, consts.API_KEYS_KEY, ids...)
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	if reply == nil || len(reply) == 0 {
+		return nil, errors.New("keys is nil")
+	}
+
+	for _, str := range reply.Strings() {
+
+		if str == "" {
+			continue
+		}
+
+		result := new(model.Key)
+		err = gjson.Unmarshal([]byte(str), &result)
+		if err != nil {
+			logger.Error(ctx, err)
+			return nil, err
+		}
+
+		if result.Status == 1 {
+			items = append(items, result)
+			s.keyCacheMap.Set(result.Id, result)
+		}
+	}
+
+	if len(items) == 0 {
+		return nil, errors.New("keys is nil")
+	}
+
+	slices.SortFunc(items, func(k1, k2 *model.Key) int {
+		return cmp.Compare(k1.Id, k2.Id)
+	})
+
+	return items, nil
+}
+
+// 保存模型密钥列表到缓存
+func (s *sKey) SaveCacheModelKeys(ctx context.Context, id string, keys []*model.Key) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sKey SaveCacheModelKeys time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	fields := g.Map{}
+	for _, key := range keys {
+		fields[key.Id] = key
+	}
+
+	_, err := redis.HSet(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id), fields)
+	if err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	s.modelKeysCacheMap.Set(id, keys)
+
+	return nil
+}
+
+// 获取缓存中的模型密钥列表
+func (s *sKey) GetCacheModelKeys(ctx context.Context, id string) ([]*model.Key, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sKey GetCacheModelKeys time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	modelKeysCacheValue := s.modelKeysCacheMap.Get(id)
+	if modelKeysCacheValue != nil {
+		return modelKeysCacheValue.([]*model.Key), nil
+	}
+
+	reply, err := redis.HVals(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id))
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	if reply == nil || len(reply) == 0 {
+		return nil, errors.New("modelKeys is nil")
+	}
+
+	items := make([]*model.Key, 0)
+	for _, str := range reply.Strings() {
+
+		if str == "" {
+			continue
+		}
+
+		result := new(model.Key)
+		err = gjson.Unmarshal([]byte(str), &result)
+		if err != nil {
+			logger.Error(ctx, err)
+			return nil, err
+		}
+
+		if result.Status == 1 {
+			items = append(items, result)
+		}
+	}
+
+	if len(items) == 0 {
+		return nil, errors.New("modelKeys is nil")
+	}
+
+	slices.SortFunc(items, func(k1, k2 *model.Key) int {
+		return cmp.Compare(k1.Id, k2.Id)
+	})
+
+	s.modelKeysCacheMap.Set(id, items)
+
+	return items, nil
 }
 
 // 变更订阅

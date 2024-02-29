@@ -3,6 +3,7 @@ package common
 import (
 	"context"
 	"fmt"
+	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gregex"
@@ -17,14 +18,22 @@ import (
 	"strings"
 )
 
-type sCommon struct{}
+type sCommon struct {
+	userCacheMap *gmap.IntAnyMap
+	appCacheMap  *gmap.IntAnyMap
+	keyCacheMap  *gmap.StrAnyMap
+}
 
 func init() {
 	service.RegisterCommon(New())
 }
 
 func New() service.ICommon {
-	return &sCommon{}
+	return &sCommon{
+		userCacheMap: gmap.NewIntAnyMap(true),
+		appCacheMap:  gmap.NewIntAnyMap(true),
+		keyCacheMap:  gmap.NewStrAnyMap(true),
+	}
 }
 
 func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) error {
@@ -303,6 +312,8 @@ func (s *sCommon) SaveCacheUser(ctx context.Context, user *model.User) error {
 
 	service.Session().SaveUser(ctx, user)
 
+	s.userCacheMap.Set(user.UserId, user)
+
 	return nil
 }
 
@@ -316,6 +327,11 @@ func (s *sCommon) GetCacheUser(ctx context.Context, userId int) (*model.User, er
 
 	if user := service.Session().GetUser(ctx); user != nil {
 		return user, nil
+	}
+
+	userCacheValue := s.userCacheMap.Get(userId)
+	if userCacheValue != nil {
+		return userCacheValue.(*model.User), nil
 	}
 
 	reply, err := redis.Get(ctx, fmt.Sprintf(consts.API_USER_KEY, userId))
@@ -338,6 +354,8 @@ func (s *sCommon) GetCacheUser(ctx context.Context, userId int) (*model.User, er
 
 	service.Session().SaveUser(ctx, user)
 
+	s.userCacheMap.Set(user.UserId, user)
+
 	return user, nil
 }
 
@@ -356,6 +374,8 @@ func (s *sCommon) SaveCacheApp(ctx context.Context, app *model.App) error {
 
 	service.Session().SaveApp(ctx, app)
 
+	s.appCacheMap.Set(app.AppId, app)
+
 	return nil
 }
 
@@ -369,6 +389,11 @@ func (s *sCommon) GetCacheApp(ctx context.Context, appId int) (*model.App, error
 
 	if app := service.Session().GetApp(ctx); app != nil {
 		return app, nil
+	}
+
+	appCacheValue := s.appCacheMap.Get(appId)
+	if appCacheValue != nil {
+		return appCacheValue.(*model.App), nil
 	}
 
 	reply, err := redis.Get(ctx, fmt.Sprintf(consts.API_APP_KEY, appId))
@@ -391,6 +416,8 @@ func (s *sCommon) GetCacheApp(ctx context.Context, appId int) (*model.App, error
 
 	service.Session().SaveApp(ctx, app)
 
+	s.appCacheMap.Set(app.AppId, app)
+
 	return app, nil
 }
 
@@ -409,6 +436,8 @@ func (s *sCommon) SaveCacheKey(ctx context.Context, key *model.Key) error {
 
 	service.Session().SaveKey(ctx, key)
 
+	s.keyCacheMap.Set(key.Key, key)
+
 	return nil
 }
 
@@ -422,6 +451,11 @@ func (s *sCommon) GetCacheKey(ctx context.Context, secretKey string) (*model.Key
 
 	if key := service.Session().GetKey(ctx); key != nil {
 		return key, nil
+	}
+
+	keyCacheValue := s.keyCacheMap.Get(secretKey)
+	if keyCacheValue != nil {
+		return keyCacheValue.(*model.Key), nil
 	}
 
 	reply, err := redis.Get(ctx, fmt.Sprintf(consts.API_KEY_KEY, secretKey))
@@ -443,6 +477,8 @@ func (s *sCommon) GetCacheKey(ctx context.Context, secretKey string) (*model.Key
 	}
 
 	service.Session().SaveKey(ctx, key)
+
+	s.keyCacheMap.Set(key.Key, key)
 
 	return key, nil
 }

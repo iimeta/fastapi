@@ -31,6 +31,14 @@ type (
 		RemoveModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent, key *model.Key)
 		// 记录错误模型代理密钥
 		RecordErrorModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent, key *model.Key)
+		// 保存模型代理列表到缓存
+		SaveCacheList(ctx context.Context, modelAgents []*model.ModelAgent) error
+		// 获取缓存中的模型代理列表
+		GetCacheList(ctx context.Context, ids ...string) ([]*model.ModelAgent, error)
+		// 保存模型代理列表到缓存
+		SaveCacheModelAgentKeys(ctx context.Context, id string, keys []*model.Key) error
+		// 获取缓存中的模型代理列表
+		GetCacheModelAgentKeys(ctx context.Context, id string) ([]*model.Key, error)
 		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
 	}
