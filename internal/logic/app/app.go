@@ -126,8 +126,7 @@ func (s *sApp) SaveCacheList(ctx context.Context, apps []*model.App) error {
 	}
 
 	if len(fields) > 0 {
-		_, err := redis.HSet(ctx, consts.API_APPS_KEY, fields)
-		if err != nil {
+		if _, err := redis.HSet(ctx, consts.API_APPS_KEY, fields); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -147,8 +146,7 @@ func (s *sApp) GetCacheList(ctx context.Context, appIds ...string) ([]*model.App
 	items := make([]*model.App, 0)
 
 	for _, id := range appIds {
-		appCacheValue := s.appCacheMap.Get(id)
-		if appCacheValue != nil {
+		if appCacheValue := s.appCacheMap.Get(id); appCacheValue != nil {
 			items = append(items, appCacheValue.(*model.App))
 		}
 	}

@@ -1,8 +1,9 @@
 package consts
 
 const (
-	CHANGE_CHANNEL_USER = "admin:change:channel:user"
-	CHANGE_CHANNEL_APP  = "admin:change:channel:app"
+	CHANGE_CHANNEL_USER    = "admin:change:channel:user"
+	CHANGE_CHANNEL_APP     = "admin:change:channel:app"
+	CHANGE_CHANNEL_APP_KEY = "admin:change:channel:app:key"
 )
 
 const (

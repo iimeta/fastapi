@@ -46,8 +46,7 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) error {
 	key, err := s.GetCacheKey(ctx, secretKey)
 	if err != nil || key == nil {
 
-		key, err = service.Key().GetKey(ctx, secretKey)
-		if err != nil {
+		if key, err = service.Key().GetKey(ctx, secretKey); err != nil {
 			logger.Error(ctx, err)
 			return errors.ERR_INVALID_API_KEY
 		}
@@ -87,8 +86,7 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) error {
 	app, err := s.GetCacheApp(ctx, key.AppId)
 	if err != nil || app == nil {
 
-		app, err = service.App().GetApp(ctx, key.AppId)
-		if err != nil {
+		if app, err = service.App().GetApp(ctx, key.AppId); err != nil {
 			logger.Error(ctx, err)
 			return errors.ERR_INVALID_APP
 		}
@@ -139,8 +137,7 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) error {
 		}
 	}
 
-	err = service.Session().SaveIsLimitQuota(ctx, app.IsLimitQuota, key.IsLimitQuota)
-	if err != nil {
+	if err = service.Session().SaveIsLimitQuota(ctx, app.IsLimitQuota, key.IsLimitQuota); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
@@ -316,8 +313,7 @@ func (s *sCommon) SaveCacheUser(ctx context.Context, user *model.User) error {
 		return errors.New("user is nil")
 	}
 
-	_, err := redis.Set(ctx, fmt.Sprintf(consts.API_USER_KEY, user.UserId), user)
-	if err != nil {
+	if _, err := redis.Set(ctx, fmt.Sprintf(consts.API_USER_KEY, user.UserId), user); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
@@ -341,8 +337,7 @@ func (s *sCommon) GetCacheUser(ctx context.Context, userId int) (*model.User, er
 		return user, nil
 	}
 
-	userCacheValue := s.userCacheMap.Get(userId)
-	if userCacheValue != nil {
+	if userCacheValue := s.userCacheMap.Get(userId); userCacheValue != nil {
 		return userCacheValue.(*model.User), nil
 	}
 
@@ -357,9 +352,7 @@ func (s *sCommon) GetCacheUser(ctx context.Context, userId int) (*model.User, er
 	}
 
 	user := new(model.User)
-
-	err = reply.Struct(&user)
-	if err != nil {
+	if err = reply.Struct(&user); err != nil {
 		logger.Error(ctx, err)
 		return nil, err
 	}
@@ -388,8 +381,7 @@ func (s *sCommon) SaveCacheApp(ctx context.Context, app *model.App) error {
 		return errors.New("app is nil")
 	}
 
-	_, err := redis.Set(ctx, fmt.Sprintf(consts.API_APP_KEY, app.AppId), app)
-	if err != nil {
+	if _, err := redis.Set(ctx, fmt.Sprintf(consts.API_APP_KEY, app.AppId), app); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
@@ -413,8 +405,7 @@ func (s *sCommon) GetCacheApp(ctx context.Context, appId int) (*model.App, error
 		return app, nil
 	}
 
-	appCacheValue := s.appCacheMap.Get(appId)
-	if appCacheValue != nil {
+	if appCacheValue := s.appCacheMap.Get(appId); appCacheValue != nil {
 		return appCacheValue.(*model.App), nil
 	}
 
@@ -429,9 +420,7 @@ func (s *sCommon) GetCacheApp(ctx context.Context, appId int) (*model.App, error
 	}
 
 	app := new(model.App)
-
-	err = reply.Struct(&app)
-	if err != nil {
+	if err = reply.Struct(&app); err != nil {
 		logger.Error(ctx, err)
 		return nil, err
 	}
@@ -485,8 +474,7 @@ func (s *sCommon) GetCacheKey(ctx context.Context, secretKey string) (*model.Key
 		return key, nil
 	}
 
-	keyCacheValue := s.keyCacheMap.Get(secretKey)
-	if keyCacheValue != nil {
+	if keyCacheValue := s.keyCacheMap.Get(secretKey); keyCacheValue != nil {
 		return keyCacheValue.(*model.Key), nil
 	}
 
@@ -501,9 +489,7 @@ func (s *sCommon) GetCacheKey(ctx context.Context, secretKey string) (*model.Key
 	}
 
 	key := new(model.Key)
-
-	err = reply.Struct(&key)
-	if err != nil {
+	if err = reply.Struct(&key); err != nil {
 		logger.Error(ctx, err)
 		return nil, err
 	}

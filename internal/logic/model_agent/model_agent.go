@@ -153,10 +153,7 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (model
 	var modelAgents []*model.ModelAgent
 	var roundRobin *util.RoundRobin
 
-	modelAgentsValue := s.modelAgentsMap.Get(m.Id)
-	roundRobinValue := s.modelAgentsRoundRobinMap.Get(m.Id)
-
-	if modelAgentsValue != nil {
+	if modelAgentsValue := s.modelAgentsMap.Get(m.Id); modelAgentsValue != nil {
 		modelAgents = modelAgentsValue.([]*model.ModelAgent)
 	}
 
@@ -183,7 +180,7 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (model
 		s.modelAgentsMap.Set(m.Id, modelAgents)
 	}
 
-	if roundRobinValue != nil {
+	if roundRobinValue := s.modelAgentsRoundRobinMap.Get(m.Id); roundRobinValue != nil {
 		roundRobin = roundRobinValue.(*util.RoundRobin)
 	}
 
@@ -203,12 +200,9 @@ func (s *sModelAgent) RemoveModelAgent(ctx context.Context, m *model.Model, mode
 		logger.Debugf(ctx, "RemoveModelAgent time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	modelAgentsValue := s.modelAgentsMap.Get(m.Id)
-	if modelAgentsValue != nil {
+	if modelAgentsValue := s.modelAgentsMap.Get(m.Id); modelAgentsValue != nil {
 
-		modelAgents := modelAgentsValue.([]*model.ModelAgent)
-
-		if len(modelAgents) > 0 {
+		if modelAgents := modelAgentsValue.([]*model.ModelAgent); len(modelAgents) > 0 {
 
 			newModelAgents := make([]*model.ModelAgent, 0)
 
@@ -240,8 +234,7 @@ func (s *sModelAgent) RecordErrorModelAgent(ctx context.Context, m *model.Model,
 		logger.Error(ctx, err)
 	}
 
-	_, err = redis.ExpireAt(ctx, fmt.Sprintf(consts.ERROR_MODEL_AGENT, m.Model), gtime.Now().EndOfDay().Time)
-	if err != nil {
+	if _, err = redis.ExpireAt(ctx, fmt.Sprintf(consts.ERROR_MODEL_AGENT, m.Model), gtime.Now().EndOfDay().Time); err != nil {
 		logger.Error(ctx, err)
 	}
 
@@ -261,10 +254,7 @@ func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.M
 	var keys []*model.Key
 	var roundRobin *util.RoundRobin
 
-	keysValue := s.modelAgentKeysMap.Get(modelAgent.Id)
-	roundRobinValue := s.modelAgentKeysRoundRobinMap.Get(modelAgent.Id)
-
-	if keysValue != nil {
+	if keysValue := s.modelAgentKeysMap.Get(modelAgent.Id); keysValue != nil {
 		keys = keysValue.([]*model.Key)
 	}
 
@@ -290,7 +280,7 @@ func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.M
 		s.modelAgentKeysMap.Set(modelAgent.Id, keys)
 	}
 
-	if roundRobinValue != nil {
+	if roundRobinValue := s.modelAgentKeysRoundRobinMap.Get(modelAgent.Id); roundRobinValue != nil {
 		roundRobin = roundRobinValue.(*util.RoundRobin)
 	}
 
@@ -310,8 +300,7 @@ func (s *sModelAgent) RemoveModelAgentKey(ctx context.Context, modelAgent *model
 		logger.Debugf(ctx, "RemoveModelAgentKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	keysValue := s.modelAgentKeysMap.Get(modelAgent.Id)
-	if keysValue != nil {
+	if keysValue := s.modelAgentKeysMap.Get(modelAgent.Id); keysValue != nil {
 
 		keys := keysValue.([]*model.Key)
 
@@ -391,8 +380,7 @@ func (s *sModelAgent) GetCacheList(ctx context.Context, ids ...string) ([]*model
 	items := make([]*model.ModelAgent, 0)
 
 	for _, id := range ids {
-		modelAgentCacheValue := s.modelAgentCacheMap.Get(id)
-		if modelAgentCacheValue != nil {
+		if modelAgentCacheValue := s.modelAgentCacheMap.Get(id); modelAgentCacheValue != nil {
 			items = append(items, modelAgentCacheValue.(*model.ModelAgent))
 		}
 	}
@@ -490,8 +478,7 @@ func (s *sModelAgent) GetCacheModelAgentKeys(ctx context.Context, id string) ([]
 		logger.Debugf(ctx, "sModelAgent GetCacheModelAgentKeys time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	modelAgentKeysCacheValue := s.modelAgentKeysCacheMap.Get(id)
-	if modelAgentKeysCacheValue != nil {
+	if modelAgentKeysCacheValue := s.modelAgentKeysCacheMap.Get(id); modelAgentKeysCacheValue != nil {
 		return modelAgentKeysCacheValue.([]*model.Key), nil
 	}
 

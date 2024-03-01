@@ -21,20 +21,17 @@ func New() service.IAuth {
 
 func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 
-	err := service.Session().Save(ctx, secretKey)
-	if err != nil {
+	if err := service.Session().Save(ctx, secretKey); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
 
-	err = s.CheckUser(g.RequestFromCtx(ctx).GetCtx(), service.Session().GetUserId(g.RequestFromCtx(ctx).GetCtx()))
-	if err != nil {
+	if err := s.CheckUser(g.RequestFromCtx(ctx).GetCtx(), service.Session().GetUserId(g.RequestFromCtx(ctx).GetCtx())); err != nil {
 		logger.Error(g.RequestFromCtx(ctx).GetCtx(), err)
 		return err
 	}
 
-	err = service.Common().VerifySecretKey(g.RequestFromCtx(ctx).GetCtx(), secretKey)
-	if err != nil {
+	if err := service.Common().VerifySecretKey(g.RequestFromCtx(ctx).GetCtx(), secretKey); err != nil {
 		logger.Error(g.RequestFromCtx(ctx).GetCtx(), err)
 		return err
 	}
@@ -52,8 +49,7 @@ func (s *sAuth) CheckUser(ctx context.Context, userId int) error {
 	user, err := service.Common().GetCacheUser(ctx, userId)
 	if err != nil || user == nil {
 
-		user, err = service.User().GetUserByUserId(ctx, userId)
-		if err != nil {
+		if user, err = service.User().GetUserByUserId(ctx, userId); err != nil {
 			logger.Error(ctx, err)
 			return errors.ERR_INVALID_USER
 		}

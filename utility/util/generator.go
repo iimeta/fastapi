@@ -12,7 +12,6 @@ func init() {
 	if node, err = snowflake.NewNode(1); err != nil {
 		panic(err)
 	}
-
 }
 
 func GenerateId() string {

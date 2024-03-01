@@ -157,20 +157,15 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (key *model.Key
 	var keys []*model.Key
 	var roundRobin *util.RoundRobin
 
-	keysValue := s.keysMap.Get(m.Id)
-	roundRobinValue := s.roundRobinMap.Get(m.Id)
-
-	if keysValue != nil {
+	if keysValue := s.keysMap.Get(m.Id); keysValue != nil {
 		keys = keysValue.([]*model.Key)
 	}
 
 	if len(keys) == 0 {
 
-		keys, err = s.GetCacheModelKeys(ctx, m.Id)
-		if err != nil {
+		if keys, err = s.GetCacheModelKeys(ctx, m.Id); err != nil {
 
-			keys, err = s.GetModelKeys(ctx, m.Id)
-			if err != nil {
+			if keys, err = s.GetModelKeys(ctx, m.Id); err != nil {
 				logger.Error(ctx, err)
 				return nil, err
 			}
@@ -188,7 +183,7 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (key *model.Key
 		s.keysMap.Set(m.Id, keys)
 	}
 
-	if roundRobinValue != nil {
+	if roundRobinValue := s.roundRobinMap.Get(m.Id); roundRobinValue != nil {
 		roundRobin = roundRobinValue.(*util.RoundRobin)
 	}
 
@@ -211,12 +206,9 @@ func (s *sKey) RemoveModelKey(ctx context.Context, m *model.Model, key *model.Ke
 	keysValue := s.keysMap.Get(m.Id)
 	if keysValue != nil {
 
-		keys := keysValue.([]*model.Key)
-
-		if len(keys) > 0 {
+		if keys := keysValue.([]*model.Key); len(keys) > 0 {
 
 			newKeys := make([]*model.Key, 0)
-
 			for _, k := range keys {
 				if k.Id != key.Id {
 					newKeys = append(newKeys, k)
@@ -245,8 +237,7 @@ func (s *sKey) RecordErrorModelKey(ctx context.Context, m *model.Model, key *mod
 		logger.Error(ctx, err)
 	}
 
-	_, err = redis.ExpireAt(ctx, fmt.Sprintf(consts.ERROR_MODEL_KEY, m.Model), gtime.Now().EndOfDay().Time)
-	if err != nil {
+	if _, err = redis.ExpireAt(ctx, fmt.Sprintf(consts.ERROR_MODEL_KEY, m.Model), gtime.Now().EndOfDay().Time); err != nil {
 		logger.Error(ctx, err)
 	}
 
@@ -290,8 +281,7 @@ func (s *sKey) SaveCacheList(ctx context.Context, keys []*model.Key) error {
 	}
 
 	if len(fields) > 0 {
-		_, err := redis.HSet(ctx, consts.API_KEYS_KEY, fields)
-		if err != nil {
+		if _, err := redis.HSet(ctx, consts.API_KEYS_KEY, fields); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -309,7 +299,6 @@ func (s *sKey) GetCacheList(ctx context.Context, ids ...string) ([]*model.Key, e
 	}()
 
 	items := make([]*model.Key, 0)
-
 	for _, id := range ids {
 		keyCacheValue := s.keyCacheMap.Get(id)
 		if keyCacheValue != nil {
@@ -382,8 +371,7 @@ func (s *sKey) SaveCacheModelKeys(ctx context.Context, id string, keys []*model.
 
 	if len(fields) > 0 {
 
-		_, err := redis.HSet(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id), fields)
-		if err != nil {
+		if _, err := redis.HSet(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id), fields); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -402,8 +390,7 @@ func (s *sKey) GetCacheModelKeys(ctx context.Context, id string) ([]*model.Key, 
 		logger.Debugf(ctx, "sKey GetCacheModelKeys time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	modelKeysCacheValue := s.modelKeysCacheMap.Get(id)
-	if modelKeysCacheValue != nil {
+	if modelKeysCacheValue := s.modelKeysCacheMap.Get(id); modelKeysCacheValue != nil {
 		return modelKeysCacheValue.([]*model.Key), nil
 	}
 

@@ -283,8 +283,7 @@ func (s *sModel) SaveCacheList(ctx context.Context, models []*model.Model) error
 	}
 
 	if len(fields) > 0 {
-		_, err := redis.HSet(ctx, consts.API_MODELS_KEY, fields)
-		if err != nil {
+		if _, err := redis.HSet(ctx, consts.API_MODELS_KEY, fields); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -304,8 +303,7 @@ func (s *sModel) GetCacheList(ctx context.Context, ids ...string) ([]*model.Mode
 	items := make([]*model.Model, 0)
 
 	for _, id := range ids {
-		modelCacheValue := s.modelCacheMap.Get(id)
-		if modelCacheValue != nil {
+		if modelCacheValue := s.modelCacheMap.Get(id); modelCacheValue != nil {
 			items = append(items, modelCacheValue.(*model.Model))
 		}
 	}

@@ -15,8 +15,7 @@ import (
 func main() {
 
 	// 设置进程全局时区
-	err := gtime.SetTimeZone("Asia/Shanghai")
-	if err != nil {
+	if err := gtime.SetTimeZone("Asia/Shanghai"); err != nil {
 		panic(err)
 	}
 
