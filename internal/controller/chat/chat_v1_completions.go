@@ -18,8 +18,7 @@ func (c *ControllerV1) Completions(ctx context.Context, req *v1.CompletionsReq) 
 	}()
 
 	if req.Stream {
-		err = service.Chat().CompletionsStream(ctx, req.ChatCompletionRequest)
-		if err != nil {
+		if err = service.Chat().CompletionsStream(ctx, req.ChatCompletionRequest); err != nil {
 			return nil, err
 		}
 	} else {

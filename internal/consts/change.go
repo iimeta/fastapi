@@ -10,3 +10,10 @@ const (
 	CHANGE_CHANNEL_KEY   = "admin:change:channel:key"
 	CHANGE_CHANNEL_AGENT = "admin:change:channel:agent"
 )
+
+const (
+	ACTION_CREATE = "create"
+	ACTION_UPDATE = "update"
+	ACTION_DELETE = "delete"
+	ACTION_STATUS = "status"
+)

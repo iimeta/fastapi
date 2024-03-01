@@ -23,6 +23,8 @@ type (
 		SaveCacheList(ctx context.Context, models []*model.Model) error
 		// 获取缓存中的模型列表
 		GetCacheList(ctx context.Context, ids ...string) ([]*model.Model, error)
+		// 移除缓存中的应用信息
+		RemoveCacheModel(ctx context.Context, id string)
 		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
 	}

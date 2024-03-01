@@ -59,8 +59,7 @@ func init() {
 				fields[fmt.Sprintf(consts.KEY_IS_LIMIT_QUOTA_FIELD, key.AppId, key.Key)] = key.IsLimitQuota
 			}
 
-			_, err = redis.HSet(ctx, fmt.Sprintf(consts.API_USAGE_KEY, app.UserId), fields)
-			if err != nil {
+			if _, err = redis.HSet(ctx, fmt.Sprintf(consts.API_USAGE_KEY, app.UserId), fields); err != nil {
 				panic(err)
 			}
 		}

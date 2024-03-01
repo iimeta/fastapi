@@ -9,8 +9,7 @@ var node *snowflake.Node
 func init() {
 
 	var err error
-	node, err = snowflake.NewNode(1)
-	if err != nil {
+	if node, err = snowflake.NewNode(1); err != nil {
 		panic(err)
 	}
 

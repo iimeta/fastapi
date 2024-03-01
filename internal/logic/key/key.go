@@ -341,8 +341,7 @@ func (s *sKey) GetCacheList(ctx context.Context, ids ...string) ([]*model.Key, e
 		}
 
 		result := new(model.Key)
-		err = gjson.Unmarshal([]byte(str), &result)
-		if err != nil {
+		if err = gjson.Unmarshal([]byte(str), &result); err != nil {
 			logger.Error(ctx, err)
 			return nil, err
 		}
@@ -426,8 +425,7 @@ func (s *sKey) GetCacheModelKeys(ctx context.Context, id string) ([]*model.Key, 
 		}
 
 		result := new(model.Key)
-		err = gjson.Unmarshal([]byte(str), &result)
-		if err != nil {
+		if err = gjson.Unmarshal([]byte(str), &result); err != nil {
 			logger.Error(ctx, err)
 			return nil, err
 		}
@@ -454,8 +452,7 @@ func (s *sKey) GetCacheModelKeys(ctx context.Context, id string) ([]*model.Key, 
 func (s *sKey) Subscribe(ctx context.Context, msg string) error {
 
 	key := new(entity.Key)
-	err := gjson.Unmarshal([]byte(msg), &key)
-	if err != nil {
+	if err := gjson.Unmarshal([]byte(msg), &key); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
@@ -463,6 +460,8 @@ func (s *sKey) Subscribe(ctx context.Context, msg string) error {
 	logger.Infof(ctx, "sKey Subscribe: %s", gjson.MustEncodeString(key))
 
 	service.Common().RemoveCacheKey(ctx, key.Key)
+
+	service.ModelAgent().RemoveCacheModelAgentKeys(ctx, key.ModelAgents)
 
 	return nil
 }

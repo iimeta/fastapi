@@ -177,8 +177,7 @@ func (s *sApp) GetCacheList(ctx context.Context, appIds ...string) ([]*model.App
 		}
 
 		result := new(model.App)
-		err = gjson.Unmarshal([]byte(str), &result)
-		if err != nil {
+		if err = gjson.Unmarshal([]byte(str), &result); err != nil {
 			logger.Error(ctx, err)
 			return nil, err
 		}
@@ -204,8 +203,7 @@ func (s *sApp) GetCacheList(ctx context.Context, appIds ...string) ([]*model.App
 func (s *sApp) Subscribe(ctx context.Context, msg string) error {
 
 	app := new(entity.App)
-	err := gjson.Unmarshal([]byte(msg), &app)
-	if err != nil {
+	if err := gjson.Unmarshal([]byte(msg), &app); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}

@@ -163,10 +163,9 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (model
 	if len(modelAgents) == 0 {
 
 		modelAgents, err = s.GetCacheList(ctx, m.ModelAgents...)
-		if err != nil {
+		if err != nil || len(modelAgents) != len(m.ModelAgents) {
 
-			modelAgents, err = s.List(ctx, m.ModelAgents)
-			if err != nil {
+			if modelAgents, err = s.List(ctx, m.ModelAgents); err != nil {
 				logger.Error(ctx, err)
 				return nil, err
 			}
@@ -271,11 +270,9 @@ func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.M
 
 	if len(keys) == 0 {
 
-		keys, err = s.GetCacheModelAgentKeys(ctx, modelAgent.Id)
-		if err != nil {
+		if keys, err = s.GetCacheModelAgentKeys(ctx, modelAgent.Id); err != nil {
 
-			keys, err = s.GetModelAgentKeys(ctx, modelAgent.Id)
-			if err != nil {
+			if keys, err = s.GetModelAgentKeys(ctx, modelAgent.Id); err != nil {
 				logger.Error(ctx, err)
 				return nil, err
 			}
@@ -350,8 +347,7 @@ func (s *sModelAgent) RecordErrorModelAgentKey(ctx context.Context, modelAgent *
 		logger.Error(ctx, err)
 	}
 
-	_, err = redis.ExpireAt(ctx, fmt.Sprintf(consts.ERROR_MODEL_AGENT_KEY, modelAgent.Id), gtime.Now().EndOfDay().Time)
-	if err != nil {
+	if _, err = redis.ExpireAt(ctx, fmt.Sprintf(consts.ERROR_MODEL_AGENT_KEY, modelAgent.Id), gtime.Now().EndOfDay().Time); err != nil {
 		logger.Error(ctx, err)
 	}
 
@@ -375,8 +371,7 @@ func (s *sModelAgent) SaveCacheList(ctx context.Context, modelAgents []*model.Mo
 	}
 
 	if len(fields) > 0 {
-		_, err := redis.HSet(ctx, consts.API_MODEL_AGENTS_KEY, fields)
-		if err != nil {
+		if _, err := redis.HSet(ctx, consts.API_MODEL_AGENTS_KEY, fields); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -426,8 +421,7 @@ func (s *sModelAgent) GetCacheList(ctx context.Context, ids ...string) ([]*model
 		}
 
 		result := new(model.ModelAgent)
-		err = gjson.Unmarshal([]byte(str), &result)
-		if err != nil {
+		if err = gjson.Unmarshal([]byte(str), &result); err != nil {
 			logger.Error(ctx, err)
 			return nil, err
 		}
@@ -449,6 +443,19 @@ func (s *sModelAgent) GetCacheList(ctx context.Context, ids ...string) ([]*model
 	return items, nil
 }
 
+// 移除缓存中的模型代理列表
+func (s *sModelAgent) RemoveCacheModelAgent(ctx context.Context, id string) {
+
+	s.modelAgentCacheMap.Remove(id)
+
+	if _, err := redis.HDel(ctx, consts.API_MODEL_AGENTS_KEY, id); err != nil {
+		logger.Error(ctx, err)
+	}
+
+	s.modelAgentsMap.Clear()
+	s.modelAgentsRoundRobinMap.Clear()
+}
+
 // 保存模型代理密钥列表到缓存
 func (s *sModelAgent) SaveCacheModelAgentKeys(ctx context.Context, id string, keys []*model.Key) error {
 
@@ -464,8 +471,7 @@ func (s *sModelAgent) SaveCacheModelAgentKeys(ctx context.Context, id string, ke
 
 	if len(fields) > 0 {
 
-		_, err := redis.HSet(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id), fields)
-		if err != nil {
+		if _, err := redis.HSet(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id), fields); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -507,8 +513,7 @@ func (s *sModelAgent) GetCacheModelAgentKeys(ctx context.Context, id string) ([]
 		}
 
 		result := new(model.Key)
-		err = gjson.Unmarshal([]byte(str), &result)
-		if err != nil {
+		if err = gjson.Unmarshal([]byte(str), &result); err != nil {
 			logger.Error(ctx, err)
 			return nil, err
 		}
@@ -531,16 +536,38 @@ func (s *sModelAgent) GetCacheModelAgentKeys(ctx context.Context, id string) ([]
 	return items, nil
 }
 
+// 移除缓存中的模型代理密钥列表
+func (s *sModelAgent) RemoveCacheModelAgentKeys(ctx context.Context, ids []string) {
+
+	s.modelAgentKeysCacheMap.Removes(ids)
+
+	keys := make([]string, 0)
+	for _, id := range ids {
+		keys = append(keys, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id))
+	}
+
+	if len(keys) > 0 {
+		if _, err := redis.Del(ctx, keys...); err != nil {
+			logger.Error(ctx, err)
+		}
+	}
+
+	s.modelAgentKeysMap.Clear()
+	s.modelAgentKeysRoundRobinMap.Clear()
+}
+
 // 变更订阅
 func (s *sModelAgent) Subscribe(ctx context.Context, msg string) error {
 
 	modelAgent := new(entity.ModelAgent)
-	err := gjson.Unmarshal([]byte(msg), &modelAgent)
-	if err != nil {
+	if err := gjson.Unmarshal([]byte(msg), &modelAgent); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
-	fmt.Println(gjson.MustEncodeString(modelAgent))
+
+	logger.Infof(ctx, "sModelAgent Subscribe: %s", gjson.MustEncodeString(modelAgent))
+
+	s.RemoveCacheModelAgent(ctx, modelAgent.Id)
 
 	return nil
 }

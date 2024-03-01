@@ -2,7 +2,6 @@ package model
 
 import (
 	"context"
-	"fmt"
 	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
@@ -92,10 +91,9 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 	if len(key.Models) > 0 {
 
 		models, err := s.GetCacheList(ctx, key.Models...)
-		if err != nil {
+		if err != nil || len(models) != len(key.Models) {
 
-			models, err = s.List(ctx, key.Models)
-			if err != nil {
+			if models, err = s.List(ctx, key.Models); err != nil {
 				logger.Error(ctx, err)
 				return nil, err
 			}
@@ -156,10 +154,9 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 	}
 
 	models, err := s.GetCacheList(ctx, app.Models...)
-	if err != nil {
+	if err != nil || len(models) != len(app.Models) {
 
-		models, err = s.List(ctx, app.Models)
-		if err != nil {
+		if models, err = s.List(ctx, app.Models); err != nil {
 			logger.Error(ctx, err)
 			return nil, err
 		}
@@ -337,8 +334,7 @@ func (s *sModel) GetCacheList(ctx context.Context, ids ...string) ([]*model.Mode
 		}
 
 		result := new(model.Model)
-		err = gjson.Unmarshal([]byte(str), &result)
-		if err != nil {
+		if err = gjson.Unmarshal([]byte(str), &result); err != nil {
 			logger.Error(ctx, err)
 			return nil, err
 		}
@@ -360,16 +356,28 @@ func (s *sModel) GetCacheList(ctx context.Context, ids ...string) ([]*model.Mode
 	return items, nil
 }
 
+// 移除缓存中的模型列表
+func (s *sModel) RemoveCacheModel(ctx context.Context, id string) {
+
+	s.modelCacheMap.Remove(id)
+
+	if _, err := redis.HDel(ctx, consts.API_MODELS_KEY, id); err != nil {
+		logger.Error(ctx, err)
+	}
+}
+
 // 变更订阅
 func (s *sModel) Subscribe(ctx context.Context, msg string) error {
 
 	model := new(entity.Model)
-	err := gjson.Unmarshal([]byte(msg), &model)
-	if err != nil {
+	if err := gjson.Unmarshal([]byte(msg), &model); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
-	fmt.Println(gjson.MustEncodeString(model))
+
+	logger.Infof(ctx, "sModel Subscribe: %s", gjson.MustEncodeString(model))
+
+	s.RemoveCacheModel(ctx, model.Id)
 
 	return nil
 }

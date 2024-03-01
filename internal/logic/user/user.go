@@ -105,8 +105,7 @@ func (s *sUser) ChangeQuota(ctx context.Context, userId, quota int) error {
 func (s *sUser) Subscribe(ctx context.Context, msg string) error {
 
 	user := new(entity.User)
-	err := gjson.Unmarshal([]byte(msg), &user)
-	if err != nil {
+	if err := gjson.Unmarshal([]byte(msg), &user); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}

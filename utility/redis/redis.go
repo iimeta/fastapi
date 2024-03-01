@@ -181,6 +181,10 @@ func HIncrBy(ctx context.Context, key, field string, increment int64) (int64, er
 	return master.HIncrBy(ctx, key, field, increment)
 }
 
+func HDel(ctx context.Context, key string, fields ...string) (int64, error) {
+	return master.HDel(ctx, key, fields...)
+}
+
 func SetEX(ctx context.Context, key string, value interface{}, ttlInSeconds int64) error {
 	return master.SetEX(ctx, key, value, ttlInSeconds)
 }
