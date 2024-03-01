@@ -30,15 +30,13 @@ func init() {
 
 	redisConfig := gcfg.Instance().MustGet(ctx, "redis").MapStrVar()
 
-	Default := redisConfig[gredis.DefaultGroupName]
-	if Default != nil {
-		if err := gredis.SetConfigByMap(Default.Map()); err != nil {
+	if def := redisConfig[gredis.DefaultGroupName]; def != nil {
+		if err := gredis.SetConfigByMap(def.Map()); err != nil {
 			panic(err)
 		}
 	}
 
-	masterConfig := redisConfig["master"]
-	if masterConfig != nil {
+	if masterConfig := redisConfig["master"]; masterConfig != nil {
 		if err := gredis.SetConfigByMap(masterConfig.Map(), "master"); err != nil {
 			panic(err)
 		}
@@ -49,8 +47,7 @@ func init() {
 		}
 	}
 
-	slaveConfig := redisConfig["slave"]
-	if slaveConfig != nil {
+	if slaveConfig := redisConfig["slave"]; slaveConfig != nil {
 		if err := gredis.SetConfigByMap(slaveConfig.Map(), "slave"); err != nil {
 			panic(err)
 		}

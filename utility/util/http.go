@@ -41,8 +41,7 @@ func HttpGet(ctx context.Context, url string, header map[string]string, data g.M
 	}
 
 	defer func() {
-		err = response.Close()
-		if err != nil {
+		if err = response.Close(); err != nil {
 			logger.Error(ctx, err)
 		}
 	}()
@@ -51,8 +50,7 @@ func HttpGet(ctx context.Context, url string, header map[string]string, data g.M
 	logger.Infof(ctx, "HttpGet url: %s, header: %+v, data: %+v, response: %s", url, header, data, string(bytes))
 
 	if bytes != nil && len(bytes) > 0 {
-		err = gjson.Unmarshal(bytes, result)
-		if err != nil {
+		if err = gjson.Unmarshal(bytes, result); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -84,8 +82,7 @@ func HttpPostJson(ctx context.Context, url string, header map[string]string, dat
 	}
 
 	defer func() {
-		err = response.Close()
-		if err != nil {
+		if err = response.Close(); err != nil {
 			logger.Error(ctx, err)
 		}
 	}()
@@ -94,8 +91,7 @@ func HttpPostJson(ctx context.Context, url string, header map[string]string, dat
 	logger.Infof(ctx, "HttpPostJson url: %s, header: %+v, data: %+v, response: %s", url, header, data, string(bytes))
 
 	if bytes != nil && len(bytes) > 0 {
-		err = gjson.Unmarshal(bytes, result)
-		if err != nil {
+		if err = gjson.Unmarshal(bytes, result); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -127,8 +123,7 @@ func HttpPost(ctx context.Context, url string, header map[string]string, data, r
 	}
 
 	defer func() {
-		err = response.Close()
-		if err != nil {
+		if err = response.Close(); err != nil {
 			logger.Error(ctx, err)
 		}
 	}()
@@ -137,8 +132,7 @@ func HttpPost(ctx context.Context, url string, header map[string]string, data, r
 	logger.Infof(ctx, "HttpPost url: %s, header: %+v, data: %+v, response: %s", url, header, data, string(bytes))
 
 	if bytes != nil && len(bytes) > 0 {
-		err = gjson.Unmarshal(bytes, result)
-		if err != nil {
+		if err = gjson.Unmarshal(bytes, result); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -179,8 +173,7 @@ func WebSocketClientOnlyReceive(ctx context.Context, wsURL string, result chan [
 
 	entry := gtimer.AddSingleton(ctx, 30*time.Second, func(ctx context.Context) {
 		logger.Debugf(ctx, "WebSocketClientOnlyReceive wsURL: %s, ping...", wsURL)
-		err = conn.WriteMessage(websocket.PingMessage, []byte("ping"))
-		if err != nil {
+		if err = conn.WriteMessage(websocket.PingMessage, []byte("ping")); err != nil {
 			logger.Error(ctx, err)
 			return
 		}
@@ -238,8 +231,7 @@ func WebSocketClient(ctx context.Context, wsURL string, messageType int, message
 		return nil, err
 	}
 
-	err = conn.WriteMessage(messageType, message)
-	if err != nil {
+	if err = conn.WriteMessage(messageType, message); err != nil {
 		logger.Error(ctx, err)
 		return nil, err
 	}
@@ -294,8 +286,7 @@ func SSEServer(ctx context.Context, event string, content any) error {
 	r.Response.Header().Set("Cache-Control", "no-cache, must-revalidate")
 	r.Response.Header().Set("Connection", "keep-alive")
 
-	_, err := fmt.Fprintf(rw, "data: %s\n\n", content)
-	if err != nil {
+	if _, err := fmt.Fprintf(rw, "data: %s\n\n", content); err != nil {
 		return err
 	}
 

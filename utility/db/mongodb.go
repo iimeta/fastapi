@@ -38,7 +38,6 @@ func (m *MongoDB) FindByPage(ctx context.Context, paging *Paging, result interfa
 	if len(sortFields) > 0 {
 
 		sort := bson.D{}
-
 		for _, field := range sortFields {
 			if field[:1] == "-" {
 				sort = append(sort, bson.E{Key: field[1:], Value: -1})
@@ -55,11 +54,7 @@ func (m *MongoDB) FindByPage(ctx context.Context, paging *Paging, result interfa
 		return err
 	}
 
-	if err = cursor.All(ctx, result); err != nil {
-		return err
-	}
-
-	return nil
+	return cursor.All(ctx, result)
 }
 
 func (m *MongoDB) Find(ctx context.Context, result interface{}, sortFields ...string) error {
@@ -68,7 +63,6 @@ func (m *MongoDB) Find(ctx context.Context, result interface{}, sortFields ...st
 	if len(sortFields) > 0 {
 
 		sort := bson.D{}
-
 		for _, field := range sortFields {
 			if field[:1] == "-" {
 				sort = append(sort, bson.E{Key: field[1:], Value: -1})
@@ -85,11 +79,7 @@ func (m *MongoDB) Find(ctx context.Context, result interface{}, sortFields ...st
 		return err
 	}
 
-	if err = cursor.All(ctx, result); err != nil {
-		return err
-	}
-
-	return nil
+	return cursor.All(ctx, result)
 }
 
 func (m *MongoDB) FindOne(ctx context.Context, result interface{}, sortFields ...string) error {
@@ -98,7 +88,6 @@ func (m *MongoDB) FindOne(ctx context.Context, result interface{}, sortFields ..
 	if len(sortFields) > 0 {
 
 		sort := bson.D{}
-
 		for _, field := range sortFields {
 			if field[:1] == "-" {
 				sort = append(sort, bson.E{Key: field[1:], Value: -1})
@@ -110,13 +99,7 @@ func (m *MongoDB) FindOne(ctx context.Context, result interface{}, sortFields ..
 		findOneOptions = append(findOneOptions, &options.FindOneOptions{Sort: sort})
 	}
 
-	singleResult := client.Database(m.Database).Collection(m.Collection).FindOne(ctx, m.Filter, findOneOptions...)
-
-	if err := singleResult.Decode(result); err != nil {
-		return err
-	}
-
-	return nil
+	return client.Database(m.Database).Collection(m.Collection).FindOne(ctx, m.Filter, findOneOptions...).Decode(result)
 }
 
 func (m *MongoDB) InsertOne(ctx context.Context, document interface{}) (interface{}, error) {
@@ -140,13 +123,7 @@ func (m *MongoDB) InsertMany(ctx context.Context, documents []interface{}) ([]in
 }
 
 func (m *MongoDB) DeleteById(ctx context.Context, id interface{}) error {
-
-	singleResult := client.Database(m.Database).Collection(m.Collection).FindOneAndDelete(ctx, bson.M{"_id": id})
-	if singleResult.Err() != nil {
-		return singleResult.Err()
-	}
-
-	return nil
+	return client.Database(m.Database).Collection(m.Collection).FindOneAndDelete(ctx, bson.M{"_id": id}).Err()
 }
 
 func (m *MongoDB) DeleteOne(ctx context.Context) (int64, error) {
@@ -170,50 +147,26 @@ func (m *MongoDB) DeleteMany(ctx context.Context) (int64, error) {
 }
 
 func (m *MongoDB) UpdateById(ctx context.Context, id, update interface{}, opts ...*options.UpdateOptions) error {
-
-	if _, err := client.Database(m.Database).Collection(m.Collection).UpdateByID(ctx, id, update, opts...); err != nil {
-		return err
-	}
-
-	return nil
+	_, err := client.Database(m.Database).Collection(m.Collection).UpdateByID(ctx, id, update, opts...)
+	return err
 }
 
 func (m *MongoDB) UpdateOne(ctx context.Context, update interface{}, opts ...*options.UpdateOptions) error {
-
-	if _, err := client.Database(m.Database).Collection(m.Collection).UpdateOne(ctx, m.Filter, update, opts...); err != nil {
-		return err
-	}
-
-	return nil
+	_, err := client.Database(m.Database).Collection(m.Collection).UpdateOne(ctx, m.Filter, update, opts...)
+	return err
 }
 
 func (m *MongoDB) UpdateMany(ctx context.Context, update interface{}, opts ...*options.UpdateOptions) error {
-
-	if _, err := client.Database(m.Database).Collection(m.Collection).UpdateMany(ctx, m.Filter, update, opts...); err != nil {
-		return err
-	}
-
-	return nil
+	_, err := client.Database(m.Database).Collection(m.Collection).UpdateMany(ctx, m.Filter, update, opts...)
+	return err
 }
 
 func (m *MongoDB) CountDocuments(ctx context.Context) (int64, error) {
-
-	total, err := client.Database(m.Database).Collection(m.Collection).CountDocuments(ctx, m.Filter)
-	if err != nil {
-		return 0, err
-	}
-
-	return total, nil
+	return client.Database(m.Database).Collection(m.Collection).CountDocuments(ctx, m.Filter)
 }
 
 func (m *MongoDB) EstimatedDocumentCount(ctx context.Context) (int64, error) {
-
-	total, err := client.Database(m.Database).Collection(m.Collection).EstimatedDocumentCount(ctx)
-	if err != nil {
-		return 0, err
-	}
-
-	return total, nil
+	return client.Database(m.Database).Collection(m.Collection).EstimatedDocumentCount(ctx)
 }
 
 func (m *MongoDB) Aggregate(ctx context.Context, result interface{}, opts ...*options.AggregateOptions) error {
@@ -223,11 +176,7 @@ func (m *MongoDB) Aggregate(ctx context.Context, result interface{}, opts ...*op
 		return err
 	}
 
-	if err = cursor.All(ctx, result); err != nil {
-		return err
-	}
-
-	return nil
+	return cursor.All(ctx, result)
 }
 
 func (m *MongoDB) AggregateByPage(ctx context.Context, countResult, result interface{}, opts ...*options.AggregateOptions) error {
@@ -246,9 +195,5 @@ func (m *MongoDB) AggregateByPage(ctx context.Context, countResult, result inter
 		return err
 	}
 
-	if err = cursor.All(ctx, result); err != nil {
-		return err
-	}
-
-	return nil
+	return cursor.All(ctx, result)
 }

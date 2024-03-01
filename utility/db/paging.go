@@ -14,7 +14,7 @@ type Paging struct {
 }
 
 // 获取分页信息
-func (p *Paging) GetPages() *Paging {
+func (p *Paging) GetPages() {
 
 	if p.Page < 1 {
 		p.Page = 1
@@ -39,5 +39,4 @@ func (p *Paging) GetPages() *Paging {
 	}
 
 	p.PageCount = int64(math.Ceil(float64(p.Total) / float64(p.PageSize)))
-	return p
 }

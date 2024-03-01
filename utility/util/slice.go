@@ -21,8 +21,8 @@ func Unique[T IntInterface | string](data []T) []T {
 
 // 切片转 Map
 func ToMap[T any, K int | string](arr []T, fn func(T) K) map[K]T {
-	var m = make(map[K]T)
 
+	var m = make(map[K]T)
 	for _, t := range arr {
 		m[fn(t)] = t
 	}

@@ -25,8 +25,7 @@ func init() {
 		logger.Error(ctx, err)
 	}
 
-	client, err = mongo.Connect(ctx, options.Client().ApplyURI(uri.String()))
-	if err != nil {
+	if client, err = mongo.Connect(ctx, options.Client().ApplyURI(uri.String())); err != nil {
 		panic(err)
 	}
 
