@@ -25,6 +25,8 @@ type (
 		GetCacheList(ctx context.Context, appIds ...string) ([]*model.App, error)
 		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
+		// 应用密钥变更订阅
+		SubscribeKey(ctx context.Context, msg string) error
 	}
 )
 

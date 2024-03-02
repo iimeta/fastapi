@@ -84,6 +84,8 @@ func init() {
 				_ = service.User().Subscribe(ctx, msg.Payload)
 			case consts.CHANGE_CHANNEL_APP:
 				_ = service.App().Subscribe(ctx, msg.Payload)
+			case consts.CHANGE_CHANNEL_APP_KEY:
+				_ = service.App().SubscribeKey(ctx, msg.Payload)
 			case consts.CHANGE_CHANNEL_MODEL:
 				_ = service.Model().Subscribe(ctx, msg.Payload)
 			case consts.CHANGE_CHANNEL_KEY:

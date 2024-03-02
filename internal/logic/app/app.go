@@ -200,15 +200,57 @@ func (s *sApp) GetCacheList(ctx context.Context, appIds ...string) ([]*model.App
 // 变更订阅
 func (s *sApp) Subscribe(ctx context.Context, msg string) error {
 
-	app := new(entity.App)
-	if err := gjson.Unmarshal([]byte(msg), &app); err != nil {
+	message := new(model.SubMessage)
+	if err := gjson.Unmarshal([]byte(msg), &message); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
+	logger.Infof(ctx, "sApp Subscribe: %s", gjson.MustEncodeString(message))
 
-	logger.Infof(ctx, "sApp Subscribe: %s", gjson.MustEncodeString(app))
+	var app *entity.App
+	switch message.Action {
+	case consts.ACTION_UPDATE, consts.ACTION_STATUS:
+		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &app); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+		service.Common().UpdateCacheApp(ctx, app)
+	case consts.ACTION_DELETE:
+		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &app); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+		service.Common().RemoveCacheApp(ctx, app.AppId)
+	}
 
-	service.Common().RemoveCacheApp(ctx, app.AppId)
+	return nil
+}
+
+// 应用密钥变更订阅
+func (s *sApp) SubscribeKey(ctx context.Context, msg string) error {
+
+	message := new(model.SubMessage)
+	if err := gjson.Unmarshal([]byte(msg), &message); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+	logger.Infof(ctx, "sApp SubscribeKey: %s", gjson.MustEncodeString(message))
+
+	var key *entity.Key
+	switch message.Action {
+	case consts.ACTION_UPDATE, consts.ACTION_STATUS:
+		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &key); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+		service.Common().UpdateCacheKey(ctx, key)
+	case consts.ACTION_DELETE:
+		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &key); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+		service.Common().RemoveCacheKey(ctx, key.Key)
+	}
 
 	return nil
 }

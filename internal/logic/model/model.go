@@ -77,7 +77,7 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 	}
 
 	if len(app.Models) == 0 {
-		err = errors.ERR_PERMISSION_DENIED
+		err = errors.ERR_MODEL_NOT_FOUND
 		logger.Error(ctx, err)
 		return nil, err
 	}
@@ -88,6 +88,7 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		return nil, err
 	}
 
+	keyModelList := make([]*model.Model, 0)
 	if len(key.Models) > 0 {
 
 		models, err := s.GetCacheList(ctx, key.Models...)
@@ -106,7 +107,7 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 
 		for _, v := range models {
 			if v.Name == m {
-				md = &model.Model{
+				keyModelList = append(keyModelList, &model.Model{
 					Id:                 v.Id,
 					Corp:               v.Corp,
 					Name:               v.Name,
@@ -120,36 +121,34 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 					IsPublic:           v.IsPublic,
 					Remark:             v.Remark,
 					Status:             v.Status,
-				}
-				break
+				})
 			}
 		}
 
-		if md == nil {
-			for _, v := range models {
-				if v.Model == m {
-					md = &model.Model{
-						Id:                 v.Id,
-						Corp:               v.Corp,
-						Name:               v.Name,
-						Model:              v.Model,
-						Type:               v.Type,
-						PromptRatio:        v.PromptRatio,
-						CompletionRatio:    v.CompletionRatio,
-						DataFormat:         v.DataFormat,
-						IsEnableModelAgent: v.IsEnableModelAgent,
-						ModelAgents:        v.ModelAgents,
-						IsPublic:           v.IsPublic,
-						Remark:             v.Remark,
-						Status:             v.Status,
-					}
-					break
-				}
+		for _, v := range models {
+			if v.Model == m {
+				keyModelList = append(keyModelList, &model.Model{
+					Id:                 v.Id,
+					Corp:               v.Corp,
+					Name:               v.Name,
+					Model:              v.Model,
+					Type:               v.Type,
+					PromptRatio:        v.PromptRatio,
+					CompletionRatio:    v.CompletionRatio,
+					DataFormat:         v.DataFormat,
+					IsEnableModelAgent: v.IsEnableModelAgent,
+					ModelAgents:        v.ModelAgents,
+					IsPublic:           v.IsPublic,
+					Remark:             v.Remark,
+					Status:             v.Status,
+				})
 			}
 		}
 
-		if md == nil {
-			return nil, errors.ERR_PERMISSION_DENIED
+		if len(keyModelList) == 0 {
+			err = errors.ERR_MODEL_NOT_FOUND
+			logger.Error(ctx, err)
+			return nil, err
 		}
 	}
 
@@ -168,19 +167,15 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 	}
 
 	if len(models) == 0 {
-		err = errors.ERR_PERMISSION_DENIED
+		err = errors.ERR_MODEL_NOT_FOUND
 		logger.Error(ctx, err)
 		return nil, err
 	}
 
+	appModelList := make([]*model.Model, 0)
 	for _, v := range models {
-
-		if md != nil && md.Id == v.Id {
-			return md, nil
-		}
-
 		if v.Name == m {
-			return &model.Model{
+			appModelList = append(appModelList, &model.Model{
 				Id:                 v.Id,
 				Corp:               v.Corp,
 				Name:               v.Name,
@@ -194,18 +189,13 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 				IsPublic:           v.IsPublic,
 				Remark:             v.Remark,
 				Status:             v.Status,
-			}, nil
+			})
 		}
 	}
 
 	for _, v := range models {
-
-		if md != nil && md.Id == v.Id {
-			return md, nil
-		}
-
 		if v.Model == m {
-			return &model.Model{
+			appModelList = append(appModelList, &model.Model{
 				Id:                 v.Id,
 				Corp:               v.Corp,
 				Name:               v.Name,
@@ -219,11 +209,56 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 				IsPublic:           v.IsPublic,
 				Remark:             v.Remark,
 				Status:             v.Status,
-			}, nil
+			})
 		}
 	}
 
-	return nil, errors.ERR_PERMISSION_DENIED
+	if len(appModelList) == 0 {
+		err = errors.ERR_MODEL_NOT_FOUND
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	isModelDisabled := false
+	for _, keyModel := range keyModelList {
+		if keyModel.Name == m {
+
+			if keyModel.Status == 2 {
+				isModelDisabled = true
+				continue
+			}
+
+			for _, appModel := range appModelList {
+				if keyModel.Id == appModel.Id {
+					return keyModel, nil
+				}
+			}
+		}
+	}
+
+	for _, keyModel := range keyModelList {
+		if keyModel.Model == m {
+
+			if keyModel.Status == 2 {
+				isModelDisabled = true
+				continue
+			}
+
+			for _, appModel := range appModelList {
+				if keyModel.Id == appModel.Id {
+					return keyModel, nil
+				}
+			}
+		}
+	}
+
+	if isModelDisabled {
+		err = errors.ERR_MODEL_DISABLED
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	return nil, errors.ERR_MODEL_NOT_FOUND
 }
 
 // 模型列表
@@ -354,6 +389,29 @@ func (s *sModel) GetCacheList(ctx context.Context, ids ...string) ([]*model.Mode
 	return items, nil
 }
 
+// 更新缓存中的模型列表
+func (s *sModel) UpdateCacheModel(ctx context.Context, m *entity.Model) {
+	if err := s.SaveCacheList(ctx, []*model.Model{{
+		Id:                 m.Id,
+		Corp:               m.Corp,
+		Name:               m.Name,
+		Model:              m.Model,
+		Type:               m.Type,
+		PromptRatio:        m.PromptRatio,
+		CompletionRatio:    m.CompletionRatio,
+		DataFormat:         m.DataFormat,
+		IsPublic:           m.IsPublic,
+		IsEnableModelAgent: m.IsEnableModelAgent,
+		ModelAgents:        m.ModelAgents,
+		Remark:             m.Remark,
+		Status:             m.Status,
+		Creator:            m.Creator,
+		Updater:            m.Updater,
+	}}); err != nil {
+		logger.Error(ctx, err)
+	}
+}
+
 // 移除缓存中的模型列表
 func (s *sModel) RemoveCacheModel(ctx context.Context, id string) {
 
@@ -367,15 +425,28 @@ func (s *sModel) RemoveCacheModel(ctx context.Context, id string) {
 // 变更订阅
 func (s *sModel) Subscribe(ctx context.Context, msg string) error {
 
-	model := new(entity.Model)
-	if err := gjson.Unmarshal([]byte(msg), &model); err != nil {
+	message := new(model.SubMessage)
+	if err := gjson.Unmarshal([]byte(msg), &message); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
+	logger.Infof(ctx, "sModel Subscribe: %s", gjson.MustEncodeString(message))
 
-	logger.Infof(ctx, "sModel Subscribe: %s", gjson.MustEncodeString(model))
-
-	s.RemoveCacheModel(ctx, model.Id)
+	var model *entity.Model
+	switch message.Action {
+	case consts.ACTION_UPDATE, consts.ACTION_STATUS:
+		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &model); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+		s.UpdateCacheModel(ctx, model)
+	case consts.ACTION_DELETE:
+		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &model); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+		s.RemoveCacheModel(ctx, model.Id)
+	}
 
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/model/entity"
@@ -104,15 +105,28 @@ func (s *sUser) ChangeQuota(ctx context.Context, userId, quota int) error {
 // 变更订阅
 func (s *sUser) Subscribe(ctx context.Context, msg string) error {
 
-	user := new(entity.User)
-	if err := gjson.Unmarshal([]byte(msg), &user); err != nil {
+	message := new(model.SubMessage)
+	if err := gjson.Unmarshal([]byte(msg), &message); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
+	logger.Infof(ctx, "sUser Subscribe: %s", gjson.MustEncodeString(message))
 
-	logger.Infof(ctx, "sUser Subscribe: %s", gjson.MustEncodeString(user))
-
-	service.Common().RemoveCacheUser(ctx, user.UserId)
+	var user *entity.User
+	switch message.Action {
+	case consts.ACTION_UPDATE, consts.ACTION_STATUS:
+		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &user); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+		service.Common().UpdateCacheUser(ctx, user)
+	case consts.ACTION_DELETE:
+		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &user); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+		service.Common().RemoveCacheUser(ctx, user.UserId)
+	}
 
 	return nil
 }

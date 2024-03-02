@@ -11,6 +11,7 @@ import (
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
+	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
@@ -364,6 +365,23 @@ func (s *sCommon) GetCacheUser(ctx context.Context, userId int) (*model.User, er
 	return user, nil
 }
 
+// 更新缓存中的用户信息
+func (s *sCommon) UpdateCacheUser(ctx context.Context, user *entity.User) {
+	if err := s.SaveCacheUser(ctx, &model.User{
+		Id:     user.Id,
+		UserId: user.UserId,
+		Name:   user.Name,
+		Avatar: user.Avatar,
+		Gender: user.Gender,
+		Phone:  user.Phone,
+		Email:  user.Email,
+		Quota:  user.Quota,
+		Status: user.Status,
+	}); err != nil {
+		logger.Error(ctx, err)
+	}
+}
+
 // 移除缓存中的用户信息
 func (s *sCommon) RemoveCacheUser(ctx context.Context, userId int) {
 
@@ -430,6 +448,25 @@ func (s *sCommon) GetCacheApp(ctx context.Context, appId int) (*model.App, error
 	s.appCacheMap.Set(app.AppId, app)
 
 	return app, nil
+}
+
+// 更新缓存中的应用信息
+func (s *sCommon) UpdateCacheApp(ctx context.Context, app *entity.App) {
+	if err := s.SaveCacheApp(ctx, &model.App{
+		Id:           app.Id,
+		AppId:        app.AppId,
+		Name:         app.Name,
+		Type:         app.Type,
+		Models:       app.Models,
+		IsLimitQuota: app.IsLimitQuota,
+		Quota:        app.Quota,
+		IpWhitelist:  app.IpWhitelist,
+		IpBlacklist:  app.IpBlacklist,
+		Status:       app.Status,
+		UserId:       app.UserId,
+	}); err != nil {
+		logger.Error(ctx, err)
+	}
 }
 
 // 移除缓存中的应用信息
@@ -499,6 +536,31 @@ func (s *sCommon) GetCacheKey(ctx context.Context, secretKey string) (*model.Key
 	s.keyCacheMap.Set(key.Key, key)
 
 	return key, nil
+}
+
+// 更新缓存中的密钥信息
+func (s *sCommon) UpdateCacheKey(ctx context.Context, key *entity.Key) {
+	if key.Type == 1 {
+		if err := s.SaveCacheKey(ctx, &model.Key{
+			Id:           key.Id,
+			UserId:       key.UserId,
+			AppId:        key.AppId,
+			Corp:         key.Corp,
+			Key:          key.Key,
+			Type:         key.Type,
+			Models:       key.Models,
+			ModelAgents:  key.ModelAgents,
+			IsLimitQuota: key.IsLimitQuota,
+			Quota:        key.Quota,
+			RPM:          key.RPM,
+			RPD:          key.RPD,
+			IpWhitelist:  key.IpWhitelist,
+			IpBlacklist:  key.IpBlacklist,
+			Status:       key.Status,
+		}); err != nil {
+			logger.Error(ctx, err)
+		}
+	}
 }
 
 // 移除缓存中的密钥信息

@@ -438,17 +438,31 @@ func (s *sKey) GetCacheModelKeys(ctx context.Context, id string) ([]*model.Key, 
 // 变更订阅
 func (s *sKey) Subscribe(ctx context.Context, msg string) error {
 
-	key := new(entity.Key)
-	if err := gjson.Unmarshal([]byte(msg), &key); err != nil {
+	message := new(model.SubMessage)
+	if err := gjson.Unmarshal([]byte(msg), &message); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
+	logger.Infof(ctx, "sKey Subscribe: %s", gjson.MustEncodeString(message))
 
-	logger.Infof(ctx, "sKey Subscribe: %s", gjson.MustEncodeString(key))
-
-	service.Common().RemoveCacheKey(ctx, key.Key)
-
-	service.ModelAgent().RemoveCacheModelAgentKeys(ctx, key.ModelAgents)
+	var key *entity.Key
+	switch message.Action {
+	case consts.ACTION_UPDATE, consts.ACTION_STATUS:
+		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &key); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+		service.Common().UpdateCacheKey(ctx, key)
+	case consts.ACTION_DELETE:
+		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &key); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+		service.Common().RemoveCacheKey(ctx, key.Key)
+		if key.Type == 2 {
+			service.ModelAgent().RemoveCacheModelAgentKeys(ctx, key.ModelAgents)
+		}
+	}
 
 	return nil
 }

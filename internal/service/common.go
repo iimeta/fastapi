@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/iimeta/fastapi/internal/model"
+	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -38,18 +39,24 @@ type (
 		SaveCacheUser(ctx context.Context, user *model.User) error
 		// 获取缓存中的用户信息
 		GetCacheUser(ctx context.Context, userId int) (*model.User, error)
+		// 更新缓存中的用户信息
+		UpdateCacheUser(ctx context.Context, user *entity.User)
 		// 移除缓存中的用户信息
 		RemoveCacheUser(ctx context.Context, userId int)
 		// 保存应用信息到缓存
 		SaveCacheApp(ctx context.Context, app *model.App) error
 		// 获取缓存中的应用信息
 		GetCacheApp(ctx context.Context, appId int) (*model.App, error)
+		// 更新缓存中的应用信息
+		UpdateCacheApp(ctx context.Context, app *entity.App)
 		// 移除缓存中的应用信息
 		RemoveCacheApp(ctx context.Context, appId int)
 		// 保存密钥信息到缓存
 		SaveCacheKey(ctx context.Context, key *model.Key) error
 		// 获取缓存中的密钥信息
 		GetCacheKey(ctx context.Context, secretKey string) (*model.Key, error)
+		// 更新缓存中的密钥信息
+		UpdateCacheKey(ctx context.Context, key *entity.Key)
 		// 移除缓存中的密钥信息
 		RemoveCacheKey(ctx context.Context, secretKey string)
 	}

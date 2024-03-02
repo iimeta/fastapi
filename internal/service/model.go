@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/iimeta/fastapi/internal/model"
+	"github.com/iimeta/fastapi/internal/model/entity"
 )
 
 type (
@@ -23,7 +24,9 @@ type (
 		SaveCacheList(ctx context.Context, models []*model.Model) error
 		// 获取缓存中的模型列表
 		GetCacheList(ctx context.Context, ids ...string) ([]*model.Model, error)
-		// 移除缓存中的应用信息
+		// 更新缓存中的模型列表
+		UpdateCacheModel(ctx context.Context, m *entity.Model)
+		// 移除缓存中的模型列表
 		RemoveCacheModel(ctx context.Context, id string)
 		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
