@@ -179,6 +179,18 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (model
 		s.modelAgentsMap.Set(m.Id, modelAgents)
 	}
 
+	modelAgentList := make([]*model.ModelAgent, 0)
+	for _, modelAgent := range modelAgents {
+		// 过滤被禁用的模型代理
+		if modelAgent.Status == 1 {
+			modelAgentList = append(modelAgentList, modelAgent)
+		}
+	}
+
+	if len(modelAgentList) == 0 {
+		return nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT
+	}
+
 	if roundRobinValue := s.modelAgentsRoundRobinMap.Get(m.Id); roundRobinValue != nil {
 		roundRobin = roundRobinValue.(*util.RoundRobin)
 	}
@@ -188,7 +200,7 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (model
 		s.modelAgentsRoundRobinMap.Set(m.Id, roundRobin)
 	}
 
-	return modelAgents[roundRobin.Index(len(modelAgents))], nil
+	return modelAgentList[roundRobin.Index(len(modelAgentList))], nil
 }
 
 // 移除模型代理
@@ -204,7 +216,6 @@ func (s *sModelAgent) RemoveModelAgent(ctx context.Context, m *model.Model, mode
 		if modelAgents := modelAgentsValue.([]*model.ModelAgent); len(modelAgents) > 0 {
 
 			newModelAgents := make([]*model.ModelAgent, 0)
-
 			for _, agent := range modelAgents {
 				if agent.Id != modelAgent.Id {
 					newModelAgents = append(newModelAgents, agent)
@@ -306,7 +317,6 @@ func (s *sModelAgent) RemoveModelAgentKey(ctx context.Context, modelAgent *model
 		if len(keys) > 0 {
 
 			newKeys := make([]*model.Key, 0)
-
 			for _, k := range keys {
 				if k.Id != key.Id {
 					newKeys = append(newKeys, k)
@@ -430,6 +440,29 @@ func (s *sModelAgent) GetCacheList(ctx context.Context, ids ...string) ([]*model
 	return items, nil
 }
 
+// 新增模型代理到缓存列表中
+func (s *sModelAgent) CreateCacheModelAgent(ctx context.Context, newData *model.ModelAgent) {
+
+	if err := s.SaveCacheList(ctx, []*model.ModelAgent{{
+		Id:      newData.Id,
+		Name:    newData.Name,
+		BaseUrl: newData.BaseUrl,
+		Path:    newData.Path,
+		Weight:  newData.Weight,
+		Models:  newData.Models,
+		Status:  newData.Status,
+	}}); err != nil {
+		logger.Error(ctx, err)
+	}
+
+	// 将新增的模型代理添加到对应模型的模型代理列表缓存中(有点绕, 哈哈哈...)
+	for _, id := range newData.Models {
+		if modelAgentsValue := s.modelAgentsMap.Get(id); modelAgentsValue != nil {
+			s.modelAgentsMap.Set(id, append(modelAgentsValue.([]*model.ModelAgent), newData))
+		}
+	}
+}
+
 // 更新缓存中的模型代理列表
 func (s *sModelAgent) UpdateCacheModelAgent(ctx context.Context, oldData *model.ModelAgent, newData *model.ModelAgent) {
 
@@ -480,59 +513,56 @@ func (s *sModelAgent) UpdateCacheModelAgent(ctx context.Context, oldData *model.
 	}
 
 	// 将变更后被移除模型的模型代理移除
-	for _, id := range oldData.Models {
+	if oldData != nil {
+		for _, id := range oldData.Models {
 
-		if newModelAgentModelMap[id] == "" {
+			if newModelAgentModelMap[id] == "" {
 
-			if modelAgentsValue := s.modelAgentsMap.Get(id); modelAgentsValue != nil {
+				if modelAgentsValue := s.modelAgentsMap.Get(id); modelAgentsValue != nil {
 
-				if modelAgents := modelAgentsValue.([]*model.ModelAgent); len(modelAgents) > 0 {
+					if modelAgents := modelAgentsValue.([]*model.ModelAgent); len(modelAgents) > 0 {
 
-					newModelAgents := make([]*model.ModelAgent, 0)
-
-					for _, agent := range modelAgents {
-						if agent.Id != oldData.Id {
-							newModelAgents = append(newModelAgents, agent)
+						newModelAgents := make([]*model.ModelAgent, 0)
+						for _, agent := range modelAgents {
+							if agent.Id != oldData.Id {
+								newModelAgents = append(newModelAgents, agent)
+							}
 						}
-					}
 
-					s.modelAgentsMap.Set(id, newModelAgents)
+						s.modelAgentsMap.Set(id, newModelAgents)
+					}
 				}
 			}
 		}
 	}
 }
 
-// 更新缓存中的模型代理状态
-func (s *sModelAgent) UpdateCacheModelAgentStatus(ctx context.Context, modelAgent *model.ModelAgent) {
-	if modelAgent.Status == 1 {
-		if err := s.SaveCacheList(ctx, []*model.ModelAgent{{
-			Id:      modelAgent.Id,
-			Name:    modelAgent.Name,
-			BaseUrl: modelAgent.BaseUrl,
-			Path:    modelAgent.Path,
-			Weight:  modelAgent.Weight,
-			Models:  modelAgent.Models,
-			Status:  modelAgent.Status,
-		}}); err != nil {
-			logger.Error(ctx, err)
-		}
-	} else {
-		s.RemoveCacheModelAgent(ctx, modelAgent.Id)
-	}
-}
-
 // 移除缓存中的模型代理列表
-func (s *sModelAgent) RemoveCacheModelAgent(ctx context.Context, id string) {
+func (s *sModelAgent) RemoveCacheModelAgent(ctx context.Context, modelAgent *model.ModelAgent) {
 
-	s.modelAgentCacheMap.Remove(id)
+	for _, id := range modelAgent.Models {
 
-	if _, err := redis.HDel(ctx, consts.API_MODEL_AGENTS_KEY, id); err != nil {
+		if modelAgentsValue := s.modelAgentsMap.Get(id); modelAgentsValue != nil {
+
+			if modelAgents := modelAgentsValue.([]*model.ModelAgent); len(modelAgents) > 0 {
+
+				newModelAgents := make([]*model.ModelAgent, 0)
+				for _, agent := range modelAgents {
+					if agent.Id != modelAgent.Id {
+						newModelAgents = append(newModelAgents, agent)
+					}
+				}
+
+				s.modelAgentsMap.Set(id, newModelAgents)
+			}
+		}
+	}
+
+	if _, err := redis.HDel(ctx, consts.API_MODEL_AGENTS_KEY, modelAgent.Id); err != nil {
 		logger.Error(ctx, err)
 	}
 
-	s.modelAgentsMap.Clear()
-	s.modelAgentsRoundRobinMap.Clear()
+	s.modelAgentCacheMap.Remove(modelAgent.Id)
 }
 
 // 保存模型代理密钥列表到缓存
@@ -646,6 +676,12 @@ func (s *sModelAgent) Subscribe(ctx context.Context, msg string) error {
 
 	var modelAgent *model.ModelAgent
 	switch message.Action {
+	case consts.ACTION_CREATE:
+		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &modelAgent); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+		s.CreateCacheModelAgent(ctx, modelAgent)
 	case consts.ACTION_UPDATE:
 		var oldData *model.ModelAgent
 		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &oldData); err != nil {
@@ -662,13 +698,13 @@ func (s *sModelAgent) Subscribe(ctx context.Context, msg string) error {
 			logger.Error(ctx, err)
 			return err
 		}
-		s.UpdateCacheModelAgentStatus(ctx, modelAgent)
+		s.UpdateCacheModelAgent(ctx, nil, modelAgent)
 	case consts.ACTION_DELETE:
 		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &modelAgent); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
-		s.RemoveCacheModelAgent(ctx, modelAgent.Id)
+		s.RemoveCacheModelAgent(ctx, modelAgent)
 	}
 
 	return nil
