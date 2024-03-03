@@ -12,7 +12,6 @@ import (
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
-	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
@@ -22,11 +21,11 @@ import (
 )
 
 type sModelAgent struct {
-	modelAgentsMap              *gmap.StrAnyMap
+	modelAgentsMap              *gmap.StrAnyMap // map[模型ID][]模型代理列表
 	modelAgentsRoundRobinMap    *gmap.StrAnyMap
 	modelAgentKeysMap           *gmap.StrAnyMap
 	modelAgentKeysRoundRobinMap *gmap.StrAnyMap
-	modelAgentCacheMap          *gmap.StrAnyMap
+	modelAgentCacheMap          *gmap.StrAnyMap // map[模型代理ID]模型代理
 	modelAgentKeysCacheMap      *gmap.StrAnyMap
 }
 
@@ -431,6 +430,98 @@ func (s *sModelAgent) GetCacheList(ctx context.Context, ids ...string) ([]*model
 	return items, nil
 }
 
+// 更新缓存中的模型代理列表
+func (s *sModelAgent) UpdateCacheModelAgent(ctx context.Context, oldData *model.ModelAgent, newData *model.ModelAgent) {
+
+	if err := s.SaveCacheList(ctx, []*model.ModelAgent{{
+		Id:      newData.Id,
+		Name:    newData.Name,
+		BaseUrl: newData.BaseUrl,
+		Path:    newData.Path,
+		Weight:  newData.Weight,
+		Models:  newData.Models,
+		Status:  newData.Status,
+	}}); err != nil {
+		logger.Error(ctx, err)
+	}
+
+	// 用于处理oldData时判断作用
+	newModelAgentModelMap := make(map[string]string)
+
+	// 将变更后的模型代理替换(或添加)到对应模型的模型代理列表缓存中(有点绕, 哈哈哈...)
+	for _, id := range newData.Models {
+
+		newModelAgentModelMap[id] = id
+
+		if modelAgentsValue := s.modelAgentsMap.Get(id); modelAgentsValue != nil {
+
+			modelAgents := modelAgentsValue.([]*model.ModelAgent)
+			newModelAgents := make([]*model.ModelAgent, 0)
+			// 用于处理新添加了模型代理时判断作用
+			modelAgentMap := make(map[string]*model.ModelAgent)
+
+			for _, agent := range modelAgents {
+
+				if agent.Id != newData.Id {
+					newModelAgents = append(newModelAgents, agent)
+					modelAgentMap[agent.Id] = agent
+				} else {
+					newModelAgents = append(newModelAgents, newData)
+					modelAgentMap[newData.Id] = newData
+				}
+			}
+
+			if modelAgentMap[newData.Id] == nil {
+				newModelAgents = append(newModelAgents, newData)
+			}
+
+			s.modelAgentsMap.Set(id, newModelAgents)
+		}
+	}
+
+	// 将变更后被移除模型的模型代理移除
+	for _, id := range oldData.Models {
+
+		if newModelAgentModelMap[id] == "" {
+
+			if modelAgentsValue := s.modelAgentsMap.Get(id); modelAgentsValue != nil {
+
+				if modelAgents := modelAgentsValue.([]*model.ModelAgent); len(modelAgents) > 0 {
+
+					newModelAgents := make([]*model.ModelAgent, 0)
+
+					for _, agent := range modelAgents {
+						if agent.Id != oldData.Id {
+							newModelAgents = append(newModelAgents, agent)
+						}
+					}
+
+					s.modelAgentsMap.Set(id, newModelAgents)
+				}
+			}
+		}
+	}
+}
+
+// 更新缓存中的模型代理状态
+func (s *sModelAgent) UpdateCacheModelAgentStatus(ctx context.Context, modelAgent *model.ModelAgent) {
+	if modelAgent.Status == 1 {
+		if err := s.SaveCacheList(ctx, []*model.ModelAgent{{
+			Id:      modelAgent.Id,
+			Name:    modelAgent.Name,
+			BaseUrl: modelAgent.BaseUrl,
+			Path:    modelAgent.Path,
+			Weight:  modelAgent.Weight,
+			Models:  modelAgent.Models,
+			Status:  modelAgent.Status,
+		}}); err != nil {
+			logger.Error(ctx, err)
+		}
+	} else {
+		s.RemoveCacheModelAgent(ctx, modelAgent.Id)
+	}
+}
+
 // 移除缓存中的模型代理列表
 func (s *sModelAgent) RemoveCacheModelAgent(ctx context.Context, id string) {
 
@@ -546,15 +637,39 @@ func (s *sModelAgent) RemoveCacheModelAgentKeys(ctx context.Context, ids []strin
 // 变更订阅
 func (s *sModelAgent) Subscribe(ctx context.Context, msg string) error {
 
-	modelAgent := new(entity.ModelAgent)
-	if err := gjson.Unmarshal([]byte(msg), &modelAgent); err != nil {
+	message := new(model.SubMessage)
+	if err := gjson.Unmarshal([]byte(msg), &message); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
+	logger.Infof(ctx, "sModelAgent Subscribe: %s", gjson.MustEncodeString(message))
 
-	logger.Infof(ctx, "sModelAgent Subscribe: %s", gjson.MustEncodeString(modelAgent))
-
-	s.RemoveCacheModelAgent(ctx, modelAgent.Id)
+	var modelAgent *model.ModelAgent
+	switch message.Action {
+	case consts.ACTION_UPDATE:
+		var oldData *model.ModelAgent
+		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &oldData); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &modelAgent); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+		s.UpdateCacheModelAgent(ctx, oldData, modelAgent)
+	case consts.ACTION_STATUS:
+		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &modelAgent); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+		s.UpdateCacheModelAgentStatus(ctx, modelAgent)
+	case consts.ACTION_DELETE:
+		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &modelAgent); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+		s.RemoveCacheModelAgent(ctx, modelAgent.Id)
+	}
 
 	return nil
 }

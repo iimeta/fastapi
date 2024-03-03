@@ -35,6 +35,10 @@ type (
 		SaveCacheList(ctx context.Context, modelAgents []*model.ModelAgent) error
 		// 获取缓存中的模型代理列表
 		GetCacheList(ctx context.Context, ids ...string) ([]*model.ModelAgent, error)
+		// 更新缓存中的模型代理列表
+		UpdateCacheModelAgent(ctx context.Context, oldData *model.ModelAgent, newData *model.ModelAgent)
+		// 更新缓存中的模型代理状态
+		UpdateCacheModelAgentStatus(ctx context.Context, modelAgent *model.ModelAgent)
 		// 移除缓存中的模型代理列表
 		RemoveCacheModelAgent(ctx context.Context, id string)
 		// 保存模型代理密钥列表到缓存
