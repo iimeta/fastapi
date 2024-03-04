@@ -82,7 +82,7 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		return nil, err
 	}
 
-	key, err := service.Common().GetCacheKey(g.RequestFromCtx(ctx).GetCtx(), secretKey)
+	key, err := service.Common().GetCacheAppKey(g.RequestFromCtx(ctx).GetCtx(), secretKey)
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err

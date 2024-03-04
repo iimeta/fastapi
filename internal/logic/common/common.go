@@ -20,9 +20,9 @@ import (
 )
 
 type sCommon struct {
-	userCacheMap *gmap.IntAnyMap
-	appCacheMap  *gmap.IntAnyMap
-	keyCacheMap  *gmap.StrAnyMap
+	userCacheMap   *gmap.IntAnyMap
+	appCacheMap    *gmap.IntAnyMap
+	appKeyCacheMap *gmap.StrAnyMap
 }
 
 func init() {
@@ -31,9 +31,9 @@ func init() {
 
 func New() service.ICommon {
 	return &sCommon{
-		userCacheMap: gmap.NewIntAnyMap(true),
-		appCacheMap:  gmap.NewIntAnyMap(true),
-		keyCacheMap:  gmap.NewStrAnyMap(true),
+		userCacheMap:   gmap.NewIntAnyMap(true),
+		appCacheMap:    gmap.NewIntAnyMap(true),
+		appKeyCacheMap: gmap.NewStrAnyMap(true),
 	}
 }
 
@@ -44,7 +44,7 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) error {
 		logger.Debugf(ctx, "VerifySecretKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	key, err := s.GetCacheKey(ctx, secretKey)
+	key, err := s.GetCacheAppKey(ctx, secretKey)
 	if err != nil || key == nil {
 
 		if key, err = service.Key().GetKey(ctx, secretKey); err != nil {
@@ -52,7 +52,7 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) error {
 			return errors.ERR_INVALID_API_KEY
 		}
 
-		if err = s.SaveCacheKey(ctx, key); err != nil {
+		if err = s.SaveCacheAppKey(ctx, key); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -479,14 +479,14 @@ func (s *sCommon) RemoveCacheApp(ctx context.Context, appId int) {
 	}
 }
 
-// 保存密钥信息到缓存
-func (s *sCommon) SaveCacheKey(ctx context.Context, key *model.Key) error {
+// 保存应用密钥信息到缓存
+func (s *sCommon) SaveCacheAppKey(ctx context.Context, key *model.Key) error {
 
 	if key == nil {
 		return errors.New("key is nil")
 	}
 
-	_, err := redis.Set(ctx, fmt.Sprintf(consts.API_KEY_KEY, key.Key), key)
+	_, err := redis.Set(ctx, fmt.Sprintf(consts.API_APP_KEY_KEY, key.Key), key)
 	if err != nil {
 		logger.Error(ctx, err)
 		return err
@@ -494,28 +494,28 @@ func (s *sCommon) SaveCacheKey(ctx context.Context, key *model.Key) error {
 
 	service.Session().SaveKey(ctx, key)
 
-	s.keyCacheMap.Set(key.Key, key)
+	s.appKeyCacheMap.Set(key.Key, key)
 
 	return nil
 }
 
-// 获取缓存中的密钥信息
-func (s *sCommon) GetCacheKey(ctx context.Context, secretKey string) (*model.Key, error) {
+// 获取缓存中的应用密钥信息
+func (s *sCommon) GetCacheAppKey(ctx context.Context, secretKey string) (*model.Key, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "GetCacheKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "GetCacheAppKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if key := service.Session().GetKey(ctx); key != nil {
 		return key, nil
 	}
 
-	if keyCacheValue := s.keyCacheMap.Get(secretKey); keyCacheValue != nil {
+	if keyCacheValue := s.appKeyCacheMap.Get(secretKey); keyCacheValue != nil {
 		return keyCacheValue.(*model.Key), nil
 	}
 
-	reply, err := redis.Get(ctx, fmt.Sprintf(consts.API_KEY_KEY, secretKey))
+	reply, err := redis.Get(ctx, fmt.Sprintf(consts.API_APP_KEY_KEY, secretKey))
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -533,15 +533,15 @@ func (s *sCommon) GetCacheKey(ctx context.Context, secretKey string) (*model.Key
 
 	service.Session().SaveKey(ctx, key)
 
-	s.keyCacheMap.Set(key.Key, key)
+	s.appKeyCacheMap.Set(key.Key, key)
 
 	return key, nil
 }
 
-// 更新缓存中的密钥信息
-func (s *sCommon) UpdateCacheKey(ctx context.Context, key *entity.Key) {
+// 更新缓存中的应用密钥信息
+func (s *sCommon) UpdateCacheAppKey(ctx context.Context, key *entity.Key) {
 	if key.Type == 1 {
-		if err := s.SaveCacheKey(ctx, &model.Key{
+		if err := s.SaveCacheAppKey(ctx, &model.Key{
 			Id:           key.Id,
 			UserId:       key.UserId,
 			AppId:        key.AppId,
@@ -563,12 +563,12 @@ func (s *sCommon) UpdateCacheKey(ctx context.Context, key *entity.Key) {
 	}
 }
 
-// 移除缓存中的密钥信息
-func (s *sCommon) RemoveCacheKey(ctx context.Context, secretKey string) {
+// 移除缓存中的应用密钥信息
+func (s *sCommon) RemoveCacheAppKey(ctx context.Context, secretKey string) {
 
-	s.keyCacheMap.Remove(secretKey)
+	s.appKeyCacheMap.Remove(secretKey)
 
-	if _, err := redis.Del(ctx, fmt.Sprintf(consts.API_KEY_KEY, secretKey)); err != nil {
+	if _, err := redis.Del(ctx, fmt.Sprintf(consts.API_APP_KEY_KEY, secretKey)); err != nil {
 		logger.Error(ctx, err)
 	}
 }

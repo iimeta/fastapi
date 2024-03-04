@@ -52,13 +52,13 @@ type (
 		// 移除缓存中的应用信息
 		RemoveCacheApp(ctx context.Context, appId int)
 		// 保存密钥信息到缓存
-		SaveCacheKey(ctx context.Context, key *model.Key) error
+		SaveCacheAppKey(ctx context.Context, key *model.Key) error
 		// 获取缓存中的密钥信息
-		GetCacheKey(ctx context.Context, secretKey string) (*model.Key, error)
+		GetCacheAppKey(ctx context.Context, secretKey string) (*model.Key, error)
 		// 更新缓存中的密钥信息
-		UpdateCacheKey(ctx context.Context, key *entity.Key)
+		UpdateCacheAppKey(ctx context.Context, key *entity.Key)
 		// 移除缓存中的密钥信息
-		RemoveCacheKey(ctx context.Context, secretKey string)
+		RemoveCacheAppKey(ctx context.Context, secretKey string)
 	}
 )
 

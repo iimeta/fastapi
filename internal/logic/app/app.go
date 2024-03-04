@@ -243,13 +243,13 @@ func (s *sApp) SubscribeKey(ctx context.Context, msg string) error {
 			logger.Error(ctx, err)
 			return err
 		}
-		service.Common().UpdateCacheKey(ctx, key)
+		service.Common().UpdateCacheAppKey(ctx, key)
 	case consts.ACTION_DELETE:
 		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &key); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
-		service.Common().RemoveCacheKey(ctx, key.Key)
+		service.Common().RemoveCacheAppKey(ctx, key.Key)
 	}
 
 	return nil

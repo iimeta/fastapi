@@ -712,10 +712,6 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 
 		newModelAgentMap[id] = id
 
-		if err := s.SaveCacheModelAgentKeys(ctx, id, []*model.Key{key}); err != nil {
-			logger.Error(ctx, err)
-		}
-
 		if modelAgentKeysValue := s.modelAgentKeysMap.Get(id); modelAgentKeysValue != nil {
 
 			modelAgentKeys := modelAgentKeysValue.([]*model.Key)
@@ -738,6 +734,10 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 				newModelAgentKeys = append(newModelAgentKeys, key)
 			}
 
+			if err := s.SaveCacheModelAgentKeys(ctx, id, newModelAgentKeys); err != nil {
+				logger.Error(ctx, err)
+			}
+
 			s.modelAgentKeysMap.Set(id, newModelAgentKeys)
 		}
 	}
@@ -754,8 +754,13 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 
 						newKeys := make([]*model.Key, 0)
 						for _, k := range keys {
+
 							if k.Id != oldData.Id {
 								newKeys = append(newKeys, k)
+							} else {
+								if _, err := redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id), oldData.Id); err != nil {
+									logger.Error(ctx, err)
+								}
 							}
 						}
 
@@ -778,17 +783,18 @@ func (s *sModelAgent) RemoveCacheModelAgentKey(ctx context.Context, key *entity.
 
 				newModelAgentKeys := make([]*model.Key, 0)
 				for _, k := range modelAgentKeys {
+
 					if k.Id != key.Id {
 						newModelAgentKeys = append(newModelAgentKeys, k)
+					} else {
+						if _, err := redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id), key.Id); err != nil {
+							logger.Error(ctx, err)
+						}
 					}
 				}
 
 				s.modelAgentKeysMap.Set(id, newModelAgentKeys)
 			}
-		}
-
-		if _, err := redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id), key.Id); err != nil {
-			logger.Error(ctx, err)
 		}
 	}
 }

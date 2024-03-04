@@ -65,7 +65,7 @@ func init() {
 		}
 	}
 
-	conn, _, err := redis.Subscribe(ctx, consts.CHANGE_CHANNEL_USER, consts.CHANGE_CHANNEL_APP, consts.CHANGE_CHANNEL_MODEL, consts.CHANGE_CHANNEL_KEY, consts.CHANGE_CHANNEL_AGENT)
+	conn, _, err := redis.Subscribe(ctx, consts.CHANGE_CHANNEL_USER, consts.CHANGE_CHANNEL_APP, consts.CHANGE_CHANNEL_MODEL, consts.CHANGE_CHANNEL_KEY, consts.CHANGE_CHANNEL_AGENT, consts.CHANGE_CHANNEL_APP_KEY)
 	if err != nil {
 		panic(err)
 	}

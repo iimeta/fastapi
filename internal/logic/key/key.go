@@ -22,10 +22,9 @@ import (
 )
 
 type sKey struct {
-	keysMap           *gmap.StrAnyMap // map[模型ID][]密钥列表
-	roundRobinMap     *gmap.StrAnyMap // 模型ID->密钥下标索引
-	keyCacheMap       *gmap.StrAnyMap // map[密钥ID]密钥
-	modelKeysCacheMap *gmap.StrAnyMap // map[模型ID][]密钥列表
+	modelKeysMap           *gmap.StrAnyMap // map[模型ID][]密钥列表
+	modelKeysRoundRobinMap *gmap.StrAnyMap // 模型ID->密钥下标索引
+	modelKeysCacheMap      *gmap.StrAnyMap // map[模型ID][]密钥列表
 }
 
 func init() {
@@ -34,10 +33,9 @@ func init() {
 
 func New() service.IKey {
 	return &sKey{
-		keysMap:           gmap.NewStrAnyMap(true),
-		roundRobinMap:     gmap.NewStrAnyMap(true),
-		keyCacheMap:       gmap.NewStrAnyMap(true),
-		modelKeysCacheMap: gmap.NewStrAnyMap(true),
+		modelKeysMap:           gmap.NewStrAnyMap(true),
+		modelKeysRoundRobinMap: gmap.NewStrAnyMap(true),
+		modelKeysCacheMap:      gmap.NewStrAnyMap(true),
 	}
 }
 
@@ -154,45 +152,53 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (key *model.Key
 		logger.Debugf(ctx, "PickModelKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	var keys []*model.Key
+	var modelKeys []*model.Key
 	var roundRobin *util.RoundRobin
 
-	if keysValue := s.keysMap.Get(m.Id); keysValue != nil {
-		keys = keysValue.([]*model.Key)
+	if modelKeysValue := s.modelKeysMap.Get(m.Id); modelKeysValue != nil {
+		modelKeys = modelKeysValue.([]*model.Key)
 	}
 
-	if len(keys) == 0 {
+	if len(modelKeys) == 0 {
 
-		if keys, err = s.GetCacheModelKeys(ctx, m.Id); err != nil {
+		if modelKeys, err = s.GetCacheModelKeys(ctx, m.Id); err != nil {
 
-			if keys, err = s.GetModelKeys(ctx, m.Id); err != nil {
+			if modelKeys, err = s.GetModelKeys(ctx, m.Id); err != nil {
 				logger.Error(ctx, err)
 				return nil, err
 			}
 
-			if err = s.SaveCacheModelKeys(ctx, m.Id, keys); err != nil {
+			if err = s.SaveCacheModelKeys(ctx, m.Id, modelKeys); err != nil {
 				logger.Error(ctx, err)
 				return nil, err
 			}
 		}
 
-		if len(keys) == 0 {
+		if len(modelKeys) == 0 {
 			return nil, errors.ERR_NO_AVAILABLE_KEY
 		}
 
-		s.keysMap.Set(m.Id, keys)
+		s.modelKeysMap.Set(m.Id, modelKeys)
 	}
 
-	if roundRobinValue := s.roundRobinMap.Get(m.Id); roundRobinValue != nil {
+	keyList := make([]*model.Key, 0)
+	for _, key := range modelKeys {
+		// 过滤被禁用的模型密钥
+		if key.Status == 1 {
+			keyList = append(keyList, key)
+		}
+	}
+
+	if roundRobinValue := s.modelKeysRoundRobinMap.Get(m.Id); roundRobinValue != nil {
 		roundRobin = roundRobinValue.(*util.RoundRobin)
 	}
 
 	if roundRobin == nil {
 		roundRobin = new(util.RoundRobin)
-		s.roundRobinMap.Set(m.Id, roundRobin)
+		s.modelKeysRoundRobinMap.Set(m.Id, roundRobin)
 	}
 
-	return keys[roundRobin.Index(len(keys))], nil
+	return keyList[roundRobin.Index(len(keyList))], nil
 }
 
 // 移除模型密钥
@@ -203,7 +209,7 @@ func (s *sKey) RemoveModelKey(ctx context.Context, m *model.Model, key *model.Ke
 		logger.Debugf(ctx, "RemoveModelKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	keysValue := s.keysMap.Get(m.Id)
+	keysValue := s.modelKeysMap.Get(m.Id)
 	if keysValue != nil {
 
 		if keys := keysValue.([]*model.Key); len(keys) > 0 {
@@ -215,7 +221,7 @@ func (s *sKey) RemoveModelKey(ctx context.Context, m *model.Model, key *model.Ke
 				}
 			}
 
-			s.keysMap.Set(m.Id, newKeys)
+			s.modelKeysMap.Set(m.Id, newKeys)
 		}
 
 		if err := dao.Key.UpdateById(ctx, key.Id, bson.M{"status": 2}); err != nil {
@@ -264,96 +270,6 @@ func (s *sKey) ChangeQuota(ctx context.Context, secretKey string, quota int) err
 	}
 
 	return nil
-}
-
-// 保存密钥列表到缓存
-func (s *sKey) SaveCacheList(ctx context.Context, keys []*model.Key) error {
-
-	now := gtime.TimestampMilli()
-	defer func() {
-		logger.Debugf(ctx, "sKey SaveCacheList time: %d", gtime.TimestampMilli()-now)
-	}()
-
-	fields := g.Map{}
-	for _, key := range keys {
-		fields[key.Id] = key
-		s.keyCacheMap.Set(key.Id, key)
-	}
-
-	if len(fields) > 0 {
-		if _, err := redis.HSet(ctx, consts.API_KEYS_KEY, fields); err != nil {
-			logger.Error(ctx, err)
-			return err
-		}
-	}
-
-	return nil
-}
-
-// 获取缓存中的密钥列表
-func (s *sKey) GetCacheList(ctx context.Context, ids ...string) ([]*model.Key, error) {
-
-	now := gtime.TimestampMilli()
-	defer func() {
-		logger.Debugf(ctx, "sKey GetCacheList time: %d", gtime.TimestampMilli()-now)
-	}()
-
-	items := make([]*model.Key, 0)
-	for _, id := range ids {
-		keyCacheValue := s.keyCacheMap.Get(id)
-		if keyCacheValue != nil {
-			items = append(items, keyCacheValue.(*model.Key))
-		}
-	}
-
-	if len(items) == len(ids) {
-		return items, nil
-	}
-
-	reply, err := redis.HMGet(ctx, consts.API_KEYS_KEY, ids...)
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	if reply == nil || len(reply) == 0 {
-		if len(items) != 0 {
-			return items, nil
-		}
-		return nil, errors.New("keys is nil")
-	}
-
-	for _, str := range reply.Strings() {
-
-		if str == "" {
-			continue
-		}
-
-		result := new(model.Key)
-		if err = gjson.Unmarshal([]byte(str), &result); err != nil {
-			logger.Error(ctx, err)
-			return nil, err
-		}
-
-		if s.keyCacheMap.Get(result.Id) != nil {
-			continue
-		}
-
-		if result.Status == 1 {
-			items = append(items, result)
-			s.keyCacheMap.Set(result.Id, result)
-		}
-	}
-
-	if len(items) == 0 {
-		return nil, errors.New("keys is nil")
-	}
-
-	slices.SortFunc(items, func(k1, k2 *model.Key) int {
-		return cmp.Compare(k1.Id, k2.Id)
-	})
-
-	return items, nil
 }
 
 // 保存模型密钥列表到缓存
@@ -456,13 +372,14 @@ func (s *sKey) CreateCacheModelKey(ctx context.Context, key *entity.Key) {
 		Status:       key.Status,
 	}
 
-	if err := s.SaveCacheList(ctx, []*model.Key{k}); err != nil {
-		logger.Error(ctx, err)
-	}
-
 	for _, id := range key.Models {
-		if keysValue := s.keysMap.Get(id); keysValue != nil {
-			s.keysMap.Set(id, append(keysValue.([]*model.Key), k))
+
+		if err := s.SaveCacheModelKeys(ctx, id, []*model.Key{k}); err != nil {
+			logger.Error(ctx, err)
+		}
+
+		if keysValue := s.modelKeysMap.Get(id); keysValue != nil {
+			s.modelKeysMap.Set(id, append(keysValue.([]*model.Key), k))
 		}
 	}
 }
@@ -488,10 +405,6 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 		Status:       newData.Status,
 	}
 
-	if err := s.SaveCacheList(ctx, []*model.Key{key}); err != nil {
-		logger.Error(ctx, err)
-	}
-
 	// 用于处理oldData时判断作用
 	newModelMap := make(map[string]string)
 
@@ -499,7 +412,7 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 
 		newModelMap[id] = id
 
-		if keysValue := s.keysMap.Get(id); keysValue != nil {
+		if keysValue := s.modelKeysMap.Get(id); keysValue != nil {
 
 			keys := keysValue.([]*model.Key)
 			newKeys := make([]*model.Key, 0)
@@ -521,7 +434,11 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 				newKeys = append(newKeys, key)
 			}
 
-			s.keysMap.Set(id, newKeys)
+			if err := s.SaveCacheModelKeys(ctx, id, newKeys); err != nil {
+				logger.Error(ctx, err)
+			}
+
+			s.modelKeysMap.Set(id, newKeys)
 		}
 	}
 
@@ -531,18 +448,23 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 
 			if newModelMap[id] == "" {
 
-				if keysValue := s.keysMap.Get(id); keysValue != nil {
+				if keysValue := s.modelKeysMap.Get(id); keysValue != nil {
 
 					if keys := keysValue.([]*model.Key); len(keys) > 0 {
 
 						newKeys := make([]*model.Key, 0)
 						for _, k := range keys {
+
 							if k.Id != oldData.Id {
 								newKeys = append(newKeys, k)
+							} else {
+								if _, err := redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id), oldData.Id); err != nil {
+									logger.Error(ctx, err)
+								}
 							}
 						}
 
-						s.keysMap.Set(id, newKeys)
+						s.modelKeysMap.Set(id, newKeys)
 					}
 				}
 			}
@@ -555,27 +477,26 @@ func (s *sKey) RemoveCacheModelKey(ctx context.Context, key *entity.Key) {
 
 	for _, id := range key.Models {
 
-		if keysValue := s.keysMap.Get(id); keysValue != nil {
+		if keysValue := s.modelKeysMap.Get(id); keysValue != nil {
 
 			if keys := keysValue.([]*model.Key); len(keys) > 0 {
 
 				newKeys := make([]*model.Key, 0)
 				for _, k := range keys {
+
 					if k.Id != key.Id {
 						newKeys = append(newKeys, k)
+					} else {
+						if _, err := redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id), key.Id); err != nil {
+							logger.Error(ctx, err)
+						}
 					}
 				}
 
-				s.keysMap.Set(id, newKeys)
+				s.modelKeysMap.Set(id, newKeys)
 			}
 		}
 	}
-
-	if _, err := redis.HDel(ctx, consts.API_KEYS_KEY, key.Id); err != nil {
-		logger.Error(ctx, err)
-	}
-
-	s.keyCacheMap.Remove(key.Id)
 }
 
 // 变更订阅
@@ -591,41 +512,81 @@ func (s *sKey) Subscribe(ctx context.Context, msg string) error {
 	var key *entity.Key
 	switch message.Action {
 	case consts.ACTION_CREATE:
+
 		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &key); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
-		s.CreateCacheModelKey(ctx, key)
+
+		if key.IsAgentsOnly {
+			service.ModelAgent().CreateCacheModelAgentKey(ctx, key)
+		} else {
+			s.CreateCacheModelKey(ctx, key)
+			service.ModelAgent().CreateCacheModelAgentKey(ctx, key)
+		}
+
 	case consts.ACTION_UPDATE:
+
 		var oldData *entity.Key
 		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &oldData); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
+
 		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &key); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
-		s.UpdateCacheModelKey(ctx, oldData, key)
+
+		if !oldData.IsAgentsOnly && !key.IsAgentsOnly {
+			s.UpdateCacheModelKey(ctx, oldData, key)
+		} else if oldData.IsAgentsOnly && key.IsAgentsOnly {
+			service.ModelAgent().UpdateCacheModelAgentKey(ctx, oldData, key)
+		} else if oldData.IsAgentsOnly && !key.IsAgentsOnly {
+			s.CreateCacheModelKey(ctx, key)
+			service.ModelAgent().UpdateCacheModelAgentKey(ctx, oldData, key)
+		} else if !oldData.IsAgentsOnly && key.IsAgentsOnly {
+			s.RemoveCacheModelKey(ctx, oldData)
+			service.ModelAgent().UpdateCacheModelAgentKey(ctx, oldData, key)
+		} else { // 似乎永远都走不了这个
+			s.UpdateCacheModelKey(ctx, oldData, key)
+			service.ModelAgent().UpdateCacheModelAgentKey(ctx, oldData, key)
+		}
+
 	case consts.ACTION_STATUS:
+
 		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &key); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
+
 		if key.Type == 1 {
-			service.Common().UpdateCacheKey(ctx, key)
+			service.Common().UpdateCacheAppKey(ctx, key)
 		} else {
-			s.UpdateCacheModelKey(ctx, nil, key)
+			if key.IsAgentsOnly {
+				service.ModelAgent().UpdateCacheModelAgentKey(ctx, nil, key)
+			} else {
+				s.UpdateCacheModelKey(ctx, nil, key)
+				service.ModelAgent().UpdateCacheModelAgentKey(ctx, nil, key)
+			}
 		}
+
 	case consts.ACTION_DELETE:
+
 		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &key); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
+
 		if key.Type == 1 {
-			service.Common().RemoveCacheKey(ctx, key.Key)
+			service.Common().RemoveCacheAppKey(ctx, key.Key)
 		} else {
-			s.RemoveCacheModelKey(ctx, key)
+			if key.IsAgentsOnly {
+				service.ModelAgent().RemoveCacheModelAgentKey(ctx, key)
+			} else {
+				s.RemoveCacheModelKey(ctx, key)
+				service.ModelAgent().RemoveCacheModelAgentKey(ctx, key)
+			}
 		}
 	}
 
