@@ -12,6 +12,7 @@ import (
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
+	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
@@ -22,11 +23,11 @@ import (
 
 type sModelAgent struct {
 	modelAgentsMap              *gmap.StrAnyMap // map[模型ID][]模型代理列表
-	modelAgentsRoundRobinMap    *gmap.StrAnyMap
-	modelAgentKeysMap           *gmap.StrAnyMap
-	modelAgentKeysRoundRobinMap *gmap.StrAnyMap
+	modelAgentsRoundRobinMap    *gmap.StrAnyMap // 模型ID->模型代理下标索引
+	modelAgentKeysMap           *gmap.StrAnyMap // map[模型代理ID]模型代理密钥列表
+	modelAgentKeysRoundRobinMap *gmap.StrAnyMap // 模型代理ID->模型代理密钥下标索引
 	modelAgentCacheMap          *gmap.StrAnyMap // map[模型代理ID]模型代理
-	modelAgentKeysCacheMap      *gmap.StrAnyMap
+	modelAgentKeysCacheMap      *gmap.StrAnyMap // map[模型代理ID]模型代理密钥列表
 }
 
 func init() {
@@ -290,6 +291,14 @@ func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.M
 		s.modelAgentKeysMap.Set(modelAgent.Id, keys)
 	}
 
+	keyList := make([]*model.Key, 0)
+	for _, key := range keys {
+		// 过滤被禁用的模型代理密钥
+		if key.Status == 1 {
+			keyList = append(keyList, key)
+		}
+	}
+
 	if roundRobinValue := s.modelAgentKeysRoundRobinMap.Get(modelAgent.Id); roundRobinValue != nil {
 		roundRobin = roundRobinValue.(*util.RoundRobin)
 	}
@@ -299,7 +308,7 @@ func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.M
 		s.modelAgentKeysRoundRobinMap.Set(modelAgent.Id, roundRobin)
 	}
 
-	return keys[roundRobin.Index(len(keys))], nil
+	return keyList[roundRobin.Index(len(keyList))], nil
 }
 
 // 移除模型代理密钥
@@ -537,7 +546,7 @@ func (s *sModelAgent) UpdateCacheModelAgent(ctx context.Context, oldData *model.
 	}
 }
 
-// 移除缓存中的模型代理列表
+// 移除缓存中的模型代理
 func (s *sModelAgent) RemoveCacheModelAgent(ctx context.Context, modelAgent *model.ModelAgent) {
 
 	for _, id := range modelAgent.Models {
@@ -644,24 +653,144 @@ func (s *sModelAgent) GetCacheModelAgentKeys(ctx context.Context, id string) ([]
 	return items, nil
 }
 
-// 移除缓存中的模型代理密钥列表
-func (s *sModelAgent) RemoveCacheModelAgentKeys(ctx context.Context, ids []string) {
+// 新增模型代理密钥到缓存列表中
+func (s *sModelAgent) CreateCacheModelAgentKey(ctx context.Context, key *entity.Key) {
 
-	s.modelAgentKeysCacheMap.Removes(ids)
-
-	keys := make([]string, 0)
-	for _, id := range ids {
-		keys = append(keys, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id))
+	k := &model.Key{
+		Id:           key.Id,
+		UserId:       key.UserId,
+		AppId:        key.AppId,
+		Corp:         key.Corp,
+		Key:          key.Key,
+		Type:         key.Type,
+		Models:       key.Models,
+		ModelAgents:  key.ModelAgents,
+		IsLimitQuota: key.IsLimitQuota,
+		Quota:        key.Quota,
+		RPM:          key.RPM,
+		RPD:          key.RPD,
+		IpWhitelist:  key.IpWhitelist,
+		IpBlacklist:  key.IpBlacklist,
+		Status:       key.Status,
 	}
 
-	if len(keys) > 0 {
-		if _, err := redis.Del(ctx, keys...); err != nil {
+	for _, id := range k.ModelAgents {
+		if err := s.SaveCacheModelAgentKeys(ctx, id, []*model.Key{k}); err != nil {
 			logger.Error(ctx, err)
+		}
+		if modelAgentKeysValue := s.modelAgentKeysMap.Get(id); modelAgentKeysValue != nil {
+			s.modelAgentKeysMap.Set(id, append(modelAgentKeysValue.([]*model.Key), k))
+		}
+	}
+}
+
+// 更新缓存中的模型代理密钥
+func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *entity.Key, newData *entity.Key) {
+
+	key := &model.Key{
+		Id:           newData.Id,
+		UserId:       newData.UserId,
+		AppId:        newData.AppId,
+		Corp:         newData.Corp,
+		Key:          newData.Key,
+		Type:         newData.Type,
+		Models:       newData.Models,
+		ModelAgents:  newData.ModelAgents,
+		IsLimitQuota: newData.IsLimitQuota,
+		Quota:        newData.Quota,
+		RPM:          newData.RPM,
+		RPD:          newData.RPD,
+		IpWhitelist:  newData.IpWhitelist,
+		IpBlacklist:  newData.IpBlacklist,
+		Status:       newData.Status,
+	}
+
+	// 用于处理oldData时判断作用
+	newModelAgentMap := make(map[string]string)
+
+	for _, id := range newData.ModelAgents {
+
+		newModelAgentMap[id] = id
+
+		if err := s.SaveCacheModelAgentKeys(ctx, id, []*model.Key{key}); err != nil {
+			logger.Error(ctx, err)
+		}
+
+		if modelAgentKeysValue := s.modelAgentKeysMap.Get(id); modelAgentKeysValue != nil {
+
+			modelAgentKeys := modelAgentKeysValue.([]*model.Key)
+			newModelAgentKeys := make([]*model.Key, 0)
+			// 用于处理新添加了模型时判断作用
+			modelAgentKeyMap := make(map[string]*model.Key)
+
+			for _, k := range modelAgentKeys {
+
+				if k.Id != newData.Id {
+					newModelAgentKeys = append(newModelAgentKeys, k)
+					modelAgentKeyMap[key.Id] = k
+				} else {
+					newModelAgentKeys = append(newModelAgentKeys, key)
+					modelAgentKeyMap[newData.Id] = key
+				}
+			}
+
+			if modelAgentKeyMap[newData.Id] == nil {
+				newModelAgentKeys = append(newModelAgentKeys, key)
+			}
+
+			s.modelAgentKeysMap.Set(id, newModelAgentKeys)
 		}
 	}
 
-	s.modelAgentKeysMap.Clear()
-	s.modelAgentKeysRoundRobinMap.Clear()
+	// 将变更后被移除模型的模型密钥移除
+	if oldData != nil {
+		for _, id := range oldData.ModelAgents {
+
+			if newModelAgentMap[id] == "" {
+
+				if keysValue := s.modelAgentKeysMap.Get(id); keysValue != nil {
+
+					if keys := keysValue.([]*model.Key); len(keys) > 0 {
+
+						newKeys := make([]*model.Key, 0)
+						for _, k := range keys {
+							if k.Id != oldData.Id {
+								newKeys = append(newKeys, k)
+							}
+						}
+
+						s.modelAgentKeysMap.Set(id, newKeys)
+					}
+				}
+			}
+		}
+	}
+}
+
+// 移除缓存中的模型代理密钥
+func (s *sModelAgent) RemoveCacheModelAgentKey(ctx context.Context, key *entity.Key) {
+
+	for _, id := range key.ModelAgents {
+
+		if modelAgentKeysValue := s.modelAgentKeysMap.Get(id); modelAgentKeysValue != nil {
+
+			if modelAgentKeys := modelAgentKeysValue.([]*model.Key); len(modelAgentKeys) > 0 {
+
+				newModelAgentKeys := make([]*model.Key, 0)
+				for _, k := range modelAgentKeys {
+					if k.Id != key.Id {
+						newModelAgentKeys = append(newModelAgentKeys, k)
+					}
+				}
+
+				s.modelAgentKeysMap.Set(id, newModelAgentKeys)
+			}
+		}
+
+		if _, err := redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id), key.Id); err != nil {
+			logger.Error(ctx, err)
+		}
+	}
 }
 
 // 变更订阅

@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/iimeta/fastapi/internal/model"
+	"github.com/iimeta/fastapi/internal/model/entity"
 )
 
 type (
@@ -39,14 +40,18 @@ type (
 		CreateCacheModelAgent(ctx context.Context, newData *model.ModelAgent)
 		// 更新缓存中的模型代理列表
 		UpdateCacheModelAgent(ctx context.Context, oldData *model.ModelAgent, newData *model.ModelAgent)
-		// 移除缓存中的模型代理列表
+		// 移除缓存中的模型代理
 		RemoveCacheModelAgent(ctx context.Context, modelAgent *model.ModelAgent)
 		// 保存模型代理密钥列表到缓存
 		SaveCacheModelAgentKeys(ctx context.Context, id string, keys []*model.Key) error
 		// 获取缓存中的模型代理密钥列表
 		GetCacheModelAgentKeys(ctx context.Context, id string) ([]*model.Key, error)
-		// 移除缓存中的模型代理密钥列表
-		RemoveCacheModelAgentKeys(ctx context.Context, ids []string)
+		// 新增模型代理密钥到缓存列表中
+		CreateCacheModelAgentKey(ctx context.Context, key *entity.Key)
+		// 更新缓存中的模型代理密钥
+		UpdateCacheModelAgentKey(ctx context.Context, oldData *entity.Key, newData *entity.Key)
+		// 移除缓存中的模型代理密钥
+		RemoveCacheModelAgentKey(ctx context.Context, key *entity.Key)
 		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
 	}

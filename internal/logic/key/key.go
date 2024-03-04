@@ -22,10 +22,10 @@ import (
 )
 
 type sKey struct {
-	keysMap           *gmap.StrAnyMap
-	roundRobinMap     *gmap.StrAnyMap
-	keyCacheMap       *gmap.StrAnyMap
-	modelKeysCacheMap *gmap.StrAnyMap
+	keysMap           *gmap.StrAnyMap // map[模型ID][]密钥列表
+	roundRobinMap     *gmap.StrAnyMap // 模型ID->密钥下标索引
+	keyCacheMap       *gmap.StrAnyMap // map[密钥ID]密钥
+	modelKeysCacheMap *gmap.StrAnyMap // map[模型ID][]密钥列表
 }
 
 func init() {
@@ -435,6 +435,149 @@ func (s *sKey) GetCacheModelKeys(ctx context.Context, id string) ([]*model.Key, 
 	return items, nil
 }
 
+// 新增模型密钥到缓存列表中
+func (s *sKey) CreateCacheModelKey(ctx context.Context, key *entity.Key) {
+
+	k := &model.Key{
+		Id:           key.Id,
+		UserId:       key.UserId,
+		AppId:        key.AppId,
+		Corp:         key.Corp,
+		Key:          key.Key,
+		Type:         key.Type,
+		Models:       key.Models,
+		ModelAgents:  key.ModelAgents,
+		IsLimitQuota: key.IsLimitQuota,
+		Quota:        key.Quota,
+		RPM:          key.RPM,
+		RPD:          key.RPD,
+		IpWhitelist:  key.IpWhitelist,
+		IpBlacklist:  key.IpBlacklist,
+		Status:       key.Status,
+	}
+
+	if err := s.SaveCacheList(ctx, []*model.Key{k}); err != nil {
+		logger.Error(ctx, err)
+	}
+
+	for _, id := range key.Models {
+		if keysValue := s.keysMap.Get(id); keysValue != nil {
+			s.keysMap.Set(id, append(keysValue.([]*model.Key), k))
+		}
+	}
+}
+
+// 更新缓存中的模型密钥
+func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, newData *entity.Key) {
+
+	key := &model.Key{
+		Id:           newData.Id,
+		UserId:       newData.UserId,
+		AppId:        newData.AppId,
+		Corp:         newData.Corp,
+		Key:          newData.Key,
+		Type:         newData.Type,
+		Models:       newData.Models,
+		ModelAgents:  newData.ModelAgents,
+		IsLimitQuota: newData.IsLimitQuota,
+		Quota:        newData.Quota,
+		RPM:          newData.RPM,
+		RPD:          newData.RPD,
+		IpWhitelist:  newData.IpWhitelist,
+		IpBlacklist:  newData.IpBlacklist,
+		Status:       newData.Status,
+	}
+
+	if err := s.SaveCacheList(ctx, []*model.Key{key}); err != nil {
+		logger.Error(ctx, err)
+	}
+
+	// 用于处理oldData时判断作用
+	newModelMap := make(map[string]string)
+
+	for _, id := range newData.Models {
+
+		newModelMap[id] = id
+
+		if keysValue := s.keysMap.Get(id); keysValue != nil {
+
+			keys := keysValue.([]*model.Key)
+			newKeys := make([]*model.Key, 0)
+			// 用于处理新添加了模型时判断作用
+			keyMap := make(map[string]*model.Key)
+
+			for _, k := range keys {
+
+				if k.Id != newData.Id {
+					newKeys = append(newKeys, k)
+					keyMap[key.Id] = k
+				} else {
+					newKeys = append(newKeys, key)
+					keyMap[newData.Id] = key
+				}
+			}
+
+			if keyMap[newData.Id] == nil {
+				newKeys = append(newKeys, key)
+			}
+
+			s.keysMap.Set(id, newKeys)
+		}
+	}
+
+	// 将变更后被移除模型的模型密钥移除
+	if oldData != nil {
+		for _, id := range oldData.Models {
+
+			if newModelMap[id] == "" {
+
+				if keysValue := s.keysMap.Get(id); keysValue != nil {
+
+					if keys := keysValue.([]*model.Key); len(keys) > 0 {
+
+						newKeys := make([]*model.Key, 0)
+						for _, k := range keys {
+							if k.Id != oldData.Id {
+								newKeys = append(newKeys, k)
+							}
+						}
+
+						s.keysMap.Set(id, newKeys)
+					}
+				}
+			}
+		}
+	}
+}
+
+// 移除缓存中的模型密钥
+func (s *sKey) RemoveCacheModelKey(ctx context.Context, key *entity.Key) {
+
+	for _, id := range key.Models {
+
+		if keysValue := s.keysMap.Get(id); keysValue != nil {
+
+			if keys := keysValue.([]*model.Key); len(keys) > 0 {
+
+				newKeys := make([]*model.Key, 0)
+				for _, k := range keys {
+					if k.Id != key.Id {
+						newKeys = append(newKeys, k)
+					}
+				}
+
+				s.keysMap.Set(id, newKeys)
+			}
+		}
+	}
+
+	if _, err := redis.HDel(ctx, consts.API_KEYS_KEY, key.Id); err != nil {
+		logger.Error(ctx, err)
+	}
+
+	s.keyCacheMap.Remove(key.Id)
+}
+
 // 变更订阅
 func (s *sKey) Subscribe(ctx context.Context, msg string) error {
 
@@ -447,20 +590,42 @@ func (s *sKey) Subscribe(ctx context.Context, msg string) error {
 
 	var key *entity.Key
 	switch message.Action {
-	case consts.ACTION_UPDATE, consts.ACTION_STATUS:
+	case consts.ACTION_CREATE:
 		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &key); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
-		service.Common().UpdateCacheKey(ctx, key)
+		s.CreateCacheModelKey(ctx, key)
+	case consts.ACTION_UPDATE:
+		var oldData *entity.Key
+		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &oldData); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &key); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+		s.UpdateCacheModelKey(ctx, oldData, key)
+	case consts.ACTION_STATUS:
+		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &key); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+		if key.Type == 1 {
+			service.Common().UpdateCacheKey(ctx, key)
+		} else {
+			s.UpdateCacheModelKey(ctx, nil, key)
+		}
 	case consts.ACTION_DELETE:
 		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &key); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
-		service.Common().RemoveCacheKey(ctx, key.Key)
-		if key.Type == 2 {
-			service.ModelAgent().RemoveCacheModelAgentKeys(ctx, key.ModelAgents)
+		if key.Type == 1 {
+			service.Common().RemoveCacheKey(ctx, key.Key)
+		} else {
+			s.RemoveCacheModelKey(ctx, key)
 		}
 	}
 

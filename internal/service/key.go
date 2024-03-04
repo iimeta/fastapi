@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/iimeta/fastapi/internal/model"
+	"github.com/iimeta/fastapi/internal/model/entity"
 )
 
 type (
@@ -35,6 +36,12 @@ type (
 		SaveCacheModelKeys(ctx context.Context, id string, keys []*model.Key) error
 		// 获取缓存中的模型密钥列表
 		GetCacheModelKeys(ctx context.Context, id string) ([]*model.Key, error)
+		// 新增模型密钥到缓存列表中
+		CreateCacheModelKey(ctx context.Context, key *entity.Key)
+		// 更新缓存中的模型密钥
+		UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, newData *entity.Key)
+		// 移除缓存中的模型密钥
+		RemoveCacheModelKey(ctx context.Context, key *entity.Key)
 		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
 	}
