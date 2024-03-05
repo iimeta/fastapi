@@ -390,25 +390,62 @@ func (s *sModel) GetCacheList(ctx context.Context, ids ...string) ([]*model.Mode
 }
 
 // 更新缓存中的模型列表
-func (s *sModel) UpdateCacheModel(ctx context.Context, m *entity.Model) {
+func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, newData *entity.Model) {
+
 	if err := s.SaveCacheList(ctx, []*model.Model{{
-		Id:                 m.Id,
-		Corp:               m.Corp,
-		Name:               m.Name,
-		Model:              m.Model,
-		Type:               m.Type,
-		PromptRatio:        m.PromptRatio,
-		CompletionRatio:    m.CompletionRatio,
-		DataFormat:         m.DataFormat,
-		IsPublic:           m.IsPublic,
-		IsEnableModelAgent: m.IsEnableModelAgent,
-		ModelAgents:        m.ModelAgents,
-		Remark:             m.Remark,
-		Status:             m.Status,
-		Creator:            m.Creator,
-		Updater:            m.Updater,
+		Id:                 newData.Id,
+		Corp:               newData.Corp,
+		Name:               newData.Name,
+		Model:              newData.Model,
+		Type:               newData.Type,
+		PromptRatio:        newData.PromptRatio,
+		CompletionRatio:    newData.CompletionRatio,
+		DataFormat:         newData.DataFormat,
+		IsPublic:           newData.IsPublic,
+		IsEnableModelAgent: newData.IsEnableModelAgent,
+		ModelAgents:        newData.ModelAgents,
+		Status:             newData.Status,
 	}}); err != nil {
 		logger.Error(ctx, err)
+	}
+
+	// 用于处理oldData时判断作用
+	newModelAgentMap := make(map[string]string)
+
+	if newData.IsEnableModelAgent {
+
+		for _, modelAgentId := range newData.ModelAgents {
+
+			newModelAgentMap[modelAgentId] = modelAgentId
+
+			modelAgent, err := service.ModelAgent().GetModelAgent(ctx, modelAgentId)
+			if err != nil {
+				logger.Error(ctx, err)
+				continue
+			}
+
+			service.ModelAgent().UpdateCacheModelAgent(ctx, nil, modelAgent)
+		}
+	}
+
+	if oldData != nil && oldData.IsEnableModelAgent {
+
+		for _, modelAgentId := range oldData.ModelAgents {
+
+			if newModelAgentMap[modelAgentId] == "" {
+
+				modelAgent, err := service.ModelAgent().GetModelAgent(ctx, modelAgentId)
+				if err != nil {
+					logger.Error(ctx, err)
+					continue
+				}
+
+				oldModelAgent := *modelAgent
+				oldModelAgent.Models = append(oldModelAgent.Models, oldData.Id)
+
+				service.ModelAgent().UpdateCacheModelAgent(ctx, &oldModelAgent, modelAgent)
+			}
+		}
 	}
 }
 
@@ -432,20 +469,42 @@ func (s *sModel) Subscribe(ctx context.Context, msg string) error {
 	}
 	logger.Infof(ctx, "sModel Subscribe: %s", gjson.MustEncodeString(message))
 
-	var model *entity.Model
+	var newData *entity.Model
 	switch message.Action {
-	case consts.ACTION_UPDATE, consts.ACTION_STATUS:
-		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &model); err != nil {
+	case consts.ACTION_UPDATE:
+
+		var oldData *entity.Model
+		if message.OldData != nil {
+			if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &oldData); err != nil {
+				logger.Error(ctx, err)
+				return err
+			}
+		}
+
+		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &newData); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
-		s.UpdateCacheModel(ctx, model)
+
+		s.UpdateCacheModel(ctx, oldData, newData)
+
+	case consts.ACTION_STATUS:
+
+		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &newData); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+
+		s.UpdateCacheModel(ctx, nil, newData)
+
 	case consts.ACTION_DELETE:
-		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &model); err != nil {
+
+		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &newData); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
-		s.RemoveCacheModel(ctx, model.Id)
+
+		s.RemoveCacheModel(ctx, newData.Id)
 	}
 
 	return nil

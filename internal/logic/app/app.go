@@ -239,16 +239,21 @@ func (s *sApp) SubscribeKey(ctx context.Context, msg string) error {
 	var key *entity.Key
 	switch message.Action {
 	case consts.ACTION_UPDATE, consts.ACTION_STATUS:
+
 		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &key); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
+
 		service.Common().UpdateCacheAppKey(ctx, key)
+
 	case consts.ACTION_DELETE:
+
 		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &key); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
+
 		service.Common().RemoveCacheAppKey(ctx, key.Key)
 	}
 

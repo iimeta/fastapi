@@ -115,16 +115,21 @@ func (s *sUser) Subscribe(ctx context.Context, msg string) error {
 	var user *entity.User
 	switch message.Action {
 	case consts.ACTION_UPDATE, consts.ACTION_STATUS:
+
 		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &user); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
+
 		service.Common().UpdateCacheUser(ctx, user)
+
 	case consts.ACTION_DELETE:
+
 		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &user); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
+
 		service.Common().RemoveCacheUser(ctx, user.UserId)
 	}
 

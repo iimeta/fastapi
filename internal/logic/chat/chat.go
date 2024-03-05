@@ -264,6 +264,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 			baseUrl = modelAgent.BaseUrl
 
 			if key, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
+				service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
 				logger.Error(ctx, err)
 				return err
 			}

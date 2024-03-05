@@ -55,16 +55,19 @@ func (s *sKey) GetKey(ctx context.Context, secretKey string) (*model.Key, error)
 
 	return &model.Key{
 		Id:           key.Id,
+		UserId:       key.UserId,
 		AppId:        key.AppId,
 		Corp:         key.Corp,
 		Key:          key.Key,
 		Type:         key.Type,
 		Models:       key.Models,
+		ModelAgents:  key.ModelAgents,
 		IsLimitQuota: key.IsLimitQuota,
 		Quota:        key.Quota,
+		RPM:          key.RPM,
+		RPD:          key.RPD,
 		IpWhitelist:  key.IpWhitelist,
 		IpBlacklist:  key.IpBlacklist,
-		Remark:       key.Remark,
 		Status:       key.Status,
 	}, nil
 }
@@ -87,16 +90,19 @@ func (s *sKey) GetModelKeys(ctx context.Context, id string) ([]*model.Key, error
 	for _, result := range results {
 		items = append(items, &model.Key{
 			Id:           result.Id,
+			UserId:       result.UserId,
 			AppId:        result.AppId,
 			Corp:         result.Corp,
 			Key:          result.Key,
 			Type:         result.Type,
 			Models:       result.Models,
+			ModelAgents:  result.ModelAgents,
 			IsLimitQuota: result.IsLimitQuota,
 			Quota:        result.Quota,
+			RPM:          result.RPM,
+			RPD:          result.RPD,
 			IpWhitelist:  result.IpWhitelist,
 			IpBlacklist:  result.IpBlacklist,
-			Remark:       result.Remark,
 			Status:       result.Status,
 		})
 	}
@@ -127,16 +133,19 @@ func (s *sKey) List(ctx context.Context, typ int) ([]*model.Key, error) {
 	for _, result := range results {
 		items = append(items, &model.Key{
 			Id:           result.Id,
+			UserId:       result.UserId,
 			AppId:        result.AppId,
 			Corp:         result.Corp,
 			Key:          result.Key,
 			Type:         result.Type,
 			Models:       result.Models,
+			ModelAgents:  result.ModelAgents,
 			IsLimitQuota: result.IsLimitQuota,
 			Quota:        result.Quota,
+			RPM:          result.RPM,
+			RPD:          result.RPD,
 			IpWhitelist:  result.IpWhitelist,
 			IpBlacklist:  result.IpBlacklist,
-			Remark:       result.Remark,
 			Status:       result.Status,
 		})
 	}
@@ -252,7 +261,28 @@ func (s *sKey) RecordErrorModelKey(ctx context.Context, m *model.Model, key *mod
 	}
 
 	if reply >= 10 {
-		s.RemoveModelKey(ctx, m, key)
+
+		s.UpdateCacheModelKey(ctx, nil, &entity.Key{
+			Id:           key.Id,
+			UserId:       key.UserId,
+			AppId:        key.AppId,
+			Corp:         key.Corp,
+			Key:          key.Key,
+			Type:         key.Type,
+			Models:       key.Models,
+			ModelAgents:  key.ModelAgents,
+			IsLimitQuota: key.IsLimitQuota,
+			Quota:        key.Quota,
+			RPM:          key.RPM,
+			RPD:          key.RPD,
+			IpWhitelist:  key.IpWhitelist,
+			IpBlacklist:  key.IpBlacklist,
+			Status:       2,
+		})
+
+		if err = dao.Key.UpdateById(ctx, key.Id, bson.M{"status": 2}); err != nil {
+			logger.Error(ctx, err)
+		}
 	}
 }
 
@@ -576,6 +606,7 @@ func (s *sKey) Subscribe(ctx context.Context, msg string) error {
 		if key.Type == 1 {
 			service.Common().UpdateCacheAppKey(ctx, key)
 		} else {
+
 			if key.IsAgentsOnly {
 				service.ModelAgent().UpdateCacheModelAgentKey(ctx, nil, key)
 			} else {

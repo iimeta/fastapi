@@ -53,20 +53,35 @@ func (s *sModelAgent) GetModelAgent(ctx context.Context, id string) (*model.Mode
 		logger.Debugf(ctx, "GetModelAgent time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	modelAgent, err := dao.ModelAgent.FindOne(ctx, bson.M{"_id": id, "status": 1})
+	modelAgent, err := dao.ModelAgent.FindById(ctx, id)
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
 	}
 
+	modelList, err := dao.Model.Find(ctx, bson.M{"model_agents": bson.M{"$in": []string{id}}})
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	models := make([]string, 0)
+	modelNames := make([]string, 0)
+
+	for _, model := range modelList {
+		models = append(models, model.Id)
+		modelNames = append(modelNames, model.Name)
+	}
+
 	return &model.ModelAgent{
-		Id:      modelAgent.Id,
-		Name:    modelAgent.Name,
-		BaseUrl: modelAgent.BaseUrl,
-		Path:    modelAgent.Path,
-		Weight:  modelAgent.Weight,
-		Remark:  modelAgent.Remark,
-		Status:  modelAgent.Status,
+		Id:         modelAgent.Id,
+		Name:       modelAgent.Name,
+		BaseUrl:    modelAgent.BaseUrl,
+		Path:       modelAgent.Path,
+		Weight:     modelAgent.Weight,
+		Models:     models,
+		ModelNames: modelNames,
+		Status:     modelAgent.Status,
 	}, nil
 }
 
@@ -91,16 +106,33 @@ func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAge
 		return nil, err
 	}
 
+	modelList, err := dao.Model.Find(ctx, bson.M{"model_agents": bson.M{"$in": ids}})
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	modelMap := make(map[string][]string)
+	modelNameMap := make(map[string][]string)
+
+	for _, model := range modelList {
+		for _, id := range model.ModelAgents {
+			modelMap[id] = append(modelMap[id], model.Id)
+			modelNameMap[id] = append(modelNameMap[id], model.Name)
+		}
+	}
+
 	items := make([]*model.ModelAgent, 0)
 	for _, result := range results {
 		items = append(items, &model.ModelAgent{
-			Id:      result.Id,
-			Name:    result.Name,
-			BaseUrl: result.BaseUrl,
-			Path:    result.Path,
-			Weight:  result.Weight,
-			Remark:  result.Remark,
-			Status:  result.Status,
+			Id:         result.Id,
+			Name:       result.Name,
+			BaseUrl:    result.BaseUrl,
+			Path:       result.Path,
+			Weight:     result.Weight,
+			Models:     modelMap[result.Id],
+			ModelNames: modelNameMap[result.Id],
+			Status:     result.Status,
 		})
 	}
 
@@ -125,16 +157,19 @@ func (s *sModelAgent) GetModelAgentKeys(ctx context.Context, id string) ([]*mode
 	for _, result := range results {
 		items = append(items, &model.Key{
 			Id:           result.Id,
+			UserId:       result.UserId,
 			AppId:        result.AppId,
 			Corp:         result.Corp,
 			Key:          result.Key,
 			Type:         result.Type,
 			Models:       result.Models,
+			ModelAgents:  result.ModelAgents,
 			IsLimitQuota: result.IsLimitQuota,
 			Quota:        result.Quota,
+			RPM:          result.RPM,
+			RPD:          result.RPD,
 			IpWhitelist:  result.IpWhitelist,
 			IpBlacklist:  result.IpBlacklist,
-			Remark:       result.Remark,
 			Status:       result.Status,
 		})
 	}
@@ -250,7 +285,13 @@ func (s *sModelAgent) RecordErrorModelAgent(ctx context.Context, m *model.Model,
 	}
 
 	if reply >= 10 {
-		s.RemoveModelAgent(ctx, m, modelAgent)
+
+		modelAgent.Status = 2
+		s.UpdateCacheModelAgent(ctx, nil, modelAgent)
+
+		if err = dao.ModelAgent.UpdateById(ctx, modelAgent.Id, bson.M{"status": 2}); err != nil {
+			logger.Error(ctx, err)
+		}
 	}
 }
 
@@ -363,7 +404,28 @@ func (s *sModelAgent) RecordErrorModelAgentKey(ctx context.Context, modelAgent *
 	}
 
 	if reply >= 10 {
-		s.RemoveModelAgentKey(ctx, modelAgent, key)
+
+		s.UpdateCacheModelAgentKey(ctx, nil, &entity.Key{
+			Id:           key.Id,
+			UserId:       key.UserId,
+			AppId:        key.AppId,
+			Corp:         key.Corp,
+			Key:          key.Key,
+			Type:         key.Type,
+			Models:       key.Models,
+			ModelAgents:  key.ModelAgents,
+			IsLimitQuota: key.IsLimitQuota,
+			Quota:        key.Quota,
+			RPM:          key.RPM,
+			RPD:          key.RPD,
+			IpWhitelist:  key.IpWhitelist,
+			IpBlacklist:  key.IpBlacklist,
+			Status:       2,
+		})
+
+		if err = dao.Key.UpdateById(ctx, key.Id, bson.M{"status": 2}); err != nil {
+			logger.Error(ctx, err)
+		}
 	}
 }
 
@@ -827,33 +889,45 @@ func (s *sModelAgent) Subscribe(ctx context.Context, msg string) error {
 	var modelAgent *model.ModelAgent
 	switch message.Action {
 	case consts.ACTION_CREATE:
+
 		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &modelAgent); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
+
 		s.CreateCacheModelAgent(ctx, modelAgent)
+
 	case consts.ACTION_UPDATE:
+
 		var oldData *model.ModelAgent
 		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &oldData); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
+
 		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &modelAgent); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
+
 		s.UpdateCacheModelAgent(ctx, oldData, modelAgent)
+
 	case consts.ACTION_STATUS:
+
 		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &modelAgent); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
+
 		s.UpdateCacheModelAgent(ctx, nil, modelAgent)
+
 	case consts.ACTION_DELETE:
+
 		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &modelAgent); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
+
 		s.RemoveCacheModelAgent(ctx, modelAgent)
 	}
 
