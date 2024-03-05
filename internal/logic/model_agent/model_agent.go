@@ -299,6 +299,10 @@ func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.M
 		}
 	}
 
+	if len(keyList) == 0 {
+		return nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY
+	}
+
 	if roundRobinValue := s.modelAgentKeysRoundRobinMap.Get(modelAgent.Id); roundRobinValue != nil {
 		roundRobin = roundRobinValue.(*util.RoundRobin)
 	}
@@ -675,9 +679,17 @@ func (s *sModelAgent) CreateCacheModelAgentKey(ctx context.Context, key *entity.
 	}
 
 	for _, id := range k.ModelAgents {
-		if err := s.SaveCacheModelAgentKeys(ctx, id, []*model.Key{k}); err != nil {
-			logger.Error(ctx, err)
+
+		if modelAgentKeysValue := s.modelAgentKeysCacheMap.Get(id); modelAgentKeysValue != nil {
+			if err := s.SaveCacheModelAgentKeys(ctx, id, append(modelAgentKeysValue.([]*model.Key), k)); err != nil {
+				logger.Error(ctx, err)
+			}
+		} else {
+			if err := s.SaveCacheModelAgentKeys(ctx, id, []*model.Key{k}); err != nil {
+				logger.Error(ctx, err)
+			}
 		}
+
 		if modelAgentKeysValue := s.modelAgentKeysMap.Get(id); modelAgentKeysValue != nil {
 			s.modelAgentKeysMap.Set(id, append(modelAgentKeysValue.([]*model.Key), k))
 		}
@@ -777,23 +789,26 @@ func (s *sModelAgent) RemoveCacheModelAgentKey(ctx context.Context, key *entity.
 
 	for _, id := range key.ModelAgents {
 
-		if modelAgentKeysValue := s.modelAgentKeysMap.Get(id); modelAgentKeysValue != nil {
+		if _, err := redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id), key.Id); err != nil {
+			logger.Error(ctx, err)
+		}
+
+		if modelAgentKeysValue := s.modelAgentKeysCacheMap.Get(id); modelAgentKeysValue != nil {
 
 			if modelAgentKeys := modelAgentKeysValue.([]*model.Key); len(modelAgentKeys) > 0 {
 
 				newModelAgentKeys := make([]*model.Key, 0)
 				for _, k := range modelAgentKeys {
-
 					if k.Id != key.Id {
 						newModelAgentKeys = append(newModelAgentKeys, k)
-					} else {
-						if _, err := redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id), key.Id); err != nil {
-							logger.Error(ctx, err)
-						}
 					}
 				}
 
-				s.modelAgentKeysMap.Set(id, newModelAgentKeys)
+				s.modelAgentKeysCacheMap.Set(id, newModelAgentKeys)
+
+				if s.modelAgentKeysMap.Get(id) != nil {
+					s.modelAgentKeysMap.Set(id, newModelAgentKeys)
+				}
 			}
 		}
 	}

@@ -189,6 +189,10 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (key *model.Key
 		}
 	}
 
+	if len(keyList) == 0 {
+		return nil, errors.ERR_NO_AVAILABLE_KEY
+	}
+
 	if roundRobinValue := s.modelKeysRoundRobinMap.Get(m.Id); roundRobinValue != nil {
 		roundRobin = roundRobinValue.(*util.RoundRobin)
 	}
@@ -374,8 +378,14 @@ func (s *sKey) CreateCacheModelKey(ctx context.Context, key *entity.Key) {
 
 	for _, id := range key.Models {
 
-		if err := s.SaveCacheModelKeys(ctx, id, []*model.Key{k}); err != nil {
-			logger.Error(ctx, err)
+		if keysValue := s.modelKeysCacheMap.Get(id); keysValue != nil {
+			if err := s.SaveCacheModelKeys(ctx, id, append(keysValue.([]*model.Key), k)); err != nil {
+				logger.Error(ctx, err)
+			}
+		} else {
+			if err := s.SaveCacheModelKeys(ctx, id, []*model.Key{k}); err != nil {
+				logger.Error(ctx, err)
+			}
 		}
 
 		if keysValue := s.modelKeysMap.Get(id); keysValue != nil {
@@ -477,23 +487,26 @@ func (s *sKey) RemoveCacheModelKey(ctx context.Context, key *entity.Key) {
 
 	for _, id := range key.Models {
 
-		if keysValue := s.modelKeysMap.Get(id); keysValue != nil {
+		if _, err := redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id), key.Id); err != nil {
+			logger.Error(ctx, err)
+		}
+
+		if keysValue := s.modelKeysCacheMap.Get(id); keysValue != nil {
 
 			if keys := keysValue.([]*model.Key); len(keys) > 0 {
 
 				newKeys := make([]*model.Key, 0)
 				for _, k := range keys {
-
 					if k.Id != key.Id {
 						newKeys = append(newKeys, k)
-					} else {
-						if _, err := redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id), key.Id); err != nil {
-							logger.Error(ctx, err)
-						}
 					}
 				}
 
-				s.modelKeysMap.Set(id, newKeys)
+				s.modelKeysCacheMap.Set(id, newKeys)
+
+				if s.modelKeysMap.Get(id) != nil {
+					s.modelKeysMap.Set(id, newKeys)
+				}
 			}
 		}
 	}
