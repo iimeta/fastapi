@@ -27,7 +27,7 @@ type (
 		// 记录错误模型代理
 		RecordErrorModelAgent(ctx context.Context, m *model.Model, modelAgent *model.ModelAgent)
 		// 挑选模型代理密钥
-		PickModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent) (key *model.Key, err error)
+		PickModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent) (keyTotal int, key *model.Key, err error)
 		// 移除模型代理密钥
 		RemoveModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent, key *model.Key)
 		// 记录错误模型代理密钥

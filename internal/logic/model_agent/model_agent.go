@@ -8,6 +8,7 @@ import (
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
@@ -284,7 +285,7 @@ func (s *sModelAgent) RecordErrorModelAgent(ctx context.Context, m *model.Model,
 		logger.Error(ctx, err)
 	}
 
-	if reply >= 10 {
+	if reply >= config.Cfg.Api.ModelAgentErrDisable {
 
 		modelAgent.Status = 2
 		s.UpdateCacheModelAgent(ctx, nil, modelAgent)
@@ -296,7 +297,7 @@ func (s *sModelAgent) RecordErrorModelAgent(ctx context.Context, m *model.Model,
 }
 
 // 挑选模型代理密钥
-func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent) (key *model.Key, err error) {
+func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent) (keyTotal int, key *model.Key, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -316,17 +317,17 @@ func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.M
 
 			if keys, err = s.GetModelAgentKeys(ctx, modelAgent.Id); err != nil {
 				logger.Error(ctx, err)
-				return nil, err
+				return 0, nil, err
 			}
 
 			if err = s.SaveCacheModelAgentKeys(ctx, modelAgent.Id, keys); err != nil {
 				logger.Error(ctx, err)
-				return nil, err
+				return 0, nil, err
 			}
 		}
 
 		if len(keys) == 0 {
-			return nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY
+			return 0, nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY
 		}
 
 		s.modelAgentKeysMap.Set(modelAgent.Id, keys)
@@ -341,7 +342,7 @@ func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.M
 	}
 
 	if len(keyList) == 0 {
-		return nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY
+		return 0, nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY
 	}
 
 	if roundRobinValue := s.modelAgentKeysRoundRobinMap.Get(modelAgent.Id); roundRobinValue != nil {
@@ -353,7 +354,7 @@ func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.M
 		s.modelAgentKeysRoundRobinMap.Set(modelAgent.Id, roundRobin)
 	}
 
-	return keyList[roundRobin.Index(len(keyList))], nil
+	return len(keyList), keyList[roundRobin.Index(len(keyList))], nil
 }
 
 // 移除模型代理密钥
@@ -403,7 +404,7 @@ func (s *sModelAgent) RecordErrorModelAgentKey(ctx context.Context, modelAgent *
 		logger.Error(ctx, err)
 	}
 
-	if reply >= 10 {
+	if reply >= config.Cfg.Api.ModelAgentKeyErrDisable {
 
 		s.UpdateCacheModelAgentKey(ctx, nil, &entity.Key{
 			Id:           key.Id,
@@ -786,32 +787,44 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 
 		newModelAgentMap[id] = id
 
-		if modelAgentKeysValue := s.modelAgentKeysMap.Get(id); modelAgentKeysValue != nil {
-
-			modelAgentKeys := modelAgentKeysValue.([]*model.Key)
-			newModelAgentKeys := make([]*model.Key, 0)
-			// 用于处理新添加了模型时判断作用
-			modelAgentKeyMap := make(map[string]*model.Key)
-
-			for _, k := range modelAgentKeys {
-
-				if k.Id != newData.Id {
-					newModelAgentKeys = append(newModelAgentKeys, k)
-					modelAgentKeyMap[key.Id] = k
-				} else {
-					newModelAgentKeys = append(newModelAgentKeys, key)
-					modelAgentKeyMap[newData.Id] = key
-				}
-			}
-
-			if modelAgentKeyMap[newData.Id] == nil {
-				newModelAgentKeys = append(newModelAgentKeys, key)
-			}
-
-			if err := s.SaveCacheModelAgentKeys(ctx, id, newModelAgentKeys); err != nil {
+		modelAgentKeys, err := s.GetCacheModelAgentKeys(ctx, id)
+		if err != nil {
+			logger.Error(ctx, err)
+			if modelAgentKeys, err = s.GetModelAgentKeys(ctx, id); err != nil {
 				logger.Error(ctx, err)
+				continue
 			}
+		} else if len(modelAgentKeys) == 0 {
+			if modelAgentKeys, err = s.GetModelAgentKeys(ctx, id); err != nil {
+				logger.Error(ctx, err)
+				continue
+			}
+		}
 
+		newModelAgentKeys := make([]*model.Key, 0)
+		// 用于处理新添加了模型时判断作用
+		modelAgentKeyMap := make(map[string]*model.Key)
+
+		for _, k := range modelAgentKeys {
+
+			if k.Id != newData.Id {
+				newModelAgentKeys = append(newModelAgentKeys, k)
+				modelAgentKeyMap[key.Id] = k
+			} else {
+				newModelAgentKeys = append(newModelAgentKeys, key)
+				modelAgentKeyMap[newData.Id] = key
+			}
+		}
+
+		if modelAgentKeyMap[newData.Id] == nil {
+			newModelAgentKeys = append(newModelAgentKeys, key)
+		}
+
+		if err := s.SaveCacheModelAgentKeys(ctx, id, newModelAgentKeys); err != nil {
+			logger.Error(ctx, err)
+		}
+
+		if s.modelAgentKeysMap.Get(id) != nil {
 			s.modelAgentKeysMap.Set(id, newModelAgentKeys)
 		}
 	}
@@ -822,22 +835,35 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 
 			if newModelAgentMap[id] == "" {
 
-				if keysValue := s.modelAgentKeysMap.Get(id); keysValue != nil {
+				modelAgentKeys, err := s.GetCacheModelAgentKeys(ctx, id)
+				if err != nil {
+					logger.Error(ctx, err)
+					if modelAgentKeys, err = s.GetModelAgentKeys(ctx, id); err != nil {
+						logger.Error(ctx, err)
+						continue
+					}
+				} else if len(modelAgentKeys) == 0 {
+					if modelAgentKeys, err = s.GetModelAgentKeys(ctx, id); err != nil {
+						logger.Error(ctx, err)
+						continue
+					}
+				}
 
-					if keys := keysValue.([]*model.Key); len(keys) > 0 {
+				if len(modelAgentKeys) > 0 {
 
-						newKeys := make([]*model.Key, 0)
-						for _, k := range keys {
+					newKeys := make([]*model.Key, 0)
+					for _, k := range modelAgentKeys {
 
-							if k.Id != oldData.Id {
-								newKeys = append(newKeys, k)
-							} else {
-								if _, err := redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id), oldData.Id); err != nil {
-									logger.Error(ctx, err)
-								}
+						if k.Id != oldData.Id {
+							newKeys = append(newKeys, k)
+						} else {
+							if _, err := redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id), oldData.Id); err != nil {
+								logger.Error(ctx, err)
 							}
 						}
+					}
 
+					if s.modelAgentKeysMap.Get(id) != nil {
 						s.modelAgentKeysMap.Set(id, newKeys)
 					}
 				}

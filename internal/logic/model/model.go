@@ -106,7 +106,9 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		}
 
 		for _, v := range models {
+
 			if v.Name == m {
+
 				keyModelList = append(keyModelList, &model.Model{
 					Id:                 v.Id,
 					Corp:               v.Corp,
@@ -126,7 +128,9 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		}
 
 		for _, v := range models {
+
 			if v.Model == m {
+
 				keyModelList = append(keyModelList, &model.Model{
 					Id:                 v.Id,
 					Corp:               v.Corp,
@@ -174,7 +178,9 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 
 	appModelList := make([]*model.Model, 0)
 	for _, v := range models {
+
 		if v.Name == m {
+
 			appModelList = append(appModelList, &model.Model{
 				Id:                 v.Id,
 				Corp:               v.Corp,
@@ -194,7 +200,9 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 	}
 
 	for _, v := range models {
+
 		if v.Model == m {
+
 			appModelList = append(appModelList, &model.Model{
 				Id:                 v.Id,
 				Corp:               v.Corp,
@@ -220,34 +228,67 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 	}
 
 	isModelDisabled := false
-	for _, keyModel := range keyModelList {
-		if keyModel.Name == m {
+	if len(keyModelList) > 0 {
 
-			if keyModel.Status == 2 {
-				isModelDisabled = true
-				continue
-			}
+		for _, keyModel := range keyModelList {
 
-			for _, appModel := range appModelList {
-				if keyModel.Id == appModel.Id {
-					return keyModel, nil
+			if keyModel.Name == m {
+
+				if keyModel.Status == 2 {
+					isModelDisabled = true
+					continue
+				}
+
+				for _, appModel := range appModelList {
+					if keyModel.Id == appModel.Id {
+						return keyModel, nil
+					}
 				}
 			}
 		}
-	}
 
-	for _, keyModel := range keyModelList {
-		if keyModel.Model == m {
+		for _, keyModel := range keyModelList {
 
-			if keyModel.Status == 2 {
-				isModelDisabled = true
-				continue
-			}
+			if keyModel.Model == m {
 
-			for _, appModel := range appModelList {
-				if keyModel.Id == appModel.Id {
-					return keyModel, nil
+				if keyModel.Status == 2 {
+					isModelDisabled = true
+					continue
 				}
+
+				for _, appModel := range appModelList {
+					if keyModel.Id == appModel.Id {
+						return keyModel, nil
+					}
+				}
+			}
+		}
+
+	} else if len(appModelList) > 0 {
+
+		for _, appModel := range appModelList {
+
+			if appModel.Name == m {
+
+				if appModel.Status == 2 {
+					isModelDisabled = true
+					continue
+				}
+
+				return appModel, nil
+			}
+		}
+
+		for _, appModel := range appModelList {
+
+			if appModel.Model == m {
+
+				if appModel.Status == 2 {
+					isModelDisabled = true
+					continue
+				}
+
+				return appModel, nil
 			}
 		}
 	}

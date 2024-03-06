@@ -8,6 +8,7 @@ import (
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
@@ -154,7 +155,7 @@ func (s *sKey) List(ctx context.Context, typ int) ([]*model.Key, error) {
 }
 
 // 挑选模型密钥
-func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (key *model.Key, err error) {
+func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (keyTotal int, key *model.Key, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -174,17 +175,17 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (key *model.Key
 
 			if modelKeys, err = s.GetModelKeys(ctx, m.Id); err != nil {
 				logger.Error(ctx, err)
-				return nil, err
+				return 0, nil, err
 			}
 
 			if err = s.SaveCacheModelKeys(ctx, m.Id, modelKeys); err != nil {
 				logger.Error(ctx, err)
-				return nil, err
+				return 0, nil, err
 			}
 		}
 
 		if len(modelKeys) == 0 {
-			return nil, errors.ERR_NO_AVAILABLE_KEY
+			return 0, nil, errors.ERR_NO_AVAILABLE_KEY
 		}
 
 		s.modelKeysMap.Set(m.Id, modelKeys)
@@ -199,7 +200,7 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (key *model.Key
 	}
 
 	if len(keyList) == 0 {
-		return nil, errors.ERR_NO_AVAILABLE_KEY
+		return 0, nil, errors.ERR_NO_AVAILABLE_KEY
 	}
 
 	if roundRobinValue := s.modelKeysRoundRobinMap.Get(m.Id); roundRobinValue != nil {
@@ -211,7 +212,7 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (key *model.Key
 		s.modelKeysRoundRobinMap.Set(m.Id, roundRobin)
 	}
 
-	return keyList[roundRobin.Index(len(keyList))], nil
+	return len(keyList), keyList[roundRobin.Index(len(keyList))], nil
 }
 
 // 移除模型密钥
@@ -260,7 +261,7 @@ func (s *sKey) RecordErrorModelKey(ctx context.Context, m *model.Model, key *mod
 		logger.Error(ctx, err)
 	}
 
-	if reply >= 10 {
+	if reply >= config.Cfg.Api.ModelKeyErrDisable {
 
 		s.UpdateCacheModelKey(ctx, nil, &entity.Key{
 			Id:           key.Id,
@@ -452,32 +453,43 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 
 		newModelMap[id] = id
 
-		if keysValue := s.modelKeysMap.Get(id); keysValue != nil {
-
-			keys := keysValue.([]*model.Key)
-			newKeys := make([]*model.Key, 0)
-			// 用于处理新添加了模型时判断作用
-			keyMap := make(map[string]*model.Key)
-
-			for _, k := range keys {
-
-				if k.Id != newData.Id {
-					newKeys = append(newKeys, k)
-					keyMap[key.Id] = k
-				} else {
-					newKeys = append(newKeys, key)
-					keyMap[newData.Id] = key
-				}
-			}
-
-			if keyMap[newData.Id] == nil {
-				newKeys = append(newKeys, key)
-			}
-
-			if err := s.SaveCacheModelKeys(ctx, id, newKeys); err != nil {
+		modelKeys, err := s.GetCacheModelKeys(ctx, id)
+		if err != nil {
+			if modelKeys, err = s.GetModelKeys(ctx, id); err != nil {
 				logger.Error(ctx, err)
+				continue
 			}
+		} else if len(modelKeys) == 0 {
+			if modelKeys, err = s.GetModelKeys(ctx, id); err != nil {
+				logger.Error(ctx, err)
+				continue
+			}
+		}
 
+		newKeys := make([]*model.Key, 0)
+		// 用于处理新添加了模型时判断作用
+		keyMap := make(map[string]*model.Key)
+
+		for _, k := range modelKeys {
+
+			if k.Id != newData.Id {
+				newKeys = append(newKeys, k)
+				keyMap[key.Id] = k
+			} else {
+				newKeys = append(newKeys, key)
+				keyMap[newData.Id] = key
+			}
+		}
+
+		if keyMap[newData.Id] == nil {
+			newKeys = append(newKeys, key)
+		}
+
+		if err := s.SaveCacheModelKeys(ctx, id, newKeys); err != nil {
+			logger.Error(ctx, err)
+		}
+
+		if s.modelKeysMap.Get(id) != nil {
 			s.modelKeysMap.Set(id, newKeys)
 		}
 	}
@@ -488,27 +500,43 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 
 			if newModelMap[id] == "" {
 
-				if keysValue := s.modelKeysMap.Get(id); keysValue != nil {
+				modelKeys, err := s.GetCacheModelKeys(ctx, id)
+				if err != nil {
+					if modelKeys, err = s.GetModelKeys(ctx, id); err != nil {
+						logger.Error(ctx, err)
+						continue
+					}
+				} else if len(modelKeys) == 0 {
+					if modelKeys, err = s.GetModelKeys(ctx, id); err != nil {
+						logger.Error(ctx, err)
+						continue
+					}
+				}
 
-					if keys := keysValue.([]*model.Key); len(keys) > 0 {
+				if len(modelKeys) > 0 {
 
-						newKeys := make([]*model.Key, 0)
-						for _, k := range keys {
+					newKeys := make([]*model.Key, 0)
+					for _, k := range modelKeys {
 
-							if k.Id != oldData.Id {
-								newKeys = append(newKeys, k)
-							} else {
-								if _, err := redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id), oldData.Id); err != nil {
-									logger.Error(ctx, err)
-								}
+						if k.Id != oldData.Id {
+							newKeys = append(newKeys, k)
+						} else {
+							if _, err := redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id), oldData.Id); err != nil {
+								logger.Error(ctx, err)
 							}
 						}
+					}
 
+					if s.modelKeysMap.Get(id) != nil {
 						s.modelKeysMap.Set(id, newKeys)
 					}
 				}
 			}
 		}
+	}
+
+	if len(newData.ModelAgents) > 0 || (oldData != nil && len(oldData.ModelAgents) > 0) {
+		service.ModelAgent().UpdateCacheModelAgentKey(ctx, oldData, newData)
 	}
 }
 

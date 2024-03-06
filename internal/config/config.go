@@ -41,6 +41,14 @@ func init() {
 // 配置信息
 type Config struct {
 	Http *Http `json:"http"`
+	Api  *Api  `json:"api"`
+}
+
+type Api struct {
+	Retry                   int   `json:"retry"`
+	ModelKeyErrDisable      int64 `json:"model_key_err_disable"`
+	ModelAgentErrDisable    int64 `json:"model_agent_err_disable"`
+	ModelAgentKeyErrDisable int64 `json:"model_agent_key_err_disable"`
 }
 
 type Http struct {

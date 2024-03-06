@@ -11,6 +11,7 @@ import (
 	"github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi-sdk/tiktoken"
+	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
@@ -42,6 +43,7 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 	var key *model.Key
 	var modelAgent *model.ModelAgent
 	var baseUrl string
+	var keyTotal int
 
 	defer func() {
 
@@ -103,14 +105,15 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 
 			baseUrl = modelAgent.BaseUrl
 
-			if key, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
+			if keyTotal, key, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
+				service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
 				logger.Error(ctx, err)
 				return response, err
 			}
 		}
 
 	} else {
-		if key, err = service.Key().PickModelKey(ctx, m); err != nil {
+		if keyTotal, key, err = service.Key().PickModelKey(ctx, m); err != nil {
 			logger.Error(ctx, err)
 			return response, err
 		}
@@ -120,8 +123,14 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 	if response, err = sdk.ChatCompletion(ctx, client, params); err != nil {
 		logger.Error(ctx, err)
 
-		if len(retry) == 10 {
-			return response, err
+		if len(retry) > 0 {
+			if config.Cfg.Api.Retry > 0 && len(retry) == config.Cfg.Api.Retry {
+				return response, err
+			} else if config.Cfg.Api.Retry < 0 && len(retry) == keyTotal {
+				return response, err
+			} else {
+				return response, err
+			}
 		}
 
 		e := &openai.APIError{}
@@ -136,6 +145,7 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 
 				if m.IsEnableModelAgent {
 					service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
+					service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
 				} else {
 					service.Key().RecordErrorModelKey(ctx, m, key)
 				}
@@ -146,6 +156,7 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 
 				if m.IsEnableModelAgent {
 					service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
+					service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
 				} else {
 					service.Key().RecordErrorModelKey(ctx, m, key)
 				}
@@ -156,6 +167,7 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 
 				if m.IsEnableModelAgent {
 					service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
+					service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
 				} else {
 					service.Key().RecordErrorModelKey(ctx, m, key)
 				}
@@ -184,6 +196,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 	var modelAgent *model.ModelAgent
 	var baseUrl string
 	var completion string
+	var keyTotal int
 	var connTime int64
 	var duration int64
 	var totalTime int64
@@ -263,7 +276,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 
 			baseUrl = modelAgent.BaseUrl
 
-			if key, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
+			if keyTotal, key, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
 				service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
 				logger.Error(ctx, err)
 				return err
@@ -271,7 +284,8 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 		}
 
 	} else {
-		if key, err = service.Key().PickModelKey(ctx, m); err != nil {
+
+		if keyTotal, key, err = service.Key().PickModelKey(ctx, m); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -282,8 +296,14 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 	if err != nil {
 		logger.Error(ctx, err)
 
-		if len(retry) == 10 {
-			return err
+		if len(retry) > 0 {
+			if config.Cfg.Api.Retry > 0 && len(retry) == config.Cfg.Api.Retry {
+				return err
+			} else if config.Cfg.Api.Retry < 0 && len(retry) == keyTotal {
+				return err
+			} else {
+				return err
+			}
 		}
 
 		e := &openai.APIError{}
@@ -298,6 +318,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 
 				if m.IsEnableModelAgent {
 					service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
+					service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
 				} else {
 					service.Key().RecordErrorModelKey(ctx, m, key)
 				}
@@ -308,6 +329,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 
 				if m.IsEnableModelAgent {
 					service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
+					service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
 				} else {
 					service.Key().RecordErrorModelKey(ctx, m, key)
 				}
@@ -318,6 +340,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 
 				if m.IsEnableModelAgent {
 					service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
+					service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
 				} else {
 					service.Key().RecordErrorModelKey(ctx, m, key)
 				}
