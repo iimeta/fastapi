@@ -119,6 +119,7 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 		}
 	}
 
+	params.Model = m.Model
 	client := sdk.NewClient(ctx, m.Model, key.Key, baseUrl)
 	if response, err = sdk.ChatCompletion(ctx, client, params); err != nil {
 		logger.Error(ctx, err)
@@ -291,6 +292,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 		}
 	}
 
+	params.Model = m.Model
 	client := sdk.NewClient(ctx, m.Model, key.Key, baseUrl)
 	response, err := sdk.ChatCompletionStream(ctx, client, params)
 	if err != nil {
