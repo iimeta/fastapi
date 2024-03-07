@@ -7,7 +7,7 @@ require (
 	github.com/gogf/gf/contrib/nosql/redis/v2 v2.6.4
 	github.com/gogf/gf/v2 v2.6.4
 	github.com/gorilla/websocket v1.5.1
-	github.com/iimeta/fastapi-sdk v0.0.0-20240227142508-505999d54f33
+	github.com/iimeta/fastapi-sdk v0.0.0-20240307155459-4bdbc9a02b7e
 	github.com/redis/go-redis/v9 v9.5.1
 	github.com/sashabaranov/go-openai v1.20.2
 	go.mongodb.org/mongo-driver v1.14.0
