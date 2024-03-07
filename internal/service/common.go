@@ -51,14 +51,15 @@ type (
 		UpdateCacheApp(ctx context.Context, app *entity.App)
 		// 移除缓存中的应用信息
 		RemoveCacheApp(ctx context.Context, appId int)
-		// 保存密钥信息到缓存
+		// 保存应用密钥信息到缓存
 		SaveCacheAppKey(ctx context.Context, key *model.Key) error
-		// 获取缓存中的密钥信息
+		// 获取缓存中的应用密钥信息
 		GetCacheAppKey(ctx context.Context, secretKey string) (*model.Key, error)
-		// 更新缓存中的密钥信息
+		// 更新缓存中的应用密钥信息
 		UpdateCacheAppKey(ctx context.Context, key *entity.Key)
-		// 移除缓存中的密钥信息
+		// 移除缓存中的应用密钥信息
 		RemoveCacheAppKey(ctx context.Context, secretKey string)
+		RecordError(ctx context.Context, model *model.Model, key *model.Key, modelAgent *model.ModelAgent)
 	}
 )
 

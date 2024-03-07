@@ -129,13 +129,15 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 				return response, err
 			} else if config.Cfg.Api.Retry < 0 && len(retry) == keyTotal {
 				return response, err
-			} else {
+			} else if config.Cfg.Api.Retry == 0 {
 				return response, err
 			}
 		}
 
 		e := &openai.APIError{}
 		if errors.As(err, &e) {
+
+			service.Common().RecordError(ctx, m, key, modelAgent)
 
 			switch e.HTTPStatusCode {
 			case 400:
@@ -144,35 +146,11 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 					return response, err
 				}
 
-				if m.IsEnableModelAgent {
-					service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
-					service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
-				} else {
-					service.Key().RecordErrorModelKey(ctx, m, key)
-				}
-
 				response, err = s.Completions(ctx, params, append(retry, 1)...)
 
 			case 429:
-
-				if m.IsEnableModelAgent {
-					service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
-					service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
-				} else {
-					service.Key().RecordErrorModelKey(ctx, m, key)
-				}
-
 				response, err = s.Completions(ctx, params, append(retry, 1)...)
-
 			default:
-
-				if m.IsEnableModelAgent {
-					service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
-					service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
-				} else {
-					service.Key().RecordErrorModelKey(ctx, m, key)
-				}
-
 				response, err = s.Completions(ctx, params, append(retry, 1)...)
 			}
 
@@ -303,13 +281,15 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 				return err
 			} else if config.Cfg.Api.Retry < 0 && len(retry) == keyTotal {
 				return err
-			} else {
+			} else if config.Cfg.Api.Retry == 0 {
 				return err
 			}
 		}
 
 		e := &openai.APIError{}
 		if errors.As(err, &e) {
+
+			service.Common().RecordError(ctx, m, key, modelAgent)
 
 			switch e.HTTPStatusCode {
 			case 400:
@@ -318,35 +298,11 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 					return err
 				}
 
-				if m.IsEnableModelAgent {
-					service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
-					service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
-				} else {
-					service.Key().RecordErrorModelKey(ctx, m, key)
-				}
-
 				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
 
 			case 429:
-
-				if m.IsEnableModelAgent {
-					service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
-					service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
-				} else {
-					service.Key().RecordErrorModelKey(ctx, m, key)
-				}
-
 				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
-
 			default:
-
-				if m.IsEnableModelAgent {
-					service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
-					service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
-				} else {
-					service.Key().RecordErrorModelKey(ctx, m, key)
-				}
-
 				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
 			}
 

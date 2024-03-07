@@ -572,3 +572,20 @@ func (s *sCommon) RemoveCacheAppKey(ctx context.Context, secretKey string) {
 		logger.Error(ctx, err)
 	}
 }
+
+// 记录错误次数和禁用
+func (s *sCommon) RecordError(ctx context.Context, model *model.Model, key *model.Key, modelAgent *model.ModelAgent) {
+
+	if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+
+		if model.IsEnableModelAgent {
+			service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
+			service.ModelAgent().RecordErrorModelAgent(ctx, model, modelAgent)
+		} else {
+			service.Key().RecordErrorModelKey(ctx, model, key)
+		}
+
+	}, nil); err != nil {
+		logger.Error(ctx, err)
+	}
+}
