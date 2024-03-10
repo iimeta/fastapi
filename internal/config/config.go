@@ -40,8 +40,9 @@ func init() {
 
 // 配置信息
 type Config struct {
-	Http *Http `json:"http"`
-	Api  *Api  `json:"api"`
+	Http       *Http       `json:"http"`
+	Api        *Api        `json:"api"`
+	Midjourney *Midjourney `json:"midjourney"`
 }
 
 type Api struct {
@@ -55,6 +56,18 @@ type Http struct {
 	Timeout   time.Duration `json:"timeout"`
 	ProxyOpen bool          `json:"proxy_open"`
 	ProxyUrl  string        `json:"proxy_url"`
+}
+
+type Midjourney struct {
+	CdnUrl          string           `json:"cdn_url"`
+	MidjourneyProxy *MidjourneyProxy `json:"midjourney_proxy"`
+}
+
+type MidjourneyProxy struct {
+	ApiBaseUrl      string `json:"api_base_url"`
+	ApiSecret       string `json:"api_secret"`
+	ApiSecretHeader string `json:"api_secret_header"`
+	CdnOriginalUrl  string `json:"cdn_original_url"`
 }
 
 func Get(ctx context.Context, pattern string, def ...interface{}) (*gvar.Var, error) {

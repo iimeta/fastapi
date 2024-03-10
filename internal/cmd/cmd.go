@@ -8,6 +8,7 @@ import (
 	"github.com/gogf/gf/v2/os/gcmd"
 	"github.com/iimeta/fastapi/internal/controller/chat"
 	"github.com/iimeta/fastapi/internal/controller/image"
+	"github.com/iimeta/fastapi/internal/controller/midjourney"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
@@ -55,6 +56,18 @@ var (
 				v1.Group("/images", func(g *ghttp.RouterGroup) {
 					g.Bind(
 						image.NewV1(),
+					)
+				})
+			})
+
+			s.Group("/mj", func(v1 *ghttp.RouterGroup) {
+
+				v1.Middleware(middleware)
+				v1.Middleware(middlewareHandlerResponse)
+
+				v1.Group("/", func(g *ghttp.RouterGroup) {
+					g.Bind(
+						midjourney.NewV1(),
 					)
 				})
 			})
