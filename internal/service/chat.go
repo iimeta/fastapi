@@ -15,9 +15,12 @@ import (
 
 type (
 	IChat interface {
+		// Completions
 		Completions(ctx context.Context, params openai.ChatCompletionRequest, retry ...int) (response sdkm.ChatCompletionResponse, err error)
+		// CompletionsStream
 		CompletionsStream(ctx context.Context, params openai.ChatCompletionRequest, retry ...int) (err error)
-		SaveChat(ctx context.Context, model *model.Model, key *model.Key, completionsReq openai.ChatCompletionRequest, completionsRes model.CompletionsRes)
+		// 保存文生文聊天数据
+		SaveChat(ctx context.Context, model *model.Model, key *model.Key, completionsReq *openai.ChatCompletionRequest, completionsRes *model.CompletionsRes)
 	}
 )
 

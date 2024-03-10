@@ -7,6 +7,7 @@ import (
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gcmd"
 	"github.com/iimeta/fastapi/internal/controller/chat"
+	"github.com/iimeta/fastapi/internal/controller/image"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
@@ -48,6 +49,12 @@ var (
 				v1.Group("/chat", func(g *ghttp.RouterGroup) {
 					g.Bind(
 						chat.NewV1(),
+					)
+				})
+
+				v1.Group("/images", func(g *ghttp.RouterGroup) {
+					g.Bind(
+						image.NewV1(),
 					)
 				})
 			})

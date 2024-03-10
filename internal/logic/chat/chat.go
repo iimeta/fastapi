@@ -32,6 +32,7 @@ func New() service.IChat {
 	return &sChat{}
 }
 
+// Completions
 func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionRequest, retry ...int) (response sdkm.ChatCompletionResponse, err error) {
 
 	now := gtime.TimestampMilli()
@@ -66,7 +67,7 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 
 				m.ModelAgent = modelAgent
 
-				completionsRes := model.CompletionsRes{
+				completionsRes := &model.CompletionsRes{
 					Usage:        response.Usage,
 					TotalTime:    response.TotalTime,
 					Error:        err,
@@ -78,7 +79,7 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 					completionsRes.Completion = response.Choices[0].Message.Content
 				}
 
-				s.SaveChat(ctx, m, key, params, completionsRes)
+				s.SaveChat(ctx, m, key, &params, completionsRes)
 
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -163,6 +164,7 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 	return response, nil
 }
 
+// CompletionsStream
 func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatCompletionRequest, retry ...int) (err error) {
 
 	now := gtime.TimestampMilli()
@@ -220,7 +222,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 
 			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
 				m.ModelAgent = modelAgent
-				s.SaveChat(ctx, m, key, params, model.CompletionsRes{
+				s.SaveChat(ctx, m, key, &params, &model.CompletionsRes{
 					Completion:   completion,
 					Usage:        usage,
 					Error:        err,
@@ -349,7 +351,8 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 	}
 }
 
-func (s *sChat) SaveChat(ctx context.Context, model *model.Model, key *model.Key, completionsReq openai.ChatCompletionRequest, completionsRes model.CompletionsRes) {
+// 保存文生文聊天数据
+func (s *sChat) SaveChat(ctx context.Context, model *model.Model, key *model.Key, completionsReq *openai.ChatCompletionRequest, completionsRes *model.CompletionsRes) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
