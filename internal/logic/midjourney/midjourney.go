@@ -2,12 +2,17 @@ package midjourney
 
 import (
 	"context"
-	"github.com/gogf/gf/v2/encoding/gjson"
-	"github.com/gogf/gf/v2/text/gstr"
-	"github.com/iimeta/fastapi-sdk/model"
+	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/os/grpool"
+	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/iimeta/fastapi-sdk"
+	sdkm "github.com/iimeta/fastapi-sdk/model"
+	"github.com/iimeta/fastapi/internal/config"
+	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
-	"github.com/iimeta/fastapi/utility/util"
+	"github.com/sashabaranov/go-openai"
 )
 
 type sMidjourney struct{}
@@ -20,76 +25,140 @@ func New() service.IMidjourney {
 	return &sMidjourney{}
 }
 
-func (s *sMidjourney) Imagine(ctx context.Context, midjourneyProxy *model.MidjourneyProxy, midjourneyProxyImagineReq *model.MidjourneyProxyImagineReq) (*model.MidjourneyProxyImagineRes, error) {
+func (s *sMidjourney) Imagine(ctx context.Context, params sdkm.MidjourneyProxyImagineReq, retry ...int) (response sdkm.MidjourneyProxyImagineRes, err error) {
 
-	header := make(map[string]string)
-	header[midjourneyProxy.ApiSecretHeader] = midjourneyProxy.ApiSecret
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "Imagine time: %d", gtime.TimestampMilli()-now)
+	}()
 
-	midjourneyProxyImagineRes := new(model.MidjourneyProxyImagineRes)
-	if err := util.HttpPostJson(ctx, midjourneyProxy.ImagineUrl, header, midjourneyProxyImagineReq, &midjourneyProxyImagineRes); err != nil {
+	var m *model.Model
+	var key *model.Key
+	var modelAgent *model.ModelAgent
+	var baseUrl = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
+	var keyTotal int
+
+	defer func() {
+
+		enterTime := g.RequestFromCtx(ctx).EnterTime
+		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
+		usage := openai.Usage{
+			PromptTokens:     100,
+			CompletionTokens: 100,
+		}
+
+		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+			if err == nil {
+				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+					if err := service.Common().RecordUsage(ctx, m, usage); err != nil {
+						logger.Error(ctx, err)
+					}
+				}, nil); err != nil {
+					logger.Error(ctx, err)
+				}
+			}
+
+			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+
+				m.ModelAgent = modelAgent
+
+				imageRes := &model.ImageRes{
+					Usage:        usage,
+					TotalTime:    response.TotalTime,
+					Error:        err,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
+				}
+
+				service.Image().SaveImage(ctx, m, key, &openai.ImageRequest{
+					Prompt: params.Prompt,
+				}, imageRes)
+
+			}, nil); err != nil {
+				logger.Error(ctx, err)
+			}
+
+		}, nil); err != nil {
+			logger.Error(ctx, err)
+		}
+	}()
+
+	if m, err = service.Model().GetModelBySecretKey(ctx, "Midjourney", service.Session().GetSecretKey(ctx)); err != nil {
 		logger.Error(ctx, err)
-		return nil, err
+		return response, err
 	}
 
-	return midjourneyProxyImagineRes, nil
+	if m.IsEnableModelAgent {
+
+		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
+			logger.Error(ctx, err)
+			return response, err
+		}
+
+		if modelAgent != nil {
+
+			baseUrl = modelAgent.BaseUrl
+
+			if keyTotal, key, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
+				service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
+				logger.Error(ctx, err)
+				return response, err
+			}
+		}
+
+	} else {
+		if keyTotal, key, err = service.Key().PickModelKey(ctx, m); err != nil {
+			logger.Error(ctx, err)
+			return response, err
+		}
+	}
+
+	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, baseUrl, config.Cfg.Midjourney.MidjourneyProxy.ApiSecret, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
+
+	if response, err = sdk.Imagine(ctx, midjourneyProxy, params); err != nil {
+		logger.Error(ctx, err)
+
+		if len(retry) > 0 {
+			if config.Cfg.Api.Retry > 0 && len(retry) == config.Cfg.Api.Retry {
+				return response, err
+			} else if config.Cfg.Api.Retry < 0 && len(retry) == keyTotal {
+				return response, err
+			} else if config.Cfg.Api.Retry == 0 {
+				return response, err
+			}
+		}
+
+		return s.Imagine(ctx, params, append(retry, 1)...)
+	}
+
+	return response, nil
 }
 
-func (s *sMidjourney) Change(ctx context.Context, midjourneyProxy *model.MidjourneyProxy, midjourneyProxyChangeReq *model.MidjourneyProxyChangeReq) (*model.MidjourneyProxyChangeRes, error) {
+func (s *sMidjourney) Change(ctx context.Context, params sdkm.MidjourneyProxyChangeReq) (sdkm.MidjourneyProxyChangeRes, error) {
 
-	header := make(map[string]string)
-	header[midjourneyProxy.ApiSecretHeader] = midjourneyProxy.ApiSecret
+	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl, config.Cfg.Midjourney.MidjourneyProxy.ApiSecret, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
 
-	midjourneyProxyChangeRes := new(model.MidjourneyProxyChangeRes)
-	if err := util.HttpPostJson(ctx, midjourneyProxy.ChangeUrl, header, midjourneyProxyChangeReq, &midjourneyProxyChangeRes); err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	return midjourneyProxyChangeRes, nil
+	return sdk.Change(ctx, midjourneyProxy, params)
 }
 
-func (s *sMidjourney) Describe(ctx context.Context, midjourneyProxy *model.MidjourneyProxy, midjourneyProxyDescribeReq *model.MidjourneyProxyDescribeReq) (*model.MidjourneyProxyDescribeRes, error) {
+func (s *sMidjourney) Describe(ctx context.Context, params sdkm.MidjourneyProxyDescribeReq) (sdkm.MidjourneyProxyDescribeRes, error) {
 
-	header := make(map[string]string)
-	header[midjourneyProxy.ApiSecretHeader] = midjourneyProxy.ApiSecret
+	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl, config.Cfg.Midjourney.MidjourneyProxy.ApiSecret, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
 
-	midjourneyProxyDescribeRes := new(model.MidjourneyProxyDescribeRes)
-	if err := util.HttpPostJson(ctx, midjourneyProxy.DescribeUrl, header, midjourneyProxyDescribeReq, &midjourneyProxyDescribeRes); err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	return midjourneyProxyDescribeRes, nil
+	return sdk.Describe(ctx, midjourneyProxy, params)
 }
 
-func (s *sMidjourney) Blend(ctx context.Context, midjourneyProxy *model.MidjourneyProxy, midjourneyProxyBlendReq *model.MidjourneyProxyBlendReq) (*model.MidjourneyProxyBlendRes, error) {
+func (s *sMidjourney) Blend(ctx context.Context, params sdkm.MidjourneyProxyBlendReq) (sdkm.MidjourneyProxyBlendRes, error) {
 
-	header := make(map[string]string)
-	header[midjourneyProxy.ApiSecretHeader] = midjourneyProxy.ApiSecret
+	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl, config.Cfg.Midjourney.MidjourneyProxy.ApiSecret, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
 
-	midjourneyProxyBlendRes := new(model.MidjourneyProxyBlendRes)
-	if err := util.HttpPostJson(ctx, midjourneyProxy.BlendUrl, header, midjourneyProxyBlendReq, &midjourneyProxyBlendRes); err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	return midjourneyProxyBlendRes, nil
+	return sdk.Blend(ctx, midjourneyProxy, params)
 }
 
-func (s *sMidjourney) Fetch(ctx context.Context, midjourneyProxy *model.MidjourneyProxy, taskId string) (*model.MidjourneyProxyFetchRes, error) {
+func (s *sMidjourney) Fetch(ctx context.Context, taskId string) (sdkm.MidjourneyProxyFetchRes, error) {
 
-	header := make(map[string]string)
-	header[midjourneyProxy.ApiSecretHeader] = midjourneyProxy.ApiSecret
+	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl, config.Cfg.Midjourney.MidjourneyProxy.ApiSecret, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
 
-	fetchUrl := gstr.Replace(midjourneyProxy.FetchUrl, "${task_id}", taskId, -1)
-
-	midjourneyProxyFetchRes := new(model.MidjourneyProxyFetchRes)
-	if err := util.HttpGet(ctx, fetchUrl, header, nil, &midjourneyProxyFetchRes); err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	logger.Infof(ctx, "midjourneyProxyFetchRes: %s", gjson.MustEncodeString(midjourneyProxyFetchRes))
-
-	return midjourneyProxyFetchRes, nil
+	return sdk.Fetch(ctx, midjourneyProxy, taskId)
 }

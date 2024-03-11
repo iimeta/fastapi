@@ -2,12 +2,12 @@ package v1
 
 import (
 	"github.com/gogf/gf/v2/frame/g"
-	"github.com/iimeta/fastapi/internal/model"
+	sdkm "github.com/iimeta/fastapi-sdk/model"
 )
 
 type ImagineReq struct {
 	g.Meta `path:"/submit/imagine" tags:"midjourney" method:"post" summary:"midjourney api"`
-	model.MidjourneyProxyImagineReq
+	sdkm.MidjourneyProxyImagineReq
 }
 
 type ImagineRes struct {
@@ -16,7 +16,7 @@ type ImagineRes struct {
 
 type ChangeReq struct {
 	g.Meta `path:"/submit/change" tags:"midjourney" method:"post" summary:"midjourney api"`
-	model.MidjourneyProxyChangeReq
+	sdkm.MidjourneyProxyChangeReq
 }
 
 type ChangeRes struct {
@@ -25,7 +25,7 @@ type ChangeRes struct {
 
 type DescribeReq struct {
 	g.Meta `path:"/submit/describe" tags:"midjourney" method:"post" summary:"midjourney api"`
-	model.MidjourneyProxyDescribeReq
+	sdkm.MidjourneyProxyDescribeReq
 }
 
 type DescribeRes struct {
@@ -34,7 +34,7 @@ type DescribeRes struct {
 
 type BlendReq struct {
 	g.Meta `path:"/submit/blend" tags:"midjourney" method:"post" summary:"midjourney api"`
-	model.MidjourneyProxyBlendReq
+	sdkm.MidjourneyProxyBlendReq
 }
 
 type BlendRes struct {

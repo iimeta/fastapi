@@ -6,6 +6,7 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gcmd"
+	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/controller/chat"
 	"github.com/iimeta/fastapi/internal/controller/image"
 	"github.com/iimeta/fastapi/internal/controller/midjourney"
@@ -86,6 +87,10 @@ func beforeServeHook(r *ghttp.Request) {
 func middleware(r *ghttp.Request) {
 
 	secretKey := strings.TrimPrefix(r.GetHeader("Authorization"), "Bearer ")
+	if secretKey == "" {
+		secretKey = r.GetHeader(config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
+	}
+
 	if secretKey == "" {
 		err := errors.Error(errors.ERR_NOT_API_KEY)
 		r.Response.Header().Set("Content-Type", "application/json")

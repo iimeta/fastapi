@@ -8,16 +8,16 @@ package service
 import (
 	"context"
 
-	"github.com/iimeta/fastapi-sdk/model"
+	sdkm "github.com/iimeta/fastapi-sdk/model"
 )
 
 type (
 	IMidjourney interface {
-		Imagine(ctx context.Context, midjourneyProxy *model.MidjourneyProxy, midjourneyProxyImagineReq *model.MidjourneyProxyImagineReq) (*model.MidjourneyProxyImagineRes, error)
-		Change(ctx context.Context, midjourneyProxy *model.MidjourneyProxy, midjourneyProxyChangeReq *model.MidjourneyProxyChangeReq) (*model.MidjourneyProxyChangeRes, error)
-		Describe(ctx context.Context, midjourneyProxy *model.MidjourneyProxy, midjourneyProxyDescribeReq *model.MidjourneyProxyDescribeReq) (*model.MidjourneyProxyDescribeRes, error)
-		Blend(ctx context.Context, midjourneyProxy *model.MidjourneyProxy, midjourneyProxyBlendReq *model.MidjourneyProxyBlendReq) (*model.MidjourneyProxyBlendRes, error)
-		Fetch(ctx context.Context, midjourneyProxy *model.MidjourneyProxy, taskId string) (*model.MidjourneyProxyFetchRes, error)
+		Imagine(ctx context.Context, params sdkm.MidjourneyProxyImagineReq, retry ...int) (response sdkm.MidjourneyProxyImagineRes, err error)
+		Change(ctx context.Context, params sdkm.MidjourneyProxyChangeReq) (sdkm.MidjourneyProxyChangeRes, error)
+		Describe(ctx context.Context, params sdkm.MidjourneyProxyDescribeReq) (sdkm.MidjourneyProxyDescribeRes, error)
+		Blend(ctx context.Context, params sdkm.MidjourneyProxyBlendReq) (sdkm.MidjourneyProxyBlendRes, error)
+		Fetch(ctx context.Context, taskId string) (sdkm.MidjourneyProxyFetchRes, error)
 	}
 )
 

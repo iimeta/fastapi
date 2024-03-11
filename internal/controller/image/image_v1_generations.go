@@ -21,6 +21,7 @@ func (c *ControllerV1) Generations(ctx context.Context, req *v1.GenerationsReq) 
 	if err != nil {
 		return nil, err
 	}
+
 	g.RequestFromCtx(ctx).Response.WriteJson(response)
 
 	return
