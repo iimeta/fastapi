@@ -9,7 +9,9 @@ import (
 	"github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/config"
+	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/model"
+	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/sashabaranov/go-openai"
@@ -25,7 +27,8 @@ func New() service.IMidjourney {
 	return &sMidjourney{}
 }
 
-func (s *sMidjourney) Imagine(ctx context.Context, params sdkm.MidjourneyProxyImagineReq, retry ...int) (response sdkm.MidjourneyProxyImagineRes, err error) {
+// Imagine
+func (s *sMidjourney) Imagine(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (response sdkm.MidjourneyProxyResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -45,6 +48,7 @@ func (s *sMidjourney) Imagine(ctx context.Context, params sdkm.MidjourneyProxyIm
 		usage := openai.Usage{
 			PromptTokens:     100,
 			CompletionTokens: 100,
+			TotalTokens:      200,
 		}
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -63,17 +67,16 @@ func (s *sMidjourney) Imagine(ctx context.Context, params sdkm.MidjourneyProxyIm
 
 				m.ModelAgent = modelAgent
 
-				imageRes := &model.ImageRes{
-					Usage:        usage,
-					TotalTime:    response.TotalTime,
-					Error:        err,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
+				midjourneyProxyResponse := model.MidjourneyProxyResponse{
+					MidjourneyProxyResponse: response,
+					Usage:                   usage,
+					TotalTime:               response.TotalTime,
+					Error:                   err,
+					InternalTime:            internalTime,
+					EnterTime:               enterTime,
 				}
 
-				service.Image().SaveImage(ctx, m, key, &openai.ImageRequest{
-					Prompt: params.Prompt,
-				}, imageRes)
+				s.SaveChat(ctx, m, key, params, midjourneyProxyResponse)
 
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -135,30 +138,101 @@ func (s *sMidjourney) Imagine(ctx context.Context, params sdkm.MidjourneyProxyIm
 	return response, nil
 }
 
-func (s *sMidjourney) Change(ctx context.Context, params sdkm.MidjourneyProxyChangeReq) (sdkm.MidjourneyProxyChangeRes, error) {
+// Change
+func (s *sMidjourney) Change(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (sdkm.MidjourneyProxyResponse, error) {
 
 	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl, config.Cfg.Midjourney.MidjourneyProxy.ApiSecret, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
 
 	return sdk.Change(ctx, midjourneyProxy, params)
 }
 
-func (s *sMidjourney) Describe(ctx context.Context, params sdkm.MidjourneyProxyDescribeReq) (sdkm.MidjourneyProxyDescribeRes, error) {
+// Describe
+func (s *sMidjourney) Describe(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (sdkm.MidjourneyProxyResponse, error) {
 
 	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl, config.Cfg.Midjourney.MidjourneyProxy.ApiSecret, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
 
 	return sdk.Describe(ctx, midjourneyProxy, params)
 }
 
-func (s *sMidjourney) Blend(ctx context.Context, params sdkm.MidjourneyProxyBlendReq) (sdkm.MidjourneyProxyBlendRes, error) {
+// Blend
+func (s *sMidjourney) Blend(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (sdkm.MidjourneyProxyResponse, error) {
 
 	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl, config.Cfg.Midjourney.MidjourneyProxy.ApiSecret, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
 
 	return sdk.Blend(ctx, midjourneyProxy, params)
 }
 
-func (s *sMidjourney) Fetch(ctx context.Context, taskId string) (sdkm.MidjourneyProxyFetchRes, error) {
+// Fetch
+func (s *sMidjourney) Fetch(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (sdkm.MidjourneyProxyFetchResponse, error) {
 
 	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl, config.Cfg.Midjourney.MidjourneyProxy.ApiSecret, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
 
-	return sdk.Fetch(ctx, midjourneyProxy, taskId)
+	return sdk.Fetch(ctx, midjourneyProxy, params)
+}
+
+// 保存Midjourney数据
+func (s *sMidjourney) SaveChat(ctx context.Context, model *model.Model, key *model.Key, request sdkm.MidjourneyProxyRequest, response model.MidjourneyProxyResponse) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "SaveChat time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	chat := do.Chat{
+		TraceId:      gctx.CtxId(ctx),
+		UserId:       service.Session().GetUserId(ctx),
+		AppId:        service.Session().GetAppId(ctx),
+		Prompt:       request.Prompt,
+		Completion:   response.Result,
+		ConnTime:     response.ConnTime,
+		Duration:     response.Duration,
+		TotalTime:    response.TotalTime,
+		InternalTime: response.InternalTime,
+		ReqTime:      response.EnterTime,
+		ReqDate:      gtime.NewFromTimeStamp(response.EnterTime).Format("Y-m-d"),
+		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
+		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
+		Status:       1,
+	}
+
+	if model != nil {
+		chat.Corp = model.Corp
+		chat.ModelId = model.Id
+		chat.Name = model.Name
+		chat.Model = model.Model
+		chat.Type = model.Type
+		chat.PromptRatio = model.PromptRatio
+		chat.CompletionRatio = model.CompletionRatio
+		chat.IsEnableModelAgent = model.IsEnableModelAgent
+		if chat.IsEnableModelAgent {
+			chat.ModelAgentId = model.ModelAgent.Id
+			chat.ModelAgent = &do.ModelAgent{
+				Name:    model.ModelAgent.Name,
+				BaseUrl: model.ModelAgent.BaseUrl,
+				Path:    model.ModelAgent.Path,
+				Weight:  model.ModelAgent.Weight,
+				Remark:  model.ModelAgent.Remark,
+				Status:  model.ModelAgent.Status,
+			}
+		}
+	}
+
+	if key != nil {
+		chat.Key = key.Key
+	}
+
+	if response.Usage.TotalTokens != 0 {
+		chat.PromptTokens = int(chat.PromptRatio * float64(response.Usage.PromptTokens))
+		chat.CompletionTokens = int(chat.CompletionRatio * float64(response.Usage.CompletionTokens))
+		chat.TotalTokens = chat.PromptTokens + chat.CompletionTokens
+	}
+
+	if response.Error != nil {
+		chat.ErrMsg = response.Error.Error()
+		chat.Status = -1
+	}
+
+	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
+		logger.Error(ctx, err)
+	}
 }

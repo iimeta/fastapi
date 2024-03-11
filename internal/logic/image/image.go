@@ -51,6 +51,7 @@ func (s *sImage) Generations(ctx context.Context, params openai.ImageRequest, re
 		usage := openai.Usage{
 			PromptTokens:     100,
 			CompletionTokens: 100,
+			TotalTokens:      200,
 		}
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -79,7 +80,7 @@ func (s *sImage) Generations(ctx context.Context, params openai.ImageRequest, re
 					EnterTime:    enterTime,
 				}
 
-				s.SaveImage(ctx, m, key, &params, imageRes)
+				s.SaveChat(ctx, m, key, &params, imageRes)
 
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -165,7 +166,7 @@ func (s *sImage) Generations(ctx context.Context, params openai.ImageRequest, re
 }
 
 // 保存文生图聊天数据
-func (s *sImage) SaveImage(ctx context.Context, model *model.Model, key *model.Key, imageReq *openai.ImageRequest, imageRes *model.ImageRes) {
+func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Key, imageReq *openai.ImageRequest, imageRes *model.ImageRes) {
 
 	now := gtime.TimestampMilli()
 	defer func() {

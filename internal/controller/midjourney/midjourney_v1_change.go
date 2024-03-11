@@ -17,7 +17,7 @@ func (c *ControllerV1) Change(ctx context.Context, req *v1.ChangeReq) (res *v1.C
 		logger.Debugf(ctx, "Controller Change time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	response, err := service.Midjourney().Change(ctx, req.MidjourneyProxyChangeReq)
+	response, err := service.Midjourney().Change(ctx, req.MidjourneyProxyRequest)
 	if err != nil {
 		return nil, err
 	}

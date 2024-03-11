@@ -17,7 +17,7 @@ func (c *ControllerV1) Fetch(ctx context.Context, req *v1.FetchReq) (res *v1.Fet
 		logger.Debugf(ctx, "Controller Fetch time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	response, err := service.Midjourney().Fetch(ctx, req.TaskId)
+	response, err := service.Midjourney().Fetch(ctx, req.MidjourneyProxyRequest)
 	if err != nil {
 		return nil, err
 	}

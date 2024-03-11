@@ -17,7 +17,7 @@ func (c *ControllerV1) Blend(ctx context.Context, req *v1.BlendReq) (res *v1.Ble
 		logger.Debugf(ctx, "Controller Blend time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	response, err := service.Midjourney().Blend(ctx, req.MidjourneyProxyBlendReq)
+	response, err := service.Midjourney().Blend(ctx, req.MidjourneyProxyRequest)
 	if err != nil {
 		return nil, err
 	}

@@ -7,7 +7,7 @@ import (
 
 type ImagineReq struct {
 	g.Meta `path:"/submit/imagine" tags:"midjourney" method:"post" summary:"midjourney api"`
-	sdkm.MidjourneyProxyImagineReq
+	sdkm.MidjourneyProxyRequest
 }
 
 type ImagineRes struct {
@@ -16,7 +16,7 @@ type ImagineRes struct {
 
 type ChangeReq struct {
 	g.Meta `path:"/submit/change" tags:"midjourney" method:"post" summary:"midjourney api"`
-	sdkm.MidjourneyProxyChangeReq
+	sdkm.MidjourneyProxyRequest
 }
 
 type ChangeRes struct {
@@ -25,7 +25,7 @@ type ChangeRes struct {
 
 type DescribeReq struct {
 	g.Meta `path:"/submit/describe" tags:"midjourney" method:"post" summary:"midjourney api"`
-	sdkm.MidjourneyProxyDescribeReq
+	sdkm.MidjourneyProxyRequest
 }
 
 type DescribeRes struct {
@@ -34,7 +34,7 @@ type DescribeRes struct {
 
 type BlendReq struct {
 	g.Meta `path:"/submit/blend" tags:"midjourney" method:"post" summary:"midjourney api"`
-	sdkm.MidjourneyProxyBlendReq
+	sdkm.MidjourneyProxyRequest
 }
 
 type BlendRes struct {
@@ -42,8 +42,8 @@ type BlendRes struct {
 }
 
 type FetchReq struct {
-	g.Meta `path:"/task/:task_id/fetch" tags:"midjourney" method:"get" summary:"midjourney api"`
-	TaskId string `json:"task_id"`
+	g.Meta `path:"/task/:taskId/fetch" tags:"midjourney" method:"get" summary:"midjourney api"`
+	sdkm.MidjourneyProxyRequest
 }
 
 type FetchRes struct {

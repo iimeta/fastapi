@@ -17,7 +17,7 @@ func (c *ControllerV1) Describe(ctx context.Context, req *v1.DescribeReq) (res *
 		logger.Debugf(ctx, "Controller Describe time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	response, err := service.Midjourney().Describe(ctx, req.MidjourneyProxyDescribeReq)
+	response, err := service.Midjourney().Describe(ctx, req.MidjourneyProxyRequest)
 	if err != nil {
 		return nil, err
 	}

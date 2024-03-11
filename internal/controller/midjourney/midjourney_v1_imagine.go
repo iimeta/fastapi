@@ -17,7 +17,7 @@ func (c *ControllerV1) Imagine(ctx context.Context, req *v1.ImagineReq) (res *v1
 		logger.Debugf(ctx, "Controller Imagine time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	response, err := service.Midjourney().Imagine(ctx, req.MidjourneyProxyImagineReq)
+	response, err := service.Midjourney().Imagine(ctx, req.MidjourneyProxyRequest)
 	if err != nil {
 		return nil, err
 	}

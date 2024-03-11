@@ -9,15 +9,18 @@ import (
 	"context"
 
 	sdkm "github.com/iimeta/fastapi-sdk/model"
+	"github.com/iimeta/fastapi/internal/model"
 )
 
 type (
 	IMidjourney interface {
-		Imagine(ctx context.Context, params sdkm.MidjourneyProxyImagineReq, retry ...int) (response sdkm.MidjourneyProxyImagineRes, err error)
-		Change(ctx context.Context, params sdkm.MidjourneyProxyChangeReq) (sdkm.MidjourneyProxyChangeRes, error)
-		Describe(ctx context.Context, params sdkm.MidjourneyProxyDescribeReq) (sdkm.MidjourneyProxyDescribeRes, error)
-		Blend(ctx context.Context, params sdkm.MidjourneyProxyBlendReq) (sdkm.MidjourneyProxyBlendRes, error)
-		Fetch(ctx context.Context, taskId string) (sdkm.MidjourneyProxyFetchRes, error)
+		Imagine(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (response sdkm.MidjourneyProxyResponse, err error)
+		Change(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (sdkm.MidjourneyProxyResponse, error)
+		Describe(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (sdkm.MidjourneyProxyResponse, error)
+		Blend(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (sdkm.MidjourneyProxyResponse, error)
+		Fetch(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (sdkm.MidjourneyProxyFetchResponse, error)
+		// 保存Midjourney数据
+		SaveChat(ctx context.Context, model *model.Model, key *model.Key, request sdkm.MidjourneyProxyRequest, response model.MidjourneyProxyResponse)
 	}
 )
 

@@ -18,7 +18,7 @@ type (
 		// Generations
 		Generations(ctx context.Context, params openai.ImageRequest, retry ...int) (response sdkm.ImageResponse, err error)
 		// 保存文生图聊天数据
-		SaveImage(ctx context.Context, model *model.Model, key *model.Key, imageReq *openai.ImageRequest, imageRes *model.ImageRes)
+		SaveChat(ctx context.Context, model *model.Model, key *model.Key, imageReq *openai.ImageRequest, imageRes *model.ImageRes)
 	}
 )
 
