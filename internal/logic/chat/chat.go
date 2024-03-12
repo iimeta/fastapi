@@ -8,6 +8,7 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi-sdk/tiktoken"
@@ -20,6 +21,8 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
 	"github.com/sashabaranov/go-openai"
+	"strings"
+	"time"
 )
 
 type sChat struct{}
@@ -121,6 +124,11 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 	}
 
 	params.Model = m.Model
+
+	if gstr.HasPrefix(m.Model, "glm-") {
+		key.Key = genGlmSign(key.Key)
+	}
+
 	client := sdk.NewClient(ctx, m.Model, key.Key, baseUrl)
 	if response, err = sdk.ChatCompletion(ctx, client, params); err != nil {
 		logger.Error(ctx, err)
@@ -273,6 +281,11 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 	}
 
 	params.Model = m.Model
+
+	if gstr.HasPrefix(m.Model, "glm-") {
+		key.Key = genGlmSign(key.Key)
+	}
+
 	client := sdk.NewClient(ctx, m.Model, key.Key, baseUrl)
 	response, err := sdk.ChatCompletionStream(ctx, client, params)
 	if err != nil {
@@ -349,6 +362,34 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 			return err
 		}
 	}
+}
+
+func genGlmSign(key string) string {
+
+	split := strings.Split(key, ".")
+	if len(split) != 2 {
+		return key
+	}
+
+	now := time.Now()
+
+	claims := jwt.MapClaims{
+		"api_key":   split[0],
+		"exp":       now.Add(time.Hour * 24).UnixMilli(),
+		"timestamp": now.UnixMilli(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	token.Header["alg"] = "HS256"
+	token.Header["sign_type"] = "SIGN"
+
+	sign, err := token.SignedString([]byte(split[1]))
+	if err != nil {
+		panic(err)
+	}
+
+	return sign
 }
 
 // 保存文生文聊天数据
