@@ -2,6 +2,7 @@ package midjourney
 
 import (
 	"context"
+	"fmt"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
@@ -117,7 +118,7 @@ func (s *sMidjourney) Imagine(ctx context.Context, params sdkm.MidjourneyProxyRe
 		}
 	}
 
-	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, baseUrl, config.Cfg.Midjourney.MidjourneyProxy.ApiSecret, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
+	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, baseUrl, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
 
 	if response, err = sdk.Imagine(ctx, midjourneyProxy, params); err != nil {
 		logger.Error(ctx, err)
@@ -139,35 +140,449 @@ func (s *sMidjourney) Imagine(ctx context.Context, params sdkm.MidjourneyProxyRe
 }
 
 // Change
-func (s *sMidjourney) Change(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (sdkm.MidjourneyProxyResponse, error) {
+func (s *sMidjourney) Change(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (response sdkm.MidjourneyProxyResponse, err error) {
 
-	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl, config.Cfg.Midjourney.MidjourneyProxy.ApiSecret, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "Imagine time: %d", gtime.TimestampMilli()-now)
+	}()
 
-	return sdk.Change(ctx, midjourneyProxy, params)
+	var m *model.Model
+	var key *model.Key
+	var modelAgent *model.ModelAgent
+	var baseUrl = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
+	var keyTotal int
+
+	defer func() {
+
+		enterTime := g.RequestFromCtx(ctx).EnterTime
+		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
+		usage := openai.Usage{
+			PromptTokens:     100,
+			CompletionTokens: 100,
+			TotalTokens:      200,
+		}
+
+		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+			if err == nil {
+				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+					if err := service.Common().RecordUsage(ctx, m, usage); err != nil {
+						logger.Error(ctx, err)
+					}
+				}, nil); err != nil {
+					logger.Error(ctx, err)
+				}
+			}
+
+			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+
+				m.ModelAgent = modelAgent
+
+				midjourneyProxyResponse := model.MidjourneyProxyResponse{
+					MidjourneyProxyResponse: response,
+					Usage:                   usage,
+					TotalTime:               response.TotalTime,
+					Error:                   err,
+					InternalTime:            internalTime,
+					EnterTime:               enterTime,
+				}
+
+				s.SaveChat(ctx, m, key, params, midjourneyProxyResponse)
+
+			}, nil); err != nil {
+				logger.Error(ctx, err)
+			}
+
+		}, nil); err != nil {
+			logger.Error(ctx, err)
+		}
+	}()
+
+	if m, err = service.Model().GetModelBySecretKey(ctx, "Midjourney", service.Session().GetSecretKey(ctx)); err != nil {
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	if m.IsEnableModelAgent {
+
+		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
+			logger.Error(ctx, err)
+			return response, err
+		}
+
+		if modelAgent != nil {
+
+			baseUrl = modelAgent.BaseUrl
+
+			if keyTotal, key, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
+				service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
+				logger.Error(ctx, err)
+				return response, err
+			}
+		}
+
+	} else {
+		if keyTotal, key, err = service.Key().PickModelKey(ctx, m); err != nil {
+			logger.Error(ctx, err)
+			return response, err
+		}
+	}
+
+	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, baseUrl, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
+
+	if response, err = sdk.Change(ctx, midjourneyProxy, params); err != nil {
+		logger.Error(ctx, err)
+
+		if len(retry) > 0 {
+			if config.Cfg.Api.Retry > 0 && len(retry) == config.Cfg.Api.Retry {
+				return response, err
+			} else if config.Cfg.Api.Retry < 0 && len(retry) == keyTotal {
+				return response, err
+			} else if config.Cfg.Api.Retry == 0 {
+				return response, err
+			}
+		}
+
+		return s.Change(ctx, params, append(retry, 1)...)
+	}
+
+	return response, nil
 }
 
 // Describe
-func (s *sMidjourney) Describe(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (sdkm.MidjourneyProxyResponse, error) {
+func (s *sMidjourney) Describe(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (response sdkm.MidjourneyProxyResponse, err error) {
 
-	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl, config.Cfg.Midjourney.MidjourneyProxy.ApiSecret, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "Imagine time: %d", gtime.TimestampMilli()-now)
+	}()
 
-	return sdk.Describe(ctx, midjourneyProxy, params)
+	var m *model.Model
+	var key *model.Key
+	var modelAgent *model.ModelAgent
+	var baseUrl = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
+	var keyTotal int
+
+	defer func() {
+
+		enterTime := g.RequestFromCtx(ctx).EnterTime
+		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
+		usage := openai.Usage{
+			PromptTokens:     100,
+			CompletionTokens: 100,
+			TotalTokens:      200,
+		}
+
+		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+			if err == nil {
+				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+					if err := service.Common().RecordUsage(ctx, m, usage); err != nil {
+						logger.Error(ctx, err)
+					}
+				}, nil); err != nil {
+					logger.Error(ctx, err)
+				}
+			}
+
+			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+
+				m.ModelAgent = modelAgent
+
+				midjourneyProxyResponse := model.MidjourneyProxyResponse{
+					MidjourneyProxyResponse: response,
+					Usage:                   usage,
+					TotalTime:               response.TotalTime,
+					Error:                   err,
+					InternalTime:            internalTime,
+					EnterTime:               enterTime,
+				}
+
+				s.SaveChat(ctx, m, key, params, midjourneyProxyResponse)
+
+			}, nil); err != nil {
+				logger.Error(ctx, err)
+			}
+
+		}, nil); err != nil {
+			logger.Error(ctx, err)
+		}
+	}()
+
+	if m, err = service.Model().GetModelBySecretKey(ctx, "Midjourney", service.Session().GetSecretKey(ctx)); err != nil {
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	if m.IsEnableModelAgent {
+
+		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
+			logger.Error(ctx, err)
+			return response, err
+		}
+
+		if modelAgent != nil {
+
+			baseUrl = modelAgent.BaseUrl
+
+			if keyTotal, key, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
+				service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
+				logger.Error(ctx, err)
+				return response, err
+			}
+		}
+
+	} else {
+		if keyTotal, key, err = service.Key().PickModelKey(ctx, m); err != nil {
+			logger.Error(ctx, err)
+			return response, err
+		}
+	}
+
+	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, baseUrl, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
+
+	if response, err = sdk.Describe(ctx, midjourneyProxy, params); err != nil {
+		logger.Error(ctx, err)
+
+		if len(retry) > 0 {
+			if config.Cfg.Api.Retry > 0 && len(retry) == config.Cfg.Api.Retry {
+				return response, err
+			} else if config.Cfg.Api.Retry < 0 && len(retry) == keyTotal {
+				return response, err
+			} else if config.Cfg.Api.Retry == 0 {
+				return response, err
+			}
+		}
+
+		return s.Describe(ctx, params, append(retry, 1)...)
+	}
+
+	return response, nil
 }
 
 // Blend
-func (s *sMidjourney) Blend(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (sdkm.MidjourneyProxyResponse, error) {
+func (s *sMidjourney) Blend(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (response sdkm.MidjourneyProxyResponse, err error) {
 
-	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl, config.Cfg.Midjourney.MidjourneyProxy.ApiSecret, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "Imagine time: %d", gtime.TimestampMilli()-now)
+	}()
 
-	return sdk.Blend(ctx, midjourneyProxy, params)
+	var m *model.Model
+	var key *model.Key
+	var modelAgent *model.ModelAgent
+	var baseUrl = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
+	var keyTotal int
+
+	defer func() {
+
+		enterTime := g.RequestFromCtx(ctx).EnterTime
+		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
+		usage := openai.Usage{
+			PromptTokens:     100,
+			CompletionTokens: 100,
+			TotalTokens:      200,
+		}
+
+		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+			if err == nil {
+				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+					if err := service.Common().RecordUsage(ctx, m, usage); err != nil {
+						logger.Error(ctx, err)
+					}
+				}, nil); err != nil {
+					logger.Error(ctx, err)
+				}
+			}
+
+			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+
+				m.ModelAgent = modelAgent
+
+				midjourneyProxyResponse := model.MidjourneyProxyResponse{
+					MidjourneyProxyResponse: response,
+					Usage:                   usage,
+					TotalTime:               response.TotalTime,
+					Error:                   err,
+					InternalTime:            internalTime,
+					EnterTime:               enterTime,
+				}
+
+				s.SaveChat(ctx, m, key, params, midjourneyProxyResponse)
+
+			}, nil); err != nil {
+				logger.Error(ctx, err)
+			}
+
+		}, nil); err != nil {
+			logger.Error(ctx, err)
+		}
+	}()
+
+	if m, err = service.Model().GetModelBySecretKey(ctx, "Midjourney", service.Session().GetSecretKey(ctx)); err != nil {
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	if m.IsEnableModelAgent {
+
+		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
+			logger.Error(ctx, err)
+			return response, err
+		}
+
+		if modelAgent != nil {
+
+			baseUrl = modelAgent.BaseUrl
+
+			if keyTotal, key, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
+				service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
+				logger.Error(ctx, err)
+				return response, err
+			}
+		}
+
+	} else {
+		if keyTotal, key, err = service.Key().PickModelKey(ctx, m); err != nil {
+			logger.Error(ctx, err)
+			return response, err
+		}
+	}
+
+	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, baseUrl, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
+
+	if response, err = sdk.Blend(ctx, midjourneyProxy, params); err != nil {
+		logger.Error(ctx, err)
+
+		if len(retry) > 0 {
+			if config.Cfg.Api.Retry > 0 && len(retry) == config.Cfg.Api.Retry {
+				return response, err
+			} else if config.Cfg.Api.Retry < 0 && len(retry) == keyTotal {
+				return response, err
+			} else if config.Cfg.Api.Retry == 0 {
+				return response, err
+			}
+		}
+
+		return s.Blend(ctx, params, append(retry, 1)...)
+	}
+
+	return response, nil
 }
 
 // Fetch
-func (s *sMidjourney) Fetch(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (sdkm.MidjourneyProxyFetchResponse, error) {
+func (s *sMidjourney) Fetch(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (response sdkm.MidjourneyProxyFetchResponse, err error) {
 
-	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl, config.Cfg.Midjourney.MidjourneyProxy.ApiSecret, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "Imagine time: %d", gtime.TimestampMilli()-now)
+	}()
 
-	return sdk.Fetch(ctx, midjourneyProxy, params)
+	var m *model.Model
+	var key *model.Key
+	var modelAgent *model.ModelAgent
+	var baseUrl = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
+	var keyTotal int
+
+	defer func() {
+
+		enterTime := g.RequestFromCtx(ctx).EnterTime
+		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
+		usage := openai.Usage{
+			PromptTokens:     100,
+			CompletionTokens: 100,
+			TotalTokens:      200,
+		}
+
+		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+			if err == nil {
+				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+					if err := service.Common().RecordUsage(ctx, m, usage); err != nil {
+						logger.Error(ctx, err)
+					}
+				}, nil); err != nil {
+					logger.Error(ctx, err)
+				}
+			}
+
+			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+
+				m.ModelAgent = modelAgent
+
+				midjourneyProxyResponse := model.MidjourneyProxyResponse{
+					MidjourneyProxyResponse: sdkm.MidjourneyProxyResponse{
+						Result: fmt.Sprintf("taskId: %s\nimageUrl: %s", params.TaskId, response.ImageUrl),
+					},
+					Usage:        usage,
+					TotalTime:    response.TotalTime,
+					Error:        err,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
+				}
+
+				s.SaveChat(ctx, m, key, params, midjourneyProxyResponse)
+
+			}, nil); err != nil {
+				logger.Error(ctx, err)
+			}
+
+		}, nil); err != nil {
+			logger.Error(ctx, err)
+		}
+	}()
+
+	if m, err = service.Model().GetModelBySecretKey(ctx, "Midjourney", service.Session().GetSecretKey(ctx)); err != nil {
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	if m.IsEnableModelAgent {
+
+		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
+			logger.Error(ctx, err)
+			return response, err
+		}
+
+		if modelAgent != nil {
+
+			baseUrl = modelAgent.BaseUrl
+
+			if keyTotal, key, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
+				service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
+				logger.Error(ctx, err)
+				return response, err
+			}
+		}
+
+	} else {
+		if keyTotal, key, err = service.Key().PickModelKey(ctx, m); err != nil {
+			logger.Error(ctx, err)
+			return response, err
+		}
+	}
+
+	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, baseUrl, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
+
+	if response, err = sdk.Fetch(ctx, midjourneyProxy, params); err != nil {
+		logger.Error(ctx, err)
+
+		if len(retry) > 0 {
+			if config.Cfg.Api.Retry > 0 && len(retry) == config.Cfg.Api.Retry {
+				return response, err
+			} else if config.Cfg.Api.Retry < 0 && len(retry) == keyTotal {
+				return response, err
+			} else if config.Cfg.Api.Retry == 0 {
+				return response, err
+			}
+		}
+
+		return s.Fetch(ctx, params, append(retry, 1)...)
+	}
+
+	return response, nil
 }
 
 // 保存Midjourney数据

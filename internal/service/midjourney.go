@@ -14,11 +14,16 @@ import (
 
 type (
 	IMidjourney interface {
+		// Imagine
 		Imagine(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (response sdkm.MidjourneyProxyResponse, err error)
-		Change(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (sdkm.MidjourneyProxyResponse, error)
-		Describe(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (sdkm.MidjourneyProxyResponse, error)
-		Blend(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (sdkm.MidjourneyProxyResponse, error)
-		Fetch(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (sdkm.MidjourneyProxyFetchResponse, error)
+		// Change
+		Change(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (response sdkm.MidjourneyProxyResponse, err error)
+		// Describe
+		Describe(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (response sdkm.MidjourneyProxyResponse, err error)
+		// Blend
+		Blend(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (response sdkm.MidjourneyProxyResponse, err error)
+		// Fetch
+		Fetch(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (response sdkm.MidjourneyProxyFetchResponse, err error)
 		// 保存Midjourney数据
 		SaveChat(ctx context.Context, model *model.Model, key *model.Key, request sdkm.MidjourneyProxyRequest, response model.MidjourneyProxyResponse)
 	}
