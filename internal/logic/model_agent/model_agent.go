@@ -286,13 +286,23 @@ func (s *sModelAgent) RecordErrorModelAgent(ctx context.Context, m *model.Model,
 	}
 
 	if reply >= config.Cfg.Api.ModelAgentErrDisable {
+		s.DisabledModelAgent(ctx, modelAgent)
+	}
+}
 
-		modelAgent.Status = 2
-		s.UpdateCacheModelAgent(ctx, nil, modelAgent)
+// 禁用模型代理
+func (s *sModelAgent) DisabledModelAgent(ctx context.Context, modelAgent *model.ModelAgent) {
 
-		if err = dao.ModelAgent.UpdateById(ctx, modelAgent.Id, bson.M{"status": 2}); err != nil {
-			logger.Error(ctx, err)
-		}
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "DisabledModelAgent time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	modelAgent.Status = 2
+	s.UpdateCacheModelAgent(ctx, nil, modelAgent)
+
+	if err := dao.ModelAgent.UpdateById(ctx, modelAgent.Id, bson.M{"status": 2}); err != nil {
+		logger.Error(ctx, err)
 	}
 }
 
@@ -405,28 +415,38 @@ func (s *sModelAgent) RecordErrorModelAgentKey(ctx context.Context, modelAgent *
 	}
 
 	if reply >= config.Cfg.Api.ModelAgentKeyErrDisable {
+		s.DisabledModelAgentKey(ctx, key)
+	}
+}
 
-		s.UpdateCacheModelAgentKey(ctx, nil, &entity.Key{
-			Id:           key.Id,
-			UserId:       key.UserId,
-			AppId:        key.AppId,
-			Corp:         key.Corp,
-			Key:          key.Key,
-			Type:         key.Type,
-			Models:       key.Models,
-			ModelAgents:  key.ModelAgents,
-			IsLimitQuota: key.IsLimitQuota,
-			Quota:        key.Quota,
-			RPM:          key.RPM,
-			RPD:          key.RPD,
-			IpWhitelist:  key.IpWhitelist,
-			IpBlacklist:  key.IpBlacklist,
-			Status:       2,
-		})
+// 禁用模型代理密钥
+func (s *sModelAgent) DisabledModelAgentKey(ctx context.Context, key *model.Key) {
 
-		if err = dao.Key.UpdateById(ctx, key.Id, bson.M{"status": 2}); err != nil {
-			logger.Error(ctx, err)
-		}
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "DisabledModelAgentKey time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	s.UpdateCacheModelAgentKey(ctx, nil, &entity.Key{
+		Id:           key.Id,
+		UserId:       key.UserId,
+		AppId:        key.AppId,
+		Corp:         key.Corp,
+		Key:          key.Key,
+		Type:         key.Type,
+		Models:       key.Models,
+		ModelAgents:  key.ModelAgents,
+		IsLimitQuota: key.IsLimitQuota,
+		Quota:        key.Quota,
+		RPM:          key.RPM,
+		RPD:          key.RPD,
+		IpWhitelist:  key.IpWhitelist,
+		IpBlacklist:  key.IpBlacklist,
+		Status:       2,
+	})
+
+	if err := dao.Key.UpdateById(ctx, key.Id, bson.M{"status": 2}); err != nil {
+		logger.Error(ctx, err)
 	}
 }
 

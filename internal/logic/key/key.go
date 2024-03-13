@@ -262,28 +262,38 @@ func (s *sKey) RecordErrorModelKey(ctx context.Context, m *model.Model, key *mod
 	}
 
 	if reply >= config.Cfg.Api.ModelKeyErrDisable {
+		s.DisabledModelKey(ctx, key)
+	}
+}
 
-		s.UpdateCacheModelKey(ctx, nil, &entity.Key{
-			Id:           key.Id,
-			UserId:       key.UserId,
-			AppId:        key.AppId,
-			Corp:         key.Corp,
-			Key:          key.Key,
-			Type:         key.Type,
-			Models:       key.Models,
-			ModelAgents:  key.ModelAgents,
-			IsLimitQuota: key.IsLimitQuota,
-			Quota:        key.Quota,
-			RPM:          key.RPM,
-			RPD:          key.RPD,
-			IpWhitelist:  key.IpWhitelist,
-			IpBlacklist:  key.IpBlacklist,
-			Status:       2,
-		})
+// 禁用模型密钥
+func (s *sKey) DisabledModelKey(ctx context.Context, key *model.Key) {
 
-		if err = dao.Key.UpdateById(ctx, key.Id, bson.M{"status": 2}); err != nil {
-			logger.Error(ctx, err)
-		}
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "DisabledModelKey time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	s.UpdateCacheModelKey(ctx, nil, &entity.Key{
+		Id:           key.Id,
+		UserId:       key.UserId,
+		AppId:        key.AppId,
+		Corp:         key.Corp,
+		Key:          key.Key,
+		Type:         key.Type,
+		Models:       key.Models,
+		ModelAgents:  key.ModelAgents,
+		IsLimitQuota: key.IsLimitQuota,
+		Quota:        key.Quota,
+		RPM:          key.RPM,
+		RPD:          key.RPD,
+		IpWhitelist:  key.IpWhitelist,
+		IpBlacklist:  key.IpBlacklist,
+		Status:       2,
+	})
+
+	if err := dao.Key.UpdateById(ctx, key.Id, bson.M{"status": 2}); err != nil {
+		logger.Error(ctx, err)
 	}
 }
 

@@ -127,6 +127,11 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 
 	if gstr.HasPrefix(m.Model, "glm-") {
 		key.Key = genGlmSign(key.Key)
+		if params.TopP == 1 {
+			params.TopP -= 0.01
+		} else if params.TopP == 0 {
+			params.TopP += 0.01
+		}
 	}
 
 	client := sdk.NewClient(ctx, m.Model, key.Key, baseUrl)
@@ -158,8 +163,39 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 				response, err = s.Completions(ctx, params, append(retry, 1)...)
 
 			case 429:
+
+				if gstr.Contains(err.Error(), "You exceeded your current quota") {
+					if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+
+						if m.IsEnableModelAgent {
+							service.ModelAgent().DisabledModelAgentKey(ctx, key)
+						} else {
+							service.Key().DisabledModelKey(ctx, key)
+						}
+
+					}, nil); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
+
 				response, err = s.Completions(ctx, params, append(retry, 1)...)
+
 			default:
+
+				if gstr.Contains(err.Error(), "Incorrect API key provided") {
+					if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+
+						if m.IsEnableModelAgent {
+							service.ModelAgent().DisabledModelAgentKey(ctx, key)
+						} else {
+							service.Key().DisabledModelKey(ctx, key)
+						}
+
+					}, nil); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
+
 				response, err = s.Completions(ctx, params, append(retry, 1)...)
 			}
 
@@ -284,6 +320,11 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 
 	if gstr.HasPrefix(m.Model, "glm-") {
 		key.Key = genGlmSign(key.Key)
+		if params.TopP == 1 {
+			params.TopP -= 0.01
+		} else if params.TopP == 0 {
+			params.TopP += 0.01
+		}
 	}
 
 	client := sdk.NewClient(ctx, m.Model, key.Key, baseUrl)
@@ -316,8 +357,39 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
 
 			case 429:
+
+				if gstr.Contains(err.Error(), "You exceeded your current quota") {
+					if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+
+						if m.IsEnableModelAgent {
+							service.ModelAgent().DisabledModelAgentKey(ctx, key)
+						} else {
+							service.Key().DisabledModelKey(ctx, key)
+						}
+
+					}, nil); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
+
 				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
+
 			default:
+
+				if gstr.Contains(err.Error(), "Incorrect API key provided") {
+					if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+
+						if m.IsEnableModelAgent {
+							service.ModelAgent().DisabledModelAgentKey(ctx, key)
+						} else {
+							service.Key().DisabledModelKey(ctx, key)
+						}
+
+					}, nil); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
+
 				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
 			}
 
