@@ -2,6 +2,7 @@ package util
 
 import (
 	"github.com/bwmarrin/snowflake"
+	"math/rand"
 )
 
 var node *snowflake.Node
@@ -9,7 +10,7 @@ var node *snowflake.Node
 func init() {
 
 	var err error
-	if node, err = snowflake.NewNode(1); err != nil {
+	if node, err = snowflake.NewNode(rand.Int63n(1023)); err != nil {
 		panic(err)
 	}
 }

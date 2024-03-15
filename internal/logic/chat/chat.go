@@ -165,7 +165,7 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 			case 429:
 
 				if gstr.Contains(err.Error(), "You exceeded your current quota") {
-					if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 						if m.IsEnableModelAgent {
 							service.ModelAgent().DisabledModelAgentKey(ctx, key)
@@ -183,7 +183,7 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 			default:
 
 				if gstr.Contains(err.Error(), "Incorrect API key provided") {
-					if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 						if m.IsEnableModelAgent {
 							service.ModelAgent().DisabledModelAgentKey(ctx, key)
@@ -359,7 +359,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 			case 429:
 
 				if gstr.Contains(err.Error(), "You exceeded your current quota") {
-					if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 						if m.IsEnableModelAgent {
 							service.ModelAgent().DisabledModelAgentKey(ctx, key)
@@ -377,7 +377,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 			default:
 
 				if gstr.Contains(err.Error(), "Incorrect API key provided") {
-					if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 						if m.IsEnableModelAgent {
 							service.ModelAgent().DisabledModelAgentKey(ctx, key)
