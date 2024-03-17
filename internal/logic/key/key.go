@@ -537,6 +537,10 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 						}
 					}
 
+					if s.modelKeysCacheMap.Get(id) != nil {
+						s.modelKeysCacheMap.Set(id, newKeys)
+					}
+
 					if s.modelKeysMap.Get(id) != nil {
 						s.modelKeysMap.Set(id, newKeys)
 					}

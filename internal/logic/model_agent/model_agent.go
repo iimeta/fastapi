@@ -883,6 +883,10 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 						}
 					}
 
+					if s.modelAgentKeysCacheMap.Get(id) != nil {
+						s.modelAgentKeysCacheMap.Set(id, newKeys)
+					}
+
 					if s.modelAgentKeysMap.Get(id) != nil {
 						s.modelAgentKeysMap.Set(id, newKeys)
 					}
