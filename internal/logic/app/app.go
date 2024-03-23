@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
@@ -13,13 +12,14 @@ import (
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/internal/service"
+	"github.com/iimeta/fastapi/utility/cache"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 type sApp struct {
-	appCacheMap *gmap.StrAnyMap
+	appCacheMap *cache.Cache
 }
 
 func init() {
@@ -28,7 +28,7 @@ func init() {
 
 func New() service.IApp {
 	return &sApp{
-		appCacheMap: gmap.NewStrAnyMap(true),
+		appCacheMap: cache.New(),
 	}
 }
 
@@ -122,7 +122,10 @@ func (s *sApp) SaveCacheList(ctx context.Context, apps []*model.App) error {
 	fields := g.Map{}
 	for _, app := range apps {
 		fields[gconv.String(app.AppId)] = app
-		s.appCacheMap.Set(gconv.String(app.AppId), app)
+		if err := s.appCacheMap.Set(ctx, gconv.String(app.AppId), app, 0); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
 	}
 
 	if len(fields) > 0 {
@@ -146,7 +149,7 @@ func (s *sApp) GetCacheList(ctx context.Context, appIds ...string) ([]*model.App
 	items := make([]*model.App, 0)
 
 	for _, id := range appIds {
-		if appCacheValue := s.appCacheMap.Get(id); appCacheValue != nil {
+		if appCacheValue := s.appCacheMap.GetVal(ctx, id); appCacheValue != nil {
 			items = append(items, appCacheValue.(*model.App))
 		}
 	}
@@ -180,13 +183,16 @@ func (s *sApp) GetCacheList(ctx context.Context, appIds ...string) ([]*model.App
 			return nil, err
 		}
 
-		if s.appCacheMap.Get(gconv.String(result.AppId)) != nil {
+		if s.appCacheMap.ContainsKey(ctx, gconv.String(result.AppId)) {
 			continue
 		}
 
 		if result.Status == 1 {
 			items = append(items, result)
-			s.appCacheMap.Set(gconv.String(result.AppId), result)
+			if err = s.appCacheMap.Set(ctx, gconv.String(result.AppId), result, 0); err != nil {
+				logger.Error(ctx, err)
+				return nil, err
+			}
 		}
 	}
 

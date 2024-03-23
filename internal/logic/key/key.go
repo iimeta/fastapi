@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"context"
 	"fmt"
-	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
@@ -15,6 +14,7 @@ import (
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/internal/service"
+	"github.com/iimeta/fastapi/utility/cache"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
 	"github.com/iimeta/fastapi/utility/util"
@@ -23,9 +23,9 @@ import (
 )
 
 type sKey struct {
-	modelKeysMap           *gmap.StrAnyMap // map[模型ID][]密钥列表
-	modelKeysRoundRobinMap *gmap.StrAnyMap // 模型ID->密钥下标索引
-	modelKeysCacheMap      *gmap.StrAnyMap // map[模型ID][]密钥列表
+	modelKeysMap           *cache.Cache // map[模型ID][]密钥列表
+	modelKeysRoundRobinMap *cache.Cache // 模型ID->密钥下标索引
+	modelKeysCacheMap      *cache.Cache // map[模型ID][]密钥列表
 }
 
 func init() {
@@ -34,9 +34,9 @@ func init() {
 
 func New() service.IKey {
 	return &sKey{
-		modelKeysMap:           gmap.NewStrAnyMap(true),
-		modelKeysRoundRobinMap: gmap.NewStrAnyMap(true),
-		modelKeysCacheMap:      gmap.NewStrAnyMap(true),
+		modelKeysMap:           cache.New(),
+		modelKeysRoundRobinMap: cache.New(),
+		modelKeysCacheMap:      cache.New(),
 	}
 }
 
@@ -165,7 +165,7 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (keyTotal int, 
 	var modelKeys []*model.Key
 	var roundRobin *util.RoundRobin
 
-	if modelKeysValue := s.modelKeysMap.Get(m.Id); modelKeysValue != nil {
+	if modelKeysValue := s.modelKeysMap.GetVal(ctx, m.Id); modelKeysValue != nil {
 		modelKeys = modelKeysValue.([]*model.Key)
 	}
 
@@ -188,7 +188,10 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (keyTotal int, 
 			return 0, nil, errors.ERR_NO_AVAILABLE_KEY
 		}
 
-		s.modelKeysMap.Set(m.Id, modelKeys)
+		if err = s.modelKeysMap.Set(ctx, m.Id, modelKeys, 0); err != nil {
+			logger.Error(ctx, err)
+			return 0, nil, err
+		}
 	}
 
 	keyList := make([]*model.Key, 0)
@@ -203,13 +206,16 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (keyTotal int, 
 		return 0, nil, errors.ERR_NO_AVAILABLE_KEY
 	}
 
-	if roundRobinValue := s.modelKeysRoundRobinMap.Get(m.Id); roundRobinValue != nil {
+	if roundRobinValue := s.modelKeysRoundRobinMap.GetVal(ctx, m.Id); roundRobinValue != nil {
 		roundRobin = roundRobinValue.(*util.RoundRobin)
 	}
 
 	if roundRobin == nil {
 		roundRobin = new(util.RoundRobin)
-		s.modelKeysRoundRobinMap.Set(m.Id, roundRobin)
+		if err = s.modelKeysRoundRobinMap.Set(ctx, m.Id, roundRobin, 0); err != nil {
+			logger.Error(ctx, err)
+			return 0, nil, err
+		}
 	}
 
 	return len(keyList), keyList[roundRobin.Index(len(keyList))], nil
@@ -223,7 +229,7 @@ func (s *sKey) RemoveModelKey(ctx context.Context, m *model.Model, key *model.Ke
 		logger.Debugf(ctx, "RemoveModelKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	keysValue := s.modelKeysMap.Get(m.Id)
+	keysValue := s.modelKeysMap.GetVal(ctx, m.Id)
 	if keysValue != nil {
 
 		if keys := keysValue.([]*model.Key); len(keys) > 0 {
@@ -235,7 +241,9 @@ func (s *sKey) RemoveModelKey(ctx context.Context, m *model.Model, key *model.Ke
 				}
 			}
 
-			s.modelKeysMap.Set(m.Id, newKeys)
+			if err := s.modelKeysMap.Set(ctx, m.Id, newKeys, 0); err != nil {
+				logger.Error(ctx, err)
+			}
 		}
 
 		if err := dao.Key.UpdateById(ctx, key.Id, bson.M{"status": 2}); err != nil {
@@ -337,7 +345,10 @@ func (s *sKey) SaveCacheModelKeys(ctx context.Context, id string, keys []*model.
 			return err
 		}
 
-		s.modelKeysCacheMap.Set(id, keys)
+		if err := s.modelKeysCacheMap.Set(ctx, id, keys, 0); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
 	}
 
 	return nil
@@ -351,7 +362,7 @@ func (s *sKey) GetCacheModelKeys(ctx context.Context, id string) ([]*model.Key, 
 		logger.Debugf(ctx, "sKey GetCacheModelKeys time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	if modelKeysCacheValue := s.modelKeysCacheMap.Get(id); modelKeysCacheValue != nil {
+	if modelKeysCacheValue := s.modelKeysCacheMap.GetVal(ctx, id); modelKeysCacheValue != nil {
 		return modelKeysCacheValue.([]*model.Key), nil
 	}
 
@@ -391,7 +402,10 @@ func (s *sKey) GetCacheModelKeys(ctx context.Context, id string) ([]*model.Key, 
 		return cmp.Compare(k1.Id, k2.Id)
 	})
 
-	s.modelKeysCacheMap.Set(id, items)
+	if err = s.modelKeysCacheMap.Set(ctx, id, items, 0); err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
 
 	return items, nil
 }
@@ -419,7 +433,7 @@ func (s *sKey) CreateCacheModelKey(ctx context.Context, key *entity.Key) {
 
 	for _, id := range key.Models {
 
-		if keysValue := s.modelKeysCacheMap.Get(id); keysValue != nil {
+		if keysValue := s.modelKeysCacheMap.GetVal(ctx, id); keysValue != nil {
 			if err := s.SaveCacheModelKeys(ctx, id, append(keysValue.([]*model.Key), k)); err != nil {
 				logger.Error(ctx, err)
 			}
@@ -429,8 +443,10 @@ func (s *sKey) CreateCacheModelKey(ctx context.Context, key *entity.Key) {
 			}
 		}
 
-		if keysValue := s.modelKeysMap.Get(id); keysValue != nil {
-			s.modelKeysMap.Set(id, append(keysValue.([]*model.Key), k))
+		if keysValue := s.modelKeysMap.GetVal(ctx, id); keysValue != nil {
+			if err := s.modelKeysMap.Set(ctx, id, append(keysValue.([]*model.Key), k), 0); err != nil {
+				logger.Error(ctx, err)
+			}
 		}
 	}
 }
@@ -495,12 +511,14 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 			newKeys = append(newKeys, key)
 		}
 
-		if err := s.SaveCacheModelKeys(ctx, id, newKeys); err != nil {
+		if err = s.SaveCacheModelKeys(ctx, id, newKeys); err != nil {
 			logger.Error(ctx, err)
 		}
 
-		if s.modelKeysMap.Get(id) != nil {
-			s.modelKeysMap.Set(id, newKeys)
+		if s.modelKeysMap.ContainsKey(ctx, id) {
+			if err = s.modelKeysMap.Set(ctx, id, newKeys, 0); err != nil {
+				logger.Error(ctx, err)
+			}
 		}
 	}
 
@@ -531,18 +549,22 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 						if k.Id != oldData.Id {
 							newKeys = append(newKeys, k)
 						} else {
-							if _, err := redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id), oldData.Id); err != nil {
+							if _, err = redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id), oldData.Id); err != nil {
 								logger.Error(ctx, err)
 							}
 						}
 					}
 
-					if s.modelKeysCacheMap.Get(id) != nil {
-						s.modelKeysCacheMap.Set(id, newKeys)
+					if s.modelKeysCacheMap.ContainsKey(ctx, id) {
+						if err = s.modelKeysCacheMap.Set(ctx, id, newKeys, 0); err != nil {
+							logger.Error(ctx, err)
+						}
 					}
 
-					if s.modelKeysMap.Get(id) != nil {
-						s.modelKeysMap.Set(id, newKeys)
+					if s.modelKeysMap.ContainsKey(ctx, id) {
+						if err = s.modelKeysMap.Set(ctx, id, newKeys, 0); err != nil {
+							logger.Error(ctx, err)
+						}
 					}
 				}
 			}
@@ -563,7 +585,7 @@ func (s *sKey) RemoveCacheModelKey(ctx context.Context, key *entity.Key) {
 			logger.Error(ctx, err)
 		}
 
-		if keysValue := s.modelKeysCacheMap.Get(id); keysValue != nil {
+		if keysValue := s.modelKeysCacheMap.GetVal(ctx, id); keysValue != nil {
 
 			if keys := keysValue.([]*model.Key); len(keys) > 0 {
 
@@ -574,10 +596,14 @@ func (s *sKey) RemoveCacheModelKey(ctx context.Context, key *entity.Key) {
 					}
 				}
 
-				s.modelKeysCacheMap.Set(id, newKeys)
+				if err := s.modelKeysCacheMap.Set(ctx, id, newKeys, 0); err != nil {
+					logger.Error(ctx, err)
+				}
 
-				if s.modelKeysMap.Get(id) != nil {
-					s.modelKeysMap.Set(id, newKeys)
+				if s.modelKeysMap.ContainsKey(ctx, id) {
+					if err := s.modelKeysMap.Set(ctx, id, newKeys, 0); err != nil {
+						logger.Error(ctx, err)
+					}
 				}
 			}
 		}

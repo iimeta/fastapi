@@ -3,7 +3,6 @@ package common
 import (
 	"context"
 	"fmt"
-	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gregex"
@@ -13,15 +12,16 @@ import (
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/internal/service"
+	"github.com/iimeta/fastapi/utility/cache"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
 	"strings"
 )
 
 type sCommon struct {
-	userCacheMap   *gmap.IntAnyMap
-	appCacheMap    *gmap.IntAnyMap
-	appKeyCacheMap *gmap.StrAnyMap
+	userCacheMap   *cache.Cache
+	appCacheMap    *cache.Cache
+	appKeyCacheMap *cache.Cache
 }
 
 func init() {
@@ -30,9 +30,9 @@ func init() {
 
 func New() service.ICommon {
 	return &sCommon{
-		userCacheMap:   gmap.NewIntAnyMap(true),
-		appCacheMap:    gmap.NewIntAnyMap(true),
-		appKeyCacheMap: gmap.NewStrAnyMap(true),
+		userCacheMap:   cache.New(),
+		appCacheMap:    cache.New(),
+		appKeyCacheMap: cache.New(),
 	}
 }
 
@@ -180,7 +180,10 @@ func (s *sCommon) SaveCacheUser(ctx context.Context, user *model.User) error {
 
 	service.Session().SaveUser(ctx, user)
 
-	s.userCacheMap.Set(user.UserId, user)
+	if err := s.userCacheMap.Set(ctx, user.UserId, user, 0); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
 
 	return nil
 }
@@ -197,7 +200,7 @@ func (s *sCommon) GetCacheUser(ctx context.Context, userId int) (*model.User, er
 		return user, nil
 	}
 
-	if userCacheValue := s.userCacheMap.Get(userId); userCacheValue != nil {
+	if userCacheValue := s.userCacheMap.GetVal(ctx, userId); userCacheValue != nil {
 		return userCacheValue.(*model.User), nil
 	}
 
@@ -219,7 +222,10 @@ func (s *sCommon) GetCacheUser(ctx context.Context, userId int) (*model.User, er
 
 	service.Session().SaveUser(ctx, user)
 
-	s.userCacheMap.Set(user.UserId, user)
+	if err = s.userCacheMap.Set(ctx, user.UserId, user, 0); err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
 
 	return user, nil
 }
@@ -244,7 +250,9 @@ func (s *sCommon) UpdateCacheUser(ctx context.Context, user *entity.User) {
 // 移除缓存中的用户信息
 func (s *sCommon) RemoveCacheUser(ctx context.Context, userId int) {
 
-	s.userCacheMap.Remove(userId)
+	if _, err := s.userCacheMap.Remove(ctx, userId); err != nil {
+		logger.Error(ctx, err)
+	}
 
 	if _, err := redis.Del(ctx, fmt.Sprintf(consts.API_USER_KEY, userId)); err != nil {
 		logger.Error(ctx, err)
@@ -265,7 +273,10 @@ func (s *sCommon) SaveCacheApp(ctx context.Context, app *model.App) error {
 
 	service.Session().SaveApp(ctx, app)
 
-	s.appCacheMap.Set(app.AppId, app)
+	if err := s.appCacheMap.Set(ctx, app.AppId, app, 0); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
 
 	return nil
 }
@@ -282,7 +293,7 @@ func (s *sCommon) GetCacheApp(ctx context.Context, appId int) (*model.App, error
 		return app, nil
 	}
 
-	if appCacheValue := s.appCacheMap.Get(appId); appCacheValue != nil {
+	if appCacheValue := s.appCacheMap.GetVal(ctx, appId); appCacheValue != nil {
 		return appCacheValue.(*model.App), nil
 	}
 
@@ -304,7 +315,10 @@ func (s *sCommon) GetCacheApp(ctx context.Context, appId int) (*model.App, error
 
 	service.Session().SaveApp(ctx, app)
 
-	s.appCacheMap.Set(app.AppId, app)
+	if err = s.appCacheMap.Set(ctx, app.AppId, app, 0); err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
 
 	return app, nil
 }
@@ -331,7 +345,9 @@ func (s *sCommon) UpdateCacheApp(ctx context.Context, app *entity.App) {
 // 移除缓存中的应用信息
 func (s *sCommon) RemoveCacheApp(ctx context.Context, appId int) {
 
-	s.appCacheMap.Remove(appId)
+	if _, err := s.appCacheMap.Remove(ctx, appId); err != nil {
+		logger.Error(ctx, err)
+	}
 
 	if _, err := redis.Del(ctx, fmt.Sprintf(consts.API_APP_KEY, appId)); err != nil {
 		logger.Error(ctx, err)
@@ -345,15 +361,17 @@ func (s *sCommon) SaveCacheAppKey(ctx context.Context, key *model.Key) error {
 		return errors.New("key is nil")
 	}
 
-	_, err := redis.Set(ctx, fmt.Sprintf(consts.API_APP_KEY_KEY, key.Key), key)
-	if err != nil {
+	if _, err := redis.Set(ctx, fmt.Sprintf(consts.API_APP_KEY_KEY, key.Key), key); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
 
 	service.Session().SaveKey(ctx, key)
 
-	s.appKeyCacheMap.Set(key.Key, key)
+	if err := s.appKeyCacheMap.Set(ctx, key.Key, key, 0); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
 
 	return nil
 }
@@ -370,7 +388,7 @@ func (s *sCommon) GetCacheAppKey(ctx context.Context, secretKey string) (*model.
 		return key, nil
 	}
 
-	if keyCacheValue := s.appKeyCacheMap.Get(secretKey); keyCacheValue != nil {
+	if keyCacheValue := s.appKeyCacheMap.GetVal(ctx, secretKey); keyCacheValue != nil {
 		return keyCacheValue.(*model.Key), nil
 	}
 
@@ -392,7 +410,10 @@ func (s *sCommon) GetCacheAppKey(ctx context.Context, secretKey string) (*model.
 
 	service.Session().SaveKey(ctx, key)
 
-	s.appKeyCacheMap.Set(key.Key, key)
+	if err = s.appKeyCacheMap.Set(ctx, key.Key, key, 0); err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
 
 	return key, nil
 }
@@ -425,7 +446,9 @@ func (s *sCommon) UpdateCacheAppKey(ctx context.Context, key *entity.Key) {
 // 移除缓存中的应用密钥信息
 func (s *sCommon) RemoveCacheAppKey(ctx context.Context, secretKey string) {
 
-	s.appKeyCacheMap.Remove(secretKey)
+	if _, err := s.appKeyCacheMap.Remove(ctx, secretKey); err != nil {
+		logger.Error(ctx, err)
+	}
 
 	if _, err := redis.Del(ctx, fmt.Sprintf(consts.API_APP_KEY_KEY, secretKey)); err != nil {
 		logger.Error(ctx, err)

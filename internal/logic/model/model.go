@@ -2,7 +2,6 @@ package model
 
 import (
 	"context"
-	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
@@ -12,13 +11,14 @@ import (
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/internal/service"
+	"github.com/iimeta/fastapi/utility/cache"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 type sModel struct {
-	modelCacheMap *gmap.StrAnyMap
+	modelCacheMap *cache.Cache
 }
 
 func init() {
@@ -27,7 +27,7 @@ func init() {
 
 func New() service.IModel {
 	return &sModel{
-		modelCacheMap: gmap.NewStrAnyMap(true),
+		modelCacheMap: cache.New(),
 	}
 }
 
@@ -63,7 +63,7 @@ func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 }
 
 // 根据model和secretKey获取模型信息
-func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (md *model.Model, err error) {
+func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (*model.Model, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -355,7 +355,10 @@ func (s *sModel) SaveCacheList(ctx context.Context, models []*model.Model) error
 	fields := g.Map{}
 	for _, model := range models {
 		fields[model.Id] = model
-		s.modelCacheMap.Set(model.Id, model)
+		if err := s.modelCacheMap.Set(ctx, model.Id, model, 0); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
 	}
 
 	if len(fields) > 0 {
@@ -379,7 +382,7 @@ func (s *sModel) GetCacheList(ctx context.Context, ids ...string) ([]*model.Mode
 	items := make([]*model.Model, 0)
 
 	for _, id := range ids {
-		if modelCacheValue := s.modelCacheMap.Get(id); modelCacheValue != nil {
+		if modelCacheValue := s.modelCacheMap.GetVal(ctx, id); modelCacheValue != nil {
 			items = append(items, modelCacheValue.(*model.Model))
 		}
 	}
@@ -413,13 +416,16 @@ func (s *sModel) GetCacheList(ctx context.Context, ids ...string) ([]*model.Mode
 			return nil, err
 		}
 
-		if s.modelCacheMap.Get(result.Id) != nil {
+		if s.modelCacheMap.ContainsKey(ctx, result.Id) {
 			continue
 		}
 
 		if result.Status == 1 {
 			items = append(items, result)
-			s.modelCacheMap.Set(result.Id, result)
+			if err = s.modelCacheMap.Set(ctx, result.Id, result, 0); err != nil {
+				logger.Error(ctx, err)
+				return nil, err
+			}
 		}
 	}
 
@@ -493,7 +499,9 @@ func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, ne
 // 移除缓存中的模型列表
 func (s *sModel) RemoveCacheModel(ctx context.Context, id string) {
 
-	s.modelCacheMap.Remove(id)
+	if _, err := s.modelCacheMap.Remove(ctx, id); err != nil {
+		logger.Error(ctx, err)
+	}
 
 	if _, err := redis.HDel(ctx, consts.API_MODELS_KEY, id); err != nil {
 		logger.Error(ctx, err)
