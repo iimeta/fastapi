@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/iimeta/fastapi/internal/model"
+	"github.com/iimeta/fastapi/internal/model/entity"
 )
 
 type (
@@ -19,10 +20,22 @@ type (
 		List(ctx context.Context) ([]*model.App, error)
 		// 更改应用额度
 		ChangeQuota(ctx context.Context, appId, quota int) error
-		// 保存应用列表到缓存
-		SaveCacheList(ctx context.Context, apps []*model.App) error
-		// 获取缓存中的应用列表
-		GetCacheList(ctx context.Context, appIds ...string) ([]*model.App, error)
+		// 保存应用信息到缓存
+		SaveCacheApp(ctx context.Context, app *model.App) error
+		// 获取缓存中的应用信息
+		GetCacheApp(ctx context.Context, appId int) (*model.App, error)
+		// 更新缓存中的应用信息
+		UpdateCacheApp(ctx context.Context, app *entity.App)
+		// 移除缓存中的应用信息
+		RemoveCacheApp(ctx context.Context, appId int)
+		// 保存应用密钥信息到缓存
+		SaveCacheAppKey(ctx context.Context, key *model.Key) error
+		// 获取缓存中的应用密钥信息
+		GetCacheAppKey(ctx context.Context, secretKey string) (*model.Key, error)
+		// 更新缓存中的应用密钥信息
+		UpdateCacheAppKey(ctx context.Context, key *entity.Key)
+		// 移除缓存中的应用密钥信息
+		RemoveCacheAppKey(ctx context.Context, secretKey string)
 		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
 		// 应用密钥变更订阅

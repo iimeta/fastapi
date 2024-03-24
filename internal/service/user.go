@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/iimeta/fastapi/internal/model"
+	"github.com/iimeta/fastapi/internal/model/entity"
 )
 
 type (
@@ -19,7 +20,15 @@ type (
 		List(ctx context.Context) ([]*model.User, error)
 		// 更改用户额度
 		ChangeQuota(ctx context.Context, userId, quota int) error
-		// 更新订阅
+		// 保存用户信息到缓存
+		SaveCacheUser(ctx context.Context, user *model.User) error
+		// 获取缓存中的用户信息
+		GetCacheUser(ctx context.Context, userId int) (*model.User, error)
+		// 更新缓存中的用户信息
+		UpdateCacheUser(ctx context.Context, user *entity.User)
+		// 移除缓存中的用户信息
+		RemoveCacheUser(ctx context.Context, userId int)
+		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
 	}
 )

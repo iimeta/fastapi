@@ -18,7 +18,7 @@ import (
 )
 
 type sModel struct {
-	modelCacheMap *cache.Cache
+	modelCache *cache.Cache // [模型ID]Model
 }
 
 func init() {
@@ -27,7 +27,7 @@ func init() {
 
 func New() service.IModel {
 	return &sModel{
-		modelCacheMap: cache.New(),
+		modelCache: cache.New(),
 	}
 }
 
@@ -70,7 +70,7 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		logger.Debugf(ctx, "GetModelBySecretKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	app, err := service.Common().GetCacheApp(ctx, service.Session().GetAppId(ctx))
+	app, err := service.App().GetCacheApp(ctx, service.Session().GetAppId(ctx))
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -82,7 +82,7 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		return nil, err
 	}
 
-	key, err := service.Common().GetCacheAppKey(g.RequestFromCtx(ctx).GetCtx(), secretKey)
+	key, err := service.App().GetCacheAppKey(g.RequestFromCtx(ctx).GetCtx(), secretKey)
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -355,7 +355,7 @@ func (s *sModel) SaveCacheList(ctx context.Context, models []*model.Model) error
 	fields := g.Map{}
 	for _, model := range models {
 		fields[model.Id] = model
-		if err := s.modelCacheMap.Set(ctx, model.Id, model, 0); err != nil {
+		if err := s.modelCache.Set(ctx, model.Id, model, 0); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -382,7 +382,7 @@ func (s *sModel) GetCacheList(ctx context.Context, ids ...string) ([]*model.Mode
 	items := make([]*model.Model, 0)
 
 	for _, id := range ids {
-		if modelCacheValue := s.modelCacheMap.GetVal(ctx, id); modelCacheValue != nil {
+		if modelCacheValue := s.modelCache.GetVal(ctx, id); modelCacheValue != nil {
 			items = append(items, modelCacheValue.(*model.Model))
 		}
 	}
@@ -416,13 +416,13 @@ func (s *sModel) GetCacheList(ctx context.Context, ids ...string) ([]*model.Mode
 			return nil, err
 		}
 
-		if s.modelCacheMap.ContainsKey(ctx, result.Id) {
+		if s.modelCache.ContainsKey(ctx, result.Id) {
 			continue
 		}
 
 		if result.Status == 1 {
 			items = append(items, result)
-			if err = s.modelCacheMap.Set(ctx, result.Id, result, 0); err != nil {
+			if err = s.modelCache.Set(ctx, result.Id, result, 0); err != nil {
 				logger.Error(ctx, err)
 				return nil, err
 			}
@@ -499,7 +499,7 @@ func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, ne
 // 移除缓存中的模型列表
 func (s *sModel) RemoveCacheModel(ctx context.Context, id string) {
 
-	if _, err := s.modelCacheMap.Remove(ctx, id); err != nil {
+	if _, err := s.modelCache.Remove(ctx, id); err != nil {
 		logger.Error(ctx, err)
 	}
 

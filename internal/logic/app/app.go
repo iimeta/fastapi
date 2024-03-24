@@ -2,10 +2,9 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
-	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
-	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
@@ -19,7 +18,8 @@ import (
 )
 
 type sApp struct {
-	appCacheMap *cache.Cache
+	appCache    *cache.Cache // [appId]App
+	appKeyCache *cache.Cache // [key]Key
 }
 
 func init() {
@@ -28,7 +28,8 @@ func init() {
 
 func New() service.IApp {
 	return &sApp{
-		appCacheMap: cache.New(),
+		appCache:    cache.New(),
+		appKeyCache: cache.New(),
 	}
 }
 
@@ -111,96 +112,200 @@ func (s *sApp) ChangeQuota(ctx context.Context, appId, quota int) error {
 	return nil
 }
 
-// 保存应用列表到缓存
-func (s *sApp) SaveCacheList(ctx context.Context, apps []*model.App) error {
+// 保存应用信息到缓存
+func (s *sApp) SaveCacheApp(ctx context.Context, app *model.App) error {
 
-	now := gtime.TimestampMilli()
-	defer func() {
-		logger.Debugf(ctx, "sApp SaveCacheList time: %d", gtime.TimestampMilli()-now)
-	}()
-
-	fields := g.Map{}
-	for _, app := range apps {
-		fields[gconv.String(app.AppId)] = app
-		if err := s.appCacheMap.Set(ctx, gconv.String(app.AppId), app, 0); err != nil {
-			logger.Error(ctx, err)
-			return err
-		}
+	if app == nil {
+		return errors.New("app is nil")
 	}
 
-	if len(fields) > 0 {
-		if _, err := redis.HSet(ctx, consts.API_APPS_KEY, fields); err != nil {
-			logger.Error(ctx, err)
-			return err
-		}
+	if _, err := redis.Set(ctx, fmt.Sprintf(consts.API_APP_KEY, app.AppId), app); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	service.Session().SaveApp(ctx, app)
+
+	if err := s.appCache.Set(ctx, app.AppId, app, 0); err != nil {
+		logger.Error(ctx, err)
+		return err
 	}
 
 	return nil
 }
 
-// 获取缓存中的应用列表
-func (s *sApp) GetCacheList(ctx context.Context, appIds ...string) ([]*model.App, error) {
+// 获取缓存中的应用信息
+func (s *sApp) GetCacheApp(ctx context.Context, appId int) (*model.App, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sApp GetCacheList time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "GetCacheApp time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	items := make([]*model.App, 0)
-
-	for _, id := range appIds {
-		if appCacheValue := s.appCacheMap.GetVal(ctx, id); appCacheValue != nil {
-			items = append(items, appCacheValue.(*model.App))
-		}
+	if app := service.Session().GetApp(ctx); app != nil {
+		return app, nil
 	}
 
-	if len(items) == len(appIds) {
-		return items, nil
+	if appCacheValue := s.appCache.GetVal(ctx, appId); appCacheValue != nil {
+		return appCacheValue.(*model.App), nil
 	}
 
-	reply, err := redis.HMGet(ctx, consts.API_APPS_KEY, appIds...)
+	reply, err := redis.Get(ctx, fmt.Sprintf(consts.API_APP_KEY, appId))
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
 	}
 
-	if reply == nil || len(reply) == 0 {
-		if len(items) != 0 {
-			return items, nil
-		}
-		return nil, errors.New("apps is nil")
+	if reply == nil || reply.IsNil() {
+		return nil, errors.New("app is nil")
 	}
 
-	for _, str := range reply.Strings() {
+	app := new(model.App)
+	if err = reply.Struct(&app); err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
 
-		if str == "" {
-			continue
-		}
+	service.Session().SaveApp(ctx, app)
 
-		result := new(model.App)
-		if err = gjson.Unmarshal([]byte(str), &result); err != nil {
+	if err = s.appCache.Set(ctx, app.AppId, app, 0); err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	return app, nil
+}
+
+// 更新缓存中的应用信息
+func (s *sApp) UpdateCacheApp(ctx context.Context, app *entity.App) {
+	if err := s.SaveCacheApp(ctx, &model.App{
+		Id:           app.Id,
+		AppId:        app.AppId,
+		Name:         app.Name,
+		Type:         app.Type,
+		Models:       app.Models,
+		IsLimitQuota: app.IsLimitQuota,
+		Quota:        app.Quota,
+		IpWhitelist:  app.IpWhitelist,
+		IpBlacklist:  app.IpBlacklist,
+		Status:       app.Status,
+		UserId:       app.UserId,
+	}); err != nil {
+		logger.Error(ctx, err)
+	}
+}
+
+// 移除缓存中的应用信息
+func (s *sApp) RemoveCacheApp(ctx context.Context, appId int) {
+
+	if _, err := s.appCache.Remove(ctx, appId); err != nil {
+		logger.Error(ctx, err)
+	}
+
+	if _, err := redis.Del(ctx, fmt.Sprintf(consts.API_APP_KEY, appId)); err != nil {
+		logger.Error(ctx, err)
+	}
+}
+
+// 保存应用密钥信息到缓存
+func (s *sApp) SaveCacheAppKey(ctx context.Context, key *model.Key) error {
+
+	if key == nil {
+		return errors.New("key is nil")
+	}
+
+	if _, err := redis.Set(ctx, fmt.Sprintf(consts.API_APP_KEY_KEY, key.Key), key); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	service.Session().SaveKey(ctx, key)
+
+	if err := s.appKeyCache.Set(ctx, key.Key, key, 0); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	return nil
+}
+
+// 获取缓存中的应用密钥信息
+func (s *sApp) GetCacheAppKey(ctx context.Context, secretKey string) (*model.Key, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "GetCacheAppKey time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	if key := service.Session().GetKey(ctx); key != nil {
+		return key, nil
+	}
+
+	if keyCacheValue := s.appKeyCache.GetVal(ctx, secretKey); keyCacheValue != nil {
+		return keyCacheValue.(*model.Key), nil
+	}
+
+	reply, err := redis.Get(ctx, fmt.Sprintf(consts.API_APP_KEY_KEY, secretKey))
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	if reply == nil || reply.IsNil() {
+		return nil, errors.New("key is nil")
+	}
+
+	key := new(model.Key)
+	if err = reply.Struct(&key); err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	service.Session().SaveKey(ctx, key)
+
+	if err = s.appKeyCache.Set(ctx, key.Key, key, 0); err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	return key, nil
+}
+
+// 更新缓存中的应用密钥信息
+func (s *sApp) UpdateCacheAppKey(ctx context.Context, key *entity.Key) {
+	if key.Type == 1 {
+		if err := s.SaveCacheAppKey(ctx, &model.Key{
+			Id:           key.Id,
+			UserId:       key.UserId,
+			AppId:        key.AppId,
+			Corp:         key.Corp,
+			Key:          key.Key,
+			Type:         key.Type,
+			Models:       key.Models,
+			ModelAgents:  key.ModelAgents,
+			IsLimitQuota: key.IsLimitQuota,
+			Quota:        key.Quota,
+			RPM:          key.RPM,
+			RPD:          key.RPD,
+			IpWhitelist:  key.IpWhitelist,
+			IpBlacklist:  key.IpBlacklist,
+			Status:       key.Status,
+		}); err != nil {
 			logger.Error(ctx, err)
-			return nil, err
-		}
-
-		if s.appCacheMap.ContainsKey(ctx, gconv.String(result.AppId)) {
-			continue
-		}
-
-		if result.Status == 1 {
-			items = append(items, result)
-			if err = s.appCacheMap.Set(ctx, gconv.String(result.AppId), result, 0); err != nil {
-				logger.Error(ctx, err)
-				return nil, err
-			}
 		}
 	}
+}
 
-	if len(items) == 0 {
-		return nil, errors.New("apps is nil")
+// 移除缓存中的应用密钥信息
+func (s *sApp) RemoveCacheAppKey(ctx context.Context, secretKey string) {
+
+	if _, err := s.appKeyCache.Remove(ctx, secretKey); err != nil {
+		logger.Error(ctx, err)
 	}
 
-	return items, nil
+	if _, err := redis.Del(ctx, fmt.Sprintf(consts.API_APP_KEY_KEY, secretKey)); err != nil {
+		logger.Error(ctx, err)
+	}
 }
 
 // 变更订阅
@@ -220,13 +325,13 @@ func (s *sApp) Subscribe(ctx context.Context, msg string) error {
 			logger.Error(ctx, err)
 			return err
 		}
-		service.Common().UpdateCacheApp(ctx, app)
+		s.UpdateCacheApp(ctx, app)
 	case consts.ACTION_DELETE:
 		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &app); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
-		service.Common().RemoveCacheApp(ctx, app.AppId)
+		s.RemoveCacheApp(ctx, app.AppId)
 	}
 
 	return nil
@@ -251,7 +356,7 @@ func (s *sApp) SubscribeKey(ctx context.Context, msg string) error {
 			return err
 		}
 
-		service.Common().UpdateCacheAppKey(ctx, key)
+		s.UpdateCacheAppKey(ctx, key)
 
 	case consts.ACTION_DELETE:
 
@@ -260,7 +365,7 @@ func (s *sApp) SubscribeKey(ctx context.Context, msg string) error {
 			return err
 		}
 
-		service.Common().RemoveCacheAppKey(ctx, key.Key)
+		s.RemoveCacheAppKey(ctx, key.Key)
 	}
 
 	return nil

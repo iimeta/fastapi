@@ -23,9 +23,8 @@ import (
 )
 
 type sKey struct {
-	modelKeysMap           *cache.Cache // map[模型ID][]密钥列表
-	modelKeysRoundRobinMap *cache.Cache // 模型ID->密钥下标索引
-	modelKeysCacheMap      *cache.Cache // map[模型ID][]密钥列表
+	modelKeysCache           *cache.Cache // [模型ID][]密钥列表
+	modelKeysRoundRobinCache *cache.Cache // [模型ID]密钥下标索引
 }
 
 func init() {
@@ -34,9 +33,8 @@ func init() {
 
 func New() service.IKey {
 	return &sKey{
-		modelKeysMap:           cache.New(),
-		modelKeysRoundRobinMap: cache.New(),
-		modelKeysCacheMap:      cache.New(),
+		modelKeysRoundRobinCache: cache.New(),
+		modelKeysCache:           cache.New(),
 	}
 }
 
@@ -165,7 +163,7 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (keyTotal int, 
 	var modelKeys []*model.Key
 	var roundRobin *util.RoundRobin
 
-	if modelKeysValue := s.modelKeysMap.GetVal(ctx, m.Id); modelKeysValue != nil {
+	if modelKeysValue := s.modelKeysCache.GetVal(ctx, m.Id); modelKeysValue != nil {
 		modelKeys = modelKeysValue.([]*model.Key)
 	}
 
@@ -188,7 +186,7 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (keyTotal int, 
 			return 0, nil, errors.ERR_NO_AVAILABLE_KEY
 		}
 
-		if err = s.modelKeysMap.Set(ctx, m.Id, modelKeys, 0); err != nil {
+		if err = s.modelKeysCache.Set(ctx, m.Id, modelKeys, 0); err != nil {
 			logger.Error(ctx, err)
 			return 0, nil, err
 		}
@@ -206,13 +204,13 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (keyTotal int, 
 		return 0, nil, errors.ERR_NO_AVAILABLE_KEY
 	}
 
-	if roundRobinValue := s.modelKeysRoundRobinMap.GetVal(ctx, m.Id); roundRobinValue != nil {
+	if roundRobinValue := s.modelKeysRoundRobinCache.GetVal(ctx, m.Id); roundRobinValue != nil {
 		roundRobin = roundRobinValue.(*util.RoundRobin)
 	}
 
 	if roundRobin == nil {
 		roundRobin = new(util.RoundRobin)
-		if err = s.modelKeysRoundRobinMap.Set(ctx, m.Id, roundRobin, 0); err != nil {
+		if err = s.modelKeysRoundRobinCache.Set(ctx, m.Id, roundRobin, 0); err != nil {
 			logger.Error(ctx, err)
 			return 0, nil, err
 		}
@@ -229,7 +227,7 @@ func (s *sKey) RemoveModelKey(ctx context.Context, m *model.Model, key *model.Ke
 		logger.Debugf(ctx, "RemoveModelKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	keysValue := s.modelKeysMap.GetVal(ctx, m.Id)
+	keysValue := s.modelKeysCache.GetVal(ctx, m.Id)
 	if keysValue != nil {
 
 		if keys := keysValue.([]*model.Key); len(keys) > 0 {
@@ -241,7 +239,7 @@ func (s *sKey) RemoveModelKey(ctx context.Context, m *model.Model, key *model.Ke
 				}
 			}
 
-			if err := s.modelKeysMap.Set(ctx, m.Id, newKeys, 0); err != nil {
+			if err := s.modelKeysCache.Set(ctx, m.Id, newKeys, 0); err != nil {
 				logger.Error(ctx, err)
 			}
 		}
@@ -345,7 +343,7 @@ func (s *sKey) SaveCacheModelKeys(ctx context.Context, id string, keys []*model.
 			return err
 		}
 
-		if err := s.modelKeysCacheMap.Set(ctx, id, keys, 0); err != nil {
+		if err := s.modelKeysCache.Set(ctx, id, keys, 0); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -362,7 +360,7 @@ func (s *sKey) GetCacheModelKeys(ctx context.Context, id string) ([]*model.Key, 
 		logger.Debugf(ctx, "sKey GetCacheModelKeys time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	if modelKeysCacheValue := s.modelKeysCacheMap.GetVal(ctx, id); modelKeysCacheValue != nil {
+	if modelKeysCacheValue := s.modelKeysCache.GetVal(ctx, id); modelKeysCacheValue != nil {
 		return modelKeysCacheValue.([]*model.Key), nil
 	}
 
@@ -402,7 +400,7 @@ func (s *sKey) GetCacheModelKeys(ctx context.Context, id string) ([]*model.Key, 
 		return cmp.Compare(k1.Id, k2.Id)
 	})
 
-	if err = s.modelKeysCacheMap.Set(ctx, id, items, 0); err != nil {
+	if err = s.modelKeysCache.Set(ctx, id, items, 0); err != nil {
 		logger.Error(ctx, err)
 		return nil, err
 	}
@@ -433,18 +431,12 @@ func (s *sKey) CreateCacheModelKey(ctx context.Context, key *entity.Key) {
 
 	for _, id := range key.Models {
 
-		if keysValue := s.modelKeysCacheMap.GetVal(ctx, id); keysValue != nil {
+		if keysValue := s.modelKeysCache.GetVal(ctx, id); keysValue != nil {
 			if err := s.SaveCacheModelKeys(ctx, id, append(keysValue.([]*model.Key), k)); err != nil {
 				logger.Error(ctx, err)
 			}
 		} else {
 			if err := s.SaveCacheModelKeys(ctx, id, []*model.Key{k}); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
-
-		if keysValue := s.modelKeysMap.GetVal(ctx, id); keysValue != nil {
-			if err := s.modelKeysMap.Set(ctx, id, append(keysValue.([]*model.Key), k), 0); err != nil {
 				logger.Error(ctx, err)
 			}
 		}
@@ -511,12 +503,8 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 			newKeys = append(newKeys, key)
 		}
 
-		if err = s.SaveCacheModelKeys(ctx, id, newKeys); err != nil {
-			logger.Error(ctx, err)
-		}
-
-		if s.modelKeysMap.ContainsKey(ctx, id) {
-			if err = s.modelKeysMap.Set(ctx, id, newKeys, 0); err != nil {
+		if s.modelKeysCache.ContainsKey(ctx, id) {
+			if err = s.SaveCacheModelKeys(ctx, id, newKeys); err != nil {
 				logger.Error(ctx, err)
 			}
 		}
@@ -524,6 +512,7 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 
 	// 将变更后被移除模型的模型密钥移除
 	if oldData != nil {
+
 		for _, id := range oldData.Models {
 
 			if newModelMap[id] == "" {
@@ -555,14 +544,8 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 						}
 					}
 
-					if s.modelKeysCacheMap.ContainsKey(ctx, id) {
-						if err = s.modelKeysCacheMap.Set(ctx, id, newKeys, 0); err != nil {
-							logger.Error(ctx, err)
-						}
-					}
-
-					if s.modelKeysMap.ContainsKey(ctx, id) {
-						if err = s.modelKeysMap.Set(ctx, id, newKeys, 0); err != nil {
+					if s.modelKeysCache.ContainsKey(ctx, id) {
+						if err = s.modelKeysCache.Set(ctx, id, newKeys, 0); err != nil {
 							logger.Error(ctx, err)
 						}
 					}
@@ -585,7 +568,7 @@ func (s *sKey) RemoveCacheModelKey(ctx context.Context, key *entity.Key) {
 			logger.Error(ctx, err)
 		}
 
-		if keysValue := s.modelKeysCacheMap.GetVal(ctx, id); keysValue != nil {
+		if keysValue := s.modelKeysCache.GetVal(ctx, id); keysValue != nil {
 
 			if keys := keysValue.([]*model.Key); len(keys) > 0 {
 
@@ -596,14 +579,8 @@ func (s *sKey) RemoveCacheModelKey(ctx context.Context, key *entity.Key) {
 					}
 				}
 
-				if err := s.modelKeysCacheMap.Set(ctx, id, newKeys, 0); err != nil {
+				if err := s.modelKeysCache.Set(ctx, id, newKeys, 0); err != nil {
 					logger.Error(ctx, err)
-				}
-
-				if s.modelKeysMap.ContainsKey(ctx, id) {
-					if err := s.modelKeysMap.Set(ctx, id, newKeys, 0); err != nil {
-						logger.Error(ctx, err)
-					}
 				}
 			}
 		}
@@ -672,7 +649,7 @@ func (s *sKey) Subscribe(ctx context.Context, msg string) error {
 		}
 
 		if key.Type == 1 {
-			service.Common().UpdateCacheAppKey(ctx, key)
+			service.App().UpdateCacheAppKey(ctx, key)
 		} else {
 
 			if key.IsAgentsOnly {
@@ -691,7 +668,7 @@ func (s *sKey) Subscribe(ctx context.Context, msg string) error {
 		}
 
 		if key.Type == 1 {
-			service.Common().RemoveCacheAppKey(ctx, key.Key)
+			service.App().RemoveCacheAppKey(ctx, key.Key)
 		} else {
 			if key.IsAgentsOnly {
 				service.ModelAgent().RemoveCacheModelAgentKey(ctx, key)

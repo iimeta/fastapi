@@ -2,25 +2,33 @@ package user
 
 import (
 	"context"
+	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
+	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/internal/service"
+	"github.com/iimeta/fastapi/utility/cache"
 	"github.com/iimeta/fastapi/utility/logger"
+	"github.com/iimeta/fastapi/utility/redis"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-type sUser struct{}
+type sUser struct {
+	userCache *cache.Cache // [userId]User
+}
 
 func init() {
 	service.RegisterUser(New())
 }
 
 func New() service.IUser {
-	return &sUser{}
+	return &sUser{
+		userCache: cache.New(),
+	}
 }
 
 // 根据userId获取用户信息
@@ -102,6 +110,99 @@ func (s *sUser) ChangeQuota(ctx context.Context, userId, quota int) error {
 	return nil
 }
 
+// 保存用户信息到缓存
+func (s *sUser) SaveCacheUser(ctx context.Context, user *model.User) error {
+
+	if user == nil {
+		return errors.New("user is nil")
+	}
+
+	if _, err := redis.Set(ctx, fmt.Sprintf(consts.API_USER_KEY, user.UserId), user); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	service.Session().SaveUser(ctx, user)
+
+	if err := s.userCache.Set(ctx, user.UserId, user, 0); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	return nil
+}
+
+// 获取缓存中的用户信息
+func (s *sUser) GetCacheUser(ctx context.Context, userId int) (*model.User, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "GetCacheUser time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	if user := service.Session().GetUser(ctx); user != nil {
+		return user, nil
+	}
+
+	if userCacheValue := s.userCache.GetVal(ctx, userId); userCacheValue != nil {
+		return userCacheValue.(*model.User), nil
+	}
+
+	reply, err := redis.Get(ctx, fmt.Sprintf(consts.API_USER_KEY, userId))
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	if reply == nil || reply.IsNil() {
+		return nil, errors.New("user is nil")
+	}
+
+	user := new(model.User)
+	if err = reply.Struct(&user); err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	service.Session().SaveUser(ctx, user)
+
+	if err = s.userCache.Set(ctx, user.UserId, user, 0); err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	return user, nil
+}
+
+// 更新缓存中的用户信息
+func (s *sUser) UpdateCacheUser(ctx context.Context, user *entity.User) {
+	if err := s.SaveCacheUser(ctx, &model.User{
+		Id:     user.Id,
+		UserId: user.UserId,
+		Name:   user.Name,
+		Avatar: user.Avatar,
+		Gender: user.Gender,
+		Phone:  user.Phone,
+		Email:  user.Email,
+		Quota:  user.Quota,
+		Status: user.Status,
+	}); err != nil {
+		logger.Error(ctx, err)
+	}
+}
+
+// 移除缓存中的用户信息
+func (s *sUser) RemoveCacheUser(ctx context.Context, userId int) {
+
+	if _, err := s.userCache.Remove(ctx, userId); err != nil {
+		logger.Error(ctx, err)
+	}
+
+	if _, err := redis.Del(ctx, fmt.Sprintf(consts.API_USER_KEY, userId)); err != nil {
+		logger.Error(ctx, err)
+	}
+}
+
 // 变更订阅
 func (s *sUser) Subscribe(ctx context.Context, msg string) error {
 
@@ -121,7 +222,7 @@ func (s *sUser) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		service.Common().UpdateCacheUser(ctx, user)
+		s.UpdateCacheUser(ctx, user)
 
 	case consts.ACTION_DELETE:
 
@@ -130,7 +231,7 @@ func (s *sUser) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		service.Common().RemoveCacheUser(ctx, user.UserId)
+		s.RemoveCacheUser(ctx, user.UserId)
 	}
 
 	return nil

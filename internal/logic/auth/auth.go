@@ -46,7 +46,7 @@ func (s *sAuth) CheckUser(ctx context.Context, userId int) error {
 		logger.Debugf(ctx, "CheckUser time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	user, err := service.Common().GetCacheUser(ctx, userId)
+	user, err := service.User().GetCacheUser(ctx, userId)
 	if err != nil || user == nil {
 
 		if user, err = service.User().GetUserByUserId(ctx, userId); err != nil {
@@ -54,7 +54,7 @@ func (s *sAuth) CheckUser(ctx context.Context, userId int) error {
 			return errors.ERR_INVALID_USER
 		}
 
-		if err = service.Common().SaveCacheUser(ctx, user); err != nil {
+		if err = service.User().SaveCacheUser(ctx, user); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
