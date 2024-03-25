@@ -70,14 +70,60 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		logger.Debugf(ctx, "GetModelBySecretKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	app, err := service.App().GetCacheApp(ctx, service.Session().GetAppId(ctx))
+	user, err := service.User().GetCacheUser(ctx, service.Session().GetUserId(ctx))
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
 	}
 
-	if len(app.Models) == 0 {
+	if len(user.Models) == 0 {
 		err = errors.ERR_MODEL_NOT_FOUND
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	models, err := s.GetCacheList(ctx, user.Models...)
+	if err != nil || len(models) != len(user.Models) {
+
+		if models, err = s.List(ctx, user.Models); err != nil {
+			logger.Error(ctx, err)
+			return nil, err
+		}
+
+		if err = s.SaveCacheList(ctx, models); err != nil {
+			logger.Error(ctx, err)
+			return nil, err
+		}
+	}
+
+	if len(models) == 0 {
+		err = errors.ERR_MODEL_NOT_FOUND
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	userModelList := make([]*model.Model, 0)
+	for _, v := range models {
+		if v.Name == m {
+			userModelList = append(userModelList, v)
+			break
+		}
+	}
+
+	for _, v := range models {
+		if v.Model == m {
+			userModelList = append(userModelList, v)
+		}
+	}
+
+	if len(userModelList) == 0 {
+		err = errors.ERR_MODEL_NOT_FOUND
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	app, err := service.App().GetCacheApp(ctx, service.Session().GetAppId(ctx))
+	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
 	}
@@ -106,46 +152,15 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		}
 
 		for _, v := range models {
-
 			if v.Name == m {
-
-				keyModelList = append(keyModelList, &model.Model{
-					Id:                 v.Id,
-					Corp:               v.Corp,
-					Name:               v.Name,
-					Model:              v.Model,
-					Type:               v.Type,
-					PromptRatio:        v.PromptRatio,
-					CompletionRatio:    v.CompletionRatio,
-					DataFormat:         v.DataFormat,
-					IsEnableModelAgent: v.IsEnableModelAgent,
-					ModelAgents:        v.ModelAgents,
-					IsPublic:           v.IsPublic,
-					Remark:             v.Remark,
-					Status:             v.Status,
-				})
+				keyModelList = append(keyModelList, v)
+				break
 			}
 		}
 
 		for _, v := range models {
-
 			if v.Model == m {
-
-				keyModelList = append(keyModelList, &model.Model{
-					Id:                 v.Id,
-					Corp:               v.Corp,
-					Name:               v.Name,
-					Model:              v.Model,
-					Type:               v.Type,
-					PromptRatio:        v.PromptRatio,
-					CompletionRatio:    v.CompletionRatio,
-					DataFormat:         v.DataFormat,
-					IsEnableModelAgent: v.IsEnableModelAgent,
-					ModelAgents:        v.ModelAgents,
-					IsPublic:           v.IsPublic,
-					Remark:             v.Remark,
-					Status:             v.Status,
-				})
+				keyModelList = append(keyModelList, v)
 			}
 		}
 
@@ -156,79 +171,45 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		}
 	}
 
-	models, err := s.GetCacheList(ctx, app.Models...)
-	if err != nil || len(models) != len(app.Models) {
-
-		if models, err = s.List(ctx, app.Models); err != nil {
-			logger.Error(ctx, err)
-			return nil, err
-		}
-
-		if err = s.SaveCacheList(ctx, models); err != nil {
-			logger.Error(ctx, err)
-			return nil, err
-		}
-	}
-
-	if len(models) == 0 {
-		err = errors.ERR_MODEL_NOT_FOUND
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
 	appModelList := make([]*model.Model, 0)
-	for _, v := range models {
+	if len(app.Models) > 0 {
 
-		if v.Name == m {
+		models, err := s.GetCacheList(ctx, app.Models...)
+		if err != nil || len(models) != len(app.Models) {
 
-			appModelList = append(appModelList, &model.Model{
-				Id:                 v.Id,
-				Corp:               v.Corp,
-				Name:               v.Name,
-				Model:              v.Model,
-				Type:               v.Type,
-				PromptRatio:        v.PromptRatio,
-				CompletionRatio:    v.CompletionRatio,
-				DataFormat:         v.DataFormat,
-				IsEnableModelAgent: v.IsEnableModelAgent,
-				ModelAgents:        v.ModelAgents,
-				IsPublic:           v.IsPublic,
-				Remark:             v.Remark,
-				Status:             v.Status,
-			})
+			if models, err = s.List(ctx, app.Models); err != nil {
+				logger.Error(ctx, err)
+				return nil, err
+			}
+
+			if err = s.SaveCacheList(ctx, models); err != nil {
+				logger.Error(ctx, err)
+				return nil, err
+			}
 		}
-	}
 
-	for _, v := range models {
-
-		if v.Model == m {
-
-			appModelList = append(appModelList, &model.Model{
-				Id:                 v.Id,
-				Corp:               v.Corp,
-				Name:               v.Name,
-				Model:              v.Model,
-				Type:               v.Type,
-				PromptRatio:        v.PromptRatio,
-				CompletionRatio:    v.CompletionRatio,
-				DataFormat:         v.DataFormat,
-				IsEnableModelAgent: v.IsEnableModelAgent,
-				ModelAgents:        v.ModelAgents,
-				IsPublic:           v.IsPublic,
-				Remark:             v.Remark,
-				Status:             v.Status,
-			})
+		for _, v := range models {
+			if v.Name == m {
+				appModelList = append(appModelList, v)
+				break
+			}
 		}
-	}
 
-	if len(appModelList) == 0 {
-		err = errors.ERR_MODEL_NOT_FOUND
-		logger.Error(ctx, err)
-		return nil, err
+		for _, v := range models {
+			if v.Model == m {
+				appModelList = append(appModelList, v)
+			}
+		}
+
+		if len(appModelList) == 0 {
+			err = errors.ERR_MODEL_NOT_FOUND
+			logger.Error(ctx, err)
+			return nil, err
+		}
 	}
 
 	isModelDisabled := false
-	if len(keyModelList) > 0 {
+	if len(keyModelList) > 0 { // 密钥层模型权限
 
 		for _, keyModel := range keyModelList {
 
@@ -239,9 +220,27 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 					continue
 				}
 
-				for _, appModel := range appModelList {
-					if keyModel.Id == appModel.Id {
-						return keyModel, nil
+				if len(appModelList) > 0 {
+
+					for _, appModel := range appModelList {
+						// 应用层模型权限校验
+						if keyModel.Id == appModel.Id {
+							for _, userModel := range userModelList {
+								// 用户层模型权限校验
+								if appModel.Id == userModel.Id {
+									return keyModel, nil
+								}
+							}
+						}
+					}
+
+				} else {
+
+					for _, userModel := range userModelList {
+						// 用户层模型权限校验
+						if keyModel.Id == userModel.Id {
+							return keyModel, nil
+						}
 					}
 				}
 			}
@@ -256,15 +255,33 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 					continue
 				}
 
-				for _, appModel := range appModelList {
-					if keyModel.Id == appModel.Id {
-						return keyModel, nil
+				if len(appModelList) > 0 {
+
+					for _, appModel := range appModelList {
+						// 应用层模型权限校验
+						if keyModel.Id == appModel.Id {
+							for _, userModel := range userModelList {
+								// 用户层模型权限校验
+								if appModel.Id == userModel.Id {
+									return keyModel, nil
+								}
+							}
+						}
+					}
+
+				} else {
+
+					for _, userModel := range userModelList {
+						// 用户层模型权限校验
+						if keyModel.Id == userModel.Id {
+							return keyModel, nil
+						}
 					}
 				}
 			}
 		}
 
-	} else if len(appModelList) > 0 {
+	} else if len(appModelList) > 0 { // 应用层模型权限
 
 		for _, appModel := range appModelList {
 
@@ -275,7 +292,12 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 					continue
 				}
 
-				return appModel, nil
+				for _, userModel := range userModelList {
+					// 用户层模型权限校验
+					if appModel.Id == userModel.Id {
+						return appModel, nil
+					}
+				}
 			}
 		}
 
@@ -288,7 +310,40 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 					continue
 				}
 
-				return appModel, nil
+				for _, userModel := range userModelList {
+					// 用户层模型权限校验
+					if appModel.Id == userModel.Id {
+						return appModel, nil
+					}
+				}
+			}
+		}
+
+	} else if len(userModelList) > 0 { // 用户层模型权限
+
+		for _, userModel := range userModelList {
+
+			if userModel.Name == m {
+
+				if userModel.Status == 2 {
+					isModelDisabled = true
+					continue
+				}
+
+				return userModel, nil
+			}
+		}
+
+		for _, userModel := range userModelList {
+
+			if userModel.Model == m {
+
+				if userModel.Status == 2 {
+					isModelDisabled = true
+					continue
+				}
+
+				return userModel, nil
 			}
 		}
 	}

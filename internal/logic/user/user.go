@@ -50,8 +50,11 @@ func (s *sUser) GetUserByUserId(ctx context.Context, userId int) (*model.User, e
 		UserId: user.UserId,
 		Name:   user.Name,
 		Avatar: user.Avatar,
-		Gender: user.Gender,
 		Email:  user.Email,
+		Phone:  user.Phone,
+		Quota:  user.Quota,
+		Models: user.Models,
+		Status: user.Status,
 	}, nil
 }
 
@@ -80,10 +83,11 @@ func (s *sUser) List(ctx context.Context) ([]*model.User, error) {
 			UserId: result.UserId,
 			Name:   result.Name,
 			Avatar: result.Avatar,
-			Gender: result.Gender,
 			Email:  result.Email,
+			Phone:  result.Phone,
 			Quota:  result.Quota,
-			Remark: result.Remark,
+			Models: result.Models,
+			Status: result.Status,
 		})
 	}
 
@@ -181,10 +185,10 @@ func (s *sUser) UpdateCacheUser(ctx context.Context, user *entity.User) {
 		UserId: user.UserId,
 		Name:   user.Name,
 		Avatar: user.Avatar,
-		Gender: user.Gender,
-		Phone:  user.Phone,
 		Email:  user.Email,
+		Phone:  user.Phone,
 		Quota:  user.Quota,
+		Models: user.Models,
 		Status: user.Status,
 	}); err != nil {
 		logger.Error(ctx, err)

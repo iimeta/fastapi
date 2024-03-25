@@ -17,4 +17,5 @@ const (
 	ACTION_UPDATE = "update"
 	ACTION_DELETE = "delete"
 	ACTION_STATUS = "status"
+	ACTION_MODELS = "models"
 )
