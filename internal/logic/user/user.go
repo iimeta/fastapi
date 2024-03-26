@@ -219,7 +219,7 @@ func (s *sUser) Subscribe(ctx context.Context, msg string) error {
 
 	var user *entity.User
 	switch message.Action {
-	case consts.ACTION_UPDATE, consts.ACTION_STATUS:
+	case consts.ACTION_UPDATE, consts.ACTION_STATUS, consts.ACTION_MODELS:
 
 		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &user); err != nil {
 			logger.Error(ctx, err)
