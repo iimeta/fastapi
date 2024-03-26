@@ -443,7 +443,7 @@ func genGlmSign(key string) string {
 		return key
 	}
 
-	now := time.Now()
+	now := gtime.Now()
 
 	claims := jwt.MapClaims{
 		"api_key":   split[0],
