@@ -8,6 +8,7 @@ const (
 
 type Chat struct {
 	gmeta.Meta         `collection:"chat" bson:"-"`
+	Id                 string      `bson:"_id,omitempty"`                   // ID
 	TraceId            string      `bson:"trace_id,omitempty"`              // 日志ID
 	UserId             int         `bson:"user_id,omitempty"`               // 用户ID
 	AppId              int         `bson:"app_id,omitempty"`                // 应用ID

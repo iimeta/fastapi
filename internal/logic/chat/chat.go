@@ -126,11 +126,19 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 	params.Model = m.Model
 
 	if gstr.HasPrefix(m.Model, "glm-") {
+
 		key.Key = genGlmSign(key.Key)
+
 		if params.TopP == 1 {
 			params.TopP -= 0.01
 		} else if params.TopP == 0 {
 			params.TopP += 0.01
+		}
+
+		if params.Temperature == 1 {
+			params.Temperature -= 0.01
+		} else if params.Temperature == 0 {
+			params.Temperature += 0.01
 		}
 	}
 
@@ -319,11 +327,19 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 	params.Model = m.Model
 
 	if gstr.HasPrefix(m.Model, "glm-") {
+
 		key.Key = genGlmSign(key.Key)
+
 		if params.TopP == 1 {
 			params.TopP -= 0.01
 		} else if params.TopP == 0 {
 			params.TopP += 0.01
+		}
+
+		if params.Temperature == 1 {
+			params.Temperature -= 0.01
+		} else if params.Temperature == 0 {
+			params.Temperature += 0.01
 		}
 	}
 
