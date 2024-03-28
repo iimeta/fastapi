@@ -43,8 +43,14 @@ func (s *sImage) Generations(ctx context.Context, params openai.ImageRequest, re
 	var modelAgent *model.ModelAgent
 	var baseUrl string
 	var keyTotal int
+	var isRetry bool
 
 	defer func() {
+
+		// 不记录重试
+		if isRetry {
+			return
+		}
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
@@ -139,6 +145,7 @@ func (s *sImage) Generations(ctx context.Context, params openai.ImageRequest, re
 		e := &openai.APIError{}
 		if errors.As(err, &e) {
 
+			isRetry = true
 			service.Common().RecordError(ctx, m, key, modelAgent)
 
 			switch e.HTTPStatusCode {

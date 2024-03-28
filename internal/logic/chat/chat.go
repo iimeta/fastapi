@@ -48,8 +48,14 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 	var modelAgent *model.ModelAgent
 	var baseUrl string
 	var keyTotal int
+	var isRetry bool
 
 	defer func() {
+
+		// 不记录重试
+		if isRetry {
+			return
+		}
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
@@ -127,7 +133,11 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 
 	if gstr.HasPrefix(m.Model, "glm-") {
 
-		key.Key = genGlmSign(key.Key)
+		tmp := new(model.Key)
+		*tmp = *key
+		key = tmp
+
+		key.Key = genGlmSign(ctx, key.Key)
 
 		if params.TopP == 1 {
 			params.TopP -= 0.01
@@ -139,6 +149,10 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 			params.Temperature -= 0.01
 		} else if params.Temperature == 0 {
 			params.Temperature += 0.01
+		}
+
+		if params.Messages[0].Role == openai.ChatMessageRoleSystem && params.Messages[0].Content == "" && len(params.Messages[0].ToolCalls) == 0 {
+			params.Messages = params.Messages[1:]
 		}
 	}
 
@@ -159,6 +173,7 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 		e := &openai.APIError{}
 		if errors.As(err, &e) {
 
+			isRetry = true
 			service.Common().RecordError(ctx, m, key, modelAgent)
 
 			switch e.HTTPStatusCode {
@@ -233,8 +248,14 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 	var connTime int64
 	var duration int64
 	var totalTime int64
+	var isRetry bool
 
 	defer func() {
+
+		// 不记录重试
+		if isRetry {
+			return
+		}
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime
 		internalTime := gtime.TimestampMilli() - enterTime - totalTime
@@ -328,7 +349,11 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 
 	if gstr.HasPrefix(m.Model, "glm-") {
 
-		key.Key = genGlmSign(key.Key)
+		tmp := new(model.Key)
+		*tmp = *key
+		key = tmp
+
+		key.Key = genGlmSign(ctx, key.Key)
 
 		if params.TopP == 1 {
 			params.TopP -= 0.01
@@ -340,6 +365,10 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 			params.Temperature -= 0.01
 		} else if params.Temperature == 0 {
 			params.Temperature += 0.01
+		}
+
+		if params.Messages[0].Role == openai.ChatMessageRoleSystem && params.Messages[0].Content == "" && len(params.Messages[0].ToolCalls) == 0 {
+			params.Messages = params.Messages[1:]
 		}
 	}
 
@@ -361,6 +390,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 		e := &openai.APIError{}
 		if errors.As(err, &e) {
 
+			isRetry = true
 			service.Common().RecordError(ctx, m, key, modelAgent)
 
 			switch e.HTTPStatusCode {
@@ -452,34 +482,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 	}
 }
 
-func genGlmSign(key string) string {
-
-	split := strings.Split(key, ".")
-	if len(split) != 2 {
-		return key
-	}
-
-	now := gtime.Now()
-
-	claims := jwt.MapClaims{
-		"api_key":   split[0],
-		"exp":       now.Add(time.Hour * 24).UnixMilli(),
-		"timestamp": now.UnixMilli(),
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	token.Header["alg"] = "HS256"
-	token.Header["sign_type"] = "SIGN"
-
-	sign, err := token.SignedString([]byte(split[1]))
-	if err != nil {
-		panic(err)
-	}
-
-	return sign
-}
-
 // 保存文生文聊天数据
 func (s *sChat) SaveChat(ctx context.Context, model *model.Model, key *model.Key, completionsReq *openai.ChatCompletionRequest, completionsRes *model.CompletionsRes) {
 
@@ -553,4 +555,32 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, key *model.Key
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
 		logger.Error(ctx, err)
 	}
+}
+
+func genGlmSign(ctx context.Context, key string) string {
+
+	split := strings.Split(key, ".")
+	if len(split) != 2 {
+		return key
+	}
+
+	now := gtime.Now()
+
+	claims := jwt.MapClaims{
+		"api_key":   split[0],
+		"exp":       now.Add(time.Minute * 10).UnixMilli(),
+		"timestamp": now.UnixMilli(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	token.Header["alg"] = "HS256"
+	token.Header["sign_type"] = "SIGN"
+
+	sign, err := token.SignedString([]byte(split[1]))
+	if err != nil {
+		logger.Error(ctx, err)
+	}
+
+	return sign
 }
