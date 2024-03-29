@@ -1,6 +1,6 @@
 server:
   address:     ":8000"
-  clientMaxBodySize: 100m
+  clientMaxBodySize: 20m
 
 # Redis 配置
 redis:
@@ -62,3 +62,12 @@ http:
   timeout: 60  # 单位秒
   proxy_open: false
   proxy_url: http://localhost:7890
+
+# Midjourney
+midjourney:
+  cdn_url: http://cdn.xxx.com
+  midjourney_proxy:
+    api_base_url: http://xxx/mj
+    api_secret: xxx
+    api_secret_header: mj-api-secret
+    cdn_original_url: https://cdn.discordapp.com

@@ -7,6 +7,7 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
@@ -1043,6 +1044,11 @@ func (s *sMidjourney) Fetch(ctx context.Context, params sdkm.MidjourneyProxyRequ
 	var keyTotal int
 
 	defer func() {
+
+		// 替换图片CDN地址
+		if config.Cfg.Midjourney.CdnUrl != "" && config.Cfg.Midjourney.MidjourneyProxy.CdnOriginalUrl != "" {
+			response.ImageUrl = gstr.Replace(response.ImageUrl, config.Cfg.Midjourney.MidjourneyProxy.CdnOriginalUrl, config.Cfg.Midjourney.CdnUrl)
+		}
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
