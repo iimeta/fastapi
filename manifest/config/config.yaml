@@ -1,0 +1,73 @@
+server:
+  address:     ":8000"
+  clientMaxBodySize: 20m
+
+# Redis 配置
+redis:
+  default:
+    address: 127.0.0.1:6379
+    db: 1
+    pass: fastapi666
+#    masterName: default  # 哨兵模式必填
+    minIdle: 20
+    maxIdle: 100
+    maxActive: 100
+    waitTimeout: 60
+    dialTimeout: 60
+    readTimeout: 60
+    writeTimeout: 60
+#  slave:
+#    address: 127.0.0.1:6379
+#    db: 1
+#    pass: fastapi666
+#    minIdle: 20
+#    maxIdle: 100
+#    maxActive: 100
+#    waitTimeout: 60
+#    dialTimeout: 60
+#    readTimeout: 60
+#    writeTimeout: 60
+
+mongodb:
+  uri: mongodb://admin:fastapi666@127.0.0.1:27017/?authSource=admin
+  database: fastapi
+
+# 日志配置
+logger:
+  path: "./log/"                          # 日志文件路径。默认为空，表示关闭，仅输出到终端
+  file: "{Ymd_H}.log"                     # 日志文件格式。默认为"{Y-m-d}.log"
+  prefix: ""                              # 日志内容输出前缀。默认为空
+  level: "debug"                          # 日志输出级别, debug, info, error, all
+  ctxKeys: [ "user_id", "app_id", "sk" ]  # 自定义Context上下文变量名称，自动打印Context的变量到日志中。默认为空
+  header: true                            # 是否打印日志的头信息。默认true
+  stdout: true                            # 日志是否同时输出到终端。默认true
+  rotateSize: 0                           # 按照日志文件大小对文件进行滚动切分。默认为0，表示关闭滚动切分特性
+  rotateExpire: 0                         # 按照日志文件时间间隔对文件滚动切分。默认为0，表示关闭滚动切分特性
+  rotateBackupLimit: 0                    # 按照切分的文件数量清理切分文件，当滚动切分特性开启时有效。默认为0，表示不备份，切分则删除
+  rotateBackupExpire: 0                   # 按照切分的文件有效期清理切分文件，当滚动切分特性开启时有效。默认为0，表示不备份，切分则删除
+  rotateBackupCompress: 0                 # 滚动切分文件的压缩比（0-9）。默认为0，表示不压缩
+  rotateCheckInterval: "1h"               # 滚动切分的时间检测间隔，一般不需要设置。默认为1小时
+  stdoutColorDisabled: false              # 关闭终端的颜色打印。默认开启
+  writerColorEnable: false                # 日志文件是否带上颜色。默认false，表示不带颜色
+
+# API接口配置
+api:
+  retry: 10                        # 重试次数, N > 0 重试 N 次, N == 0 默认重试 1 次, N < 0 重试所有key一轮
+  model_key_err_disable: 10        # 模型密钥错误禁用次数, 出现报错 N 次后禁用
+  model_agent_err_disable: 10      # 模型代理错误禁用次数, 出现报错 N 次后禁用, 注意: 模型代理密钥发生错误时, 也会记录模型代理错误次数
+  model_agent_key_err_disable: 10  # 模型代理密钥错误禁用次数, 出现报错 N 次后禁用
+
+# http配置
+http:
+  timeout: 60  # 单位秒
+  proxy_open: false
+  proxy_url: http://localhost:7890
+
+# Midjourney
+midjourney:
+  cdn_url: http://cdn.xxx.com
+  midjourney_proxy:
+    api_base_url: http://xxx/mj
+    api_secret: xxx
+    api_secret_header: mj-api-secret
+    cdn_original_url: https://cdn.discordapp.com
