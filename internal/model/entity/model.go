@@ -6,6 +6,7 @@ type Model struct {
 	Name               string   `bson:"name,omitempty"`                  // 模型名称
 	Model              string   `bson:"model,omitempty"`                 // 模型
 	Type               int      `bson:"type,omitempty"`                  // 模型类型[1:文生文, 2:文生图, 3:图生文, 4:图生图, 5:文生语音, 6:语音生文]
+	Prompt             string   `bson:"prompt,omitempty"`                // 预设提示词
 	PromptRatio        float64  `bson:"prompt_ratio,omitempty"`          // 提示倍率(提问倍率)
 	CompletionRatio    float64  `bson:"completion_ratio,omitempty"`      // 补全倍率(回答倍率)
 	DataFormat         int      `bson:"data_format,omitempty"`           // 数据格式[1:统一格式, 2:官方格式]

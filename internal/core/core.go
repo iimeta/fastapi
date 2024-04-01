@@ -81,17 +81,21 @@ func init() {
 
 			switch msg.Channel {
 			case consts.CHANGE_CHANNEL_USER:
-				_ = service.User().Subscribe(ctx, msg.Payload)
+				err = service.User().Subscribe(ctx, msg.Payload)
 			case consts.CHANGE_CHANNEL_APP:
-				_ = service.App().Subscribe(ctx, msg.Payload)
+				err = service.App().Subscribe(ctx, msg.Payload)
 			case consts.CHANGE_CHANNEL_APP_KEY:
-				_ = service.App().SubscribeKey(ctx, msg.Payload)
+				err = service.App().SubscribeKey(ctx, msg.Payload)
 			case consts.CHANGE_CHANNEL_MODEL:
-				_ = service.Model().Subscribe(ctx, msg.Payload)
+				err = service.Model().Subscribe(ctx, msg.Payload)
 			case consts.CHANGE_CHANNEL_KEY:
-				_ = service.Key().Subscribe(ctx, msg.Payload)
+				err = service.Key().Subscribe(ctx, msg.Payload)
 			case consts.CHANGE_CHANNEL_AGENT:
-				_ = service.ModelAgent().Subscribe(ctx, msg.Payload)
+				err = service.ModelAgent().Subscribe(ctx, msg.Payload)
+			}
+
+			if err != nil {
+				logger.Error(ctx, err)
 			}
 		}
 	}, nil); err != nil {

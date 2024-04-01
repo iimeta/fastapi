@@ -43,6 +43,7 @@ type Config struct {
 	Http       *Http       `json:"http"`
 	Api        *Api        `json:"api"`
 	Midjourney *Midjourney `json:"midjourney"`
+	Local      *Local      `json:"local"`
 }
 
 type Api struct {
@@ -68,6 +69,10 @@ type MidjourneyProxy struct {
 	ApiSecret       string `json:"api_secret"`
 	ApiSecretHeader string `json:"api_secret_header"`
 	CdnOriginalUrl  string `json:"cdn_original_url"`
+}
+
+type Local struct {
+	PublicIp []string `json:"public_ip"`
 }
 
 func Get(ctx context.Context, pattern string, def ...interface{}) (*gvar.Var, error) {

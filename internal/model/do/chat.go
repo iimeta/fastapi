@@ -39,6 +39,7 @@ type Chat struct {
 	ReqDate            string      `bson:"req_date,omitempty"`              // 请求日期
 	ClientIp           string      `bson:"client_ip,omitempty"`             // 客户端IP
 	RemoteIp           string      `bson:"remote_ip,omitempty"`             // 远程IP
+	LocalIp            string      `bson:"local_ip,omitempty"`              // 本地IP
 	ErrMsg             string      `bson:"err_msg,omitempty"`               // 错误信息
 	Status             int         `bson:"status,omitempty"`                // 状态[1:成功, -1:失败]
 	Creator            string      `bson:"creator,omitempty"`               // 创建人

@@ -49,12 +49,18 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 	var baseUrl string
 	var keyTotal int
 	var isRetry bool
+	var messages []openai.ChatCompletionMessage // 原始上下文
 
 	defer func() {
 
 		// 不记录重试
 		if isRetry {
 			return
+		}
+
+		// 替换回原始上下文
+		if len(messages) > 0 {
+			params.Messages = messages
 		}
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime
@@ -129,6 +135,7 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 		}
 	}
 
+	messages = append(messages, params.Messages...)
 	params.Model = m.Model
 
 	if gstr.HasPrefix(m.Model, "glm-") {
@@ -153,6 +160,18 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 
 		if params.Messages[0].Role == openai.ChatMessageRoleSystem && params.Messages[0].Content == "" && len(params.Messages[0].ToolCalls) == 0 {
 			params.Messages = params.Messages[1:]
+		}
+	}
+
+	// 替换预设提示词
+	if m.Prompt != "" {
+		if params.Messages[0].Role == openai.ChatMessageRoleSystem {
+			params.Messages[0].Content = m.Prompt
+		} else {
+			params.Messages = append([]openai.ChatCompletionMessage{{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: m.Prompt,
+			}}, params.Messages...)
 		}
 	}
 
@@ -249,12 +268,18 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 	var duration int64
 	var totalTime int64
 	var isRetry bool
+	var messages []openai.ChatCompletionMessage // 原始上下文
 
 	defer func() {
 
 		// 不记录重试
 		if isRetry {
 			return
+		}
+
+		// 替换回原始上下文
+		if len(messages) > 0 {
+			params.Messages = messages
 		}
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime
@@ -345,6 +370,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 		}
 	}
 
+	messages = append(messages, params.Messages...)
 	params.Model = m.Model
 
 	if gstr.HasPrefix(m.Model, "glm-") {
@@ -369,6 +395,18 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 
 		if params.Messages[0].Role == openai.ChatMessageRoleSystem && params.Messages[0].Content == "" && len(params.Messages[0].ToolCalls) == 0 {
 			params.Messages = params.Messages[1:]
+		}
+	}
+
+	// 替换预设提示词
+	if m.Prompt != "" {
+		if params.Messages[0].Role == openai.ChatMessageRoleSystem {
+			params.Messages[0].Content = m.Prompt
+		} else {
+			params.Messages = append([]openai.ChatCompletionMessage{{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: m.Prompt,
+			}}, params.Messages...)
 		}
 	}
 
@@ -505,6 +543,7 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, key *model.Key
 		ReqDate:      gtime.NewFromTimeStamp(completionsRes.EnterTime).Format("Y-m-d"),
 		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
 		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
+		LocalIp:      util.GetLocalIp(),
 		Status:       1,
 	}
 

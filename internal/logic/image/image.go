@@ -17,6 +17,7 @@ import (
 	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
+	"github.com/iimeta/fastapi/utility/util"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -204,6 +205,7 @@ func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Ke
 		ReqDate:      gtime.NewFromTimeStamp(imageRes.EnterTime).Format("Y-m-d"),
 		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
 		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
+		LocalIp:      util.GetLocalIp(),
 		Status:       1,
 	}
 
