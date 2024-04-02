@@ -40,10 +40,11 @@ func init() {
 
 // 配置信息
 type Config struct {
-	Http       *Http       `json:"http"`
-	Api        *Api        `json:"api"`
-	Midjourney *Midjourney `json:"midjourney"`
-	Local      *Local      `json:"local"`
+	ApiServerAddress string      `json:"api_server_address"`
+	Http             *Http       `json:"http"`
+	Api              *Api        `json:"api"`
+	Midjourney       *Midjourney `json:"midjourney"`
+	Local            *Local      `json:"local"`
 }
 
 type Api struct {

@@ -1,5 +1,6 @@
+api_server_address: ":8000"
+
 server:
-  address:     ":8000"
   clientMaxBodySize: 20m
 
 # Redis 配置

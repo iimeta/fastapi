@@ -73,6 +73,10 @@ var (
 				})
 			})
 
+			if config.Cfg.ApiServerAddress != "" {
+				s.SetAddr(config.Cfg.ApiServerAddress)
+			}
+
 			s.Run()
 			return nil
 		},
