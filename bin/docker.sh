@@ -2,4 +2,4 @@
 cd `dirname $0`
 cd ../
 
-docker build -f ./bin/Dockerfile -t iimeta/fastapi:0.1.0 .
+docker build -f ./bin/Dockerfile -t iimeta/fastapi:0.1.1 .

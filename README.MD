@@ -14,7 +14,7 @@
 
 ## 手动Docker部署
 0. 需提前安装好Redis和MongoDB以及Docker服务
-1. 拉取镜像: docker pull iimeta/fastapi:0.1.0
+1. 拉取镜像: docker pull iimeta/fastapi:0.1.1
 2. 创建配置文件目录: mkdir -p /data/fastapi/manifest/config
 3. 进入配置文件目录: cd /data/fastapi/manifest/config
 4. 下载配置文件: wget https://github.com/iimeta/fastapi/raw/docker/manifest/config/config.yaml
@@ -28,7 +28,7 @@ docker run -d \
   -v /etc/localtime:/etc/localtime:ro \
   -v /data/fastapi/manifest/config/config.yaml:/app/manifest/config/config.yaml \
   --name fastapi \
-  iimeta/fastapi:0.1.0
+  iimeta/fastapi:0.1.1
 ```
 7. 访问: http://ip:8000/ 如: http://127.0.0.1:8000/
 
@@ -42,7 +42,7 @@ docker run -d \
 
 ## 备用国内镜像地址
 ```shell
-docker pull registry.cn-hangzhou.aliyuncs.com/iimeta/fastapi:0.1.0
+docker pull registry.cn-hangzhou.aliyuncs.com/iimeta/fastapi:0.1.1
 ```
 ```shell
 docker run -d \
@@ -52,7 +52,7 @@ docker run -d \
   -v /etc/localtime:/etc/localtime:ro \
   -v /data/fastapi/manifest/config/config.yaml:/app/manifest/config/config.yaml \
   --name fastapi \
-  registry.cn-hangzhou.aliyuncs.com/iimeta/fastapi:0.1.0
+  registry.cn-hangzhou.aliyuncs.com/iimeta/fastapi:0.1.1
 ```
 
 

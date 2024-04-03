@@ -1,6 +1,6 @@
 #!/bin/bash
 
-docker pull iimeta/fastapi:0.1.0
+docker pull iimeta/fastapi:0.1.1
 
 mkdir -p /data/fastapi/manifest/config
 
