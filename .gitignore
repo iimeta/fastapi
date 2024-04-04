@@ -17,6 +17,3 @@ manifest/output/
 temp/
 temp.yaml
 log/*.log
-resource/public/media/
-resource/private/tmp/
-resource/private/files/
