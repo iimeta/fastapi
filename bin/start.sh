@@ -7,4 +7,4 @@ docker run -d \
   -v /etc/localtime:/etc/localtime:ro \
   -v /data/fastapi/manifest/config/config.yaml:/app/manifest/config/config.yaml \
   --name fastapi \
-  iimeta/fastapi:0.1.1
+  iimeta/fastapi:0.1.2
