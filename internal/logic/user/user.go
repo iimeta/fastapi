@@ -31,12 +31,12 @@ func New() service.IUser {
 	}
 }
 
-// 根据userId获取用户信息
-func (s *sUser) GetUserByUserId(ctx context.Context, userId int) (*model.User, error) {
+// 根据用户ID获取用户信息
+func (s *sUser) GetUser(ctx context.Context, userId int) (*model.User, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "GetUserByUserId time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "GetUser time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	user, err := dao.User.FindUserByUserId(ctx, userId)
@@ -95,7 +95,7 @@ func (s *sUser) List(ctx context.Context) ([]*model.User, error) {
 }
 
 // 更改用户额度
-func (s *sUser) ChangeQuota(ctx context.Context, userId, quota int) error {
+func (s *sUser) ChangeQuota(ctx context.Context, userId, quota, currentQuota int) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -107,6 +107,19 @@ func (s *sUser) ChangeQuota(ctx context.Context, userId, quota int) error {
 			"quota": quota,
 		},
 	}); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	user, err := s.GetCacheUser(ctx, userId)
+	if err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	user.Quota = currentQuota
+
+	if err = s.SaveCacheUser(ctx, user); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}

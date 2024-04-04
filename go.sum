@@ -41,8 +41,8 @@ github.com/gorilla/websocket v1.5.1 h1:gmztn0JnHVt9JZquRuzLw3g4wouNVzKL15iLr/zn/
 github.com/gorilla/websocket v1.5.1/go.mod h1:x3kM2JMyaluk02fnUJpQuwD2dCS5NDG2ZHL0uE0tcaY=
 github.com/grokify/html-strip-tags-go v0.0.1 h1:0fThFwLbW7P/kOiTBs03FsJSV9RM2M/Q/MOnCQxKMo0=
 github.com/grokify/html-strip-tags-go v0.0.1/go.mod h1:2Su6romC5/1VXOQMaWL2yb618ARB8iVo6/DR99A6d78=
-github.com/iimeta/fastapi-sdk v0.1.0 h1:XTvZAkF6UdBu/MTBuKE0Raf1etPqcT0Mf37o5JtqSJ8=
-github.com/iimeta/fastapi-sdk v0.1.0/go.mod h1:FXsHHYVK3ymVavThxGlHd7qJQQFW5bxjQpZWBeOaOJQ=
+github.com/iimeta/fastapi-sdk v0.1.1 h1:DRZbh+kbMSkCt39QSoSyK5rPYsAnAlsDOj8atGoxkQo=
+github.com/iimeta/fastapi-sdk v0.1.1/go.mod h1:FXsHHYVK3ymVavThxGlHd7qJQQFW5bxjQpZWBeOaOJQ=
 github.com/iimeta/tiktoken-go v0.0.0-20240312165419-7d75ab68a516 h1:WtUVGIxucEg2E8fSGGA7BsBrCwv2O4iGbT+ioNByx6M=
 github.com/iimeta/tiktoken-go v0.0.0-20240312165419-7d75ab68a516/go.mod h1:PpRikFwoTQaeC4kthl6Jg6fkf48Zcvva8PXjaJi8pcU=
 github.com/klauspost/compress v1.13.6 h1:P76CopJELS0TiO2mebmnzgWaajssP/EszplttgQxcgc=

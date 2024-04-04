@@ -19,7 +19,7 @@ type (
 		// 应用列表
 		List(ctx context.Context) ([]*model.App, error)
 		// 更改应用额度
-		ChangeQuota(ctx context.Context, appId, quota int) error
+		ChangeQuota(ctx context.Context, appId, quota, currentQuota int) error
 		// 保存应用信息到缓存
 		SaveCacheApp(ctx context.Context, app *model.App) error
 		// 获取缓存中的应用信息
@@ -36,6 +36,8 @@ type (
 		UpdateCacheAppKey(ctx context.Context, key *entity.Key)
 		// 移除缓存中的应用密钥信息
 		RemoveCacheAppKey(ctx context.Context, secretKey string)
+		// 更改密钥额度
+		ChangeAppKeyQuota(ctx context.Context, secretKey string, quota, currentQuota int) error
 		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
 		// 应用密钥变更订阅

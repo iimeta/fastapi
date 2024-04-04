@@ -303,26 +303,6 @@ func (s *sKey) DisabledModelKey(ctx context.Context, key *model.Key) {
 	}
 }
 
-// 更改密钥额度
-func (s *sKey) ChangeQuota(ctx context.Context, secretKey string, quota int) error {
-
-	now := gtime.TimestampMilli()
-	defer func() {
-		logger.Debugf(ctx, "sKey ChangeQuota time: %d", gtime.TimestampMilli()-now)
-	}()
-
-	if err := dao.Key.UpdateOne(ctx, bson.M{"key": secretKey}, bson.M{
-		"$inc": bson.M{
-			"quota": quota,
-		},
-	}); err != nil {
-		logger.Error(ctx, err)
-		return err
-	}
-
-	return nil
-}
-
 // 保存模型密钥列表到缓存
 func (s *sKey) SaveCacheModelKeys(ctx context.Context, id string, keys []*model.Key) error {
 

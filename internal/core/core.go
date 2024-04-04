@@ -48,15 +48,13 @@ func init() {
 		user := userMap[app.UserId]
 		if user != nil {
 			fields := g.Map{
-				consts.USER_TOTAL_TOKENS_FIELD:                          user.Quota,
-				fmt.Sprintf(consts.APP_TOTAL_TOKENS_FIELD, app.AppId):   app.Quota,
-				fmt.Sprintf(consts.APP_IS_LIMIT_QUOTA_FIELD, app.AppId): app.IsLimitQuota,
+				consts.USER_TOTAL_TOKENS_FIELD:                        user.Quota,
+				fmt.Sprintf(consts.APP_TOTAL_TOKENS_FIELD, app.AppId): app.Quota,
 			}
 
 			keys := keyMap[app.AppId]
 			for _, key := range keys {
 				fields[fmt.Sprintf(consts.KEY_TOTAL_TOKENS_FIELD, key.AppId, key.Key)] = key.Quota
-				fields[fmt.Sprintf(consts.KEY_IS_LIMIT_QUOTA_FIELD, key.AppId, key.Key)] = key.IsLimitQuota
 			}
 
 			if _, err = redis.HSet(ctx, fmt.Sprintf(consts.API_USAGE_KEY, app.UserId), fields); err != nil {

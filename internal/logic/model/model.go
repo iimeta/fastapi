@@ -477,12 +477,10 @@ func (s *sModel) GetCacheList(ctx context.Context, ids ...string) ([]*model.Mode
 			continue
 		}
 
-		if result.Status == 1 {
-			items = append(items, result)
-			if err = s.modelCache.Set(ctx, result.Id, result, 0); err != nil {
-				logger.Error(ctx, err)
-				return nil, err
-			}
+		items = append(items, result)
+		if err = s.modelCache.Set(ctx, result.Id, result, 0); err != nil {
+			logger.Error(ctx, err)
+			return nil, err
 		}
 	}
 

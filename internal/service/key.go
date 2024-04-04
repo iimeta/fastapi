@@ -28,8 +28,6 @@ type (
 		RecordErrorModelKey(ctx context.Context, m *model.Model, key *model.Key)
 		// 禁用模型密钥
 		DisabledModelKey(ctx context.Context, key *model.Key)
-		// 更改密钥额度
-		ChangeQuota(ctx context.Context, secretKey string, quota int) error
 		// 保存模型密钥列表到缓存
 		SaveCacheModelKeys(ctx context.Context, id string, keys []*model.Key) error
 		// 获取缓存中的模型密钥列表

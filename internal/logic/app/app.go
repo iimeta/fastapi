@@ -98,13 +98,26 @@ func (s *sApp) List(ctx context.Context) ([]*model.App, error) {
 }
 
 // 更改应用额度
-func (s *sApp) ChangeQuota(ctx context.Context, appId, quota int) error {
+func (s *sApp) ChangeQuota(ctx context.Context, appId, quota, currentQuota int) error {
 
 	if err := dao.App.UpdateOne(ctx, bson.M{"app_id": appId}, bson.M{
 		"$inc": bson.M{
 			"quota": quota,
 		},
 	}); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	app, err := s.GetCacheApp(ctx, appId)
+	if err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	app.Quota = currentQuota
+
+	if err = s.SaveCacheApp(ctx, app); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
@@ -306,6 +319,39 @@ func (s *sApp) RemoveCacheAppKey(ctx context.Context, secretKey string) {
 	if _, err := redis.Del(ctx, fmt.Sprintf(consts.API_APP_KEY_KEY, secretKey)); err != nil {
 		logger.Error(ctx, err)
 	}
+}
+
+// 更改密钥额度
+func (s *sApp) ChangeAppKeyQuota(ctx context.Context, secretKey string, quota, currentQuota int) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sApp ChangeAppKeyQuota time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	if err := dao.Key.UpdateOne(ctx, bson.M{"key": secretKey}, bson.M{
+		"$inc": bson.M{
+			"quota": quota,
+		},
+	}); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	key, err := s.GetCacheAppKey(ctx, secretKey)
+	if err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	key.Quota = currentQuota
+
+	if err = s.SaveCacheAppKey(ctx, key); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	return nil
 }
 
 // 变更订阅

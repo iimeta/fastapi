@@ -57,15 +57,39 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) error {
 		return err
 	}
 
-	getUserTotalTokensTime := gtime.TimestampMilli()
-	userTotalTokens, err := s.GetUserTotalTokens(ctx)
-	if err != nil {
+	if key.IsLimitQuota && key.Quota <= 0 {
+		err = errors.ERR_INSUFFICIENT_QUOTA
 		logger.Error(ctx, err)
 		return err
 	}
-	logger.Debugf(ctx, "GetUserTotalTokens time: %d", gtime.TimestampMilli()-getUserTotalTokensTime)
 
-	if userTotalTokens <= 0 {
+	user, err := service.User().GetCacheUser(ctx, service.Session().GetUserId(ctx))
+	if err != nil || user == nil {
+
+		if user, err = service.User().GetUser(ctx, service.Session().GetUserId(ctx)); err != nil {
+			logger.Error(ctx, err)
+			return errors.ERR_INVALID_USER
+		}
+
+		if err = service.User().SaveCacheUser(ctx, user); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+	}
+
+	if user == nil {
+		err = errors.ERR_INVALID_USER
+		logger.Error(ctx, err)
+		return err
+	}
+
+	if user.Status == 2 {
+		err = errors.ERR_USER_DISABLED
+		logger.Error(ctx, err)
+		return err
+	}
+
+	if user.Quota <= 0 {
 		err = errors.ERR_INSUFFICIENT_QUOTA
 		logger.Error(ctx, err)
 		return err
@@ -85,44 +109,22 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) error {
 		}
 	}
 
+	if app == nil {
+		err = errors.ERR_INVALID_APP
+		logger.Error(ctx, err)
+		return err
+	}
+
 	if app.Status == 2 {
 		err = errors.ERR_APP_DISABLED
 		logger.Error(ctx, err)
 		return err
 	}
 
-	if key.IsLimitQuota {
-
-		getKeyTotalTokensTime := gtime.TimestampMilli()
-		keyTotalTokens, err := s.GetKeyTotalTokens(ctx)
-		if err != nil {
-			logger.Error(ctx, err)
-			return err
-		}
-		logger.Debugf(ctx, "GetKeyTotalTokens time: %d", gtime.TimestampMilli()-getKeyTotalTokensTime)
-
-		if keyTotalTokens <= 0 {
-			err = errors.ERR_INSUFFICIENT_QUOTA
-			logger.Error(ctx, err)
-			return err
-		}
-	}
-
-	if app.IsLimitQuota {
-
-		getAppTotalTokensTime := gtime.TimestampMilli()
-		appTotalTokens, err := s.GetAppTotalTokens(ctx)
-		if err != nil {
-			logger.Error(ctx, err)
-			return err
-		}
-		logger.Debugf(ctx, "GetAppTotalTokens time: %d", gtime.TimestampMilli()-getAppTotalTokensTime)
-
-		if appTotalTokens <= 0 {
-			err = errors.ERR_INSUFFICIENT_QUOTA
-			logger.Error(ctx, err)
-			return err
-		}
+	if app.IsLimitQuota && app.Quota <= 0 {
+		err = errors.ERR_INSUFFICIENT_QUOTA
+		logger.Error(ctx, err)
+		return err
 	}
 
 	if err = service.Session().SaveIsLimitQuota(ctx, app.IsLimitQuota, key.IsLimitQuota); err != nil {

@@ -22,22 +22,12 @@ type (
 		RecordError(ctx context.Context, model *model.Model, key *model.Key, modelAgent *model.ModelAgent)
 		// 记录使用额度
 		RecordUsage(ctx context.Context, model *model.Model, usage openai.Usage) error
-		GetUserUsageKey(ctx context.Context) string
-		GetAppUsageCountField(ctx context.Context) string
-		GetAppUsedTokensField(ctx context.Context) string
-		GetAppTotalTokensField(ctx context.Context) string
-		GetKeyUsageCountField(ctx context.Context) string
-		GetKeyUsedTokensField(ctx context.Context) string
-		GetKeyTotalTokensField(ctx context.Context) string
-		GetUserUsageCount(ctx context.Context) (int, error)
-		GetUserUsedTokens(ctx context.Context) (int, error)
 		GetUserTotalTokens(ctx context.Context) (int, error)
-		GetAppUsageCount(ctx context.Context) (int, error)
-		GetAppUsedTokens(ctx context.Context) (int, error)
 		GetAppTotalTokens(ctx context.Context) (int, error)
-		GetKeyUsageCount(ctx context.Context) (int, error)
-		GetKeyUsedTokens(ctx context.Context) (int, error)
 		GetKeyTotalTokens(ctx context.Context) (int, error)
+		GetUserUsageKey(ctx context.Context) string
+		GetAppTotalTokensField(ctx context.Context) string
+		GetKeyTotalTokensField(ctx context.Context) string
 	}
 )
 

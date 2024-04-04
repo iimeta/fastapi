@@ -15,11 +15,11 @@ import (
 type (
 	IUser interface {
 		// 根据userId获取用户信息
-		GetUserByUserId(ctx context.Context, userId int) (*model.User, error)
+		GetUser(ctx context.Context, userId int) (*model.User, error)
 		// 用户列表
 		List(ctx context.Context) ([]*model.User, error)
 		// 更改用户额度
-		ChangeQuota(ctx context.Context, userId, quota int) error
+		ChangeQuota(ctx context.Context, userId, quota, currentQuota int) error
 		// 保存用户信息到缓存
 		SaveCacheUser(ctx context.Context, user *model.User) error
 		// 获取缓存中的用户信息

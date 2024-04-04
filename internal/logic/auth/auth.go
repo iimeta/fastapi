@@ -49,7 +49,7 @@ func (s *sAuth) CheckUser(ctx context.Context, userId int) error {
 	user, err := service.User().GetCacheUser(ctx, userId)
 	if err != nil || user == nil {
 
-		if user, err = service.User().GetUserByUserId(ctx, userId); err != nil {
+		if user, err = service.User().GetUser(ctx, userId); err != nil {
 			logger.Error(ctx, err)
 			return errors.ERR_INVALID_USER
 		}
