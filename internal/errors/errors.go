@@ -1,9 +1,11 @@
 package errors
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/gogf/gf/v2/errors/gerror"
+	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -22,12 +24,13 @@ type FastAPIError struct {
 var (
 	ERR_NIL                          = NewError(500, -1, "", "fastapi_error")
 	ERR_UNKNOWN                      = NewError(500, -1, "Unknown Error", "fastapi_error")
+	ERR_SYSTEM                       = NewError(500, -1, "System Error.", "fastapi_error")
 	ERR_INTERNAL_ERROR               = NewError(500, 500, "Internal Error", "fastapi_error")
+	ERR_NOT_FOUND                    = NewError(404, "unknown_url", "Unknown request URL", "invalid_request_error")
 	ERR_NO_AVAILABLE_KEY             = NewError(500, "fastapi_error", "No available key", "fastapi_error")
 	ERR_NO_AVAILABLE_MODEL_AGENT     = NewError(500, "fastapi_error", "No available model agent", "fastapi_error")
 	ERR_NO_AVAILABLE_MODEL_AGENT_KEY = NewError(500, "fastapi_error", "No available model agent key", "fastapi_error")
 	ERR_NOT_AUTHORIZED               = NewError(403, "fastapi_error", "Not Authorized", "fastapi_error")
-	ERR_NOT_FOUND                    = NewError(404, "unknown_url", "Unknown request URL", "invalid_request_error")
 	ERR_NOT_API_KEY                  = NewError(401, "invalid_request_error", "You didn't provide an API key.", "invalid_request_error")
 	ERR_INVALID_API_KEY              = NewError(401, "invalid_api_key", "Incorrect API key provided or has been disabled.", "fastapi_request_error")
 	ERR_API_KEY_DISABLED             = NewError(401, "api_key_disabled", "Key has been disabled.", "fastapi_request_error")
@@ -67,22 +70,41 @@ func NewError(status int, code any, message, typ string) error {
 	}
 }
 
-func Error(err error) IFastAPIError {
+func NewErrorf(status int, code any, message, typ string, args ...interface{}) error {
+	return &FastAPIError{
+		Err: &openai.APIError{
+			HTTPStatusCode: status,
+			Code:           code,
+			Message:        fmt.Sprintf(message, args...),
+			Type:           typ,
+		},
+	}
+}
+
+func Error(ctx context.Context, err error) IFastAPIError {
 
 	if err == nil {
 		return ERR_NIL.(IFastAPIError)
 	}
 
+	// 屏蔽不想对外暴露的错误
+	if Is(err, ERR_NO_AVAILABLE_KEY) || Is(err, ERR_NO_AVAILABLE_MODEL_AGENT) || Is(err, ERR_NO_AVAILABLE_MODEL_AGENT_KEY) {
+		err = ERR_SYSTEM
+	}
+
 	if e, ok := err.(IFastAPIError); ok {
-		return e
+		return NewErrorf(e.Status(), e.ErrCode(), e.ErrMessage()+" TraceId: %s", e.ErrType(), gctx.CtxId(ctx)).(IFastAPIError)
 	}
 
-	e := &openai.APIError{}
-	if errors.As(err, &e) {
-		return NewError(e.HTTPStatusCode, e.Code, e.Message, e.Type).(IFastAPIError)
+	apiError := &openai.APIError{}
+	if As(err, &apiError) {
+		return NewError(apiError.HTTPStatusCode, apiError.Code, apiError.Message, apiError.Type).(IFastAPIError)
 	}
 
-	return NewError(200, "fastapi_error", err.Error(), "fastapi_error").(IFastAPIError)
+	//return NewError(200, "fastapi_error", err.Error(), "fastapi_error").(IFastAPIError)
+	// 未知的错误, 用统一描述处理
+	e := ERR_UNKNOWN.(IFastAPIError)
+	return NewErrorf(e.Status(), e.ErrCode(), e.ErrMessage()+" TraceId: %s", e.ErrType(), gctx.CtxId(ctx)).(IFastAPIError)
 }
 
 func (e *FastAPIError) Error() string {

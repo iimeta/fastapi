@@ -49,18 +49,12 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 	var baseUrl string
 	var keyTotal int
 	var isRetry bool
-	var messages []openai.ChatCompletionMessage // 原始上下文
 
 	defer func() {
 
 		// 不记录重试
 		if isRetry {
 			return
-		}
-
-		// 替换回原始上下文
-		if len(messages) > 0 {
-			params.Messages = messages
 		}
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime
@@ -135,8 +129,8 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 		}
 	}
 
-	messages = append(messages, params.Messages...)
-	params.Model = m.Model
+	request := params
+	request.Model = m.Model
 
 	if gstr.HasPrefix(m.Model, "glm-") {
 
@@ -146,37 +140,37 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 
 		key.Key = genGlmSign(ctx, key.Key)
 
-		if params.TopP == 1 {
-			params.TopP -= 0.01
-		} else if params.TopP == 0 {
-			params.TopP += 0.01
+		if request.TopP == 1 {
+			request.TopP -= 0.01
+		} else if request.TopP == 0 {
+			request.TopP += 0.01
 		}
 
-		if params.Temperature == 1 {
-			params.Temperature -= 0.01
-		} else if params.Temperature == 0 {
-			params.Temperature += 0.01
+		if request.Temperature == 1 {
+			request.Temperature -= 0.01
+		} else if request.Temperature == 0 {
+			request.Temperature += 0.01
 		}
 
-		if params.Messages[0].Role == openai.ChatMessageRoleSystem && params.Messages[0].Content == "" && len(params.Messages[0].ToolCalls) == 0 {
-			params.Messages = params.Messages[1:]
+		if request.Messages[0].Role == openai.ChatMessageRoleSystem && request.Messages[0].Content == "" && len(request.Messages[0].ToolCalls) == 0 {
+			request.Messages = request.Messages[1:]
 		}
 	}
 
 	// 替换预设提示词
 	if m.Prompt != "" {
-		if params.Messages[0].Role == openai.ChatMessageRoleSystem {
-			params.Messages[0].Content = m.Prompt
+		if request.Messages[0].Role == openai.ChatMessageRoleSystem {
+			request.Messages[0].Content = m.Prompt
 		} else {
-			params.Messages = append([]openai.ChatCompletionMessage{{
+			request.Messages = append([]openai.ChatCompletionMessage{{
 				Role:    openai.ChatMessageRoleSystem,
 				Content: m.Prompt,
-			}}, params.Messages...)
+			}}, request.Messages...)
 		}
 	}
 
 	client := sdk.NewClient(ctx, m.Model, key.Key, baseUrl)
-	if response, err = sdk.ChatCompletion(ctx, client, params); err != nil {
+	if response, err = sdk.ChatCompletion(ctx, client, request); err != nil {
 		logger.Error(ctx, err)
 
 		if len(retry) > 0 {
@@ -268,18 +262,12 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 	var duration int64
 	var totalTime int64
 	var isRetry bool
-	var messages []openai.ChatCompletionMessage // 原始上下文
 
 	defer func() {
 
 		// 不记录重试
 		if isRetry {
 			return
-		}
-
-		// 替换回原始上下文
-		if len(messages) > 0 {
-			params.Messages = messages
 		}
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime
@@ -370,8 +358,8 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 		}
 	}
 
-	messages = append(messages, params.Messages...)
-	params.Model = m.Model
+	request := params
+	request.Model = m.Model
 
 	if gstr.HasPrefix(m.Model, "glm-") {
 
@@ -381,37 +369,37 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 
 		key.Key = genGlmSign(ctx, key.Key)
 
-		if params.TopP == 1 {
-			params.TopP -= 0.01
-		} else if params.TopP == 0 {
-			params.TopP += 0.01
+		if request.TopP == 1 {
+			request.TopP -= 0.01
+		} else if request.TopP == 0 {
+			request.TopP += 0.01
 		}
 
-		if params.Temperature == 1 {
-			params.Temperature -= 0.01
-		} else if params.Temperature == 0 {
-			params.Temperature += 0.01
+		if request.Temperature == 1 {
+			request.Temperature -= 0.01
+		} else if request.Temperature == 0 {
+			request.Temperature += 0.01
 		}
 
-		if params.Messages[0].Role == openai.ChatMessageRoleSystem && params.Messages[0].Content == "" && len(params.Messages[0].ToolCalls) == 0 {
-			params.Messages = params.Messages[1:]
+		if request.Messages[0].Role == openai.ChatMessageRoleSystem && request.Messages[0].Content == "" && len(request.Messages[0].ToolCalls) == 0 {
+			request.Messages = request.Messages[1:]
 		}
 	}
 
 	// 替换预设提示词
 	if m.Prompt != "" {
-		if params.Messages[0].Role == openai.ChatMessageRoleSystem {
-			params.Messages[0].Content = m.Prompt
+		if request.Messages[0].Role == openai.ChatMessageRoleSystem {
+			request.Messages[0].Content = m.Prompt
 		} else {
-			params.Messages = append([]openai.ChatCompletionMessage{{
+			request.Messages = append([]openai.ChatCompletionMessage{{
 				Role:    openai.ChatMessageRoleSystem,
 				Content: m.Prompt,
-			}}, params.Messages...)
+			}}, request.Messages...)
 		}
 	}
 
 	client := sdk.NewClient(ctx, m.Model, key.Key, baseUrl)
-	response, err := sdk.ChatCompletionStream(ctx, client, params)
+	response, err := sdk.ChatCompletionStream(ctx, client, request)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -556,7 +544,7 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, key *model.Key
 		chat.PromptRatio = model.PromptRatio
 		chat.CompletionRatio = model.CompletionRatio
 		chat.IsEnableModelAgent = model.IsEnableModelAgent
-		if chat.IsEnableModelAgent {
+		if chat.IsEnableModelAgent && model.ModelAgent != nil {
 			chat.ModelAgentId = model.ModelAgent.Id
 			chat.ModelAgent = &do.ModelAgent{
 				Name:    model.ModelAgent.Name,

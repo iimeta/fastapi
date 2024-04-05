@@ -96,7 +96,7 @@ func middleware(r *ghttp.Request) {
 	}
 
 	if secretKey == "" {
-		err := errors.Error(errors.ERR_NOT_API_KEY)
+		err := errors.Error(r.GetCtx(), errors.ERR_NOT_API_KEY)
 		r.Response.Header().Set("Content-Type", "application/json")
 		r.Response.WriteStatus(err.Status(), gjson.MustEncodeString(err))
 		r.Exit()
@@ -104,7 +104,7 @@ func middleware(r *ghttp.Request) {
 	}
 
 	if err := service.Auth().VerifySecretKey(r.GetCtx(), secretKey); err != nil {
-		err := errors.Error(err)
+		err := errors.Error(r.GetCtx(), err)
 		r.Response.Header().Set("Content-Type", "application/json")
 		r.Response.WriteStatus(err.Status(), gjson.MustEncodeString(err))
 		r.Exit()
@@ -133,38 +133,40 @@ func middlewareHandlerResponse(r *ghttp.Request) {
 		msg  string
 		err  = r.GetError()
 		res  = r.GetHandlerResponse()
-		code = errors.Error(err)
+		code = errors.Error(r.GetCtx(), err)
 	)
+
 	if err != nil {
-		if code == errors.Error(errors.ERR_NIL) {
-			code = errors.Error(errors.ERR_INTERNAL_ERROR)
+		if code == errors.Error(r.GetCtx(), errors.ERR_NIL) {
+			code = errors.Error(r.GetCtx(), errors.ERR_INTERNAL_ERROR)
 		}
 		msg = err.Error()
 	} else {
+
 		if r.Response.Status > 0 && r.Response.Status != http.StatusOK {
 
 			msg = http.StatusText(r.Response.Status)
 
 			switch r.Response.Status {
 			case http.StatusNotFound:
-				code = errors.Error(errors.ERR_NOT_FOUND)
+				code = errors.Error(r.GetCtx(), errors.ERR_NOT_FOUND)
 			case http.StatusForbidden:
-				code = errors.Error(errors.ERR_NOT_AUTHORIZED)
+				code = errors.Error(r.GetCtx(), errors.ERR_NOT_AUTHORIZED)
 			default:
-				code = errors.Error(errors.ERR_UNKNOWN)
+				code = errors.Error(r.GetCtx(), errors.ERR_UNKNOWN)
 			}
 
 			err = code.Unwrap()
 			r.SetError(err)
 
 		} else {
-			code = errors.Error(errors.NewError(200, 0, "success", "success"))
+			code = errors.Error(r.GetCtx(), errors.NewError(200, 0, "success", "success"))
 			msg = code.ErrMessage()
 		}
 	}
 
 	if err != nil {
-		err := errors.Error(err)
+		err := errors.Error(r.GetCtx(), err)
 		r.Response.Header().Set("Content-Type", "application/json")
 		r.Response.WriteStatus(err.Status(), gjson.MustEncodeString(err))
 	} else {
