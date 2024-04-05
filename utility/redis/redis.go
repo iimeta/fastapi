@@ -154,7 +154,11 @@ func HVals(ctx context.Context, key string) (gvar.Vars, error) {
 	return slave.HVals(ctx, key)
 }
 
-func HSetStr(ctx context.Context, key string, field, value string) (int64, error) {
+func HSetStrStr(ctx context.Context, key string, field, value string) (int64, error) {
+	return HSet(ctx, key, g.MapStrAny{field: value})
+}
+
+func HSetStrAny(ctx context.Context, key string, field string, value interface{}) (int64, error) {
 	return HSet(ctx, key, g.MapStrAny{field: value})
 }
 

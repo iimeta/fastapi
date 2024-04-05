@@ -24,8 +24,13 @@ func init() {
 		panic(err)
 	}
 
-	userMap := util.ToMap(users, func(t *model.User) int {
-		return t.UserId
+	userMap := util.ToMap(users, func(user *model.User) int {
+
+		if _, err = redis.HSetStrAny(ctx, fmt.Sprintf(consts.API_USAGE_KEY, user.UserId), consts.USER_TOTAL_TOKENS_FIELD, user.Quota); err != nil {
+			panic(err)
+		}
+
+		return user.UserId
 	})
 
 	apps, err := service.App().List(ctx)
@@ -48,7 +53,6 @@ func init() {
 		user := userMap[app.UserId]
 		if user != nil {
 			fields := g.Map{
-				consts.USER_TOTAL_TOKENS_FIELD:                        user.Quota,
 				fmt.Sprintf(consts.APP_TOTAL_TOKENS_FIELD, app.AppId): app.Quota,
 			}
 
