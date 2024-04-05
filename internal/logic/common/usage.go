@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/os/grpool"
+	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
@@ -15,11 +16,16 @@ import (
 // 记录使用额度
 func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage openai.Usage) error {
 
-	usageKey := s.GetUserUsageKey(ctx)
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sCommon RecordUsage time: %d", gtime.TimestampMilli()-now)
+	}()
 
-	promptTokens := model.PromptRatio * float64(usage.PromptTokens)
-	completionTokens := model.CompletionRatio * float64(usage.CompletionTokens)
+	promptTokens := float64(usage.PromptTokens) * model.PromptRatio
+	completionTokens := float64(usage.CompletionTokens) * model.CompletionRatio
 	totalTokens := promptTokens + completionTokens
+
+	usageKey := s.GetUserUsageKey(ctx)
 
 	currentQuota, err := redis.HIncrBy(ctx, usageKey, consts.USER_TOTAL_TOKENS_FIELD, int64(-totalTokens))
 	if err != nil {
@@ -27,9 +33,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage ope
 	}
 
 	if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
-		if err = service.User().ChangeQuota(ctx, service.Session().GetUserId(ctx), int(-totalTokens), int(currentQuota)); err != nil {
-			logger.Error(ctx, err)
-		}
+		service.User().ChangeQuota(ctx, service.Session().GetUserId(ctx), int(-totalTokens), int(currentQuota))
 	}, nil); err != nil {
 		logger.Error(ctx, err)
 	}
@@ -42,9 +46,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage ope
 		}
 
 		if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
-			if err = service.App().ChangeQuota(ctx, service.Session().GetAppId(ctx), int(-totalTokens), int(currentQuota)); err != nil {
-				logger.Error(ctx, err)
-			}
+			service.App().ChangeQuota(ctx, service.Session().GetAppId(ctx), int(-totalTokens), int(currentQuota))
 		}, nil); err != nil {
 			logger.Error(ctx, err)
 		}
@@ -58,9 +60,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage ope
 		}
 
 		if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
-			if err = service.App().ChangeAppKeyQuota(ctx, service.Session().GetSecretKey(ctx), int(-totalTokens), int(currentQuota)); err != nil {
-				logger.Error(ctx, err)
-			}
+			service.App().ChangeAppKeyQuota(ctx, service.Session().GetSecretKey(ctx), int(-totalTokens), int(currentQuota))
 		}, nil); err != nil {
 			logger.Error(ctx, err)
 		}

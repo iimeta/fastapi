@@ -28,8 +28,7 @@ func (s *sSession) Save(ctx context.Context, secretKey string) error {
 		return err
 	}
 
-	r := g.RequestFromCtx(ctx)
-	if r != nil {
+	if r := g.RequestFromCtx(ctx); r != nil {
 		r.SetCtxVar(consts.USER_ID_KEY, userId)
 		r.SetCtxVar(consts.APP_ID_KEY, appId)
 		r.SetCtxVar(consts.SECRET_KEY, secretKey)
@@ -39,15 +38,11 @@ func (s *sSession) Save(ctx context.Context, secretKey string) error {
 }
 
 // 保存应用和密钥是否限制额度
-func (s *sSession) SaveIsLimitQuota(ctx context.Context, app, key bool) error {
-
-	r := g.RequestFromCtx(ctx)
-	if r != nil {
+func (s *sSession) SaveIsLimitQuota(ctx context.Context, app, key bool) {
+	if r := g.RequestFromCtx(ctx); r != nil {
 		r.SetCtxVar(consts.APP_IS_LIMIT_QUOTA_KEY, app)
 		r.SetCtxVar(consts.KEY_IS_LIMIT_QUOTA_KEY, key)
 	}
-
-	return nil
 }
 
 // 获取用户ID
@@ -112,8 +107,7 @@ func (s *sSession) GetKeyIsLimitQuota(ctx context.Context) bool {
 
 // 保存用户信息到会话中
 func (s *sSession) SaveUser(ctx context.Context, user *model.User) {
-	r := g.RequestFromCtx(ctx)
-	if r != nil {
+	if r := g.RequestFromCtx(ctx); r != nil {
 		r.SetCtxVar(consts.SESSION_USER, user)
 	}
 }
@@ -132,8 +126,7 @@ func (s *sSession) GetUser(ctx context.Context) *model.User {
 
 // 保存应用信息到会话中
 func (s *sSession) SaveApp(ctx context.Context, app *model.App) {
-	r := g.RequestFromCtx(ctx)
-	if r != nil {
+	if r := g.RequestFromCtx(ctx); r != nil {
 		r.SetCtxVar(consts.SESSION_APP, app)
 	}
 }
@@ -152,8 +145,7 @@ func (s *sSession) GetApp(ctx context.Context) *model.App {
 
 // 保存密钥信息到会话中
 func (s *sSession) SaveKey(ctx context.Context, key *model.Key) {
-	r := g.RequestFromCtx(ctx)
-	if r != nil {
+	if r := g.RequestFromCtx(ctx); r != nil {
 		r.SetCtxVar(consts.SESSION_KEY, key)
 	}
 }

@@ -36,7 +36,7 @@ func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "GetModel time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModel GetModel time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	result, err := dao.Model.FindOne(ctx, bson.M{"model": m, "status": 1})
@@ -68,7 +68,7 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "GetModelBySecretKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModel GetModelBySecretKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	user, err := service.User().GetCacheUser(ctx, service.Session().GetUserId(ctx))
@@ -494,6 +494,11 @@ func (s *sModel) GetCacheList(ctx context.Context, ids ...string) ([]*model.Mode
 // 更新缓存中的模型列表
 func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, newData *entity.Model) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModel UpdateCacheModel time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	if err := s.SaveCacheList(ctx, []*model.Model{{
 		Id:                 newData.Id,
 		Corp:               newData.Corp,
@@ -555,6 +560,11 @@ func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, ne
 // 移除缓存中的模型列表
 func (s *sModel) RemoveCacheModel(ctx context.Context, id string) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModel RemoveCacheModel time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	if _, err := s.modelCache.Remove(ctx, id); err != nil {
 		logger.Error(ctx, err)
 	}
@@ -566,6 +576,11 @@ func (s *sModel) RemoveCacheModel(ctx context.Context, id string) {
 
 // 变更订阅
 func (s *sModel) Subscribe(ctx context.Context, msg string) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModel Subscribe time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	message := new(model.SubMessage)
 	if err := gjson.Unmarshal([]byte(msg), &message); err != nil {

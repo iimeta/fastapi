@@ -49,7 +49,7 @@ func (s *sModelAgent) GetModelAgent(ctx context.Context, id string) (*model.Mode
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "GetModelAgent time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent GetModelAgent time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	modelAgent, err := dao.ModelAgent.FindById(ctx, id)
@@ -143,7 +143,7 @@ func (s *sModelAgent) GetModelAgentKeys(ctx context.Context, id string) ([]*mode
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "GetModelAgentKeys time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent GetModelAgentKeys time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	results, err := dao.Key.Find(ctx, bson.M{"type": 2, "status": 1, "model_agents": bson.M{"$in": []string{id}}})
@@ -181,7 +181,7 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (model
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "PickModelAgent time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent PickModelAgent time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var modelAgents []*model.ModelAgent
@@ -249,7 +249,7 @@ func (s *sModelAgent) RemoveModelAgent(ctx context.Context, m *model.Model, mode
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "RemoveModelAgent time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent RemoveModelAgent time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if modelAgentsValue := s.modelAgentsCache.GetVal(ctx, m.Id); modelAgentsValue != nil {
@@ -279,7 +279,7 @@ func (s *sModelAgent) RecordErrorModelAgent(ctx context.Context, m *model.Model,
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "RecordErrorModelAgent time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent RecordErrorModelAgent time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	reply, err := redis.HIncrBy(ctx, fmt.Sprintf(consts.ERROR_MODEL_AGENT, m.Model), modelAgent.Id, 1)
@@ -301,7 +301,7 @@ func (s *sModelAgent) DisabledModelAgent(ctx context.Context, modelAgent *model.
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "DisabledModelAgent time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent DisabledModelAgent time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	modelAgent.Status = 2
@@ -317,7 +317,7 @@ func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.M
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "PickModelAgentKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent PickModelAgentKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var keys []*model.Key
@@ -379,7 +379,7 @@ func (s *sModelAgent) RemoveModelAgentKey(ctx context.Context, modelAgent *model
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "RemoveModelAgentKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent RemoveModelAgentKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if keysValue := s.modelAgentKeysCache.GetVal(ctx, modelAgent.Id); keysValue != nil {
@@ -411,7 +411,7 @@ func (s *sModelAgent) RecordErrorModelAgentKey(ctx context.Context, modelAgent *
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "RecordErrorModelAgentKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent RecordErrorModelAgentKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	reply, err := redis.HIncrBy(ctx, fmt.Sprintf(consts.ERROR_MODEL_AGENT_KEY, modelAgent.Id), key.Key, 1)
@@ -433,7 +433,7 @@ func (s *sModelAgent) DisabledModelAgentKey(ctx context.Context, key *model.Key)
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "DisabledModelAgentKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent DisabledModelAgentKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	s.UpdateCacheModelAgentKey(ctx, nil, &entity.Key{
@@ -554,6 +554,11 @@ func (s *sModelAgent) GetCacheList(ctx context.Context, ids ...string) ([]*model
 // 新增模型代理到缓存列表中
 func (s *sModelAgent) CreateCacheModelAgent(ctx context.Context, newData *model.ModelAgent) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModelAgent CreateCacheModelAgent time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	if err := s.SaveCacheList(ctx, []*model.ModelAgent{{
 		Id:      newData.Id,
 		Name:    newData.Name,
@@ -578,6 +583,11 @@ func (s *sModelAgent) CreateCacheModelAgent(ctx context.Context, newData *model.
 
 // 更新缓存中的模型代理列表
 func (s *sModelAgent) UpdateCacheModelAgent(ctx context.Context, oldData *model.ModelAgent, newData *model.ModelAgent) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModelAgent UpdateCacheModelAgent time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	if err := s.SaveCacheList(ctx, []*model.ModelAgent{{
 		Id:      newData.Id,
@@ -657,6 +667,11 @@ func (s *sModelAgent) UpdateCacheModelAgent(ctx context.Context, oldData *model.
 
 // 移除缓存中的模型代理
 func (s *sModelAgent) RemoveCacheModelAgent(ctx context.Context, modelAgent *model.ModelAgent) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModelAgent RemoveCacheModelAgent time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	for _, id := range modelAgent.Models {
 
@@ -775,6 +790,11 @@ func (s *sModelAgent) GetCacheModelAgentKeys(ctx context.Context, id string) ([]
 // 新增模型代理密钥到缓存列表中
 func (s *sModelAgent) CreateCacheModelAgentKey(ctx context.Context, key *entity.Key) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModelAgent CreateCacheModelAgentKey time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	k := &model.Key{
 		Id:           key.Id,
 		UserId:       key.UserId,
@@ -809,6 +829,11 @@ func (s *sModelAgent) CreateCacheModelAgentKey(ctx context.Context, key *entity.
 
 // 更新缓存中的模型代理密钥
 func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *entity.Key, newData *entity.Key) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModelAgent UpdateCacheModelAgentKey time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	key := &model.Key{
 		Id:           newData.Id,
@@ -928,6 +953,11 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 // 移除缓存中的模型代理密钥
 func (s *sModelAgent) RemoveCacheModelAgentKey(ctx context.Context, key *entity.Key) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModelAgent RemoveCacheModelAgentKey time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	for _, id := range key.ModelAgents {
 
 		if _, err := redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id), key.Id); err != nil {
@@ -955,6 +985,11 @@ func (s *sModelAgent) RemoveCacheModelAgentKey(ctx context.Context, key *entity.
 
 // 变更订阅
 func (s *sModelAgent) Subscribe(ctx context.Context, msg string) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModelAgent Subscribe time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	message := new(model.SubMessage)
 	if err := gjson.Unmarshal([]byte(msg), &message); err != nil {

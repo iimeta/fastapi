@@ -36,7 +36,7 @@ func (s *sUser) GetUser(ctx context.Context, userId int) (*model.User, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "GetUser time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sUser GetUser time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	user, err := dao.User.FindUserByUserId(ctx, userId)
@@ -95,40 +95,40 @@ func (s *sUser) List(ctx context.Context) ([]*model.User, error) {
 }
 
 // 更改用户额度
-func (s *sUser) ChangeQuota(ctx context.Context, userId, quota, currentQuota int) error {
+func (s *sUser) ChangeQuota(ctx context.Context, userId, quota, currentQuota int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "sUser ChangeQuota time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	if err := dao.User.UpdateOne(ctx, bson.M{"user_id": userId}, bson.M{
-		"$inc": bson.M{
-			"quota": quota,
-		},
-	}); err != nil {
-		logger.Error(ctx, err)
-		return err
-	}
-
 	user, err := s.GetCacheUser(ctx, userId)
 	if err != nil {
 		logger.Error(ctx, err)
-		return err
 	}
 
 	user.Quota = currentQuota
 
 	if err = s.SaveCacheUser(ctx, user); err != nil {
 		logger.Error(ctx, err)
-		return err
 	}
 
-	return nil
+	if err = dao.User.UpdateOne(ctx, bson.M{"user_id": userId}, bson.M{
+		"$inc": bson.M{
+			"quota": quota,
+		},
+	}); err != nil {
+		logger.Error(ctx, err)
+	}
 }
 
 // 保存用户信息到缓存
 func (s *sUser) SaveCacheUser(ctx context.Context, user *model.User) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sUser SaveCacheUser time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	if user == nil {
 		return errors.New("user is nil")
@@ -154,7 +154,7 @@ func (s *sUser) GetCacheUser(ctx context.Context, userId int) (*model.User, erro
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "GetCacheUser time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sUser GetCacheUser time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if user := service.Session().GetUser(ctx); user != nil {
@@ -193,6 +193,12 @@ func (s *sUser) GetCacheUser(ctx context.Context, userId int) (*model.User, erro
 
 // 更新缓存中的用户信息
 func (s *sUser) UpdateCacheUser(ctx context.Context, user *entity.User) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sUser UpdateCacheUser time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	if err := s.SaveCacheUser(ctx, &model.User{
 		Id:     user.Id,
 		UserId: user.UserId,
@@ -211,6 +217,11 @@ func (s *sUser) UpdateCacheUser(ctx context.Context, user *entity.User) {
 // 移除缓存中的用户信息
 func (s *sUser) RemoveCacheUser(ctx context.Context, userId int) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sUser RemoveCacheUser time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	if _, err := s.userCache.Remove(ctx, userId); err != nil {
 		logger.Error(ctx, err)
 	}
@@ -222,6 +233,11 @@ func (s *sUser) RemoveCacheUser(ctx context.Context, userId int) {
 
 // 变更订阅
 func (s *sUser) Subscribe(ctx context.Context, msg string) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sUser Subscribe time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	message := new(model.SubMessage)
 	if err := gjson.Unmarshal([]byte(msg), &message); err != nil {

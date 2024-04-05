@@ -21,6 +21,11 @@ func New() service.IAuth {
 
 func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sAuth VerifySecretKey time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	if err := service.Session().Save(ctx, secretKey); err != nil {
 		logger.Error(ctx, err)
 		return err
@@ -43,7 +48,7 @@ func (s *sAuth) CheckUser(ctx context.Context, userId int) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "CheckUser time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sAuth CheckUser time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	user, err := service.User().GetCacheUser(ctx, userId)

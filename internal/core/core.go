@@ -6,6 +6,7 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
+	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/consts"
 	_ "github.com/iimeta/fastapi/internal/logic"
 	"github.com/iimeta/fastapi/internal/model"
@@ -19,12 +20,22 @@ func init() {
 
 	ctx := gctx.New()
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "core init time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	users, err := service.User().List(ctx)
 	if err != nil {
 		panic(err)
 	}
 
 	userMap := util.ToMap(users, func(user *model.User) int {
+
+		err = service.User().SaveCacheUser(ctx, user)
+		if err != nil {
+			panic(err)
+		}
 
 		if _, err = redis.HSetStrAny(ctx, fmt.Sprintf(consts.API_USAGE_KEY, user.UserId), consts.USER_TOTAL_TOKENS_FIELD, user.Quota); err != nil {
 			panic(err)
@@ -45,10 +56,21 @@ func init() {
 
 	keyMap := make(map[int][]*model.Key)
 	for _, key := range keys {
+
+		err = service.App().SaveCacheAppKey(ctx, key)
+		if err != nil {
+			panic(err)
+		}
+
 		keyMap[key.AppId] = append(keyMap[key.AppId], key)
 	}
 
 	for _, app := range apps {
+
+		err = service.App().SaveCacheApp(ctx, app)
+		if err != nil {
+			panic(err)
+		}
 
 		user := userMap[app.UserId]
 		if user != nil {

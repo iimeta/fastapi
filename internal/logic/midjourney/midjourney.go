@@ -36,7 +36,7 @@ func (s *sMidjourney) Imagine(ctx context.Context, params sdkm.MidjourneyProxyRe
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "Imagine time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sMidjourney Imagine time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var m *model.Model
@@ -147,7 +147,7 @@ func (s *sMidjourney) Change(ctx context.Context, params sdkm.MidjourneyProxyReq
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "Change time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sMidjourney Change time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var m *model.Model
@@ -258,7 +258,7 @@ func (s *sMidjourney) Describe(ctx context.Context, params sdkm.MidjourneyProxyR
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "Describe time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sMidjourney Describe time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var m *model.Model
@@ -369,7 +369,7 @@ func (s *sMidjourney) Blend(ctx context.Context, params sdkm.MidjourneyProxyRequ
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "Blend time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sMidjourney Blend time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var m *model.Model
@@ -480,7 +480,7 @@ func (s *sMidjourney) SwapFace(ctx context.Context, params sdkm.MidjourneyProxyR
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "SwapFace time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sMidjourney SwapFace time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var m *model.Model
@@ -591,7 +591,7 @@ func (s *sMidjourney) Action(ctx context.Context, params sdkm.MidjourneyProxyReq
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "Action time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sMidjourney Action time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var m *model.Model
@@ -702,7 +702,7 @@ func (s *sMidjourney) Modal(ctx context.Context, params sdkm.MidjourneyProxyRequ
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "Modal time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sMidjourney Modal time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var m *model.Model
@@ -813,7 +813,7 @@ func (s *sMidjourney) Shorten(ctx context.Context, params sdkm.MidjourneyProxyRe
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "Shorten time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sMidjourney Shorten time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var m *model.Model
@@ -924,7 +924,7 @@ func (s *sMidjourney) UploadDiscordImages(ctx context.Context, params sdkm.Midjo
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "UploadDiscordImages time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sMidjourney UploadDiscordImages time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var m *model.Model
@@ -1035,7 +1035,7 @@ func (s *sMidjourney) Fetch(ctx context.Context, params sdkm.MidjourneyProxyRequ
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "Fetch time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sMidjourney Fetch time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var m *model.Model
@@ -1153,7 +1153,7 @@ func (s *sMidjourney) SaveChat(ctx context.Context, model *model.Model, key *mod
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "SaveChat time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sMidjourney SaveChat time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	chat := do.Chat{

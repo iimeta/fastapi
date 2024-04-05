@@ -28,7 +28,7 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "VerifySecretKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sCommon VerifySecretKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	key, err := service.App().GetCacheAppKey(ctx, secretKey)
@@ -127,10 +127,7 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) error {
 		return err
 	}
 
-	if err = service.Session().SaveIsLimitQuota(ctx, app.IsLimitQuota, key.IsLimitQuota); err != nil {
-		logger.Error(ctx, err)
-		return err
-	}
+	service.Session().SaveIsLimitQuota(ctx, app.IsLimitQuota, key.IsLimitQuota)
 
 	return nil
 }

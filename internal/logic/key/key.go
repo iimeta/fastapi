@@ -43,7 +43,7 @@ func (s *sKey) GetKey(ctx context.Context, secretKey string) (*model.Key, error)
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "GetKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sKey GetKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	key, err := dao.Key.FindOne(ctx, bson.M{"key": secretKey, "status": 1})
@@ -76,7 +76,7 @@ func (s *sKey) GetModelKeys(ctx context.Context, id string) ([]*model.Key, error
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "GetModelKeys time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sKey GetModelKeys time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	results, err := dao.Key.Find(ctx, bson.M{"type": 2, "is_agents_only": false, "status": 1, "models": bson.M{"$in": []string{id}}})
@@ -157,7 +157,7 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (keyTotal int, 
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "PickModelKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sKey PickModelKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var modelKeys []*model.Key
@@ -224,7 +224,7 @@ func (s *sKey) RemoveModelKey(ctx context.Context, m *model.Model, key *model.Ke
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "RemoveModelKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sKey RemoveModelKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	keysValue := s.modelKeysCache.GetVal(ctx, m.Id)
@@ -255,7 +255,7 @@ func (s *sKey) RecordErrorModelKey(ctx context.Context, m *model.Model, key *mod
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "RecordErrorModelKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sKey RecordErrorModelKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	reply, err := redis.HIncrBy(ctx, fmt.Sprintf(consts.ERROR_MODEL_KEY, m.Model), key.Key, 1)
@@ -277,7 +277,7 @@ func (s *sKey) DisabledModelKey(ctx context.Context, key *model.Key) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "DisabledModelKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sKey DisabledModelKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	s.UpdateCacheModelKey(ctx, nil, &entity.Key{
@@ -391,6 +391,11 @@ func (s *sKey) GetCacheModelKeys(ctx context.Context, id string) ([]*model.Key, 
 // 新增模型密钥到缓存列表中
 func (s *sKey) CreateCacheModelKey(ctx context.Context, key *entity.Key) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sKey CreateCacheModelKey time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	k := &model.Key{
 		Id:           key.Id,
 		UserId:       key.UserId,
@@ -425,6 +430,11 @@ func (s *sKey) CreateCacheModelKey(ctx context.Context, key *entity.Key) {
 
 // 更新缓存中的模型密钥
 func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, newData *entity.Key) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sKey UpdateCacheModelKey time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	key := &model.Key{
 		Id:           newData.Id,
@@ -542,6 +552,11 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 // 移除缓存中的模型密钥
 func (s *sKey) RemoveCacheModelKey(ctx context.Context, key *entity.Key) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sKey RemoveCacheModelKey time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	for _, id := range key.Models {
 
 		if _, err := redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id), key.Id); err != nil {
@@ -569,6 +584,11 @@ func (s *sKey) RemoveCacheModelKey(ctx context.Context, key *entity.Key) {
 
 // 变更订阅
 func (s *sKey) Subscribe(ctx context.Context, msg string) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sKey Subscribe time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	message := new(model.SubMessage)
 	if err := gjson.Unmarshal([]byte(msg), &message); err != nil {

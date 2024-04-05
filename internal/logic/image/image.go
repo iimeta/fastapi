@@ -36,7 +36,7 @@ func (s *sImage) Generations(ctx context.Context, params openai.ImageRequest, re
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "Generations time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sImage Generations time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var m *model.Model
@@ -178,7 +178,7 @@ func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Ke
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "SaveChat time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sImage SaveChat time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	completion := ""

@@ -40,7 +40,7 @@ func (s *sChat) Completions(ctx context.Context, params openai.ChatCompletionReq
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "Completions time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sChat Completions time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var m *model.Model
@@ -255,7 +255,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "CompletionsStream time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sChat CompletionsStream time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var m *model.Model
@@ -525,7 +525,7 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, key *model.Key
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "SaveChat time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sChat SaveChat time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	chat := do.Chat{

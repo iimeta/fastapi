@@ -16,7 +16,7 @@ type (
 		// 保存会话
 		Save(ctx context.Context, secretKey string) error
 		// 保存应用和密钥是否限制额度
-		SaveIsLimitQuota(ctx context.Context, app, key bool) error
+		SaveIsLimitQuota(ctx context.Context, app, key bool)
 		// 获取用户ID
 		GetUserId(ctx context.Context) int
 		// 获取应用ID
