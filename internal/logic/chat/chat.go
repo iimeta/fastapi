@@ -294,7 +294,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params openai.ChatComplet
 					logger.Debugf(ctx, "NumTokensFromString len(completion): %d, time: %d", len(completion), gtime.TimestampMilli()-completionTime)
 
 					usage.CompletionTokens = completionTokens
-					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 
 					if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
 						if err := service.Common().RecordUsage(ctx, m, usage); err != nil {
@@ -541,8 +540,10 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, key *model.Key
 		chat.Name = model.Name
 		chat.Model = model.Model
 		chat.Type = model.Type
+		chat.BillingMethod = model.BillingMethod
 		chat.PromptRatio = model.PromptRatio
 		chat.CompletionRatio = model.CompletionRatio
+		chat.FixedQuota = model.FixedQuota
 		chat.IsEnableModelAgent = model.IsEnableModelAgent
 		if chat.IsEnableModelAgent && model.ModelAgent != nil {
 			chat.ModelAgentId = model.ModelAgent.Id

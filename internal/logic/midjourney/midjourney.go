@@ -50,9 +50,7 @@ func (s *sMidjourney) Imagine(ctx context.Context, params sdkm.MidjourneyProxyRe
 		enterTime := g.RequestFromCtx(ctx).EnterTime
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := openai.Usage{
-			PromptTokens:     100,
-			CompletionTokens: 100,
-			TotalTokens:      200,
+			TotalTokens: m.FixedQuota,
 		}
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -161,9 +159,7 @@ func (s *sMidjourney) Change(ctx context.Context, params sdkm.MidjourneyProxyReq
 		enterTime := g.RequestFromCtx(ctx).EnterTime
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := openai.Usage{
-			PromptTokens:     100,
-			CompletionTokens: 100,
-			TotalTokens:      200,
+			TotalTokens: m.FixedQuota,
 		}
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -272,9 +268,7 @@ func (s *sMidjourney) Describe(ctx context.Context, params sdkm.MidjourneyProxyR
 		enterTime := g.RequestFromCtx(ctx).EnterTime
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := openai.Usage{
-			PromptTokens:     100,
-			CompletionTokens: 100,
-			TotalTokens:      200,
+			TotalTokens: m.FixedQuota,
 		}
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -383,9 +377,7 @@ func (s *sMidjourney) Blend(ctx context.Context, params sdkm.MidjourneyProxyRequ
 		enterTime := g.RequestFromCtx(ctx).EnterTime
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := openai.Usage{
-			PromptTokens:     100,
-			CompletionTokens: 100,
-			TotalTokens:      200,
+			TotalTokens: m.FixedQuota,
 		}
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -494,9 +486,7 @@ func (s *sMidjourney) SwapFace(ctx context.Context, params sdkm.MidjourneyProxyR
 		enterTime := g.RequestFromCtx(ctx).EnterTime
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := openai.Usage{
-			PromptTokens:     100,
-			CompletionTokens: 100,
-			TotalTokens:      200,
+			TotalTokens: m.FixedQuota,
 		}
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -605,9 +595,7 @@ func (s *sMidjourney) Action(ctx context.Context, params sdkm.MidjourneyProxyReq
 		enterTime := g.RequestFromCtx(ctx).EnterTime
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := openai.Usage{
-			PromptTokens:     100,
-			CompletionTokens: 100,
-			TotalTokens:      200,
+			TotalTokens: m.FixedQuota,
 		}
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -716,9 +704,7 @@ func (s *sMidjourney) Modal(ctx context.Context, params sdkm.MidjourneyProxyRequ
 		enterTime := g.RequestFromCtx(ctx).EnterTime
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := openai.Usage{
-			PromptTokens:     100,
-			CompletionTokens: 100,
-			TotalTokens:      200,
+			TotalTokens: m.FixedQuota,
 		}
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -827,9 +813,7 @@ func (s *sMidjourney) Shorten(ctx context.Context, params sdkm.MidjourneyProxyRe
 		enterTime := g.RequestFromCtx(ctx).EnterTime
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := openai.Usage{
-			PromptTokens:     100,
-			CompletionTokens: 100,
-			TotalTokens:      200,
+			TotalTokens: m.FixedQuota,
 		}
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -938,9 +922,7 @@ func (s *sMidjourney) UploadDiscordImages(ctx context.Context, params sdkm.Midjo
 		enterTime := g.RequestFromCtx(ctx).EnterTime
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := openai.Usage{
-			PromptTokens:     100,
-			CompletionTokens: 100,
-			TotalTokens:      200,
+			TotalTokens: m.FixedQuota,
 		}
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -1054,9 +1036,7 @@ func (s *sMidjourney) Fetch(ctx context.Context, params sdkm.MidjourneyProxyRequ
 		enterTime := g.RequestFromCtx(ctx).EnterTime
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := openai.Usage{
-			PromptTokens:     100,
-			CompletionTokens: 100,
-			TotalTokens:      200,
+			TotalTokens: m.FixedQuota,
 		}
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -1180,10 +1160,13 @@ func (s *sMidjourney) SaveChat(ctx context.Context, model *model.Model, key *mod
 		chat.Name = model.Name
 		chat.Model = model.Model
 		chat.Type = model.Type
+		chat.BillingMethod = model.BillingMethod
 		chat.PromptRatio = model.PromptRatio
 		chat.CompletionRatio = model.CompletionRatio
+		chat.FixedQuota = model.FixedQuota
+		chat.TotalTokens = model.FixedQuota
 		chat.IsEnableModelAgent = model.IsEnableModelAgent
-		if chat.IsEnableModelAgent {
+		if chat.IsEnableModelAgent && model.ModelAgent != nil {
 			chat.ModelAgentId = model.ModelAgent.Id
 			chat.ModelAgent = &do.ModelAgent{
 				Name:    model.ModelAgent.Name,
@@ -1198,12 +1181,6 @@ func (s *sMidjourney) SaveChat(ctx context.Context, model *model.Model, key *mod
 
 	if key != nil {
 		chat.Key = key.Key
-	}
-
-	if response.Usage.TotalTokens != 0 {
-		chat.PromptTokens = int(chat.PromptRatio * float64(response.Usage.PromptTokens))
-		chat.CompletionTokens = int(chat.CompletionRatio * float64(response.Usage.CompletionTokens))
-		chat.TotalTokens = chat.PromptTokens + chat.CompletionTokens
 	}
 
 	if response.Error != nil {

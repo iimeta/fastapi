@@ -21,13 +21,16 @@ func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage ope
 		logger.Debugf(ctx, "sCommon RecordUsage time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	promptTokens := float64(usage.PromptTokens) * model.PromptRatio
-	completionTokens := float64(usage.CompletionTokens) * model.CompletionRatio
-	totalTokens := promptTokens + completionTokens
+	var totalTokens int64
+	if model.BillingMethod == 1 {
+		totalTokens = int64(float64(usage.PromptTokens)*model.PromptRatio + float64(usage.CompletionTokens)*model.CompletionRatio)
+	} else {
+		totalTokens = int64(model.FixedQuota)
+	}
 
 	usageKey := s.GetUserUsageKey(ctx)
 
-	currentQuota, err := redis.HIncrBy(ctx, usageKey, consts.USER_TOTAL_TOKENS_FIELD, int64(-totalTokens))
+	currentQuota, err := redis.HIncrBy(ctx, usageKey, consts.USER_TOTAL_TOKENS_FIELD, -totalTokens)
 	if err != nil {
 		logger.Error(ctx, err)
 	}
@@ -40,7 +43,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage ope
 
 	if service.Session().GetAppIsLimitQuota(ctx) {
 
-		currentQuota, err = redis.HIncrBy(ctx, usageKey, s.GetAppTotalTokensField(ctx), int64(-totalTokens))
+		currentQuota, err = redis.HIncrBy(ctx, usageKey, s.GetAppTotalTokensField(ctx), -totalTokens)
 		if err != nil {
 			logger.Error(ctx, err)
 		}
@@ -54,7 +57,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage ope
 
 	if service.Session().GetKeyIsLimitQuota(ctx) {
 
-		currentQuota, err = redis.HIncrBy(ctx, usageKey, s.GetKeyTotalTokensField(ctx), int64(-totalTokens))
+		currentQuota, err = redis.HIncrBy(ctx, usageKey, s.GetKeyTotalTokensField(ctx), -totalTokens)
 		if err != nil {
 			logger.Error(ctx, err)
 		}

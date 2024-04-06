@@ -56,9 +56,7 @@ func (s *sImage) Generations(ctx context.Context, params openai.ImageRequest, re
 		enterTime := g.RequestFromCtx(ctx).EnterTime
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := openai.Usage{
-			PromptTokens:     100,
-			CompletionTokens: 100,
-			TotalTokens:      200,
+			TotalTokens: m.FixedQuota,
 		}
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -128,9 +126,11 @@ func (s *sImage) Generations(ctx context.Context, params openai.ImageRequest, re
 		}
 	}
 
-	params.Model = m.Model
+	request := params
+	request.Model = m.Model
+
 	client := sdk.NewClient(ctx, m.Model, key.Key, baseUrl)
-	if response, err = sdk.Image(ctx, client, params); err != nil {
+	if response, err = sdk.Image(ctx, client, request); err != nil {
 		logger.Error(ctx, err)
 
 		if len(retry) > 0 {
@@ -215,10 +215,13 @@ func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Ke
 		chat.Name = model.Name
 		chat.Model = model.Model
 		chat.Type = model.Type
+		chat.BillingMethod = model.BillingMethod
 		chat.PromptRatio = model.PromptRatio
 		chat.CompletionRatio = model.CompletionRatio
+		chat.FixedQuota = model.FixedQuota
+		chat.TotalTokens = model.FixedQuota
 		chat.IsEnableModelAgent = model.IsEnableModelAgent
-		if chat.IsEnableModelAgent {
+		if chat.IsEnableModelAgent && model.ModelAgent != nil {
 			chat.ModelAgentId = model.ModelAgent.Id
 			chat.ModelAgent = &do.ModelAgent{
 				Name:    model.ModelAgent.Name,
@@ -233,12 +236,6 @@ func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Ke
 
 	if key != nil {
 		chat.Key = key.Key
-	}
-
-	if imageRes.Usage.TotalTokens != 0 {
-		chat.PromptTokens = int(chat.PromptRatio * float64(imageRes.Usage.PromptTokens))
-		chat.CompletionTokens = int(chat.CompletionRatio * float64(imageRes.Usage.CompletionTokens))
-		chat.TotalTokens = chat.PromptTokens + chat.CompletionTokens
 	}
 
 	if imageRes.Error != nil {
