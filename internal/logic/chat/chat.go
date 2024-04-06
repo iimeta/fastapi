@@ -535,6 +535,7 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, key *model.Key
 	}
 
 	if model != nil {
+
 		chat.Corp = model.Corp
 		chat.ModelId = model.Id
 		chat.Name = model.Name
@@ -556,16 +557,19 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, key *model.Key
 				Status:  model.ModelAgent.Status,
 			}
 		}
+
+		chat.PromptTokens = int(chat.PromptRatio * float64(completionsRes.Usage.PromptTokens))
+		chat.CompletionTokens = int(chat.CompletionRatio * float64(completionsRes.Usage.CompletionTokens))
+
+		if model.BillingMethod == 1 {
+			chat.TotalTokens = chat.PromptTokens + chat.CompletionTokens
+		} else {
+			chat.TotalTokens = chat.FixedQuota
+		}
 	}
 
 	if key != nil {
 		chat.Key = key.Key
-	}
-
-	if completionsRes.Usage.TotalTokens != 0 {
-		chat.PromptTokens = int(chat.PromptRatio * float64(completionsRes.Usage.PromptTokens))
-		chat.CompletionTokens = int(chat.CompletionRatio * float64(completionsRes.Usage.CompletionTokens))
-		chat.TotalTokens = chat.PromptTokens + chat.CompletionTokens
 	}
 
 	if completionsRes.Error != nil {
