@@ -32,7 +32,7 @@ func New() service.IImage {
 }
 
 // Generations
-func (s *sImage) Generations(ctx context.Context, params openai.ImageRequest, retry ...int) (response sdkm.ImageResponse, err error) {
+func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retry ...int) (response sdkm.ImageResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -129,8 +129,8 @@ func (s *sImage) Generations(ctx context.Context, params openai.ImageRequest, re
 	request := params
 	request.Model = m.Model
 
-	client := sdk.NewClient(ctx, m.Model, key.Key, baseUrl)
-	if response, err = sdk.Image(ctx, client, request); err != nil {
+	client := sdk.NewClient(ctx, m.Corp, m.Model, key.Key, baseUrl)
+	if response, err = client.Image(ctx, request); err != nil {
 		logger.Error(ctx, err)
 
 		if len(retry) > 0 {
@@ -174,7 +174,7 @@ func (s *sImage) Generations(ctx context.Context, params openai.ImageRequest, re
 }
 
 // 保存文生图聊天数据
-func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Key, imageReq *openai.ImageRequest, imageRes *model.ImageRes) {
+func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes) {
 
 	now := gtime.TimestampMilli()
 	defer func() {

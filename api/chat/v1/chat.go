@@ -2,13 +2,13 @@ package v1
 
 import (
 	"github.com/gogf/gf/v2/frame/g"
-	"github.com/sashabaranov/go-openai"
+	sdkm "github.com/iimeta/fastapi-sdk/model"
 )
 
 // Completions接口请求参数
 type CompletionsReq struct {
 	g.Meta `path:"/completions" tags:"chat" method:"post" summary:"Completions接口"`
-	openai.ChatCompletionRequest
+	sdkm.ChatCompletionRequest
 }
 
 // Completions接口响应参数
