@@ -61,8 +61,7 @@ api:
 # http配置
 http:
   timeout: 60  # 单位秒
-  proxy_open: false
-  proxy_url: http://localhost:7890
+#  proxy_url: http://localhost:7890
 
 # Midjourney
 midjourney:

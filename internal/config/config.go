@@ -55,9 +55,8 @@ type Api struct {
 }
 
 type Http struct {
-	Timeout   time.Duration `json:"timeout"`
-	ProxyOpen bool          `json:"proxy_open"`
-	ProxyUrl  string        `json:"proxy_url"`
+	Timeout  time.Duration `json:"timeout"`
+	ProxyUrl string        `json:"proxy_url"`
 }
 
 type Midjourney struct {

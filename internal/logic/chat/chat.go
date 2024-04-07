@@ -47,6 +47,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 	var key *model.Key
 	var modelAgent *model.ModelAgent
 	var baseUrl string
+	var path string
 	var keyTotal int
 	var isRetry bool
 
@@ -64,7 +65,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 			if err == nil {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, m, response.Usage); err != nil {
+					if err := service.Common().RecordUsage(ctx, m, *response.Usage); err != nil {
 						logger.Error(ctx, err)
 					}
 				}, nil); err != nil {
@@ -77,7 +78,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				m.ModelAgent = modelAgent
 
 				completionsRes := &model.CompletionsRes{
-					Usage:        response.Usage,
+					Usage:        *response.Usage,
 					TotalTime:    response.TotalTime,
 					Error:        err,
 					InternalTime: internalTime,
@@ -114,6 +115,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		if modelAgent != nil {
 
 			baseUrl = modelAgent.BaseUrl
+			path = modelAgent.Path
 
 			if keyTotal, key, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
 				service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
@@ -169,7 +171,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		}
 	}
 
-	client := sdk.NewClient(ctx, m.Corp, m.Model, key.Key, baseUrl)
+	client := sdk.NewClient(ctx, m.Corp, m.Model, key.Key, baseUrl, path, config.Cfg.Http.ProxyUrl)
 	if response, err = client.ChatCompletion(ctx, request); err != nil {
 		logger.Error(ctx, err)
 
@@ -256,12 +258,14 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	var key *model.Key
 	var modelAgent *model.ModelAgent
 	var baseUrl string
+	var path string
 	var completion string
 	var keyTotal int
 	var connTime int64
 	var duration int64
 	var totalTime int64
 	var isRetry bool
+	var usage *openai.Usage
 
 	defer func() {
 
@@ -275,9 +279,9 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-			usage := openai.Usage{}
+			if completion != "" && usage == nil {
 
-			if completion != "" {
+				usage = new(openai.Usage)
 
 				numTokensFromMessagesTime := gtime.TimestampMilli()
 				if promptTokens, err := tiktoken.NumTokensFromMessages(m.Model, params.Messages); err != nil {
@@ -296,7 +300,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					usage.CompletionTokens = completionTokens
 
 					if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-						if err := service.Common().RecordUsage(ctx, m, usage); err != nil {
+						if err := service.Common().RecordUsage(ctx, m, *usage); err != nil {
 							logger.Error(ctx, err)
 						}
 					}, nil); err != nil {
@@ -309,7 +313,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				m.ModelAgent = modelAgent
 				s.SaveChat(ctx, m, key, &params, &model.CompletionsRes{
 					Completion:   completion,
-					Usage:        usage,
+					Usage:        *usage,
 					Error:        err,
 					ConnTime:     connTime,
 					Duration:     duration,
@@ -341,6 +345,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		if modelAgent != nil {
 
 			baseUrl = modelAgent.BaseUrl
+			path = modelAgent.Path
 
 			if keyTotal, key, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
 				service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
@@ -397,7 +402,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		}
 	}
 
-	client := sdk.NewClient(ctx, m.Corp, m.Model, key.Key, baseUrl)
+	client := sdk.NewClient(ctx, m.Corp, m.Model, key.Key, baseUrl, path, config.Cfg.Http.ProxyUrl)
 	response, err := client.ChatCompletionStream(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
@@ -484,6 +489,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		connTime = response.ConnTime
 		duration = response.Duration
 		totalTime = response.TotalTime
+		usage = response.Usage
 
 		if response.Choices[0].FinishReason == "stop" {
 

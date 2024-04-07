@@ -30,7 +30,7 @@ func HttpGet(ctx context.Context, url string, header map[string]string, data g.M
 
 	if len(proxyURL) > 0 {
 		client.SetProxy(proxyURL[0])
-	} else if config.Cfg.Http.ProxyOpen && config.Cfg.Http.ProxyUrl != "" {
+	} else if config.Cfg.Http.ProxyUrl != "" {
 		client.SetProxy(config.Cfg.Http.ProxyUrl)
 	}
 
@@ -71,7 +71,7 @@ func HttpPostJson(ctx context.Context, url string, header map[string]string, dat
 
 	if len(proxyURL) > 0 {
 		client.SetProxy(proxyURL[0])
-	} else if config.Cfg.Http.ProxyOpen && config.Cfg.Http.ProxyUrl != "" {
+	} else if config.Cfg.Http.ProxyUrl != "" {
 		client.SetProxy(config.Cfg.Http.ProxyUrl)
 	}
 
@@ -112,7 +112,7 @@ func HttpPost(ctx context.Context, url string, header map[string]string, data, r
 
 	if len(proxyURL) > 0 {
 		client.SetProxy(proxyURL[0])
-	} else if config.Cfg.Http.ProxyOpen && config.Cfg.Http.ProxyUrl != "" {
+	} else if config.Cfg.Http.ProxyUrl != "" {
 		client.SetProxy(config.Cfg.Http.ProxyUrl)
 	}
 
@@ -157,7 +157,7 @@ func WebSocketClientOnlyReceive(ctx context.Context, wsURL string, result chan [
 		} else {
 			client.Proxy = http.ProxyURL(proxyUrl)
 		}
-	} else if config.Cfg.Http.ProxyOpen && config.Cfg.Http.ProxyUrl != "" {
+	} else if config.Cfg.Http.ProxyUrl != "" {
 		if proxyUrl, err := url.Parse(config.Cfg.Http.ProxyUrl); err != nil {
 			logger.Error(ctx, err)
 		} else {
@@ -217,7 +217,7 @@ func WebSocketClient(ctx context.Context, wsURL string, messageType int, message
 		} else {
 			client.Proxy = http.ProxyURL(proxyUrl)
 		}
-	} else if config.Cfg.Http.ProxyOpen && config.Cfg.Http.ProxyUrl != "" {
+	} else if config.Cfg.Http.ProxyUrl != "" {
 		if proxyUrl, err := url.Parse(config.Cfg.Http.ProxyUrl); err != nil {
 			logger.Error(ctx, err)
 		} else {
@@ -264,7 +264,7 @@ func HttpDownloadFile(ctx context.Context, fileURL string, proxyURL ...string) [
 
 	if len(proxyURL) > 0 {
 		client.SetProxy(proxyURL[0])
-	} else if config.Cfg.Http.ProxyOpen && config.Cfg.Http.ProxyUrl != "" {
+	} else if config.Cfg.Http.ProxyUrl != "" {
 		client.SetProxy(config.Cfg.Http.ProxyUrl)
 	}
 

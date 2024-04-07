@@ -43,6 +43,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 	var key *model.Key
 	var modelAgent *model.ModelAgent
 	var baseUrl string
+	var path string
 	var keyTotal int
 	var isRetry bool
 
@@ -111,6 +112,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 		if modelAgent != nil {
 
 			baseUrl = modelAgent.BaseUrl
+			path = modelAgent.Path
 
 			if keyTotal, key, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
 				service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
@@ -129,7 +131,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 	request := params
 	request.Model = m.Model
 
-	client := sdk.NewClient(ctx, m.Corp, m.Model, key.Key, baseUrl)
+	client := sdk.NewClient(ctx, m.Corp, m.Model, key.Key, baseUrl, path, config.Cfg.Http.ProxyUrl)
 	if response, err = client.Image(ctx, request); err != nil {
 		logger.Error(ctx, err)
 
