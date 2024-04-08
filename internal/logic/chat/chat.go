@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
@@ -61,6 +62,40 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
+
+		if err == nil && (response.Usage == nil || response.Usage.TotalTokens == 0) {
+
+			response.Usage = new(openai.Usage)
+			model := m.Model
+
+			if m.Corp != consts.CORP_OPENAI {
+				model = "gpt-3.5-turbo"
+			} else {
+				if _, err := tiktoken.EncodingForModel(model); err != nil {
+					model = "gpt-3.5-turbo"
+				}
+			}
+
+			numTokensFromMessagesTime := gtime.TimestampMilli()
+			if promptTokens, err := tiktoken.NumTokensFromMessages(model, params.Messages); err != nil {
+				logger.Errorf(ctx, "CompletionsStream model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
+			} else {
+				logger.Debugf(ctx, "NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-numTokensFromMessagesTime)
+				response.Usage.PromptTokens = promptTokens
+			}
+
+			if len(response.Choices) > 0 {
+				completionTime := gtime.TimestampMilli()
+				if completionTokens, err := tiktoken.NumTokensFromString(model, response.Choices[0].Message.Content); err != nil {
+					logger.Errorf(ctx, "CompletionsStream model: %s, completion: %s, NumTokensFromString error: %v", params.Model, response.Choices[0].Message.Content, err)
+				} else {
+					logger.Debugf(ctx, "NumTokensFromString len(completion): %d, time: %d", len(response.Choices[0].Message.Content), gtime.TimestampMilli()-completionTime)
+					response.Usage.CompletionTokens = completionTokens
+				}
+			}
+
+			response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
+		}
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
@@ -163,7 +198,10 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 	// 替换预设提示词
 	if m.Prompt != "" {
 		if request.Messages[0].Role == openai.ChatMessageRoleSystem {
-			request.Messages[0].Content = m.Prompt
+			request.Messages = append([]openai.ChatCompletionMessage{{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: m.Prompt,
+			}}, request.Messages[1:]...)
 		} else {
 			request.Messages = append([]openai.ChatCompletionMessage{{
 				Role:    openai.ChatMessageRoleSystem,
@@ -287,6 +325,10 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 				if m.Corp != consts.CORP_OPENAI {
 					model = "gpt-3.5-turbo"
+				} else {
+					if _, err := tiktoken.EncodingForModel(model); err != nil {
+						model = "gpt-3.5-turbo"
+					}
 				}
 
 				numTokensFromMessagesTime := gtime.TimestampMilli()
@@ -370,7 +412,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 	request := params
 	request.Model = m.Model
-
+	fmt.Printf("%p  %p", &params, &request)
 	if gstr.HasPrefix(m.Model, "glm-") {
 
 		tmp := new(model.Key)
@@ -399,7 +441,10 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	// 替换预设提示词
 	if m.Prompt != "" {
 		if request.Messages[0].Role == openai.ChatMessageRoleSystem {
-			request.Messages[0].Content = m.Prompt
+			request.Messages = append([]openai.ChatCompletionMessage{{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: m.Prompt,
+			}}, request.Messages[1:]...)
 		} else {
 			request.Messages = append([]openai.ChatCompletionMessage{{
 				Role:    openai.ChatMessageRoleSystem,
