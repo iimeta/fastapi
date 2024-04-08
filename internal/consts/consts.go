@@ -10,4 +10,10 @@ const (
 	SECRET_KEY             = "sk"
 	APP_IS_LIMIT_QUOTA_KEY = "app_is_limit_quota"
 	KEY_IS_LIMIT_QUOTA_KEY = "key_is_limit_quota"
+
+	CORP_OPENAI     = "OpenAI"
+	CORP_BAIDU      = "Baidu"
+	CORP_XFYUN      = "Xfyun"
+	CORP_ALIYUN     = "Aliyun"
+	CORP_MIDJOURNEY = "Midjourney"
 )

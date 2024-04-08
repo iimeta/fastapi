@@ -13,6 +13,7 @@ import (
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi-sdk/tiktoken"
 	"github.com/iimeta/fastapi/internal/config"
+	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
@@ -282,9 +283,14 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			if completion != "" && usage == nil {
 
 				usage = new(openai.Usage)
+				model := m.Model
+
+				if m.Corp != consts.CORP_OPENAI {
+					model = "gpt-3.5-turbo"
+				}
 
 				numTokensFromMessagesTime := gtime.TimestampMilli()
-				if promptTokens, err := tiktoken.NumTokensFromMessages(m.Model, params.Messages); err != nil {
+				if promptTokens, err := tiktoken.NumTokensFromMessages(model, params.Messages); err != nil {
 					logger.Errorf(ctx, "CompletionsStream model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
 				} else {
 					usage.PromptTokens = promptTokens
@@ -292,7 +298,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				logger.Debugf(ctx, "NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-numTokensFromMessagesTime)
 
 				completionTime := gtime.TimestampMilli()
-				if completionTokens, err := tiktoken.NumTokensFromString(m.Model, completion); err != nil {
+				if completionTokens, err := tiktoken.NumTokensFromString(model, completion); err != nil {
 					logger.Errorf(ctx, "CompletionsStream model: %s, completion: %s, NumTokensFromString error: %v", params.Model, completion, err)
 				} else {
 					logger.Debugf(ctx, "NumTokensFromString len(completion): %d, time: %d", len(completion), gtime.TimestampMilli()-completionTime)
