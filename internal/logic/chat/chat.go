@@ -60,7 +60,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			return
 		}
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime
+		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if err == nil && (response.Usage == nil || response.Usage.TotalTokens == 0) {
@@ -313,7 +313,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			return
 		}
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime
+		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {

@@ -54,7 +54,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 			return
 		}
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime
+		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := openai.Usage{
 			TotalTokens: m.FixedQuota,
