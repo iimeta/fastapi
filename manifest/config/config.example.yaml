@@ -9,7 +9,7 @@ redis:
     address: 127.0.0.1:6379
     db: 1
     pass: fastapi666
-#    masterName: default  # 哨兵模式必填
+#    masterName: mymaster  # 哨兵模式必填
     minIdle: 20
     maxIdle: 100
     maxActive: 100

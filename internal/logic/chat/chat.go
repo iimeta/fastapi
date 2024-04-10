@@ -2,7 +2,6 @@ package chat
 
 import (
 	"context"
-	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
@@ -412,7 +411,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 	request := params
 	request.Model = m.Model
-	fmt.Printf("%p  %p", &params, &request)
+
 	if gstr.HasPrefix(m.Model, "glm-") {
 
 		tmp := new(model.Key)
