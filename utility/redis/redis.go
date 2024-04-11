@@ -244,3 +244,7 @@ func LLen(ctx context.Context, key string) (int64, error) {
 func LRange(ctx context.Context, key string, start, stop int64) (gvar.Vars, error) {
 	return slave.LRange(ctx, key, start, stop)
 }
+
+func TTL(ctx context.Context, key string) (int64, error) {
+	return slave.TTL(ctx, key)
+}

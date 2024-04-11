@@ -8,7 +8,6 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi-sdk/tiktoken"
@@ -22,8 +21,6 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
 	"github.com/sashabaranov/go-openai"
-	"strings"
-	"time"
 )
 
 type sChat struct{}
@@ -114,8 +111,10 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 				completionsRes := &model.CompletionsRes{
 					Usage:        *response.Usage,
-					TotalTime:    response.TotalTime,
 					Error:        err,
+					ConnTime:     response.ConnTime,
+					Duration:     response.Duration,
+					TotalTime:    response.TotalTime,
 					InternalTime: internalTime,
 					EnterTime:    enterTime,
 				}
@@ -192,6 +191,13 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		if request.Messages[0].Role == openai.ChatMessageRoleSystem && request.Messages[0].Content == "" && len(request.Messages[0].ToolCalls) == 0 {
 			request.Messages = request.Messages[1:]
 		}
+	} else if m.Corp == consts.CORP_BAIDU {
+
+		tmp := new(model.Key)
+		*tmp = *key
+		key = tmp
+
+		key.Key = getAccessToken(ctx, key.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
 	// 替换预设提示词
@@ -435,6 +441,13 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		if request.Messages[0].Role == openai.ChatMessageRoleSystem && request.Messages[0].Content == "" && len(request.Messages[0].ToolCalls) == 0 {
 			request.Messages = request.Messages[1:]
 		}
+	} else if m.Corp == consts.CORP_BAIDU {
+
+		tmp := new(model.Key)
+		*tmp = *key
+		key = tmp
+
+		key.Key = getAccessToken(ctx, key.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
 	// 替换预设提示词
@@ -643,32 +656,4 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, key *model.Key
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
 		logger.Error(ctx, err)
 	}
-}
-
-func genGlmSign(ctx context.Context, key string) string {
-
-	split := strings.Split(key, ".")
-	if len(split) != 2 {
-		return key
-	}
-
-	now := gtime.Now()
-
-	claims := jwt.MapClaims{
-		"api_key":   split[0],
-		"exp":       now.Add(time.Minute * 10).UnixMilli(),
-		"timestamp": now.UnixMilli(),
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	token.Header["alg"] = "HS256"
-	token.Header["sign_type"] = "SIGN"
-
-	sign, err := token.SignedString([]byte(split[1]))
-	if err != nil {
-		logger.Error(ctx, err)
-	}
-
-	return sign
 }
