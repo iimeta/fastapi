@@ -161,8 +161,39 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 				response, err = s.Generations(ctx, params, append(retry, 1)...)
 
 			case 429:
+
+				if gstr.Contains(err.Error(), "You exceeded your current quota") {
+					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+						if m.IsEnableModelAgent {
+							service.ModelAgent().DisabledModelAgentKey(ctx, key)
+						} else {
+							service.Key().DisabledModelKey(ctx, key)
+						}
+
+					}, nil); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
+
 				response, err = s.Generations(ctx, params, append(retry, 1)...)
+
 			default:
+
+				if gstr.Contains(err.Error(), "Incorrect API key provided") {
+					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+						if m.IsEnableModelAgent {
+							service.ModelAgent().DisabledModelAgentKey(ctx, key)
+						} else {
+							service.Key().DisabledModelKey(ctx, key)
+						}
+
+					}, nil); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
+
 				response, err = s.Generations(ctx, params, append(retry, 1)...)
 			}
 

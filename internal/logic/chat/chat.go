@@ -44,6 +44,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 	var m *model.Model
 	var key *model.Key
 	var modelAgent *model.ModelAgent
+	var token string
 	var baseUrl string
 	var path string
 	var keyTotal int
@@ -167,14 +168,11 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 	request := params
 	request.Model = m.Model
+	token = key.Key
 
 	if gstr.HasPrefix(m.Model, "glm-") {
 
-		tmp := new(model.Key)
-		*tmp = *key
-		key = tmp
-
-		key.Key = genGlmSign(ctx, key.Key)
+		token = genGlmSign(ctx, key.Key)
 
 		if request.TopP == 1 {
 			request.TopP -= 0.01
@@ -192,12 +190,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			request.Messages = request.Messages[1:]
 		}
 	} else if m.Corp == consts.CORP_BAIDU {
-
-		tmp := new(model.Key)
-		*tmp = *key
-		key = tmp
-
-		key.Key = getAccessToken(ctx, key.Key, baseUrl, config.Cfg.Http.ProxyUrl)
+		token = getAccessToken(ctx, key.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
 	// 替换预设提示词
@@ -215,7 +208,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		}
 	}
 
-	client := sdk.NewClient(ctx, m.Corp, m.Model, key.Key, baseUrl, path, config.Cfg.Http.ProxyUrl)
+	client := sdk.NewClient(ctx, m.Corp, m.Model, token, baseUrl, path, config.Cfg.Http.ProxyUrl)
 	if response, err = client.ChatCompletion(ctx, request); err != nil {
 		logger.Error(ctx, err)
 
@@ -301,6 +294,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	var m *model.Model
 	var key *model.Key
 	var modelAgent *model.ModelAgent
+	var token string
 	var baseUrl string
 	var path string
 	var completion string
@@ -417,14 +411,11 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 	request := params
 	request.Model = m.Model
+	token = key.Key
 
 	if gstr.HasPrefix(m.Model, "glm-") {
 
-		tmp := new(model.Key)
-		*tmp = *key
-		key = tmp
-
-		key.Key = genGlmSign(ctx, key.Key)
+		token = genGlmSign(ctx, key.Key)
 
 		if request.TopP == 1 {
 			request.TopP -= 0.01
@@ -442,12 +433,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			request.Messages = request.Messages[1:]
 		}
 	} else if m.Corp == consts.CORP_BAIDU {
-
-		tmp := new(model.Key)
-		*tmp = *key
-		key = tmp
-
-		key.Key = getAccessToken(ctx, key.Key, baseUrl, config.Cfg.Http.ProxyUrl)
+		token = getAccessToken(ctx, key.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
 	// 替换预设提示词
@@ -465,7 +451,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		}
 	}
 
-	client := sdk.NewClient(ctx, m.Corp, m.Model, key.Key, baseUrl, path, config.Cfg.Http.ProxyUrl)
+	client := sdk.NewClient(ctx, m.Corp, m.Model, token, baseUrl, path, config.Cfg.Http.ProxyUrl)
 	response, err := client.ChatCompletionStream(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
