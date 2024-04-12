@@ -522,45 +522,6 @@ func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, ne
 	}}); err != nil {
 		logger.Error(ctx, err)
 	}
-
-	//// 用于处理oldData时判断作用
-	//newModelAgentMap := make(map[string]string)
-	//
-	//if newData.IsEnableModelAgent {
-	//
-	//	for _, modelAgentId := range newData.ModelAgents {
-	//
-	//		newModelAgentMap[modelAgentId] = modelAgentId
-	//
-	//		modelAgent, err := service.ModelAgent().GetModelAgent(ctx, modelAgentId)
-	//		if err != nil {
-	//			logger.Error(ctx, err)
-	//			continue
-	//		}
-	//
-	//		service.ModelAgent().UpdateCacheModelAgent(ctx, nil, modelAgent)
-	//	}
-	//}
-	//
-	//if oldData != nil && oldData.IsEnableModelAgent {
-	//
-	//	for _, modelAgentId := range oldData.ModelAgents {
-	//
-	//		if newModelAgentMap[modelAgentId] == "" {
-	//
-	//			modelAgent, err := service.ModelAgent().GetModelAgent(ctx, modelAgentId)
-	//			if err != nil {
-	//				logger.Error(ctx, err)
-	//				continue
-	//			}
-	//
-	//			oldModelAgent := *modelAgent
-	//			oldModelAgent.Models = append(oldModelAgent.Models, oldData.Id)
-	//
-	//			service.ModelAgent().UpdateCacheModelAgent(ctx, &oldModelAgent, modelAgent)
-	//		}
-	//	}
-	//}
 }
 
 // 移除缓存中的模型列表
