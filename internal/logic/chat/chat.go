@@ -186,9 +186,14 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			request.Temperature += 0.01
 		}
 
+		if request.MaxTokens == 1 {
+			request.MaxTokens = 2
+		}
+
 		if request.Messages[0].Role == openai.ChatMessageRoleSystem && request.Messages[0].Content == "" && len(request.Messages[0].ToolCalls) == 0 {
 			request.Messages = request.Messages[1:]
 		}
+
 	} else if m.Corp == consts.CORP_BAIDU {
 		token = getAccessToken(ctx, key.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
@@ -429,9 +434,14 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			request.Temperature += 0.01
 		}
 
+		if request.MaxTokens == 1 {
+			request.MaxTokens = 2
+		}
+
 		if request.Messages[0].Role == openai.ChatMessageRoleSystem && request.Messages[0].Content == "" && len(request.Messages[0].ToolCalls) == 0 {
 			request.Messages = request.Messages[1:]
 		}
+
 	} else if m.Corp == consts.CORP_BAIDU {
 		token = getAccessToken(ctx, key.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
