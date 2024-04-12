@@ -42,9 +42,9 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 	}()
 
 	var m *model.Model
-	var key *model.Key
+	var k *model.Key
 	var modelAgent *model.ModelAgent
-	var token string
+	var key string
 	var baseUrl string
 	var path string
 	var keyTotal int
@@ -124,7 +124,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 					completionsRes.Completion = response.Choices[0].Message.Content
 				}
 
-				s.SaveChat(ctx, m, key, &params, completionsRes)
+				s.SaveChat(ctx, m, k, &params, completionsRes)
 
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -152,7 +152,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			baseUrl = modelAgent.BaseUrl
 			path = modelAgent.Path
 
-			if keyTotal, key, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
+			if keyTotal, k, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
 				service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
 				logger.Error(ctx, err)
 				return response, err
@@ -160,7 +160,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		}
 
 	} else {
-		if keyTotal, key, err = service.Key().PickModelKey(ctx, m); err != nil {
+		if keyTotal, k, err = service.Key().PickModelKey(ctx, m); err != nil {
 			logger.Error(ctx, err)
 			return response, err
 		}
@@ -168,11 +168,11 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 	request := params
 	request.Model = m.Model
-	token = key.Key
+	key = k.Key
 
 	if gstr.HasPrefix(m.Model, "glm-") {
 
-		token = genGlmSign(ctx, key.Key)
+		key = genGlmSign(ctx, k.Key)
 
 		if request.TopP == 1 {
 			request.TopP -= 0.01
@@ -195,7 +195,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		}
 
 	} else if m.Corp == consts.CORP_BAIDU {
-		token = getAccessToken(ctx, key.Key, baseUrl, config.Cfg.Http.ProxyUrl)
+		key = getAccessToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
 	// 替换预设提示词
@@ -213,7 +213,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		}
 	}
 
-	client := sdk.NewClient(ctx, m.Corp, m.Model, token, baseUrl, path, config.Cfg.Http.ProxyUrl)
+	client := sdk.NewClient(ctx, m.Corp, m.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
 	if response, err = client.ChatCompletion(ctx, request); err != nil {
 		logger.Error(ctx, err)
 
@@ -231,7 +231,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		if errors.As(err, &e) {
 
 			isRetry = true
-			service.Common().RecordError(ctx, m, key, modelAgent)
+			service.Common().RecordError(ctx, m, k, modelAgent)
 
 			switch e.HTTPStatusCode {
 			case 400:
@@ -248,9 +248,9 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 						if m.IsEnableModelAgent {
-							service.ModelAgent().DisabledModelAgentKey(ctx, key)
+							service.ModelAgent().DisabledModelAgentKey(ctx, k)
 						} else {
-							service.Key().DisabledModelKey(ctx, key)
+							service.Key().DisabledModelKey(ctx, k)
 						}
 
 					}, nil); err != nil {
@@ -266,9 +266,9 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 						if m.IsEnableModelAgent {
-							service.ModelAgent().DisabledModelAgentKey(ctx, key)
+							service.ModelAgent().DisabledModelAgentKey(ctx, k)
 						} else {
-							service.Key().DisabledModelKey(ctx, key)
+							service.Key().DisabledModelKey(ctx, k)
 						}
 
 					}, nil); err != nil {
@@ -297,9 +297,9 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	}()
 
 	var m *model.Model
-	var key *model.Key
+	var k *model.Key
 	var modelAgent *model.ModelAgent
-	var token string
+	var key string
 	var baseUrl string
 	var path string
 	var completion string
@@ -363,7 +363,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
 				m.ModelAgent = modelAgent
-				s.SaveChat(ctx, m, key, &params, &model.CompletionsRes{
+				s.SaveChat(ctx, m, k, &params, &model.CompletionsRes{
 					Completion:   completion,
 					Usage:        *usage,
 					Error:        err,
@@ -399,7 +399,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			baseUrl = modelAgent.BaseUrl
 			path = modelAgent.Path
 
-			if keyTotal, key, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
+			if keyTotal, k, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
 				service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
 				logger.Error(ctx, err)
 				return err
@@ -408,7 +408,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 	} else {
 
-		if keyTotal, key, err = service.Key().PickModelKey(ctx, m); err != nil {
+		if keyTotal, k, err = service.Key().PickModelKey(ctx, m); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -416,11 +416,11 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 	request := params
 	request.Model = m.Model
-	token = key.Key
+	key = k.Key
 
 	if gstr.HasPrefix(m.Model, "glm-") {
 
-		token = genGlmSign(ctx, key.Key)
+		key = genGlmSign(ctx, k.Key)
 
 		if request.TopP == 1 {
 			request.TopP -= 0.01
@@ -443,7 +443,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		}
 
 	} else if m.Corp == consts.CORP_BAIDU {
-		token = getAccessToken(ctx, key.Key, baseUrl, config.Cfg.Http.ProxyUrl)
+		key = getAccessToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
 	// 替换预设提示词
@@ -461,7 +461,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		}
 	}
 
-	client := sdk.NewClient(ctx, m.Corp, m.Model, token, baseUrl, path, config.Cfg.Http.ProxyUrl)
+	client := sdk.NewClient(ctx, m.Corp, m.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
 	response, err := client.ChatCompletionStream(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
@@ -480,7 +480,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		if errors.As(err, &e) {
 
 			isRetry = true
-			service.Common().RecordError(ctx, m, key, modelAgent)
+			service.Common().RecordError(ctx, m, k, modelAgent)
 
 			switch e.HTTPStatusCode {
 			case 400:
@@ -497,9 +497,9 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 						if m.IsEnableModelAgent {
-							service.ModelAgent().DisabledModelAgentKey(ctx, key)
+							service.ModelAgent().DisabledModelAgentKey(ctx, k)
 						} else {
-							service.Key().DisabledModelKey(ctx, key)
+							service.Key().DisabledModelKey(ctx, k)
 						}
 
 					}, nil); err != nil {
@@ -515,9 +515,9 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 						if m.IsEnableModelAgent {
-							service.ModelAgent().DisabledModelAgentKey(ctx, key)
+							service.ModelAgent().DisabledModelAgentKey(ctx, k)
 						} else {
-							service.Key().DisabledModelKey(ctx, key)
+							service.Key().DisabledModelKey(ctx, k)
 						}
 
 					}, nil); err != nil {
