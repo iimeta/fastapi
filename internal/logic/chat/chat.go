@@ -170,31 +170,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 	request.Model = m.Model
 	key = k.Key
 
-	if gstr.HasPrefix(m.Model, "glm-") {
-
-		key = genGlmSign(ctx, k.Key)
-
-		if request.TopP == 1 {
-			request.TopP -= 0.01
-		} else if request.TopP == 0 {
-			request.TopP += 0.01
-		}
-
-		if request.Temperature == 1 {
-			request.Temperature -= 0.01
-		} else if request.Temperature == 0 {
-			request.Temperature += 0.01
-		}
-
-		if request.MaxTokens == 1 {
-			request.MaxTokens = 2
-		}
-
-		if request.Messages[0].Role == openai.ChatMessageRoleSystem && request.Messages[0].Content == "" && len(request.Messages[0].ToolCalls) == 0 {
-			request.Messages = request.Messages[1:]
-		}
-
-	} else if m.Corp == consts.CORP_BAIDU {
+	if m.Corp == consts.CORP_BAIDU {
 		key = getAccessToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
@@ -359,6 +335,8 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 						logger.Error(ctx, err)
 					}
 				}
+
+				usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 			}
 
 			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
@@ -418,31 +396,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	request.Model = m.Model
 	key = k.Key
 
-	if gstr.HasPrefix(m.Model, "glm-") {
-
-		key = genGlmSign(ctx, k.Key)
-
-		if request.TopP == 1 {
-			request.TopP -= 0.01
-		} else if request.TopP == 0 {
-			request.TopP += 0.01
-		}
-
-		if request.Temperature == 1 {
-			request.Temperature -= 0.01
-		} else if request.Temperature == 0 {
-			request.Temperature += 0.01
-		}
-
-		if request.MaxTokens == 1 {
-			request.MaxTokens = 2
-		}
-
-		if request.Messages[0].Role == openai.ChatMessageRoleSystem && request.Messages[0].Content == "" && len(request.Messages[0].ToolCalls) == 0 {
-			request.Messages = request.Messages[1:]
-		}
-
-	} else if m.Corp == consts.CORP_BAIDU {
+	if m.Corp == consts.CORP_BAIDU {
 		key = getAccessToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
@@ -544,13 +498,19 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			return nil
 		}
 
-		completion += response.Choices[0].Delta.Content
+		if len(response.Choices) > 0 {
+			completion += response.Choices[0].Delta.Content
+		}
+
+		if response.Usage != nil {
+			usage = response.Usage
+		}
+
 		connTime = response.ConnTime
 		duration = response.Duration
 		totalTime = response.TotalTime
-		usage = response.Usage
 
-		if response.Choices[0].FinishReason == "stop" {
+		if len(response.Choices) > 0 && response.Choices[0].FinishReason != "" {
 
 			if err = util.SSEServer(ctx, "", gjson.MustEncode(response)); err != nil {
 				logger.Error(ctx, err)

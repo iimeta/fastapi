@@ -45,6 +45,7 @@ type Config struct {
 	Api              *Api        `json:"api"`
 	Midjourney       *Midjourney `json:"midjourney"`
 	Local            *Local      `json:"local"`
+	Debug            bool        `json:"debug"`
 }
 
 type Api struct {

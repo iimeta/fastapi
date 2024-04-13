@@ -6,6 +6,7 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gcmd"
+	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/controller/chat"
 	"github.com/iimeta/fastapi/internal/controller/image"
@@ -109,6 +110,14 @@ func middleware(r *ghttp.Request) {
 		r.Response.WriteStatus(err.Status(), gjson.MustEncodeString(err))
 		r.Exit()
 		return
+	}
+
+	if config.Cfg.Debug {
+		if gstr.HasPrefix(r.GetHeader("Content-Type"), "application/json") {
+			logger.Debugf(r.GetCtx(), "url: %s, request body: %s", r.GetUrl(), r.GetBodyString())
+		} else {
+			logger.Debugf(r.GetCtx(), "url: %s, Content-Type: %s", r.GetUrl(), r.GetHeader("Content-Type"))
+		}
 	}
 
 	r.Middleware.Next()
