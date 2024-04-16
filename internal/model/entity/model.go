@@ -6,6 +6,8 @@ type Model struct {
 	Name               string   `bson:"name,omitempty"`                  // 模型名称
 	Model              string   `bson:"model,omitempty"`                 // 模型
 	Type               int      `bson:"type,omitempty"`                  // 模型类型[1:文生文, 2:文生图, 3:图生文, 4:图生图, 5:文生语音, 6:语音生文]
+	BaseUrl            string   `bson:"base_url,omitempty"`              // 模型地址
+	Path               string   `bson:"path,omitempty"`                  // 模型路径
 	Prompt             string   `bson:"prompt,omitempty"`                // 预设提示词
 	BillingMethod      int      `bson:"billing_method,omitempty"`        // 计费方式[1:倍率, 2:固定额度]
 	PromptRatio        float64  `bson:"prompt_ratio,omitempty"`          // 提示倍率(提问倍率)

@@ -140,6 +140,9 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		return response, err
 	}
 
+	baseUrl = m.BaseUrl
+	path = m.Path
+
 	if m.IsEnableModelAgent {
 
 		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
