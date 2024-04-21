@@ -41,7 +41,8 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		logger.Debugf(ctx, "sChat Completions time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	var m *model.Model
+	var reqModel *model.Model
+	realModel := new(model.Model)
 	var k *model.Key
 	var modelAgent *model.ModelAgent
 	var key string
@@ -63,9 +64,9 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		if err == nil && (response.Usage == nil || response.Usage.TotalTokens == 0) {
 
 			response.Usage = new(openai.Usage)
-			model := m.Model
+			model := realModel.Model
 
-			if m.Corp != consts.CORP_OPENAI {
+			if realModel.Corp != consts.CORP_OPENAI {
 				model = "gpt-3.5-turbo"
 			} else {
 				if _, err := tiktoken.EncodingForModel(model); err != nil {
@@ -98,7 +99,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 			if err == nil {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, m, *response.Usage); err != nil {
+					if err := service.Common().RecordUsage(ctx, realModel, *response.Usage); err != nil {
 						logger.Error(ctx, err)
 					}
 				}, nil); err != nil {
@@ -108,7 +109,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
 
-				m.ModelAgent = modelAgent
+				realModel.ModelAgent = modelAgent
 
 				completionsRes := &model.CompletionsRes{
 					Usage:        *response.Usage,
@@ -124,7 +125,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 					completionsRes.Completion = response.Choices[0].Message.Content
 				}
 
-				s.SaveChat(ctx, m, k, &params, completionsRes)
+				s.SaveChat(ctx, reqModel, realModel, k, &params, completionsRes)
 
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -135,17 +136,26 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		}
 	}()
 
-	if m, err = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx)); err != nil {
+	if reqModel, err = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx)); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
-	baseUrl = m.BaseUrl
-	path = m.Path
+	*realModel = *reqModel
 
-	if m.IsEnableModelAgent {
+	if realModel.IsForward {
+		if realModel, err = service.Model().GetTargetModel(ctx, realModel, params.Messages[len(params.Messages)-1].Content); err != nil {
+			logger.Error(ctx, err)
+			return response, err
+		}
+	}
 
-		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
+	baseUrl = realModel.BaseUrl
+	path = realModel.Path
+
+	if realModel.IsEnableModelAgent {
+
+		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, realModel); err != nil {
 			logger.Error(ctx, err)
 			return response, err
 		}
@@ -156,43 +166,50 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			path = modelAgent.Path
 
 			if keyTotal, k, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
-				service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
+
+				service.ModelAgent().RecordErrorModelAgent(ctx, realModel, modelAgent)
+
+				if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY) {
+					service.ModelAgent().DisabledModelAgent(ctx, modelAgent)
+				}
+
 				logger.Error(ctx, err)
+
 				return response, err
 			}
 		}
 
 	} else {
-		if keyTotal, k, err = service.Key().PickModelKey(ctx, m); err != nil {
+		if keyTotal, k, err = service.Key().PickModelKey(ctx, realModel); err != nil {
 			logger.Error(ctx, err)
 			return response, err
 		}
 	}
 
 	request := params
-	request.Model = m.Model
+	request.Model = realModel.Model
 	key = k.Key
 
-	if m.Corp == consts.CORP_BAIDU {
+	if realModel.Corp == consts.CORP_BAIDU {
 		key = getAccessToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
 	// 替换预设提示词
-	if m.Prompt != "" {
+	if realModel.Prompt != "" {
 		if request.Messages[0].Role == openai.ChatMessageRoleSystem {
 			request.Messages = append([]openai.ChatCompletionMessage{{
 				Role:    openai.ChatMessageRoleSystem,
-				Content: m.Prompt,
+				Content: realModel.Prompt,
 			}}, request.Messages[1:]...)
 		} else {
 			request.Messages = append([]openai.ChatCompletionMessage{{
 				Role:    openai.ChatMessageRoleSystem,
-				Content: m.Prompt,
+				Content: realModel.Prompt,
 			}}, request.Messages...)
 		}
 	}
 
-	client := sdk.NewClient(ctx, m.Corp, m.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
+	client := sdk.NewClient(ctx, realModel.Corp, realModel.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
 	if response, err = client.ChatCompletion(ctx, request); err != nil {
 		logger.Error(ctx, err)
 
@@ -210,7 +227,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		if errors.As(err, &e) {
 
 			isRetry = true
-			service.Common().RecordError(ctx, m, k, modelAgent)
+			service.Common().RecordError(ctx, realModel, k, modelAgent)
 
 			switch e.HTTPStatusCode {
 			case 400:
@@ -226,7 +243,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				if gstr.Contains(err.Error(), "You exceeded your current quota") {
 					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-						if m.IsEnableModelAgent {
+						if realModel.IsEnableModelAgent {
 							service.ModelAgent().DisabledModelAgentKey(ctx, k)
 						} else {
 							service.Key().DisabledModelKey(ctx, k)
@@ -244,7 +261,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				if gstr.Contains(err.Error(), "Incorrect API key provided") {
 					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-						if m.IsEnableModelAgent {
+						if realModel.IsEnableModelAgent {
 							service.ModelAgent().DisabledModelAgentKey(ctx, k)
 						} else {
 							service.Key().DisabledModelKey(ctx, k)
@@ -275,7 +292,8 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		logger.Debugf(ctx, "sChat CompletionsStream time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	var m *model.Model
+	var reqModel *model.Model
+	realModel := new(model.Model)
 	var k *model.Key
 	var modelAgent *model.ModelAgent
 	var key string
@@ -304,9 +322,9 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			if completion != "" && usage == nil {
 
 				usage = new(openai.Usage)
-				model := m.Model
+				model := realModel.Model
 
-				if m.Corp != consts.CORP_OPENAI {
+				if realModel.Corp != consts.CORP_OPENAI {
 					model = "gpt-3.5-turbo"
 				} else {
 					if _, err := tiktoken.EncodingForModel(model); err != nil {
@@ -331,7 +349,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					usage.CompletionTokens = completionTokens
 
 					if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-						if err := service.Common().RecordUsage(ctx, m, *usage); err != nil {
+						if err := service.Common().RecordUsage(ctx, realModel, *usage); err != nil {
 							logger.Error(ctx, err)
 						}
 					}, nil); err != nil {
@@ -343,8 +361,8 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			}
 
 			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-				m.ModelAgent = modelAgent
-				s.SaveChat(ctx, m, k, &params, &model.CompletionsRes{
+				realModel.ModelAgent = modelAgent
+				s.SaveChat(ctx, reqModel, realModel, k, &params, &model.CompletionsRes{
 					Completion:   completion,
 					Usage:        *usage,
 					Error:        err,
@@ -363,14 +381,26 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		}
 	}()
 
-	if m, err = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx)); err != nil {
+	if reqModel, err = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx)); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
 
-	if m.IsEnableModelAgent {
+	*realModel = *reqModel
 
-		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
+	if realModel.IsForward {
+		if realModel, err = service.Model().GetTargetModel(ctx, realModel, params.Messages[len(params.Messages)-1].Content); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+	}
+
+	baseUrl = realModel.BaseUrl
+	path = realModel.Path
+
+	if realModel.IsEnableModelAgent {
+
+		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, realModel); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -381,44 +411,51 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			path = modelAgent.Path
 
 			if keyTotal, k, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
-				service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
+
+				service.ModelAgent().RecordErrorModelAgent(ctx, realModel, modelAgent)
+
+				if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY) {
+					service.ModelAgent().DisabledModelAgent(ctx, modelAgent)
+				}
+
 				logger.Error(ctx, err)
+
 				return err
 			}
 		}
 
 	} else {
 
-		if keyTotal, k, err = service.Key().PickModelKey(ctx, m); err != nil {
+		if keyTotal, k, err = service.Key().PickModelKey(ctx, realModel); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
 	}
 
 	request := params
-	request.Model = m.Model
+	request.Model = realModel.Model
 	key = k.Key
 
-	if m.Corp == consts.CORP_BAIDU {
+	if realModel.Corp == consts.CORP_BAIDU {
 		key = getAccessToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
 	// 替换预设提示词
-	if m.Prompt != "" {
+	if realModel.Prompt != "" {
 		if request.Messages[0].Role == openai.ChatMessageRoleSystem {
 			request.Messages = append([]openai.ChatCompletionMessage{{
 				Role:    openai.ChatMessageRoleSystem,
-				Content: m.Prompt,
+				Content: realModel.Prompt,
 			}}, request.Messages[1:]...)
 		} else {
 			request.Messages = append([]openai.ChatCompletionMessage{{
 				Role:    openai.ChatMessageRoleSystem,
-				Content: m.Prompt,
+				Content: realModel.Prompt,
 			}}, request.Messages...)
 		}
 	}
 
-	client := sdk.NewClient(ctx, m.Corp, m.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
+	client := sdk.NewClient(ctx, realModel.Corp, realModel.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
 	response, err := client.ChatCompletionStream(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
@@ -437,7 +474,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		if errors.As(err, &e) {
 
 			isRetry = true
-			service.Common().RecordError(ctx, m, k, modelAgent)
+			service.Common().RecordError(ctx, realModel, k, modelAgent)
 
 			switch e.HTTPStatusCode {
 			case 400:
@@ -453,7 +490,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				if gstr.Contains(err.Error(), "You exceeded your current quota") {
 					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-						if m.IsEnableModelAgent {
+						if realModel.IsEnableModelAgent {
 							service.ModelAgent().DisabledModelAgentKey(ctx, k)
 						} else {
 							service.Key().DisabledModelKey(ctx, k)
@@ -471,7 +508,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				if gstr.Contains(err.Error(), "Incorrect API key provided") {
 					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-						if m.IsEnableModelAgent {
+						if realModel.IsEnableModelAgent {
 							service.ModelAgent().DisabledModelAgentKey(ctx, k)
 						} else {
 							service.Key().DisabledModelKey(ctx, k)
@@ -536,7 +573,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 }
 
 // 保存文生文聊天数据
-func (s *sChat) SaveChat(ctx context.Context, model *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes) {
+func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -574,6 +611,8 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, key *model.Key
 		chat.CompletionRatio = model.CompletionRatio
 		chat.FixedQuota = model.FixedQuota
 		chat.IsEnableModelAgent = model.IsEnableModelAgent
+		chat.IsForward = model.IsForward
+
 		if chat.IsEnableModelAgent && model.ModelAgent != nil {
 			chat.ModelAgentId = model.ModelAgent.Id
 			chat.ModelAgent = &do.ModelAgent{
@@ -584,6 +623,20 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, key *model.Key
 				Remark:  model.ModelAgent.Remark,
 				Status:  model.ModelAgent.Status,
 			}
+		}
+
+		if chat.IsForward && model.ForwardConfig != nil {
+
+			chat.ForwardConfig = &do.ForwardConfig{
+				ForwardRule:  model.ForwardConfig.ForwardRule,
+				TargetModel:  model.ForwardConfig.TargetModel,
+				Keywords:     model.ForwardConfig.Keywords,
+				TargetModels: model.ForwardConfig.TargetModels,
+			}
+
+			chat.RealModelId = realModel.Id
+			chat.RealModelName = realModel.Name
+			chat.RealModel = realModel.Model
 		}
 
 		chat.PromptTokens = int(chat.PromptRatio * float64(completionsRes.Usage.PromptTokens))

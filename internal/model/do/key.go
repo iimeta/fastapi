@@ -17,12 +17,12 @@ type Key struct {
 	ModelAgents  []string `bson:"model_agents,omitempty"` // 模型代理
 	IsAgentsOnly bool     `bson:"is_agents_only"`         // 是否代理专用
 	IsLimitQuota bool     `bson:"is_limit_quota"`         // 是否限制额度
-	Quota        int      `bson:"quota"`                  // 额度
+	Quota        int      `bson:"quota,omitempty"`        // 额度
 	RPM          int      `bson:"rpm,omitempty"`          // 每分钟请求数
 	RPD          int      `bson:"rpd,omitempty"`          // 每天的请求数
 	IpWhitelist  []string `bson:"ip_whitelist"`           // IP白名单
 	IpBlacklist  []string `bson:"ip_blacklist"`           // IP黑名单
-	Remark       string   `bson:"remark"`                 // 备注
+	Remark       string   `bson:"remark,omitempty"`       // 备注
 	Status       int      `bson:"status,omitempty"`       // 状态[1:正常, 2:禁用, -1:删除]
 	Creator      string   `bson:"creator,omitempty"`      // 创建人
 	Updater      string   `bson:"updater,omitempty"`      // 更新人

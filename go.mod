@@ -2,14 +2,12 @@ module github.com/iimeta/fastapi
 
 go 1.22
 
-replace github.com/iimeta/fastapi-sdk => ../fastapi-sdk
-
 require (
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/gogf/gf/contrib/nosql/redis/v2 v2.7.0
 	github.com/gogf/gf/v2 v2.7.0
 	github.com/gorilla/websocket v1.5.1
-	github.com/iimeta/fastapi-sdk v0.1.5
+	github.com/iimeta/fastapi-sdk v0.1.6
 	github.com/redis/go-redis/v9 v9.5.1
 	github.com/sashabaranov/go-openai v1.21.0
 	go.mongodb.org/mongo-driver v1.15.0

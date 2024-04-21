@@ -5,6 +5,8 @@ import (
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/gogf/gf/v2/text/gregex"
+	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
@@ -45,7 +47,7 @@ func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 		return nil, err
 	}
 
-	return &model.Model{
+	detail := &model.Model{
 		Id:                 result.Id,
 		Corp:               result.Corp,
 		Name:               result.Name,
@@ -59,12 +61,24 @@ func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 		CompletionRatio:    result.CompletionRatio,
 		FixedQuota:         result.FixedQuota,
 		DataFormat:         result.DataFormat,
+		IsPublic:           result.IsPublic,
 		IsEnableModelAgent: result.IsEnableModelAgent,
 		ModelAgents:        result.ModelAgents,
-		IsPublic:           result.IsPublic,
+		IsForward:          result.IsForward,
 		Remark:             result.Remark,
 		Status:             result.Status,
-	}, nil
+	}
+
+	if result.ForwardConfig != nil {
+		detail.ForwardConfig = &model.ForwardConfig{
+			ForwardRule:  result.ForwardConfig.ForwardRule,
+			TargetModel:  result.ForwardConfig.TargetModel,
+			Keywords:     result.ForwardConfig.Keywords,
+			TargetModels: result.ForwardConfig.TargetModels,
+		}
+	}
+
+	return detail, nil
 }
 
 // 根据model和secretKey获取模型信息
@@ -385,7 +399,8 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 
 	items := make([]*model.Model, 0)
 	for _, result := range results {
-		items = append(items, &model.Model{
+
+		m := &model.Model{
 			Id:                 result.Id,
 			Corp:               result.Corp,
 			Name:               result.Name,
@@ -399,11 +414,24 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 			CompletionRatio:    result.CompletionRatio,
 			FixedQuota:         result.FixedQuota,
 			DataFormat:         result.DataFormat,
+			IsPublic:           result.IsPublic,
 			IsEnableModelAgent: result.IsEnableModelAgent,
 			ModelAgents:        result.ModelAgents,
+			IsForward:          result.IsForward,
 			Remark:             result.Remark,
 			Status:             result.Status,
-		})
+		}
+
+		if result.ForwardConfig != nil {
+			m.ForwardConfig = &model.ForwardConfig{
+				ForwardRule:  result.ForwardConfig.ForwardRule,
+				TargetModel:  result.ForwardConfig.TargetModel,
+				Keywords:     result.ForwardConfig.Keywords,
+				TargetModels: result.ForwardConfig.TargetModels,
+			}
+		}
+
+		items = append(items, m)
 	}
 
 	return items, nil
@@ -499,6 +527,27 @@ func (s *sModel) GetCacheList(ctx context.Context, ids ...string) ([]*model.Mode
 	return items, nil
 }
 
+// 获取缓存中的模型信息
+func (s *sModel) GetCacheModel(ctx context.Context, id string) (*model.Model, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModel GetCacheModel time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	models, err := s.GetCacheList(ctx, id)
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	if len(models) == 0 {
+		return nil, errors.New("model is nil")
+	}
+
+	return models[0], nil
+}
+
 // 更新缓存中的模型列表
 func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, newData *entity.Model) {
 
@@ -507,7 +556,7 @@ func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, ne
 		logger.Debugf(ctx, "sModel UpdateCacheModel time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	if err := s.SaveCacheList(ctx, []*model.Model{{
+	m := &model.Model{
 		Id:                 newData.Id,
 		Corp:               newData.Corp,
 		Name:               newData.Name,
@@ -524,8 +573,20 @@ func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, ne
 		IsPublic:           newData.IsPublic,
 		IsEnableModelAgent: newData.IsEnableModelAgent,
 		ModelAgents:        newData.ModelAgents,
+		IsForward:          newData.IsForward,
 		Status:             newData.Status,
-	}}); err != nil {
+	}
+
+	if newData.ForwardConfig != nil {
+		m.ForwardConfig = &model.ForwardConfig{
+			ForwardRule:  newData.ForwardConfig.ForwardRule,
+			TargetModel:  newData.ForwardConfig.TargetModel,
+			Keywords:     newData.ForwardConfig.Keywords,
+			TargetModels: newData.ForwardConfig.TargetModels,
+		}
+	}
+
+	if err := s.SaveCacheList(ctx, []*model.Model{m}); err != nil {
 		logger.Error(ctx, err)
 	}
 }
@@ -545,6 +606,36 @@ func (s *sModel) RemoveCacheModel(ctx context.Context, id string) {
 	if _, err := redis.HDel(ctx, consts.API_MODELS_KEY, id); err != nil {
 		logger.Error(ctx, err)
 	}
+}
+
+// 获取目标模型
+func (s *sModel) GetTargetModel(ctx context.Context, m *model.Model, prompt string) (model *model.Model, err error) {
+
+	if !m.IsForward {
+		return m, nil
+	}
+
+	if m.ForwardConfig.ForwardRule == 1 {
+		model, err = s.GetCacheModel(ctx, m.ForwardConfig.TargetModel)
+	} else {
+		keywords := m.ForwardConfig.Keywords
+		for i, keyword := range keywords {
+			if gregex.IsMatchString(gstr.ToLower(gstr.TrimAll(keyword)), gstr.ToLower(gstr.TrimAll(prompt))) {
+				model, err = s.GetCacheModel(ctx, m.ForwardConfig.TargetModels[i])
+			}
+		}
+	}
+
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	if model == nil || model.Status != 1 {
+		return m, nil
+	}
+
+	return s.GetTargetModel(ctx, model, prompt)
 }
 
 // 变更订阅

@@ -24,10 +24,14 @@ type (
 		SaveCacheList(ctx context.Context, models []*model.Model) error
 		// 获取缓存中的模型列表
 		GetCacheList(ctx context.Context, ids ...string) ([]*model.Model, error)
+		// 获取缓存中的模型信息
+		GetCacheModel(ctx context.Context, id string) (*model.Model, error)
 		// 更新缓存中的模型列表
 		UpdateCacheModel(ctx context.Context, oldData *entity.Model, newData *entity.Model)
 		// 移除缓存中的模型列表
 		RemoveCacheModel(ctx context.Context, id string)
+		// 获取目标模型
+		GetTargetModel(ctx context.Context, m *model.Model, prompt string) (model *model.Model, err error)
 		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
 	}
