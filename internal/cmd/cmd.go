@@ -9,6 +9,7 @@ import (
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/controller/chat"
+	"github.com/iimeta/fastapi/internal/controller/dashboard"
 	"github.com/iimeta/fastapi/internal/controller/image"
 	"github.com/iimeta/fastapi/internal/controller/midjourney"
 	"github.com/iimeta/fastapi/internal/errors"
@@ -58,6 +59,12 @@ var (
 				v1.Group("/images", func(g *ghttp.RouterGroup) {
 					g.Bind(
 						image.NewV1(),
+					)
+				})
+
+				v1.Group("/dashboard", func(g *ghttp.RouterGroup) {
+					g.Bind(
+						dashboard.NewV1(),
 					)
 				})
 			})

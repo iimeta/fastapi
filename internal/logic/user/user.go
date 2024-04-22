@@ -181,8 +181,6 @@ func (s *sUser) GetCacheUser(ctx context.Context, userId int) (*model.User, erro
 		return nil, err
 	}
 
-	service.Session().SaveUser(ctx, user)
-
 	if err = s.userCache.Set(ctx, user.UserId, user, 0); err != nil {
 		logger.Error(ctx, err)
 		return nil, err

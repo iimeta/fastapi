@@ -93,6 +93,9 @@ func Error(ctx context.Context, err error) IFastAPIError {
 	}
 
 	if e, ok := err.(IFastAPIError); ok {
+		if e.ErrCode() == 0 {
+			return NewError(e.Status(), e.ErrCode(), e.ErrMessage(), e.ErrType()).(IFastAPIError)
+		}
 		return NewErrorf(e.Status(), e.ErrCode(), e.ErrMessage()+" TraceId: %s", e.ErrType(), gctx.CtxId(ctx)).(IFastAPIError)
 	}
 

@@ -77,5 +77,7 @@ func (s *sAuth) CheckUser(ctx context.Context, userId int) error {
 		return err
 	}
 
+	service.Session().SaveUser(ctx, user)
+
 	return nil
 }
