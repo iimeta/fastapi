@@ -42,7 +42,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 	}()
 
 	var reqModel *model.Model
-	realModel := new(model.Model)
+	var realModel = new(model.Model)
 	var k *model.Key
 	var modelAgent *model.ModelAgent
 	var key string
@@ -58,15 +58,18 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			return
 		}
 
+		// 替换成调用的模型
+		response.Model = reqModel.Model
+
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if err == nil && (response.Usage == nil || response.Usage.TotalTokens == 0) {
 
 			response.Usage = new(openai.Usage)
-			model := realModel.Model
+			model := reqModel.Model
 
-			if realModel.Corp != consts.CORP_OPENAI {
+			if reqModel.Corp != consts.CORP_OPENAI {
 				model = "gpt-3.5-turbo"
 			} else {
 				if _, err := tiktoken.EncodingForModel(model); err != nil {
@@ -99,7 +102,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 			if err == nil {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, realModel, *response.Usage); err != nil {
+					if err := service.Common().RecordUsage(ctx, reqModel, *response.Usage); err != nil {
 						logger.Error(ctx, err)
 					}
 				}, nil); err != nil {
@@ -109,7 +112,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
 
-				realModel.ModelAgent = modelAgent
+				reqModel.ModelAgent = modelAgent
 
 				completionsRes := &model.CompletionsRes{
 					Usage:        *response.Usage,
@@ -195,22 +198,23 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 	}
 
 	// 替换预设提示词
-	if realModel.Prompt != "" {
+	if reqModel.Prompt != "" {
 		if request.Messages[0].Role == openai.ChatMessageRoleSystem {
 			request.Messages = append([]openai.ChatCompletionMessage{{
 				Role:    openai.ChatMessageRoleSystem,
-				Content: realModel.Prompt,
+				Content: reqModel.Prompt,
 			}}, request.Messages[1:]...)
 		} else {
 			request.Messages = append([]openai.ChatCompletionMessage{{
 				Role:    openai.ChatMessageRoleSystem,
-				Content: realModel.Prompt,
+				Content: reqModel.Prompt,
 			}}, request.Messages...)
 		}
 	}
 
 	client := sdk.NewClient(ctx, realModel.Corp, realModel.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
 	if response, err = client.ChatCompletion(ctx, request); err != nil {
+
 		logger.Error(ctx, err)
 
 		if len(retry) > 0 {
@@ -293,7 +297,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	}()
 
 	var reqModel *model.Model
-	realModel := new(model.Model)
+	var realModel = new(model.Model)
 	var k *model.Key
 	var modelAgent *model.ModelAgent
 	var key string
@@ -322,9 +326,9 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			if completion != "" && usage == nil {
 
 				usage = new(openai.Usage)
-				model := realModel.Model
+				model := reqModel.Model
 
-				if realModel.Corp != consts.CORP_OPENAI {
+				if reqModel.Corp != consts.CORP_OPENAI {
 					model = "gpt-3.5-turbo"
 				} else {
 					if _, err := tiktoken.EncodingForModel(model); err != nil {
@@ -349,7 +353,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					usage.CompletionTokens = completionTokens
 
 					if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-						if err := service.Common().RecordUsage(ctx, realModel, *usage); err != nil {
+						if err := service.Common().RecordUsage(ctx, reqModel, *usage); err != nil {
 							logger.Error(ctx, err)
 						}
 					}, nil); err != nil {
@@ -361,7 +365,9 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			}
 
 			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-				realModel.ModelAgent = modelAgent
+
+				reqModel.ModelAgent = modelAgent
+
 				s.SaveChat(ctx, reqModel, realModel, k, &params, &model.CompletionsRes{
 					Completion:   completion,
 					Usage:        *usage,
@@ -425,7 +431,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		}
 
 	} else {
-
 		if keyTotal, k, err = service.Key().PickModelKey(ctx, realModel); err != nil {
 			logger.Error(ctx, err)
 			return err
@@ -441,16 +446,16 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	}
 
 	// 替换预设提示词
-	if realModel.Prompt != "" {
+	if reqModel.Prompt != "" {
 		if request.Messages[0].Role == openai.ChatMessageRoleSystem {
 			request.Messages = append([]openai.ChatCompletionMessage{{
 				Role:    openai.ChatMessageRoleSystem,
-				Content: realModel.Prompt,
+				Content: reqModel.Prompt,
 			}}, request.Messages[1:]...)
 		} else {
 			request.Messages = append([]openai.ChatCompletionMessage{{
 				Role:    openai.ChatMessageRoleSystem,
-				Content: realModel.Prompt,
+				Content: reqModel.Prompt,
 			}}, request.Messages...)
 		}
 	}
@@ -545,6 +550,9 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		if response.Usage != nil {
 			usage = response.Usage
 		}
+
+		// 替换成调用的模型
+		response.Model = reqModel.Model
 
 		connTime = response.ConnTime
 		duration = response.Duration

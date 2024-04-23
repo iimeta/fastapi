@@ -7,7 +7,7 @@ import (
 
 // Subscription接口请求参数
 type SubscriptionReq struct {
-	g.Meta `path:"/billing/subscription" tags:"dashboard" method:"all" summary:"Subscription接口"`
+	g.Meta `path:"/billing/subscription" tags:"dashboard" method:"get,post" summary:"Subscription接口"`
 }
 
 // Subscription接口响应参数
@@ -18,7 +18,7 @@ type SubscriptionRes struct {
 
 // Usage接口请求参数
 type UsageReq struct {
-	g.Meta `path:"/billing/usage" tags:"dashboard" method:"all" summary:"Usage接口"`
+	g.Meta `path:"/billing/usage" tags:"dashboard" method:"get,post" summary:"Usage接口"`
 }
 
 // Usage接口响应参数

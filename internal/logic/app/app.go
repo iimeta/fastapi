@@ -55,6 +55,7 @@ func (s *sApp) GetApp(ctx context.Context, appId int) (*model.App, error) {
 		Models:       app.Models,
 		IsLimitQuota: app.IsLimitQuota,
 		Quota:        app.Quota,
+		UsedQuota:    app.UsedQuota,
 		IpWhitelist:  app.IpWhitelist,
 		IpBlacklist:  app.IpBlacklist,
 		Remark:       app.Remark,
@@ -91,6 +92,7 @@ func (s *sApp) List(ctx context.Context) ([]*model.App, error) {
 			Models:       result.Models,
 			IsLimitQuota: result.IsLimitQuota,
 			Quota:        result.Quota,
+			UsedQuota:    result.UsedQuota,
 			IpWhitelist:  result.IpWhitelist,
 			IpBlacklist:  result.IpBlacklist,
 			Remark:       result.Remark,
@@ -116,6 +118,7 @@ func (s *sApp) ChangeQuota(ctx context.Context, appId, quota, currentQuota int) 
 	}
 
 	app.Quota = currentQuota
+	app.UsedQuota += quota
 
 	if err = s.SaveCacheApp(ctx, app); err != nil {
 		logger.Error(ctx, err)
@@ -123,7 +126,8 @@ func (s *sApp) ChangeQuota(ctx context.Context, appId, quota, currentQuota int) 
 
 	if err = dao.App.UpdateOne(ctx, bson.M{"app_id": appId}, bson.M{
 		"$inc": bson.M{
-			"quota": quota,
+			"quota":      -quota,
+			"used_quota": quota,
 		},
 	}); err != nil {
 		logger.Error(ctx, err)
@@ -215,6 +219,7 @@ func (s *sApp) UpdateCacheApp(ctx context.Context, app *entity.App) {
 		Models:       app.Models,
 		IsLimitQuota: app.IsLimitQuota,
 		Quota:        app.Quota,
+		UsedQuota:    app.UsedQuota,
 		IpWhitelist:  app.IpWhitelist,
 		IpBlacklist:  app.IpBlacklist,
 		Status:       app.Status,
@@ -329,6 +334,7 @@ func (s *sApp) UpdateCacheAppKey(ctx context.Context, key *entity.Key) {
 		ModelAgents:  key.ModelAgents,
 		IsLimitQuota: key.IsLimitQuota,
 		Quota:        key.Quota,
+		UsedQuota:    key.UsedQuota,
 		RPM:          key.RPM,
 		RPD:          key.RPD,
 		IpWhitelist:  key.IpWhitelist,
@@ -370,6 +376,7 @@ func (s *sApp) ChangeAppKeyQuota(ctx context.Context, secretKey string, quota, c
 	}
 
 	key.Quota = currentQuota
+	key.UsedQuota += quota
 
 	if err = s.SaveCacheAppKey(ctx, key); err != nil {
 		logger.Error(ctx, err)
@@ -377,7 +384,8 @@ func (s *sApp) ChangeAppKeyQuota(ctx context.Context, secretKey string, quota, c
 
 	if err = dao.Key.UpdateOne(ctx, bson.M{"key": secretKey}, bson.M{
 		"$inc": bson.M{
-			"quota": quota,
+			"quota":      -quota,
+			"used_quota": quota,
 		},
 	}); err != nil {
 		logger.Error(ctx, err)

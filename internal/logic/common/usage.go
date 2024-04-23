@@ -30,13 +30,13 @@ func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage ope
 
 	usageKey := s.GetUserUsageKey(ctx)
 
-	currentQuota, err := redis.HIncrBy(ctx, usageKey, consts.USER_TOTAL_TOKENS_FIELD, -totalTokens)
+	currentQuota, err := redis.HIncrBy(ctx, usageKey, consts.USER_QUOTA_FIELD, -totalTokens)
 	if err != nil {
 		logger.Error(ctx, err)
 	}
 
 	if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
-		service.User().ChangeQuota(ctx, service.Session().GetUserId(ctx), int(-totalTokens), int(currentQuota))
+		service.User().ChangeQuota(ctx, service.Session().GetUserId(ctx), int(totalTokens), int(currentQuota))
 	}, nil); err != nil {
 		logger.Error(ctx, err)
 	}
@@ -49,7 +49,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage ope
 		}
 
 		if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
-			service.App().ChangeQuota(ctx, service.Session().GetAppId(ctx), int(-totalTokens), int(currentQuota))
+			service.App().ChangeQuota(ctx, service.Session().GetAppId(ctx), int(totalTokens), int(currentQuota))
 		}, nil); err != nil {
 			logger.Error(ctx, err)
 		}
@@ -63,7 +63,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage ope
 		}
 
 		if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
-			service.App().ChangeAppKeyQuota(ctx, service.Session().GetSecretKey(ctx), int(-totalTokens), int(currentQuota))
+			service.App().ChangeAppKeyQuota(ctx, service.Session().GetSecretKey(ctx), int(totalTokens), int(currentQuota))
 		}, nil); err != nil {
 			logger.Error(ctx, err)
 		}
@@ -73,7 +73,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage ope
 }
 
 func (s *sCommon) GetUserTotalTokens(ctx context.Context) (int, error) {
-	return redis.HGetInt(ctx, s.GetUserUsageKey(ctx), consts.USER_TOTAL_TOKENS_FIELD)
+	return redis.HGetInt(ctx, s.GetUserUsageKey(ctx), consts.USER_QUOTA_FIELD)
 }
 
 func (s *sCommon) GetAppTotalTokens(ctx context.Context) (int, error) {
@@ -89,9 +89,9 @@ func (s *sCommon) GetUserUsageKey(ctx context.Context) string {
 }
 
 func (s *sCommon) GetAppTotalTokensField(ctx context.Context) string {
-	return fmt.Sprintf(consts.APP_TOTAL_TOKENS_FIELD, service.Session().GetAppId(ctx))
+	return fmt.Sprintf(consts.APP_QUOTA_FIELD, service.Session().GetAppId(ctx))
 }
 
 func (s *sCommon) GetKeyTotalTokensField(ctx context.Context) string {
-	return fmt.Sprintf(consts.KEY_TOTAL_TOKENS_FIELD, service.Session().GetAppId(ctx), service.Session().GetSecretKey(ctx))
+	return fmt.Sprintf(consts.KEY_QUOTA_FIELD, service.Session().GetAppId(ctx), service.Session().GetSecretKey(ctx))
 }

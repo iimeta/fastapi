@@ -10,12 +10,13 @@ type Key struct {
 	Models       []string `json:"models,omitempty"`       // 模型
 	ModelAgents  []string `json:"model_agents,omitempty"` // 模型代理
 	IsLimitQuota bool     `json:"is_limit_quota"`         // 是否限制额度
-	Quota        int      `json:"quota"`                  // 额度
+	Quota        int      `json:"quota,omitempty"`        // 剩余额度
+	UsedQuota    int      `json:"used_quota,omitempty"`   // 已用额度
 	RPM          int      `json:"rpm,omitempty"`          // 每分钟请求数
 	RPD          int      `json:"rpd,omitempty"`          // 每天的请求数
-	IpWhitelist  []string `json:"ip_whitelist"`           // IP白名单
-	IpBlacklist  []string `json:"ip_blacklist"`           // IP黑名单
-	Remark       string   `json:"remark"`                 // 备注
+	IpWhitelist  []string `json:"ip_whitelist,omitempty"` // IP白名单
+	IpBlacklist  []string `json:"ip_blacklist,omitempty"` // IP黑名单
+	Remark       string   `json:"remark,omitempty"`       // 备注
 	Status       int      `json:"status,omitempty"`       // 状态[1:正常, 2:禁用, -1:删除]
 	Creator      string   `json:"creator,omitempty"`      // 创建人
 	Updater      string   `json:"updater,omitempty"`      // 更新人

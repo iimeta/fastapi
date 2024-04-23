@@ -37,7 +37,7 @@ func init() {
 			panic(err)
 		}
 
-		if _, err = redis.HSetStrAny(ctx, fmt.Sprintf(consts.API_USAGE_KEY, user.UserId), consts.USER_TOTAL_TOKENS_FIELD, user.Quota); err != nil {
+		if _, err = redis.HSetStrAny(ctx, fmt.Sprintf(consts.API_USAGE_KEY, user.UserId), consts.USER_QUOTA_FIELD, user.Quota); err != nil {
 			panic(err)
 		}
 
@@ -75,12 +75,12 @@ func init() {
 		user := userMap[app.UserId]
 		if user != nil {
 			fields := g.Map{
-				fmt.Sprintf(consts.APP_TOTAL_TOKENS_FIELD, app.AppId): app.Quota,
+				fmt.Sprintf(consts.APP_QUOTA_FIELD, app.AppId): app.Quota,
 			}
 
 			keys := keyMap[app.AppId]
 			for _, key := range keys {
-				fields[fmt.Sprintf(consts.KEY_TOTAL_TOKENS_FIELD, key.AppId, key.Key)] = key.Quota
+				fields[fmt.Sprintf(consts.KEY_QUOTA_FIELD, key.AppId, key.Key)] = key.Quota
 			}
 
 			if _, err = redis.HSet(ctx, fmt.Sprintf(consts.API_USAGE_KEY, app.UserId), fields); err != nil {

@@ -18,5 +18,5 @@ const (
 	CORP_ZHIPUAI    = "ZhipuAI"
 	CORP_MIDJOURNEY = "Midjourney"
 
-	USD_QUOTA_UNIT = 500 * 1000.0 // 50万tokens
+	QUOTA_USD_UNIT = 500 * 1000.0 // $1 = 50万tokens
 )

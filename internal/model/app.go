@@ -7,7 +7,8 @@ type App struct {
 	Type         int      `json:"type,omitempty"`           // 应用类型
 	Models       []string `json:"models,omitempty"`         // 模型权限
 	IsLimitQuota bool     `json:"is_limit_quota,omitempty"` // 是否限制额度
-	Quota        int      `json:"quota,omitempty"`          // 额度
+	Quota        int      `json:"quota,omitempty"`          // 剩余额度
+	UsedQuota    int      `json:"used_quota,omitempty"`     // 已用额度
 	IpWhitelist  []string `json:"ip_whitelist,omitempty"`   // IP白名单
 	IpBlacklist  []string `json:"ip_blacklist,omitempty"`   // IP黑名单
 	Remark       string   `json:"remark,omitempty"`         // 备注

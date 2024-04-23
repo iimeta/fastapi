@@ -2,9 +2,12 @@ package dashboard
 
 import (
 	"context"
+	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
+	"github.com/iimeta/fastapi/utility/logger"
+	"math"
 )
 
 type sDashboard struct{}
@@ -20,6 +23,11 @@ func New() service.IDashboard {
 // Subscription
 func (s *sDashboard) Subscription(ctx context.Context) (*model.DashboardSubscriptionRes, error) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sDashboard Subscription time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	quota := service.Session().GetUser(ctx).Quota
 
 	if service.Session().GetAppIsLimitQuota(ctx) {
@@ -33,9 +41,9 @@ func (s *sDashboard) Subscription(ctx context.Context) (*model.DashboardSubscrip
 	return &model.DashboardSubscriptionRes{
 		Object:             "billing_subscription",
 		HasPaymentMethod:   true,
-		SoftLimitUSD:       (float64(quota) / consts.USD_QUOTA_UNIT) * 100,
-		HardLimitUSD:       (float64(quota) / consts.USD_QUOTA_UNIT) * 100,
-		SystemHardLimitUSD: (float64(quota) / consts.USD_QUOTA_UNIT) * 100,
+		SoftLimitUSD:       round(float64(quota)/consts.QUOTA_USD_UNIT, 4),
+		HardLimitUSD:       round(float64(quota)/consts.QUOTA_USD_UNIT, 4),
+		SystemHardLimitUSD: round(float64(quota)/consts.QUOTA_USD_UNIT, 4),
 		AccessUntil:        0,
 	}, nil
 }
@@ -43,18 +51,28 @@ func (s *sDashboard) Subscription(ctx context.Context) (*model.DashboardSubscrip
 // Usage
 func (s *sDashboard) Usage(ctx context.Context) (*model.DashboardUsageRes, error) {
 
-	quota := service.Session().GetUser(ctx).Quota
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sDashboard Usage time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	usedQuota := service.Session().GetUser(ctx).UsedQuota
 
 	if service.Session().GetAppIsLimitQuota(ctx) {
-		quota = service.Session().GetApp(ctx).Quota
+		usedQuota = service.Session().GetApp(ctx).UsedQuota
 	}
 
 	if service.Session().GetKeyIsLimitQuota(ctx) {
-		quota = service.Session().GetKey(ctx).Quota
+		usedQuota = service.Session().GetKey(ctx).UsedQuota
 	}
 
 	return &model.DashboardUsageRes{
 		Object:     "list",
-		TotalUsage: (float64(quota) / consts.USD_QUOTA_UNIT) * 100,
+		TotalUsage: round(float64(usedQuota)/consts.QUOTA_USD_UNIT, 4),
 	}, nil
+}
+
+func round(f float64, n int) float64 {
+	n10 := math.Pow10(n)
+	return math.Trunc((f+0.5/n10)*n10) / n10
 }

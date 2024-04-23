@@ -3,9 +3,9 @@ package consts
 const (
 	API_USAGE_KEY = "api:%d:usage"
 
-	USER_TOTAL_TOKENS_FIELD = "user.total_tokens"
-	APP_TOTAL_TOKENS_FIELD  = "app.%d.total_tokens"
-	KEY_TOTAL_TOKENS_FIELD  = "key.%d.%s.total_tokens"
+	USER_QUOTA_FIELD = "user.quota"
+	APP_QUOTA_FIELD  = "app.%d.quota"
+	KEY_QUOTA_FIELD  = "key.%d.%s.quota"
 
 	API_USER_KEY    = "api:user:%d"
 	API_APP_KEY     = "api:app:%d"

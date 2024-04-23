@@ -46,15 +46,16 @@ func (s *sUser) GetUser(ctx context.Context, userId int) (*model.User, error) {
 	}
 
 	return &model.User{
-		Id:     user.Id,
-		UserId: user.UserId,
-		Name:   user.Name,
-		Avatar: user.Avatar,
-		Email:  user.Email,
-		Phone:  user.Phone,
-		Quota:  user.Quota,
-		Models: user.Models,
-		Status: user.Status,
+		Id:        user.Id,
+		UserId:    user.UserId,
+		Name:      user.Name,
+		Avatar:    user.Avatar,
+		Email:     user.Email,
+		Phone:     user.Phone,
+		Quota:     user.Quota,
+		UsedQuota: user.UsedQuota,
+		Models:    user.Models,
+		Status:    user.Status,
 	}, nil
 }
 
@@ -79,15 +80,16 @@ func (s *sUser) List(ctx context.Context) ([]*model.User, error) {
 	items := make([]*model.User, 0)
 	for _, result := range results {
 		items = append(items, &model.User{
-			Id:     result.Id,
-			UserId: result.UserId,
-			Name:   result.Name,
-			Avatar: result.Avatar,
-			Email:  result.Email,
-			Phone:  result.Phone,
-			Quota:  result.Quota,
-			Models: result.Models,
-			Status: result.Status,
+			Id:        result.Id,
+			UserId:    result.UserId,
+			Name:      result.Name,
+			Avatar:    result.Avatar,
+			Email:     result.Email,
+			Phone:     result.Phone,
+			Quota:     result.Quota,
+			UsedQuota: result.UsedQuota,
+			Models:    result.Models,
+			Status:    result.Status,
 		})
 	}
 
@@ -108,6 +110,7 @@ func (s *sUser) ChangeQuota(ctx context.Context, userId, quota, currentQuota int
 	}
 
 	user.Quota = currentQuota
+	user.UsedQuota += quota
 
 	if err = s.SaveCacheUser(ctx, user); err != nil {
 		logger.Error(ctx, err)
@@ -115,7 +118,8 @@ func (s *sUser) ChangeQuota(ctx context.Context, userId, quota, currentQuota int
 
 	if err = dao.User.UpdateOne(ctx, bson.M{"user_id": userId}, bson.M{
 		"$inc": bson.M{
-			"quota": quota,
+			"quota":      -quota,
+			"used_quota": quota,
 		},
 	}); err != nil {
 		logger.Error(ctx, err)
@@ -198,15 +202,16 @@ func (s *sUser) UpdateCacheUser(ctx context.Context, user *entity.User) {
 	}()
 
 	if err := s.SaveCacheUser(ctx, &model.User{
-		Id:     user.Id,
-		UserId: user.UserId,
-		Name:   user.Name,
-		Avatar: user.Avatar,
-		Email:  user.Email,
-		Phone:  user.Phone,
-		Quota:  user.Quota,
-		Models: user.Models,
-		Status: user.Status,
+		Id:        user.Id,
+		UserId:    user.UserId,
+		Name:      user.Name,
+		Avatar:    user.Avatar,
+		Email:     user.Email,
+		Phone:     user.Phone,
+		Quota:     user.Quota,
+		UsedQuota: user.UsedQuota,
+		Models:    user.Models,
+		Status:    user.Status,
 	}); err != nil {
 		logger.Error(ctx, err)
 	}

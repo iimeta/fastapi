@@ -17,7 +17,8 @@ type Key struct {
 	ModelAgents  []string `bson:"model_agents,omitempty"` // 模型代理
 	IsAgentsOnly bool     `bson:"is_agents_only"`         // 是否代理专用
 	IsLimitQuota bool     `bson:"is_limit_quota"`         // 是否限制额度
-	Quota        int      `bson:"quota,omitempty"`        // 额度
+	Quota        int      `bson:"quota,omitempty"`        // 剩余额度
+	UsedQuota    int      `bson:"used_quota,omitempty"`   // 已用额度
 	RPM          int      `bson:"rpm,omitempty"`          // 每分钟请求数
 	RPD          int      `bson:"rpd,omitempty"`          // 每天的请求数
 	IpWhitelist  []string `bson:"ip_whitelist"`           // IP白名单
