@@ -11,6 +11,7 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
 	"github.com/iimeta/fastapi/utility/util"
+	"net/url"
 	"time"
 )
 
@@ -44,8 +45,16 @@ func getAccessToken(ctx context.Context, key, baseURL, proxyURL string) string {
 		"client_secret": result[1],
 	}
 
+	parse, err := url.Parse(baseURL)
+	if err != nil {
+		logger.Errorf(ctx, "getAccessToken Baidu url.Parse baseURL: %s, error: %s", baseURL, err)
+		return ""
+	}
+
+	url := fmt.Sprintf("%s://%s/oauth/2.0/token", parse.Scheme, parse.Host)
+
 	getAccessTokenRes := new(model.GetAccessTokenRes)
-	if err = util.HttpPost(ctx, baseURL+"/oauth/2.0/token", nil, data, &getAccessTokenRes, proxyURL); err != nil {
+	if err = util.HttpPost(ctx, url, nil, data, &getAccessTokenRes, proxyURL); err != nil {
 		logger.Errorf(ctx, "getAccessToken Baidu key: %s, error: %v", key, err)
 		return ""
 	}
