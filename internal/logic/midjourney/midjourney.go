@@ -96,7 +96,7 @@ func (s *sMidjourney) Imagine(ctx context.Context, params sdkm.MidjourneyProxyRe
 
 	if m.IsEnableModelAgent {
 
-		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
+		if _, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
 			logger.Error(ctx, err)
 			return response, err
 		}
@@ -205,7 +205,7 @@ func (s *sMidjourney) Change(ctx context.Context, params sdkm.MidjourneyProxyReq
 
 	if m.IsEnableModelAgent {
 
-		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
+		if _, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
 			logger.Error(ctx, err)
 			return response, err
 		}
@@ -314,7 +314,7 @@ func (s *sMidjourney) Describe(ctx context.Context, params sdkm.MidjourneyProxyR
 
 	if m.IsEnableModelAgent {
 
-		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
+		if _, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
 			logger.Error(ctx, err)
 			return response, err
 		}
@@ -423,7 +423,7 @@ func (s *sMidjourney) Blend(ctx context.Context, params sdkm.MidjourneyProxyRequ
 
 	if m.IsEnableModelAgent {
 
-		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
+		if _, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
 			logger.Error(ctx, err)
 			return response, err
 		}
@@ -532,7 +532,7 @@ func (s *sMidjourney) SwapFace(ctx context.Context, params sdkm.MidjourneyProxyR
 
 	if m.IsEnableModelAgent {
 
-		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
+		if _, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
 			logger.Error(ctx, err)
 			return response, err
 		}
@@ -641,7 +641,7 @@ func (s *sMidjourney) Action(ctx context.Context, params sdkm.MidjourneyProxyReq
 
 	if m.IsEnableModelAgent {
 
-		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
+		if _, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
 			logger.Error(ctx, err)
 			return response, err
 		}
@@ -750,7 +750,7 @@ func (s *sMidjourney) Modal(ctx context.Context, params sdkm.MidjourneyProxyRequ
 
 	if m.IsEnableModelAgent {
 
-		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
+		if _, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
 			logger.Error(ctx, err)
 			return response, err
 		}
@@ -859,7 +859,7 @@ func (s *sMidjourney) Shorten(ctx context.Context, params sdkm.MidjourneyProxyRe
 
 	if m.IsEnableModelAgent {
 
-		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
+		if _, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
 			logger.Error(ctx, err)
 			return response, err
 		}
@@ -968,7 +968,7 @@ func (s *sMidjourney) UploadDiscordImages(ctx context.Context, params sdkm.Midjo
 
 	if m.IsEnableModelAgent {
 
-		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
+		if _, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
 			logger.Error(ctx, err)
 			return response, err
 		}
@@ -1084,7 +1084,7 @@ func (s *sMidjourney) Fetch(ctx context.Context, params sdkm.MidjourneyProxyRequ
 
 	if m.IsEnableModelAgent {
 
-		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
+		if _, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
 			logger.Error(ctx, err)
 			return response, err
 		}

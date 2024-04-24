@@ -178,7 +178,7 @@ func (s *sModelAgent) GetModelAgentKeys(ctx context.Context, id string) ([]*mode
 }
 
 // 挑选模型代理
-func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (modelAgent *model.ModelAgent, err error) {
+func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (agentTotal int, modelAgent *model.ModelAgent, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -199,22 +199,22 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (model
 
 			if modelAgents, err = s.List(ctx, m.ModelAgents); err != nil {
 				logger.Error(ctx, err)
-				return nil, err
+				return 0, nil, err
 			}
 
 			if err = s.SaveCacheList(ctx, modelAgents); err != nil {
 				logger.Error(ctx, err)
-				return nil, err
+				return 0, nil, err
 			}
 		}
 
 		if len(modelAgents) == 0 {
-			return nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT
+			return 0, nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT
 		}
 
 		if err = s.modelAgentsCache.Set(ctx, m.Id, modelAgents, 0); err != nil {
 			logger.Error(ctx, err)
-			return nil, err
+			return 0, nil, err
 		}
 	}
 
@@ -227,7 +227,7 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (model
 	}
 
 	if len(modelAgentList) == 0 {
-		return nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT
+		return 0, nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT
 	}
 
 	if roundRobinValue := s.modelAgentsRoundRobinCache.GetVal(ctx, m.Id); roundRobinValue != nil {
@@ -238,11 +238,11 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (model
 		roundRobin = new(util.RoundRobin)
 		if err = s.modelAgentsRoundRobinCache.Set(ctx, m.Id, roundRobin, 0); err != nil {
 			logger.Error(ctx, err)
-			return nil, err
+			return 0, nil, err
 		}
 	}
 
-	return modelAgentList[roundRobin.Index(len(modelAgentList))], nil
+	return len(modelAgentList), modelAgentList[roundRobin.Index(len(modelAgentList))], nil
 }
 
 // 移除模型代理

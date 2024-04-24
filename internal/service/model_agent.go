@@ -21,12 +21,12 @@ type (
 		// 根据模型代理ID获取密钥列表
 		GetModelAgentKeys(ctx context.Context, id string) ([]*model.Key, error)
 		// 挑选模型代理
-		PickModelAgent(ctx context.Context, m *model.Model) (modelAgent *model.ModelAgent, err error)
+		PickModelAgent(ctx context.Context, m *model.Model) (agentTotal int, modelAgent *model.ModelAgent, err error)
 		// 移除模型代理
 		RemoveModelAgent(ctx context.Context, m *model.Model, modelAgent *model.ModelAgent)
 		// 记录错误模型代理
 		RecordErrorModelAgent(ctx context.Context, m *model.Model, modelAgent *model.ModelAgent)
-		// 禁用错误模型代理
+		// 禁用模型代理
 		DisabledModelAgent(ctx context.Context, modelAgent *model.ModelAgent)
 		// 挑选模型代理密钥
 		PickModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent) (keyTotal int, key *model.Key, err error)

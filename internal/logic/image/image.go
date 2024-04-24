@@ -104,7 +104,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 
 	if m.IsEnableModelAgent {
 
-		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
+		if _, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
 			logger.Error(ctx, err)
 			return response, err
 		}

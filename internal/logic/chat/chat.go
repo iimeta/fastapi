@@ -10,6 +10,7 @@ import (
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
+	"github.com/iimeta/fastapi-sdk/sdkerr"
 	"github.com/iimeta/fastapi-sdk/tiktoken"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
@@ -48,6 +49,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 	var key string
 	var baseUrl string
 	var path string
+	var agentTotal int
 	var keyTotal int
 	var isRetry bool
 
@@ -158,7 +160,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 	if realModel.IsEnableModelAgent {
 
-		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, realModel); err != nil {
+		if agentTotal, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, realModel); err != nil {
 			logger.Error(ctx, err)
 			return response, err
 		}
@@ -220,14 +222,20 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		if len(retry) > 0 {
 			if config.Cfg.Api.Retry > 0 && len(retry) == config.Cfg.Api.Retry {
 				return response, err
-			} else if config.Cfg.Api.Retry < 0 && len(retry) == keyTotal {
-				return response, err
+			} else if config.Cfg.Api.Retry < 0 {
+				if realModel.IsEnableModelAgent {
+					if len(retry) == agentTotal {
+						return response, err
+					}
+				} else if len(retry) == keyTotal {
+					return response, err
+				}
 			} else if config.Cfg.Api.Retry == 0 {
 				return response, err
 			}
 		}
 
-		apiError := &openai.APIError{}
+		apiError := &sdkerr.APIError{}
 		if errors.As(err, &apiError) {
 
 			isRetry = true
@@ -282,7 +290,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			return response, err
 		}
 
-		reqError := &openai.RequestError{}
+		reqError := &sdkerr.RequestError{}
 		if errors.As(err, &reqError) {
 
 			isRetry = true
@@ -359,6 +367,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	var baseUrl string
 	var path string
 	var completion string
+	var agentTotal int
 	var keyTotal int
 	var connTime int64
 	var duration int64
@@ -461,7 +470,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 	if realModel.IsEnableModelAgent {
 
-		if modelAgent, err = service.ModelAgent().PickModelAgent(ctx, realModel); err != nil {
+		if agentTotal, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, realModel); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -523,14 +532,20 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		if len(retry) > 0 {
 			if config.Cfg.Api.Retry > 0 && len(retry) == config.Cfg.Api.Retry {
 				return err
-			} else if config.Cfg.Api.Retry < 0 && len(retry) == keyTotal {
-				return err
+			} else if config.Cfg.Api.Retry < 0 {
+				if realModel.IsEnableModelAgent {
+					if len(retry) == agentTotal {
+						return err
+					}
+				} else if len(retry) == keyTotal {
+					return err
+				}
 			} else if config.Cfg.Api.Retry == 0 {
 				return err
 			}
 		}
 
-		apiError := &openai.APIError{}
+		apiError := &sdkerr.APIError{}
 		if errors.As(err, &apiError) {
 
 			isRetry = true
@@ -585,7 +600,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			return err
 		}
 
-		reqError := &openai.RequestError{}
+		reqError := &sdkerr.RequestError{}
 		if errors.As(err, &reqError) {
 
 			isRetry = true
