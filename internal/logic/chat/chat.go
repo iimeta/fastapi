@@ -227,13 +227,68 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			}
 		}
 
-		e := &openai.APIError{}
-		if errors.As(err, &e) {
+		apiError := &openai.APIError{}
+		if errors.As(err, &apiError) {
 
 			isRetry = true
 			service.Common().RecordError(ctx, realModel, k, modelAgent)
 
-			switch e.HTTPStatusCode {
+			switch apiError.HTTPStatusCode {
+			case 400:
+
+				if gstr.Contains(err.Error(), "Please reduce the length of the messages") {
+					return response, err
+				}
+
+				response, err = s.Completions(ctx, params, append(retry, 1)...)
+
+			case 429:
+
+				if gstr.Contains(err.Error(), "You exceeded your current quota") {
+					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+						if realModel.IsEnableModelAgent {
+							service.ModelAgent().DisabledModelAgentKey(ctx, k)
+						} else {
+							service.Key().DisabledModelKey(ctx, k)
+						}
+
+					}, nil); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
+
+				response, err = s.Completions(ctx, params, append(retry, 1)...)
+
+			default:
+
+				if gstr.Contains(err.Error(), "Incorrect API key provided") {
+					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+						if realModel.IsEnableModelAgent {
+							service.ModelAgent().DisabledModelAgentKey(ctx, k)
+						} else {
+							service.Key().DisabledModelKey(ctx, k)
+						}
+
+					}, nil); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
+
+				response, err = s.Completions(ctx, params, append(retry, 1)...)
+			}
+
+			return response, err
+		}
+
+		reqError := &openai.RequestError{}
+		if errors.As(err, &reqError) {
+
+			isRetry = true
+			service.Common().RecordError(ctx, realModel, k, modelAgent)
+
+			switch reqError.HTTPStatusCode {
 			case 400:
 
 				if gstr.Contains(err.Error(), "Please reduce the length of the messages") {
@@ -475,13 +530,68 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			}
 		}
 
-		e := &openai.APIError{}
-		if errors.As(err, &e) {
+		apiError := &openai.APIError{}
+		if errors.As(err, &apiError) {
 
 			isRetry = true
 			service.Common().RecordError(ctx, realModel, k, modelAgent)
 
-			switch e.HTTPStatusCode {
+			switch apiError.HTTPStatusCode {
+			case 400:
+
+				if gstr.Contains(err.Error(), "Please reduce the length of the messages") {
+					return err
+				}
+
+				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
+
+			case 429:
+
+				if gstr.Contains(err.Error(), "You exceeded your current quota") {
+					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+						if realModel.IsEnableModelAgent {
+							service.ModelAgent().DisabledModelAgentKey(ctx, k)
+						} else {
+							service.Key().DisabledModelKey(ctx, k)
+						}
+
+					}, nil); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
+
+				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
+
+			default:
+
+				if gstr.Contains(err.Error(), "Incorrect API key provided") {
+					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+						if realModel.IsEnableModelAgent {
+							service.ModelAgent().DisabledModelAgentKey(ctx, k)
+						} else {
+							service.Key().DisabledModelKey(ctx, k)
+						}
+
+					}, nil); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
+
+				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
+			}
+
+			return err
+		}
+
+		reqError := &openai.RequestError{}
+		if errors.As(err, &reqError) {
+
+			isRetry = true
+			service.Common().RecordError(ctx, realModel, k, modelAgent)
+
+			switch reqError.HTTPStatusCode {
 			case 400:
 
 				if gstr.Contains(err.Error(), "Please reduce the length of the messages") {
