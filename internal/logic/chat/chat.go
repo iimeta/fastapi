@@ -60,8 +60,10 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			return
 		}
 
-		// 替换成调用的模型
-		response.Model = reqModel.Model
+		if err == nil && reqModel != nil {
+			// 替换成调用的模型
+			response.Model = reqModel.Model
+		}
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
