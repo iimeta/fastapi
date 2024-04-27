@@ -28,8 +28,10 @@ type Model struct {
 }
 
 type ForwardConfig struct {
-	ForwardRule  int      `bson:"forward_rule,omitempty"`  // 转发规则[1:全部转发, 2:按关键字]
-	TargetModel  string   `bson:"target_model,omitempty"`  // 转发规则为1时的目标模型
-	Keywords     []string `bson:"keywords,omitempty"`      // 转发规则为2时的关键字
-	TargetModels []string `bson:"target_models,omitempty"` // 转发规则为2时的目标模型
+	ForwardRule   int      `bson:"forward_rule,omitempty"`   // 转发规则[1:全部转发, 2:按关键字]
+	MatchRule     int      `bson:"match_rule,omitempty"`     // 匹配规则[1:智能匹配, 2:正则匹配]
+	TargetModel   string   `bson:"target_model,omitempty"`   // 转发规则为1时的目标模型
+	DecisionModel string   `bson:"decision_model,omitempty"` // 转发规则为2时并且匹配规则为1时的判定模型
+	Keywords      []string `bson:"keywords,omitempty"`       // 转发规则为2时的关键字
+	TargetModels  []string `bson:"target_models,omitempty"`  // 转发规则为2时的目标模型
 }

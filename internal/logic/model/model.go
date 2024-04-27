@@ -2,11 +2,13 @@ package model
 
 import (
 	"context"
+	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gregex"
 	"github.com/gogf/gf/v2/text/gstr"
+	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
@@ -16,7 +18,9 @@ import (
 	"github.com/iimeta/fastapi/utility/cache"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
+	"github.com/sashabaranov/go-openai"
 	"go.mongodb.org/mongo-driver/bson"
+	"strconv"
 )
 
 type sModel struct {
@@ -71,10 +75,12 @@ func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 
 	if result.ForwardConfig != nil {
 		detail.ForwardConfig = &model.ForwardConfig{
-			ForwardRule:  result.ForwardConfig.ForwardRule,
-			TargetModel:  result.ForwardConfig.TargetModel,
-			Keywords:     result.ForwardConfig.Keywords,
-			TargetModels: result.ForwardConfig.TargetModels,
+			ForwardRule:   result.ForwardConfig.ForwardRule,
+			MatchRule:     result.ForwardConfig.MatchRule,
+			TargetModel:   result.ForwardConfig.TargetModel,
+			DecisionModel: result.ForwardConfig.DecisionModel,
+			Keywords:      result.ForwardConfig.Keywords,
+			TargetModels:  result.ForwardConfig.TargetModels,
 		}
 	}
 
@@ -424,10 +430,12 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 
 		if result.ForwardConfig != nil {
 			m.ForwardConfig = &model.ForwardConfig{
-				ForwardRule:  result.ForwardConfig.ForwardRule,
-				TargetModel:  result.ForwardConfig.TargetModel,
-				Keywords:     result.ForwardConfig.Keywords,
-				TargetModels: result.ForwardConfig.TargetModels,
+				ForwardRule:   result.ForwardConfig.ForwardRule,
+				MatchRule:     result.ForwardConfig.MatchRule,
+				TargetModel:   result.ForwardConfig.TargetModel,
+				DecisionModel: result.ForwardConfig.DecisionModel,
+				Keywords:      result.ForwardConfig.Keywords,
+				TargetModels:  result.ForwardConfig.TargetModels,
 			}
 		}
 
@@ -579,10 +587,12 @@ func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, ne
 
 	if newData.ForwardConfig != nil {
 		m.ForwardConfig = &model.ForwardConfig{
-			ForwardRule:  newData.ForwardConfig.ForwardRule,
-			TargetModel:  newData.ForwardConfig.TargetModel,
-			Keywords:     newData.ForwardConfig.Keywords,
-			TargetModels: newData.ForwardConfig.TargetModels,
+			ForwardRule:   newData.ForwardConfig.ForwardRule,
+			MatchRule:     newData.ForwardConfig.MatchRule,
+			TargetModel:   newData.ForwardConfig.TargetModel,
+			DecisionModel: newData.ForwardConfig.DecisionModel,
+			Keywords:      newData.ForwardConfig.Keywords,
+			TargetModels:  newData.ForwardConfig.TargetModels,
 		}
 	}
 
@@ -618,10 +628,72 @@ func (s *sModel) GetTargetModel(ctx context.Context, m *model.Model, prompt stri
 	if m.ForwardConfig.ForwardRule == 1 {
 		model, err = s.GetCacheModel(ctx, m.ForwardConfig.TargetModel)
 	} else {
+
 		keywords := m.ForwardConfig.Keywords
 		for i, keyword := range keywords {
 			if gregex.IsMatchString(gstr.ToLower(gstr.TrimAll(keyword)), gstr.ToLower(gstr.TrimAll(prompt))) {
 				model, err = s.GetCacheModel(ctx, m.ForwardConfig.TargetModels[i])
+			}
+		}
+
+		if model == nil && m.ForwardConfig.MatchRule == 1 {
+
+			decisionModel, err := s.GetCacheModel(ctx, m.ForwardConfig.DecisionModel)
+			if err != nil {
+				logger.Error(ctx, err)
+				return nil, err
+			}
+
+			if decisionModel == nil {
+				return m, nil
+			}
+
+			systemPrompt := "You are an emotionless question judgment expert. You will only return the content within the options and will not add any other information. The enumerated content options that can be returned are as follows: [-1%s]"
+			systemEnum := ""
+			decisionPrompt := "please only return the value that include in enum: [-1%s]; Return the result based on the nature of the conversation: %s Other: -1. The question you need to decide is: '%s'"
+			decisionEnum := ""
+
+			for i, keyword := range keywords {
+				if i == 0 {
+					systemEnum = fmt.Sprintf(",%d", i)
+					decisionEnum = fmt.Sprintf("About %s, return %d;", gstr.Replace(keyword, "|", " or "), i)
+				} else {
+					systemEnum += fmt.Sprintf(",%d", i)
+					decisionEnum += fmt.Sprintf(" About %s, return %d;", gstr.Replace(keyword, "|", " or "), i)
+				}
+			}
+
+			systemPrompt = fmt.Sprintf(systemPrompt, systemEnum)
+			decisionPrompt = fmt.Sprintf(decisionPrompt, systemEnum, decisionEnum, prompt)
+
+			messages := []openai.ChatCompletionMessage{{
+				Role:    consts.ROLE_SYSTEM,
+				Content: systemPrompt,
+			}, {
+				Role:    consts.ROLE_USER,
+				Content: decisionPrompt,
+			}}
+
+			response, err := service.Chat().SmartCompletions(ctx, sdkm.ChatCompletionRequest{
+				Model:    decisionModel.Model,
+				Messages: messages,
+			}, decisionModel)
+
+			if err != nil {
+				logger.Error(ctx, err)
+				return nil, err
+			}
+
+			logger.Infof(ctx, "sModel GetTargetModel SmartCompletions response: %s", gjson.MustEncodeString(response))
+
+			if len(response.Choices) > 0 {
+				if index, err := strconv.Atoi(response.Choices[0].Message.Content); err == nil {
+					if index != -1 {
+						model, err = s.GetCacheModel(ctx, m.ForwardConfig.TargetModels[index])
+					} else {
+						return m, nil
+					}
+				}
 			}
 		}
 	}

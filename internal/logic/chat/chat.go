@@ -83,18 +83,18 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 			numTokensFromMessagesTime := gtime.TimestampMilli()
 			if promptTokens, err := tiktoken.NumTokensFromMessages(model, params.Messages); err != nil {
-				logger.Errorf(ctx, "CompletionsStream model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
+				logger.Errorf(ctx, "sChat Completions model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
 			} else {
-				logger.Debugf(ctx, "NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-numTokensFromMessagesTime)
+				logger.Debugf(ctx, "sChat NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-numTokensFromMessagesTime)
 				response.Usage.PromptTokens = promptTokens
 			}
 
 			if len(response.Choices) > 0 {
 				completionTime := gtime.TimestampMilli()
 				if completionTokens, err := tiktoken.NumTokensFromString(model, response.Choices[0].Message.Content); err != nil {
-					logger.Errorf(ctx, "CompletionsStream model: %s, completion: %s, NumTokensFromString error: %v", params.Model, response.Choices[0].Message.Content, err)
+					logger.Errorf(ctx, "sChat Completions model: %s, completion: %s, NumTokensFromString error: %v", params.Model, response.Choices[0].Message.Content, err)
 				} else {
-					logger.Debugf(ctx, "NumTokensFromString len(completion): %d, time: %d", len(response.Choices[0].Message.Content), gtime.TimestampMilli()-completionTime)
+					logger.Debugf(ctx, "sChat NumTokensFromString len(completion): %d, time: %d", len(response.Choices[0].Message.Content), gtime.TimestampMilli()-completionTime)
 					response.Usage.CompletionTokens = completionTokens
 				}
 			}
@@ -404,17 +404,17 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 				numTokensFromMessagesTime := gtime.TimestampMilli()
 				if promptTokens, err := tiktoken.NumTokensFromMessages(model, params.Messages); err != nil {
-					logger.Errorf(ctx, "CompletionsStream model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
+					logger.Errorf(ctx, "sChat CompletionsStream model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
 				} else {
 					usage.PromptTokens = promptTokens
 				}
-				logger.Debugf(ctx, "NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-numTokensFromMessagesTime)
+				logger.Debugf(ctx, "sChat NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-numTokensFromMessagesTime)
 
 				completionTime := gtime.TimestampMilli()
 				if completionTokens, err := tiktoken.NumTokensFromString(model, completion); err != nil {
-					logger.Errorf(ctx, "CompletionsStream model: %s, completion: %s, NumTokensFromString error: %v", params.Model, completion, err)
+					logger.Errorf(ctx, "sChat CompletionsStream model: %s, completion: %s, NumTokensFromString error: %v", params.Model, completion, err)
 				} else {
-					logger.Debugf(ctx, "NumTokensFromString len(completion): %d, time: %d", len(completion), gtime.TimestampMilli()-completionTime)
+					logger.Debugf(ctx, "sChat NumTokensFromString len(completion): %d, time: %d", len(completion), gtime.TimestampMilli()-completionTime)
 
 					usage.CompletionTokens = completionTokens
 
@@ -763,10 +763,12 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *mod
 		if chat.IsForward && model.ForwardConfig != nil {
 
 			chat.ForwardConfig = &do.ForwardConfig{
-				ForwardRule:  model.ForwardConfig.ForwardRule,
-				TargetModel:  model.ForwardConfig.TargetModel,
-				Keywords:     model.ForwardConfig.Keywords,
-				TargetModels: model.ForwardConfig.TargetModels,
+				ForwardRule:   model.ForwardConfig.ForwardRule,
+				MatchRule:     model.ForwardConfig.MatchRule,
+				TargetModel:   model.ForwardConfig.TargetModel,
+				DecisionModel: model.ForwardConfig.DecisionModel,
+				Keywords:      model.ForwardConfig.Keywords,
+				TargetModels:  model.ForwardConfig.TargetModels,
 			}
 
 			chat.RealModelId = realModel.Id
