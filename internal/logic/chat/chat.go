@@ -123,13 +123,16 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				reqModel.ModelAgent = modelAgent
 
 				completionsRes := &model.CompletionsRes{
-					Usage:        *response.Usage,
 					Error:        err,
 					ConnTime:     response.ConnTime,
 					Duration:     response.Duration,
 					TotalTime:    response.TotalTime,
 					InternalTime: internalTime,
 					EnterTime:    enterTime,
+				}
+
+				if response.Usage != nil {
+					completionsRes.Usage = *response.Usage
 				}
 
 				if len(response.Choices) > 0 {
@@ -671,8 +674,8 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 		response := <-response
 
-		if response == nil {
-			return nil
+		if response == nil || response.Error != nil {
+			return response.Error
 		}
 
 		if len(response.Choices) > 0 {
@@ -799,7 +802,13 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *mod
 
 	if completionsRes.Error != nil {
 		chat.ErrMsg = completionsRes.Error.Error()
-		chat.Status = -1
+		if errors.Is(completionsRes.Error, context.Canceled) ||
+			gstr.Contains(chat.ErrMsg, "broken pipe") ||
+			gstr.Contains(chat.ErrMsg, "aborted") {
+			chat.Status = 2
+		} else {
+			chat.Status = -1
+		}
 	}
 
 	for _, message := range completionsReq.Messages {
