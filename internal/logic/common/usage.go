@@ -11,6 +11,7 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
 	"github.com/sashabaranov/go-openai"
+	"math"
 )
 
 // 记录使用额度
@@ -23,7 +24,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage ope
 
 	var totalTokens int64
 	if model.BillingMethod == 1 {
-		totalTokens = int64(float64(usage.PromptTokens)*model.PromptRatio + float64(usage.CompletionTokens)*model.CompletionRatio)
+		totalTokens = int64(math.Ceil(float64(usage.PromptTokens)*model.PromptRatio + float64(usage.CompletionTokens)*model.CompletionRatio))
 	} else {
 		totalTokens = int64(model.FixedQuota)
 	}

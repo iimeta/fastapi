@@ -22,6 +22,7 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
 	"github.com/sashabaranov/go-openai"
+	"math"
 )
 
 type sChat struct{}
@@ -60,46 +61,49 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			return
 		}
 
-		if err == nil && reqModel != nil {
-			// 替换成调用的模型
-			response.Model = reqModel.Model
-		}
-
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
-		if err == nil && (response.Usage == nil || response.Usage.TotalTokens == 0) {
+		if err == nil {
 
-			response.Usage = new(openai.Usage)
-			model := reqModel.Model
+			if response.Usage == nil || response.Usage.TotalTokens == 0 {
 
-			if reqModel.Corp != consts.CORP_OPENAI {
-				model = "gpt-3.5-turbo"
-			} else {
-				if _, err := tiktoken.EncodingForModel(model); err != nil {
+				response.Usage = new(openai.Usage)
+				model := reqModel.Model
+
+				if reqModel.Corp != consts.CORP_OPENAI {
 					model = "gpt-3.5-turbo"
-				}
-			}
-
-			numTokensFromMessagesTime := gtime.TimestampMilli()
-			if promptTokens, err := tiktoken.NumTokensFromMessages(model, params.Messages); err != nil {
-				logger.Errorf(ctx, "sChat Completions model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
-			} else {
-				logger.Debugf(ctx, "sChat NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-numTokensFromMessagesTime)
-				response.Usage.PromptTokens = promptTokens
-			}
-
-			if len(response.Choices) > 0 {
-				completionTime := gtime.TimestampMilli()
-				if completionTokens, err := tiktoken.NumTokensFromString(model, response.Choices[0].Message.Content); err != nil {
-					logger.Errorf(ctx, "sChat Completions model: %s, completion: %s, NumTokensFromString error: %v", params.Model, response.Choices[0].Message.Content, err)
 				} else {
-					logger.Debugf(ctx, "sChat NumTokensFromString len(completion): %d, time: %d", len(response.Choices[0].Message.Content), gtime.TimestampMilli()-completionTime)
-					response.Usage.CompletionTokens = completionTokens
+					if _, err := tiktoken.EncodingForModel(model); err != nil {
+						model = "gpt-3.5-turbo"
+					}
+				}
+
+				numTokensFromMessagesTime := gtime.TimestampMilli()
+				if promptTokens, err := tiktoken.NumTokensFromMessages(model, params.Messages); err != nil {
+					logger.Errorf(ctx, "sChat Completions model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
+				} else {
+					logger.Debugf(ctx, "sChat NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-numTokensFromMessagesTime)
+					response.Usage.PromptTokens = promptTokens
+				}
+
+				if len(response.Choices) > 0 {
+					completionTime := gtime.TimestampMilli()
+					if completionTokens, err := tiktoken.NumTokensFromString(model, response.Choices[0].Message.Content); err != nil {
+						logger.Errorf(ctx, "sChat Completions model: %s, completion: %s, NumTokensFromString error: %v", params.Model, response.Choices[0].Message.Content, err)
+					} else {
+						logger.Debugf(ctx, "sChat NumTokensFromString len(completion): %d, time: %d", len(response.Choices[0].Message.Content), gtime.TimestampMilli()-completionTime)
+						response.Usage.CompletionTokens = completionTokens
+					}
 				}
 			}
 
-			response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
+			if reqModel != nil {
+				// 替换成调用的模型
+				response.Model = reqModel.Model
+				// 实际消费额度
+				response.Usage.TotalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.PromptRatio + float64(response.Usage.CompletionTokens)*reqModel.CompletionRatio))
+			}
 		}
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -427,7 +431,8 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					}
 				}
 
-				usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+				// 实际消费额度
+				usage.TotalTokens = int(math.Ceil(float64(usage.PromptTokens)*reqModel.PromptRatio + float64(usage.CompletionTokens)*reqModel.CompletionRatio))
 			}
 
 			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
@@ -675,6 +680,8 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		}
 
 		if response.Usage != nil {
+			// 实际消费额度
+			response.Usage.TotalTokens = int(math.Ceil(reqModel.PromptRatio*float64(response.Usage.PromptTokens) + reqModel.CompletionRatio*float64(response.Usage.CompletionTokens)))
 			usage = response.Usage
 		}
 
@@ -776,11 +783,11 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *mod
 			chat.RealModel = realModel.Model
 		}
 
-		chat.PromptTokens = int(chat.PromptRatio * float64(completionsRes.Usage.PromptTokens))
-		chat.CompletionTokens = int(chat.CompletionRatio * float64(completionsRes.Usage.CompletionTokens))
+		chat.PromptTokens = completionsRes.Usage.PromptTokens
+		chat.CompletionTokens = completionsRes.Usage.CompletionTokens
 
 		if model.BillingMethod == 1 {
-			chat.TotalTokens = chat.PromptTokens + chat.CompletionTokens
+			chat.TotalTokens = completionsRes.Usage.TotalTokens
 		} else {
 			chat.TotalTokens = chat.FixedQuota
 		}
