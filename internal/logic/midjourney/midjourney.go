@@ -1155,6 +1155,7 @@ func (s *sMidjourney) SaveChat(ctx context.Context, model *model.Model, key *mod
 	}
 
 	if model != nil {
+
 		chat.Corp = model.Corp
 		chat.ModelId = model.Id
 		chat.Name = model.Name
@@ -1164,7 +1165,6 @@ func (s *sMidjourney) SaveChat(ctx context.Context, model *model.Model, key *mod
 		chat.PromptRatio = model.PromptRatio
 		chat.CompletionRatio = model.CompletionRatio
 		chat.FixedQuota = model.FixedQuota
-		chat.TotalTokens = model.FixedQuota
 		chat.IsEnableModelAgent = model.IsEnableModelAgent
 		if chat.IsEnableModelAgent && model.ModelAgent != nil {
 			chat.ModelAgentId = model.ModelAgent.Id
@@ -1176,6 +1176,10 @@ func (s *sMidjourney) SaveChat(ctx context.Context, model *model.Model, key *mod
 				Remark:  model.ModelAgent.Remark,
 				Status:  model.ModelAgent.Status,
 			}
+		}
+
+		if response.Error == nil {
+			chat.TotalTokens = response.Usage.TotalTokens
 		}
 	}
 

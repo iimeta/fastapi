@@ -243,6 +243,7 @@ func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Ke
 	}
 
 	if model != nil {
+
 		chat.Corp = model.Corp
 		chat.ModelId = model.Id
 		chat.Name = model.Name
@@ -252,7 +253,6 @@ func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Ke
 		chat.PromptRatio = model.PromptRatio
 		chat.CompletionRatio = model.CompletionRatio
 		chat.FixedQuota = model.FixedQuota
-		chat.TotalTokens = model.FixedQuota
 		chat.IsEnableModelAgent = model.IsEnableModelAgent
 		if chat.IsEnableModelAgent && model.ModelAgent != nil {
 			chat.ModelAgentId = model.ModelAgent.Id
@@ -264,6 +264,10 @@ func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Ke
 				Remark:  model.ModelAgent.Remark,
 				Status:  model.ModelAgent.Status,
 			}
+		}
+
+		if imageRes.Error == nil {
+			chat.TotalTokens = imageRes.Usage.TotalTokens
 		}
 	}
 

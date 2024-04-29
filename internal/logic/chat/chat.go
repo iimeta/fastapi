@@ -442,16 +442,21 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 				reqModel.ModelAgent = modelAgent
 
-				s.SaveChat(ctx, reqModel, realModel, k, &params, &model.CompletionsRes{
+				completionsRes := &model.CompletionsRes{
 					Completion:   completion,
-					Usage:        *usage,
 					Error:        err,
 					ConnTime:     connTime,
 					Duration:     duration,
 					TotalTime:    totalTime,
 					InternalTime: internalTime,
 					EnterTime:    enterTime,
-				})
+				}
+
+				if usage != nil {
+					completionsRes.Usage = *usage
+				}
+
+				s.SaveChat(ctx, reqModel, realModel, k, &params, completionsRes)
 			}, nil); err != nil {
 				logger.Error(ctx, err)
 			}
