@@ -621,6 +621,11 @@ func (s *sModel) RemoveCacheModel(ctx context.Context, id string) {
 // 获取目标模型
 func (s *sModel) GetTargetModel(ctx context.Context, m *model.Model, prompt string) (model *model.Model, err error) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModel GetTargetModel time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	if !m.IsForward {
 		return m, nil
 	}
