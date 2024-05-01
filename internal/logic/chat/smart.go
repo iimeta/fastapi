@@ -35,11 +35,6 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 	var agentTotal int
 	var keyTotal int
 
-	if reqModel, err = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx)); err != nil {
-		logger.Error(ctx, err)
-		return response, err
-	}
-
 	*realModel = *reqModel
 
 	if realModel.IsForward {
