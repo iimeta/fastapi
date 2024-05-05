@@ -18,7 +18,7 @@ type ImageReq struct {
 type ImageRes struct {
 	Created      int64                           `json:"created,omitempty"`
 	Data         []openai.ImageResponseDataInner `json:"data,omitempty"`
-	Usage        openai.Usage                    `json:"usage"`
+	Usage        *openai.Usage                   `json:"usage"`
 	Error        error                           `json:"err"`
 	ConnTime     int64                           `json:"-"`
 	Duration     int64                           `json:"-"`

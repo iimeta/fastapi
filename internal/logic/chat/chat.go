@@ -79,12 +79,12 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 					}
 				}
 
-				numTokensFromMessagesTime := gtime.TimestampMilli()
+				promptTime := gtime.TimestampMilli()
 				if promptTokens, err := tiktoken.NumTokensFromMessages(model, params.Messages); err != nil {
 					logger.Errorf(ctx, "sChat Completions model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
 				} else {
-					logger.Debugf(ctx, "sChat NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-numTokensFromMessagesTime)
 					response.Usage.PromptTokens = promptTokens
+					logger.Debugf(ctx, "sChat NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-promptTime)
 				}
 
 				if len(response.Choices) > 0 {
@@ -92,8 +92,8 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 					if completionTokens, err := tiktoken.NumTokensFromString(model, response.Choices[0].Message.Content); err != nil {
 						logger.Errorf(ctx, "sChat Completions model: %s, completion: %s, NumTokensFromString error: %v", params.Model, response.Choices[0].Message.Content, err)
 					} else {
-						logger.Debugf(ctx, "sChat NumTokensFromString len(completion): %d, time: %d", len(response.Choices[0].Message.Content), gtime.TimestampMilli()-completionTime)
 						response.Usage.CompletionTokens = completionTokens
+						logger.Debugf(ctx, "sChat NumTokensFromString len(completion): %d, time: %d", len(response.Choices[0].Message.Content), gtime.TimestampMilli()-completionTime)
 					}
 				}
 			}
@@ -108,9 +108,9 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-			if err == nil {
+			if err == nil || isAborted(err) {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, reqModel, *response.Usage); err != nil {
+					if err := service.Common().RecordUsage(ctx, reqModel, response.Usage); err != nil {
 						logger.Error(ctx, err)
 					}
 				}, nil); err != nil {
@@ -409,33 +409,34 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					}
 				}
 
-				numTokensFromMessagesTime := gtime.TimestampMilli()
+				promptTime := gtime.TimestampMilli()
 				if promptTokens, err := tiktoken.NumTokensFromMessages(model, params.Messages); err != nil {
 					logger.Errorf(ctx, "sChat CompletionsStream model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
 				} else {
 					usage.PromptTokens = promptTokens
+					logger.Debugf(ctx, "sChat NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-promptTime)
 				}
-				logger.Debugf(ctx, "sChat NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-numTokensFromMessagesTime)
 
 				completionTime := gtime.TimestampMilli()
 				if completionTokens, err := tiktoken.NumTokensFromString(model, completion); err != nil {
 					logger.Errorf(ctx, "sChat CompletionsStream model: %s, completion: %s, NumTokensFromString error: %v", params.Model, completion, err)
 				} else {
-					logger.Debugf(ctx, "sChat NumTokensFromString len(completion): %d, time: %d", len(completion), gtime.TimestampMilli()-completionTime)
-
 					usage.CompletionTokens = completionTokens
-
-					if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-						if err := service.Common().RecordUsage(ctx, reqModel, *usage); err != nil {
-							logger.Error(ctx, err)
-						}
-					}, nil); err != nil {
-						logger.Error(ctx, err)
-					}
+					logger.Debugf(ctx, "sChat NumTokensFromString len(completion): %d, time: %d", len(completion), gtime.TimestampMilli()-completionTime)
 				}
 
 				// 实际消费额度
 				usage.TotalTokens = int(math.Ceil(float64(usage.PromptTokens)*reqModel.PromptRatio + float64(usage.CompletionTokens)*reqModel.CompletionRatio))
+			}
+
+			if err == nil || isAborted(err) {
+				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+					if err := service.Common().RecordUsage(ctx, reqModel, usage); err != nil {
+						logger.Error(ctx, err)
+					}
+				}, nil); err != nil {
+					logger.Error(ctx, err)
+				}
 			}
 
 			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
@@ -807,9 +808,7 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *mod
 
 	if completionsRes.Error != nil {
 		chat.ErrMsg = completionsRes.Error.Error()
-		if errors.Is(completionsRes.Error, context.Canceled) ||
-			gstr.Contains(chat.ErrMsg, "broken pipe") ||
-			gstr.Contains(chat.ErrMsg, "aborted") {
+		if isAborted(completionsRes.Error) {
 			chat.Status = 2
 		} else {
 			chat.Status = -1
@@ -826,4 +825,10 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *mod
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
 		logger.Error(ctx, err)
 	}
+}
+
+func isAborted(err error) bool {
+	return errors.Is(err, context.Canceled) ||
+		gstr.Contains(err.Error(), "broken pipe") ||
+		gstr.Contains(err.Error(), "aborted")
 }

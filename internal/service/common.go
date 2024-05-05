@@ -21,7 +21,7 @@ type (
 		// 记录错误次数和禁用
 		RecordError(ctx context.Context, model *model.Model, key *model.Key, modelAgent *model.ModelAgent)
 		// 记录使用额度
-		RecordUsage(ctx context.Context, model *model.Model, usage openai.Usage) error
+		RecordUsage(ctx context.Context, model *model.Model, usage *openai.Usage) error
 		GetUserTotalTokens(ctx context.Context) (int, error)
 		GetAppTotalTokens(ctx context.Context) (int, error)
 		GetKeyTotalTokens(ctx context.Context) (int, error)

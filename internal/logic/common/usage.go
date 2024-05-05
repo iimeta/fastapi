@@ -15,12 +15,16 @@ import (
 )
 
 // 记录使用额度
-func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage openai.Usage) error {
+func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage *openai.Usage) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "sCommon RecordUsage time: %d", gtime.TimestampMilli()-now)
 	}()
+
+	if usage == nil {
+		return nil
+	}
 
 	var totalTokens int64
 	if model.BillingMethod == 1 {
