@@ -20,6 +20,7 @@ import (
 	"github.com/iimeta/fastapi/utility/redis"
 	"github.com/sashabaranov/go-openai"
 	"go.mongodb.org/mongo-driver/bson"
+	"slices"
 	"strconv"
 )
 
@@ -635,13 +636,15 @@ func (s *sModel) GetTargetModel(ctx context.Context, m *model.Model, prompt stri
 	} else {
 
 		keywords := m.ForwardConfig.Keywords
-		for i, keyword := range keywords {
-			if gregex.IsMatchString(gstr.ToLower(gstr.TrimAll(keyword)), gstr.ToLower(gstr.TrimAll(prompt))) {
-				model, err = s.GetCacheModel(ctx, m.ForwardConfig.TargetModels[i])
+		if slices.Contains(m.ForwardConfig.MatchRule, 2) {
+			for i, keyword := range keywords {
+				if gregex.IsMatchString(gstr.ToLower(gstr.TrimAll(keyword)), gstr.ToLower(gstr.TrimAll(prompt))) {
+					model, err = s.GetCacheModel(ctx, m.ForwardConfig.TargetModels[i])
+				}
 			}
 		}
 
-		if model == nil && m.ForwardConfig.MatchRule == 1 {
+		if model == nil && slices.Contains(m.ForwardConfig.MatchRule, 1) {
 
 			decisionModel, err := s.GetCacheModel(ctx, m.ForwardConfig.DecisionModel)
 			if err != nil {

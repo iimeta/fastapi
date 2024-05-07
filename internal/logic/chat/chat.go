@@ -724,7 +724,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 }
 
 // 保存文生文聊天数据
-func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes) {
+func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes, isSmartMatch ...bool) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -787,6 +787,7 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *mod
 				TargetModels:  model.ForwardConfig.TargetModels,
 			}
 
+			chat.IsSmartMatch = len(isSmartMatch) > 0 && isSmartMatch[0]
 			chat.RealModelId = realModel.Id
 			chat.RealModelName = realModel.Name
 			chat.RealModel = realModel.Model

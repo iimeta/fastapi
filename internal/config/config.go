@@ -27,12 +27,13 @@ func init() {
 	// 监听配置文件变化, 热加载
 	_, _ = gfsnotify.Add(path, func(event *gfsnotify.Event) {
 		ctx := gctx.New()
-		data, err := gcfg.Instance().Data(ctx)
-		if err != nil {
+		if data, err := gcfg.Instance().Data(ctx); err != nil {
 			logger.Errorf(ctx, "热加载 获取配置文件 %s 数据错误: %v", path, err)
 		} else {
 			if err = gjson.Unmarshal(gjson.MustEncode(data), &Cfg); err != nil {
 				logger.Errorf(ctx, "热加载 解析配置文件 %s 错误: %v", path, err)
+			} else {
+				logger.Infof(ctx, "热加载 配置文件 %s 成功 当前配置信息: %s", path, gjson.MustEncodeString(Cfg))
 			}
 		}
 	})

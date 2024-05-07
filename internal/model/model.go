@@ -31,7 +31,7 @@ type Model struct {
 
 type ForwardConfig struct {
 	ForwardRule       int      `json:"forward_rule,omitempty"`        // 转发规则[1:全部转发, 2:按关键字]
-	MatchRule         int      `json:"match_rule,omitempty"`          // 匹配规则[1:智能匹配, 2:正则匹配]
+	MatchRule         []int    `json:"match_rule,omitempty"`          // 匹配规则[1:智能匹配, 2:正则匹配]
 	TargetModel       string   `json:"target_model,omitempty"`        // 转发规则为1时的目标模型
 	TargetModelName   string   `json:"target_model_name,omitempty"`   // 转发规则为1时的目标模型名称
 	DecisionModel     string   `json:"decision_model,omitempty"`      // 转发规则为2时并且匹配规则为1时的判定模型

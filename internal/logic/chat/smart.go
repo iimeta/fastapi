@@ -2,6 +2,8 @@ package chat
 
 import (
 	"context"
+	"github.com/gogf/gf/v2/encoding/gjson"
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
@@ -9,6 +11,7 @@ import (
 	sdk "github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi-sdk/sdkerr"
+	"github.com/iimeta/fastapi-sdk/tiktoken"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/errors"
@@ -16,6 +19,7 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/sashabaranov/go-openai"
+	"math"
 )
 
 // SmartCompletions
@@ -34,6 +38,103 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 	var path string
 	var agentTotal int
 	var keyTotal int
+	var isRetry bool
+
+	defer func() {
+
+		// 不记录重试
+		if isRetry {
+			return
+		}
+
+		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
+		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
+
+		if err == nil {
+
+			if response.Usage == nil || response.Usage.TotalTokens == 0 {
+
+				response.Usage = new(openai.Usage)
+				model := reqModel.Model
+
+				if reqModel.Corp != consts.CORP_OPENAI {
+					model = "gpt-3.5-turbo"
+				} else {
+					if _, err := tiktoken.EncodingForModel(model); err != nil {
+						model = "gpt-3.5-turbo"
+					}
+				}
+
+				promptTime := gtime.TimestampMilli()
+				if promptTokens, err := tiktoken.NumTokensFromMessages(model, params.Messages); err != nil {
+					logger.Errorf(ctx, "sChat Completions model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
+				} else {
+					response.Usage.PromptTokens = promptTokens
+					logger.Debugf(ctx, "sChat NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-promptTime)
+				}
+
+				if len(response.Choices) > 0 {
+					completionTime := gtime.TimestampMilli()
+					if completionTokens, err := tiktoken.NumTokensFromString(model, response.Choices[0].Message.Content); err != nil {
+						logger.Errorf(ctx, "sChat Completions model: %s, completion: %s, NumTokensFromString error: %v", params.Model, response.Choices[0].Message.Content, err)
+					} else {
+						response.Usage.CompletionTokens = completionTokens
+						logger.Debugf(ctx, "sChat NumTokensFromString len(completion): %d, time: %d", len(response.Choices[0].Message.Content), gtime.TimestampMilli()-completionTime)
+					}
+				}
+			}
+
+			if reqModel != nil {
+				// 替换成调用的模型
+				response.Model = reqModel.Model
+				// 实际消费额度
+				response.Usage.TotalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.PromptRatio + float64(response.Usage.CompletionTokens)*reqModel.CompletionRatio))
+			}
+		}
+
+		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+			//if err == nil || isAborted(err) {
+			//	if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+			//		if err := service.Common().RecordUsage(ctx, reqModel, response.Usage); err != nil {
+			//			logger.Error(ctx, err)
+			//		}
+			//	}, nil); err != nil {
+			//		logger.Error(ctx, err)
+			//	}
+			//}
+
+			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+
+				reqModel.ModelAgent = modelAgent
+
+				completionsRes := &model.CompletionsRes{
+					Error:        err,
+					ConnTime:     response.ConnTime,
+					Duration:     response.Duration,
+					TotalTime:    response.TotalTime,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
+				}
+
+				if response.Usage != nil {
+					completionsRes.Usage = *response.Usage
+				}
+
+				if len(response.Choices) > 0 {
+					completionsRes.Completion = response.Choices[0].Message.Content
+				}
+
+				s.SaveChat(ctx, reqModel, realModel, k, &params, completionsRes, true)
+
+			}, nil); err != nil {
+				logger.Error(ctx, err)
+			}
+
+		}, nil); err != nil {
+			logger.Error(ctx, err)
+		}
+	}()
 
 	*realModel = *reqModel
 
@@ -131,6 +232,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		apiError := &sdkerr.APIError{}
 		if errors.As(err, &apiError) {
 
+			isRetry = true
 			service.Common().RecordError(ctx, realModel, k, modelAgent)
 
 			switch apiError.HTTPStatusCode {
@@ -185,6 +287,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		reqError := &sdkerr.RequestError{}
 		if errors.As(err, &reqError) {
 
+			isRetry = true
 			service.Common().RecordError(ctx, realModel, k, modelAgent)
 
 			switch reqError.HTTPStatusCode {
