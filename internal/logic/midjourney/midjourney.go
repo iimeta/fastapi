@@ -18,7 +18,6 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
-	"github.com/sashabaranov/go-openai"
 )
 
 type sMidjourney struct{}
@@ -49,7 +48,7 @@ func (s *sMidjourney) Imagine(ctx context.Context, params sdkm.MidjourneyProxyRe
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		usage := &openai.Usage{
+		usage := &sdkm.Usage{
 			TotalTokens: m.FixedQuota,
 		}
 
@@ -158,7 +157,7 @@ func (s *sMidjourney) Change(ctx context.Context, params sdkm.MidjourneyProxyReq
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		usage := &openai.Usage{
+		usage := &sdkm.Usage{
 			TotalTokens: m.FixedQuota,
 		}
 
@@ -267,7 +266,7 @@ func (s *sMidjourney) Describe(ctx context.Context, params sdkm.MidjourneyProxyR
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		usage := &openai.Usage{
+		usage := &sdkm.Usage{
 			TotalTokens: m.FixedQuota,
 		}
 
@@ -376,7 +375,7 @@ func (s *sMidjourney) Blend(ctx context.Context, params sdkm.MidjourneyProxyRequ
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		usage := &openai.Usage{
+		usage := &sdkm.Usage{
 			TotalTokens: m.FixedQuota,
 		}
 
@@ -485,7 +484,7 @@ func (s *sMidjourney) SwapFace(ctx context.Context, params sdkm.MidjourneyProxyR
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		usage := &openai.Usage{
+		usage := &sdkm.Usage{
 			TotalTokens: m.FixedQuota,
 		}
 
@@ -594,7 +593,7 @@ func (s *sMidjourney) Action(ctx context.Context, params sdkm.MidjourneyProxyReq
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		usage := &openai.Usage{
+		usage := &sdkm.Usage{
 			TotalTokens: m.FixedQuota,
 		}
 
@@ -703,7 +702,7 @@ func (s *sMidjourney) Modal(ctx context.Context, params sdkm.MidjourneyProxyRequ
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		usage := &openai.Usage{
+		usage := &sdkm.Usage{
 			TotalTokens: m.FixedQuota,
 		}
 
@@ -812,7 +811,7 @@ func (s *sMidjourney) Shorten(ctx context.Context, params sdkm.MidjourneyProxyRe
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		usage := &openai.Usage{
+		usage := &sdkm.Usage{
 			TotalTokens: m.FixedQuota,
 		}
 
@@ -921,7 +920,7 @@ func (s *sMidjourney) UploadDiscordImages(ctx context.Context, params sdkm.Midjo
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		usage := &openai.Usage{
+		usage := &sdkm.Usage{
 			TotalTokens: m.FixedQuota,
 		}
 
@@ -1035,7 +1034,7 @@ func (s *sMidjourney) Fetch(ctx context.Context, params sdkm.MidjourneyProxyRequ
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		usage := &openai.Usage{
+		usage := &sdkm.Usage{
 			TotalTokens: m.FixedQuota,
 		}
 

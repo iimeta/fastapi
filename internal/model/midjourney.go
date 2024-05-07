@@ -2,16 +2,15 @@ package model
 
 import (
 	sdkm "github.com/iimeta/fastapi-sdk/model"
-	"github.com/sashabaranov/go-openai"
 )
 
 type MidjourneyProxyResponse struct {
 	sdkm.MidjourneyProxyResponse
-	Usage        *openai.Usage `json:"usage"`
-	Error        error         `json:"err"`
-	ConnTime     int64         `json:"-"`
-	Duration     int64         `json:"-"`
-	TotalTime    int64         `json:"-"`
-	InternalTime int64         `json:"-"`
-	EnterTime    int64         `json:"-"`
+	Usage        *sdkm.Usage `json:"usage"`
+	Error        error       `json:"err"`
+	ConnTime     int64       `json:"-"`
+	Duration     int64       `json:"-"`
+	TotalTime    int64       `json:"-"`
+	InternalTime int64       `json:"-"`
+	EnterTime    int64       `json:"-"`
 }

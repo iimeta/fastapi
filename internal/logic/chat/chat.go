@@ -21,7 +21,6 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
-	"github.com/sashabaranov/go-openai"
 	"math"
 )
 
@@ -68,7 +67,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 			if response.Usage == nil || response.Usage.TotalTokens == 0 {
 
-				response.Usage = new(openai.Usage)
+				response.Usage = new(sdkm.Usage)
 				model := reqModel.Model
 
 				if reqModel.Corp != consts.CORP_OPENAI {
@@ -210,14 +209,14 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 	// 替换预设提示词
 	if reqModel.Prompt != "" {
-		if request.Messages[0].Role == openai.ChatMessageRoleSystem {
-			request.Messages = append([]openai.ChatCompletionMessage{{
-				Role:    openai.ChatMessageRoleSystem,
+		if request.Messages[0].Role == consts.ROLE_SYSTEM {
+			request.Messages = append([]sdkm.ChatCompletionMessage{{
+				Role:    consts.ROLE_SYSTEM,
 				Content: reqModel.Prompt,
 			}}, request.Messages[1:]...)
 		} else {
-			request.Messages = append([]openai.ChatCompletionMessage{{
-				Role:    openai.ChatMessageRoleSystem,
+			request.Messages = append([]sdkm.ChatCompletionMessage{{
+				Role:    consts.ROLE_SYSTEM,
 				Content: reqModel.Prompt,
 			}}, request.Messages...)
 		}
@@ -382,7 +381,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	var duration int64
 	var totalTime int64
 	var isRetry bool
-	var usage *openai.Usage
+	var usage *sdkm.Usage
 
 	defer func() {
 
@@ -398,7 +397,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 			if completion != "" && usage == nil {
 
-				usage = new(openai.Usage)
+				usage = new(sdkm.Usage)
 				model := reqModel.Model
 
 				if reqModel.Corp != consts.CORP_OPENAI {
@@ -527,14 +526,14 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 	// 替换预设提示词
 	if reqModel.Prompt != "" {
-		if request.Messages[0].Role == openai.ChatMessageRoleSystem {
-			request.Messages = append([]openai.ChatCompletionMessage{{
-				Role:    openai.ChatMessageRoleSystem,
+		if request.Messages[0].Role == consts.ROLE_SYSTEM {
+			request.Messages = append([]sdkm.ChatCompletionMessage{{
+				Role:    consts.ROLE_SYSTEM,
 				Content: reqModel.Prompt,
 			}}, request.Messages[1:]...)
 		} else {
-			request.Messages = append([]openai.ChatCompletionMessage{{
-				Role:    openai.ChatMessageRoleSystem,
+			request.Messages = append([]sdkm.ChatCompletionMessage{{
+				Role:    consts.ROLE_SYSTEM,
 				Content: reqModel.Prompt,
 			}}, request.Messages...)
 		}

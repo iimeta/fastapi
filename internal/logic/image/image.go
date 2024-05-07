@@ -10,6 +10,7 @@ import (
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
+	"github.com/iimeta/fastapi-sdk/sdkerr"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
@@ -18,7 +19,6 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
-	"github.com/sashabaranov/go-openai"
 )
 
 type sImage struct{}
@@ -56,7 +56,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		usage := &openai.Usage{
+		usage := &sdkm.Usage{
 			TotalTokens: m.FixedQuota,
 		}
 
@@ -145,7 +145,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 			}
 		}
 
-		e := &openai.APIError{}
+		e := &sdkerr.APIError{}
 		if errors.As(err, &e) {
 
 			isRetry = true

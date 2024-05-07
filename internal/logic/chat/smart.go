@@ -18,7 +18,6 @@ import (
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
-	"github.com/sashabaranov/go-openai"
 	"math"
 )
 
@@ -54,7 +53,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 			if response.Usage == nil || response.Usage.TotalTokens == 0 {
 
-				response.Usage = new(openai.Usage)
+				response.Usage = new(sdkm.Usage)
 				model := reqModel.Model
 
 				if reqModel.Corp != consts.CORP_OPENAI {
@@ -195,14 +194,14 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 	// 替换预设提示词
 	if reqModel.Prompt != "" {
-		if request.Messages[0].Role == openai.ChatMessageRoleSystem {
-			request.Messages = append([]openai.ChatCompletionMessage{{
-				Role:    openai.ChatMessageRoleSystem,
+		if request.Messages[0].Role == consts.ROLE_SYSTEM {
+			request.Messages = append([]sdkm.ChatCompletionMessage{{
+				Role:    consts.ROLE_SYSTEM,
 				Content: reqModel.Prompt,
 			}}, request.Messages[1:]...)
 		} else {
-			request.Messages = append([]openai.ChatCompletionMessage{{
-				Role:    openai.ChatMessageRoleSystem,
+			request.Messages = append([]sdkm.ChatCompletionMessage{{
+				Role:    consts.ROLE_SYSTEM,
 				Content: reqModel.Prompt,
 			}}, request.Messages...)
 		}

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/os/gctx"
-	"github.com/sashabaranov/go-openai"
+	"github.com/iimeta/fastapi-sdk/sdkerr"
 )
 
 type IFastAPIError interface {
@@ -18,7 +18,7 @@ type IFastAPIError interface {
 }
 
 type FastAPIError struct {
-	Err *openai.APIError `json:"error,omitempty"`
+	Err *sdkerr.APIError `json:"error,omitempty"`
 }
 
 var (
@@ -61,7 +61,7 @@ func As(err error, target any) bool {
 
 func NewError(status int, code any, message, typ string) error {
 	return &FastAPIError{
-		Err: &openai.APIError{
+		Err: &sdkerr.APIError{
 			HTTPStatusCode: status,
 			Code:           code,
 			Message:        message,
@@ -72,7 +72,7 @@ func NewError(status int, code any, message, typ string) error {
 
 func NewErrorf(status int, code any, message, typ string, args ...interface{}) error {
 	return &FastAPIError{
-		Err: &openai.APIError{
+		Err: &sdkerr.APIError{
 			HTTPStatusCode: status,
 			Code:           code,
 			Message:        fmt.Sprintf(message, args...),
@@ -99,7 +99,7 @@ func Error(ctx context.Context, err error) IFastAPIError {
 		return NewErrorf(e.Status(), e.ErrCode(), e.ErrMessage()+" TraceId: %s", e.ErrType(), gctx.CtxId(ctx)).(IFastAPIError)
 	}
 
-	apiError := &openai.APIError{}
+	apiError := &sdkerr.APIError{}
 	if As(err, &apiError) {
 		return NewError(apiError.HTTPStatusCode, apiError.Code, apiError.Message, apiError.Type).(IFastAPIError)
 	}

@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
+	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
-	"github.com/sashabaranov/go-openai"
 	"math"
 )
 
 // 记录使用额度
-func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage *openai.Usage) error {
+func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage *sdkm.Usage) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {

@@ -18,7 +18,6 @@ import (
 	"github.com/iimeta/fastapi/utility/cache"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
-	"github.com/sashabaranov/go-openai"
 	"go.mongodb.org/mongo-driver/bson"
 	"slices"
 	"strconv"
@@ -674,7 +673,7 @@ func (s *sModel) GetTargetModel(ctx context.Context, m *model.Model, prompt stri
 			systemPrompt = fmt.Sprintf(systemPrompt, systemEnum)
 			decisionPrompt = fmt.Sprintf(decisionPrompt, systemEnum, decisionEnum, prompt)
 
-			messages := []openai.ChatCompletionMessage{{
+			messages := []sdkm.ChatCompletionMessage{{
 				Role:    consts.ROLE_SYSTEM,
 				Content: systemPrompt,
 			}, {
