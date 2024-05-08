@@ -14,6 +14,7 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
 	"github.com/iimeta/fastapi/utility/util"
+	"time"
 )
 
 func init() {
@@ -100,6 +101,11 @@ func init() {
 			msg, err := conn.ReceiveMessage(ctx)
 			if err != nil {
 				logger.Error(ctx, err)
+				time.Sleep(5 * time.Second)
+				conn, _, err = redis.Subscribe(ctx, consts.CHANGE_CHANNEL_USER, consts.CHANGE_CHANNEL_APP, consts.CHANGE_CHANNEL_MODEL, consts.CHANGE_CHANNEL_KEY, consts.CHANGE_CHANNEL_AGENT, consts.CHANGE_CHANNEL_APP_KEY)
+				if err != nil {
+					logger.Error(ctx, err)
+				}
 				continue
 			}
 

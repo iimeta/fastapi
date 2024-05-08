@@ -96,12 +96,12 @@ func (s *sUser) List(ctx context.Context) ([]*model.User, error) {
 	return items, nil
 }
 
-// 更改用户额度
-func (s *sUser) ChangeQuota(ctx context.Context, userId, quota, currentQuota int) {
+// 用户消费额度
+func (s *sUser) SpendQuota(ctx context.Context, userId, quota, currentQuota int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sUser ChangeQuota time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sUser SpendQuota time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	user, err := s.GetCacheUser(ctx, userId)

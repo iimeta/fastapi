@@ -41,7 +41,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage *sd
 	}
 
 	if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
-		service.User().ChangeQuota(ctx, service.Session().GetUserId(ctx), int(totalTokens), int(currentQuota))
+		service.User().SpendQuota(ctx, service.Session().GetUserId(ctx), int(totalTokens), int(currentQuota))
 	}, nil); err != nil {
 		logger.Error(ctx, err)
 	}
@@ -54,7 +54,14 @@ func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage *sd
 		}
 
 		if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
-			service.App().ChangeQuota(ctx, service.Session().GetAppId(ctx), int(totalTokens), int(currentQuota))
+			service.App().SpendQuota(ctx, service.Session().GetAppId(ctx), int(totalTokens), int(currentQuota))
+		}, nil); err != nil {
+			logger.Error(ctx, err)
+		}
+
+	} else {
+		if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
+			service.App().UsedQuota(ctx, service.Session().GetAppId(ctx), int(totalTokens))
 		}, nil); err != nil {
 			logger.Error(ctx, err)
 		}
@@ -68,7 +75,14 @@ func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage *sd
 		}
 
 		if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
-			service.App().ChangeAppKeyQuota(ctx, service.Session().GetSecretKey(ctx), int(totalTokens), int(currentQuota))
+			service.App().AppKeySpendQuota(ctx, service.Session().GetSecretKey(ctx), int(totalTokens), int(currentQuota))
+		}, nil); err != nil {
+			logger.Error(ctx, err)
+		}
+
+	} else {
+		if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
+			service.App().AppKeyUsedQuota(ctx, service.Session().GetSecretKey(ctx), int(totalTokens))
 		}, nil); err != nil {
 			logger.Error(ctx, err)
 		}

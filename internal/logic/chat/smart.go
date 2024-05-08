@@ -66,19 +66,19 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 				promptTime := gtime.TimestampMilli()
 				if promptTokens, err := tiktoken.NumTokensFromMessages(model, params.Messages); err != nil {
-					logger.Errorf(ctx, "sChat Completions model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
+					logger.Errorf(ctx, "sChat SmartCompletions model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
 				} else {
 					response.Usage.PromptTokens = promptTokens
-					logger.Debugf(ctx, "sChat NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-promptTime)
+					logger.Debugf(ctx, "sChat SmartCompletions NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-promptTime)
 				}
 
 				if len(response.Choices) > 0 {
 					completionTime := gtime.TimestampMilli()
 					if completionTokens, err := tiktoken.NumTokensFromString(model, response.Choices[0].Message.Content); err != nil {
-						logger.Errorf(ctx, "sChat Completions model: %s, completion: %s, NumTokensFromString error: %v", params.Model, response.Choices[0].Message.Content, err)
+						logger.Errorf(ctx, "sChat SmartCompletions model: %s, completion: %s, NumTokensFromString error: %v", params.Model, response.Choices[0].Message.Content, err)
 					} else {
 						response.Usage.CompletionTokens = completionTokens
-						logger.Debugf(ctx, "sChat NumTokensFromString len(completion): %d, time: %d", len(response.Choices[0].Message.Content), gtime.TimestampMilli()-completionTime)
+						logger.Debugf(ctx, "sChat SmartCompletions NumTokensFromString len(completion): %d, time: %d", len(response.Choices[0].Message.Content), gtime.TimestampMilli()-completionTime)
 					}
 				}
 			}

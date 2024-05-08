@@ -87,6 +87,56 @@ func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 	return detail, nil
 }
 
+// 根据模型ID获取模型信息
+func (s *sModel) GetModelById(ctx context.Context, id string) (*model.Model, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModel GetModelById time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	result, err := dao.Model.FindById(ctx, id)
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	detail := &model.Model{
+		Id:                 result.Id,
+		Corp:               result.Corp,
+		Name:               result.Name,
+		Model:              result.Model,
+		Type:               result.Type,
+		BaseUrl:            result.BaseUrl,
+		Path:               result.Path,
+		Prompt:             result.Prompt,
+		BillingMethod:      result.BillingMethod,
+		PromptRatio:        result.PromptRatio,
+		CompletionRatio:    result.CompletionRatio,
+		FixedQuota:         result.FixedQuota,
+		DataFormat:         result.DataFormat,
+		IsPublic:           result.IsPublic,
+		IsEnableModelAgent: result.IsEnableModelAgent,
+		ModelAgents:        result.ModelAgents,
+		IsForward:          result.IsForward,
+		Remark:             result.Remark,
+		Status:             result.Status,
+	}
+
+	if result.ForwardConfig != nil {
+		detail.ForwardConfig = &model.ForwardConfig{
+			ForwardRule:   result.ForwardConfig.ForwardRule,
+			MatchRule:     result.ForwardConfig.MatchRule,
+			TargetModel:   result.ForwardConfig.TargetModel,
+			DecisionModel: result.ForwardConfig.DecisionModel,
+			Keywords:      result.ForwardConfig.Keywords,
+			TargetModels:  result.ForwardConfig.TargetModels,
+		}
+	}
+
+	return detail, nil
+}
+
 // 根据model和secretKey获取模型信息
 func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (*model.Model, error) {
 
@@ -109,13 +159,7 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 
 	models, err := s.GetCacheList(ctx, user.Models...)
 	if err != nil || len(models) != len(user.Models) {
-
-		if models, err = s.List(ctx, user.Models); err != nil {
-			logger.Error(ctx, err)
-			return nil, err
-		}
-
-		if err = s.SaveCacheList(ctx, models); err != nil {
+		if models, err = s.GetModelListAndSaveCacheList(ctx, user.Models); err != nil {
 			logger.Error(ctx, err)
 			return nil, err
 		}
@@ -162,15 +206,9 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 	keyModelList := make([]*model.Model, 0)
 	if len(key.Models) > 0 {
 
-		models, err := s.GetCacheList(ctx, key.Models...)
+		models, err = s.GetCacheList(ctx, key.Models...)
 		if err != nil || len(models) != len(key.Models) {
-
-			if models, err = s.List(ctx, key.Models); err != nil {
-				logger.Error(ctx, err)
-				return nil, err
-			}
-
-			if err = s.SaveCacheList(ctx, models); err != nil {
+			if models, err = s.GetModelListAndSaveCacheList(ctx, key.Models); err != nil {
 				logger.Error(ctx, err)
 				return nil, err
 			}
@@ -199,15 +237,9 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 	appModelList := make([]*model.Model, 0)
 	if len(app.Models) > 0 {
 
-		models, err := s.GetCacheList(ctx, app.Models...)
+		models, err = s.GetCacheList(ctx, app.Models...)
 		if err != nil || len(models) != len(app.Models) {
-
-			if models, err = s.List(ctx, app.Models); err != nil {
-				logger.Error(ctx, err)
-				return nil, err
-			}
-
-			if err = s.SaveCacheList(ctx, models); err != nil {
+			if models, err = s.GetModelListAndSaveCacheList(ctx, app.Models); err != nil {
 				logger.Error(ctx, err)
 				return nil, err
 			}
@@ -445,6 +477,65 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 	return items, nil
 }
 
+// 根据模型ID获取模型信息并保存到缓存
+func (s *sModel) GetModelAndSaveCache(ctx context.Context, id string) (*model.Model, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModel GetModelAndSaveCache time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	model, err := s.GetModelById(ctx, id)
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	if model != nil {
+		if err = s.SaveCache(ctx, model); err != nil {
+			logger.Error(ctx, err)
+			return nil, err
+		}
+	}
+
+	return model, nil
+}
+
+// 获取模型列表并保存到缓存
+func (s *sModel) GetModelListAndSaveCacheList(ctx context.Context, ids []string) ([]*model.Model, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModel GetModelListAndSaveCacheList time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	models, err := s.List(ctx, ids)
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	if len(models) > 0 {
+		if err = s.SaveCacheList(ctx, models); err != nil {
+			logger.Error(ctx, err)
+			return nil, err
+		}
+	}
+
+	return models, nil
+}
+
+// 保存模型到缓存
+func (s *sModel) SaveCache(ctx context.Context, m *model.Model) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModel SaveCache time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	return s.SaveCacheList(ctx, []*model.Model{m})
+}
+
 // 保存模型列表到缓存
 func (s *sModel) SaveCacheList(ctx context.Context, models []*model.Model) error {
 
@@ -596,7 +687,7 @@ func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, ne
 		}
 	}
 
-	if err := s.SaveCacheList(ctx, []*model.Model{m}); err != nil {
+	if err := s.SaveCache(ctx, m); err != nil {
 		logger.Error(ctx, err)
 	}
 }
@@ -631,14 +722,29 @@ func (s *sModel) GetTargetModel(ctx context.Context, m *model.Model, prompt stri
 	}
 
 	if m.ForwardConfig.ForwardRule == 1 {
-		model, err = s.GetCacheModel(ctx, m.ForwardConfig.TargetModel)
+
+		if model, err = s.GetCacheModel(ctx, m.ForwardConfig.TargetModel); err != nil || model == nil {
+			if model, err = s.GetModelAndSaveCache(ctx, m.ForwardConfig.TargetModel); err != nil {
+				logger.Error(ctx, err)
+				return nil, err
+			}
+		}
+
 	} else {
 
 		keywords := m.ForwardConfig.Keywords
 		if slices.Contains(m.ForwardConfig.MatchRule, 2) {
+
 			for i, keyword := range keywords {
+
 				if gregex.IsMatchString(gstr.ToLower(gstr.TrimAll(keyword)), gstr.ToLower(gstr.TrimAll(prompt))) {
-					model, err = s.GetCacheModel(ctx, m.ForwardConfig.TargetModels[i])
+
+					if model, err = s.GetCacheModel(ctx, m.ForwardConfig.TargetModels[i]); err != nil || model == nil {
+						if model, err = s.GetModelAndSaveCache(ctx, m.ForwardConfig.TargetModels[i]); err != nil {
+							logger.Error(ctx, err)
+							return nil, err
+						}
+					}
 				}
 			}
 		}
@@ -646,12 +752,11 @@ func (s *sModel) GetTargetModel(ctx context.Context, m *model.Model, prompt stri
 		if model == nil && slices.Contains(m.ForwardConfig.MatchRule, 1) {
 
 			decisionModel, err := s.GetCacheModel(ctx, m.ForwardConfig.DecisionModel)
-			if err != nil {
-				logger.Error(ctx, err)
-				return nil, err
+			if err != nil || decisionModel == nil {
+				decisionModel, err = s.GetModelAndSaveCache(ctx, m.ForwardConfig.DecisionModel)
 			}
 
-			if decisionModel == nil {
+			if decisionModel == nil || decisionModel.Status != 1 {
 				return m, nil
 			}
 
@@ -694,20 +799,23 @@ func (s *sModel) GetTargetModel(ctx context.Context, m *model.Model, prompt stri
 			logger.Infof(ctx, "sModel GetTargetModel SmartCompletions response: %s", gjson.MustEncodeString(response))
 
 			if len(response.Choices) > 0 {
+
 				if index, err := strconv.Atoi(response.Choices[0].Message.Content); err == nil {
-					if index != -1 {
-						model, err = s.GetCacheModel(ctx, m.ForwardConfig.TargetModels[index])
-					} else {
+
+					if index == -1 {
 						return m, nil
+					}
+
+					model, err = s.GetCacheModel(ctx, m.ForwardConfig.TargetModels[index])
+					if err != nil || model == nil {
+						if model, err = s.GetModelAndSaveCache(ctx, m.ForwardConfig.TargetModels[index]); err != nil {
+							logger.Error(ctx, err)
+							return nil, err
+						}
 					}
 				}
 			}
 		}
-	}
-
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
 	}
 
 	if model == nil || model.Status != 1 {

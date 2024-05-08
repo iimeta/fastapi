@@ -83,7 +83,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 					logger.Errorf(ctx, "sChat Completions model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
 				} else {
 					response.Usage.PromptTokens = promptTokens
-					logger.Debugf(ctx, "sChat NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-promptTime)
+					logger.Debugf(ctx, "sChat Completions NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-promptTime)
 				}
 
 				if len(response.Choices) > 0 {
@@ -92,7 +92,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 						logger.Errorf(ctx, "sChat Completions model: %s, completion: %s, NumTokensFromString error: %v", params.Model, response.Choices[0].Message.Content, err)
 					} else {
 						response.Usage.CompletionTokens = completionTokens
-						logger.Debugf(ctx, "sChat NumTokensFromString len(completion): %d, time: %d", len(response.Choices[0].Message.Content), gtime.TimestampMilli()-completionTime)
+						logger.Debugf(ctx, "sChat Completions NumTokensFromString len(completion): %d, time: %d", len(response.Choices[0].Message.Content), gtime.TimestampMilli()-completionTime)
 					}
 				}
 			}
@@ -413,7 +413,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					logger.Errorf(ctx, "sChat CompletionsStream model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
 				} else {
 					usage.PromptTokens = promptTokens
-					logger.Debugf(ctx, "sChat NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-promptTime)
+					logger.Debugf(ctx, "sChat CompletionsStream NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-promptTime)
 				}
 
 				completionTime := gtime.TimestampMilli()
@@ -421,7 +421,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					logger.Errorf(ctx, "sChat CompletionsStream model: %s, completion: %s, NumTokensFromString error: %v", params.Model, completion, err)
 				} else {
 					usage.CompletionTokens = completionTokens
-					logger.Debugf(ctx, "sChat NumTokensFromString len(completion): %d, time: %d", len(completion), gtime.TimestampMilli()-completionTime)
+					logger.Debugf(ctx, "sChat CompletionsStream NumTokensFromString len(completion): %d, time: %d", len(completion), gtime.TimestampMilli()-completionTime)
 				}
 
 				// 实际消费额度
@@ -702,12 +702,12 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 		if len(response.Choices) > 0 && response.Choices[0].FinishReason != "" {
 
-			if err = util.SSEServer(ctx, "", gjson.MustEncode(response)); err != nil {
+			if err = util.SSEServer(ctx, gjson.MustEncode(response)); err != nil {
 				logger.Error(ctx, err)
 				return err
 			}
 
-			if err = util.SSEServer(ctx, "", "[DONE]"); err != nil {
+			if err = util.SSEServer(ctx, "[DONE]"); err != nil {
 				logger.Error(ctx, err)
 				return err
 			}
@@ -715,7 +715,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			return nil
 		}
 
-		if err = util.SSEServer(ctx, "", gjson.MustEncode(response)); err != nil {
+		if err = util.SSEServer(ctx, gjson.MustEncode(response)); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -734,6 +734,7 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *mod
 		TraceId:      gctx.CtxId(ctx),
 		UserId:       service.Session().GetUserId(ctx),
 		AppId:        service.Session().GetAppId(ctx),
+		IsSmartMatch: len(isSmartMatch) > 0 && isSmartMatch[0],
 		Stream:       completionsReq.Stream,
 		Prompt:       completionsReq.Messages[len(completionsReq.Messages)-1].Content,
 		Completion:   completionsRes.Completion,
@@ -786,7 +787,6 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *mod
 				TargetModels:  model.ForwardConfig.TargetModels,
 			}
 
-			chat.IsSmartMatch = len(isSmartMatch) > 0 && isSmartMatch[0]
 			chat.RealModelId = realModel.Id
 			chat.RealModelName = realModel.Name
 			chat.RealModel = realModel.Model

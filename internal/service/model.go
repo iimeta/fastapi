@@ -16,10 +16,18 @@ type (
 	IModel interface {
 		// 根据model获取模型信息
 		GetModel(ctx context.Context, m string) (*model.Model, error)
+		// 根据模型ID获取模型信息
+		GetModelById(ctx context.Context, id string) (*model.Model, error)
 		// 根据model和secretKey获取模型信息
 		GetModelBySecretKey(ctx context.Context, m, secretKey string) (*model.Model, error)
 		// 模型列表
 		List(ctx context.Context, ids []string) ([]*model.Model, error)
+		// 根据模型ID获取模型信息并保存到缓存
+		GetModelAndSaveCache(ctx context.Context, id string) (*model.Model, error)
+		// 根据模型ID获取模型信息并保存到缓存
+		GetModelListAndSaveCacheList(ctx context.Context, ids []string) ([]*model.Model, error)
+		// 保存模型到缓存
+		SaveCache(ctx context.Context, m *model.Model) error
 		// 保存模型列表到缓存
 		SaveCacheList(ctx context.Context, models []*model.Model) error
 		// 获取缓存中的模型列表
