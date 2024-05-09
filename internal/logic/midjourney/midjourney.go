@@ -38,11 +38,13 @@ func (s *sMidjourney) Imagine(ctx context.Context, params sdkm.MidjourneyProxyRe
 		logger.Debugf(ctx, "sMidjourney Imagine time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	var m *model.Model
-	var key *model.Key
-	var modelAgent *model.ModelAgent
-	var baseUrl = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
-	var keyTotal int
+	var (
+		m          *model.Model
+		key        *model.Key
+		modelAgent *model.ModelAgent
+		baseUrl    = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
+		keyTotal   int
+	)
 
 	defer func() {
 
@@ -147,11 +149,13 @@ func (s *sMidjourney) Change(ctx context.Context, params sdkm.MidjourneyProxyReq
 		logger.Debugf(ctx, "sMidjourney Change time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	var m *model.Model
-	var key *model.Key
-	var modelAgent *model.ModelAgent
-	var baseUrl = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
-	var keyTotal int
+	var (
+		m          *model.Model
+		key        *model.Key
+		modelAgent *model.ModelAgent
+		baseUrl    = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
+		keyTotal   int
+	)
 
 	defer func() {
 
@@ -256,11 +260,13 @@ func (s *sMidjourney) Describe(ctx context.Context, params sdkm.MidjourneyProxyR
 		logger.Debugf(ctx, "sMidjourney Describe time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	var m *model.Model
-	var key *model.Key
-	var modelAgent *model.ModelAgent
-	var baseUrl = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
-	var keyTotal int
+	var (
+		m          *model.Model
+		key        *model.Key
+		modelAgent *model.ModelAgent
+		baseUrl    = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
+		keyTotal   int
+	)
 
 	defer func() {
 
@@ -365,11 +371,13 @@ func (s *sMidjourney) Blend(ctx context.Context, params sdkm.MidjourneyProxyRequ
 		logger.Debugf(ctx, "sMidjourney Blend time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	var m *model.Model
-	var key *model.Key
-	var modelAgent *model.ModelAgent
-	var baseUrl = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
-	var keyTotal int
+	var (
+		m          *model.Model
+		key        *model.Key
+		modelAgent *model.ModelAgent
+		baseUrl    = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
+		keyTotal   int
+	)
 
 	defer func() {
 
@@ -474,11 +482,13 @@ func (s *sMidjourney) SwapFace(ctx context.Context, params sdkm.MidjourneyProxyR
 		logger.Debugf(ctx, "sMidjourney SwapFace time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	var m *model.Model
-	var key *model.Key
-	var modelAgent *model.ModelAgent
-	var baseUrl = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
-	var keyTotal int
+	var (
+		m          *model.Model
+		key        *model.Key
+		modelAgent *model.ModelAgent
+		baseUrl    = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
+		keyTotal   int
+	)
 
 	defer func() {
 
@@ -583,11 +593,13 @@ func (s *sMidjourney) Action(ctx context.Context, params sdkm.MidjourneyProxyReq
 		logger.Debugf(ctx, "sMidjourney Action time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	var m *model.Model
-	var key *model.Key
-	var modelAgent *model.ModelAgent
-	var baseUrl = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
-	var keyTotal int
+	var (
+		m          *model.Model
+		key        *model.Key
+		modelAgent *model.ModelAgent
+		baseUrl    = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
+		keyTotal   int
+	)
 
 	defer func() {
 
@@ -692,11 +704,13 @@ func (s *sMidjourney) Modal(ctx context.Context, params sdkm.MidjourneyProxyRequ
 		logger.Debugf(ctx, "sMidjourney Modal time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	var m *model.Model
-	var key *model.Key
-	var modelAgent *model.ModelAgent
-	var baseUrl = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
-	var keyTotal int
+	var (
+		m          *model.Model
+		key        *model.Key
+		modelAgent *model.ModelAgent
+		baseUrl    = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
+		keyTotal   int
+	)
 
 	defer func() {
 
@@ -801,11 +815,13 @@ func (s *sMidjourney) Shorten(ctx context.Context, params sdkm.MidjourneyProxyRe
 		logger.Debugf(ctx, "sMidjourney Shorten time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	var m *model.Model
-	var key *model.Key
-	var modelAgent *model.ModelAgent
-	var baseUrl = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
-	var keyTotal int
+	var (
+		m          *model.Model
+		key        *model.Key
+		modelAgent *model.ModelAgent
+		baseUrl    = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
+		keyTotal   int
+	)
 
 	defer func() {
 
@@ -910,11 +926,13 @@ func (s *sMidjourney) UploadDiscordImages(ctx context.Context, params sdkm.Midjo
 		logger.Debugf(ctx, "sMidjourney UploadDiscordImages time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	var m *model.Model
-	var key *model.Key
-	var modelAgent *model.ModelAgent
-	var baseUrl = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
-	var keyTotal int
+	var (
+		m          *model.Model
+		key        *model.Key
+		modelAgent *model.ModelAgent
+		baseUrl    = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
+		keyTotal   int
+	)
 
 	defer func() {
 
@@ -1019,11 +1037,13 @@ func (s *sMidjourney) Fetch(ctx context.Context, params sdkm.MidjourneyProxyRequ
 		logger.Debugf(ctx, "sMidjourney Fetch time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	var m *model.Model
-	var key *model.Key
-	var modelAgent *model.ModelAgent
-	var baseUrl = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
-	var keyTotal int
+	var (
+		m          *model.Model
+		key        *model.Key
+		modelAgent *model.ModelAgent
+		baseUrl    = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
+		keyTotal   int
+	)
 
 	defer func() {
 

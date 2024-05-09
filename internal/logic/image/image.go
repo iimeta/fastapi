@@ -39,13 +39,15 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 		logger.Debugf(ctx, "sImage Generations time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	var m *model.Model
-	var key *model.Key
-	var modelAgent *model.ModelAgent
-	var baseUrl string
-	var path string
-	var keyTotal int
-	var isRetry bool
+	var (
+		m          *model.Model
+		key        *model.Key
+		modelAgent *model.ModelAgent
+		baseUrl    string
+		path       string
+		keyTotal   int
+		isRetry    bool
+	)
 
 	defer func() {
 

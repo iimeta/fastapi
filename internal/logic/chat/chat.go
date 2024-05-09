@@ -42,16 +42,18 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		logger.Debugf(ctx, "sChat Completions time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	var reqModel *model.Model
-	var realModel = new(model.Model)
-	var k *model.Key
-	var modelAgent *model.ModelAgent
-	var key string
-	var baseUrl string
-	var path string
-	var agentTotal int
-	var keyTotal int
-	var isRetry bool
+	var (
+		reqModel   *model.Model
+		realModel  = new(model.Model)
+		k          *model.Key
+		modelAgent *model.ModelAgent
+		key        string
+		baseUrl    string
+		path       string
+		agentTotal int
+		keyTotal   int
+		isRetry    bool
+	)
 
 	defer func() {
 
@@ -367,21 +369,23 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		logger.Debugf(ctx, "sChat CompletionsStream time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	var reqModel *model.Model
-	var realModel = new(model.Model)
-	var k *model.Key
-	var modelAgent *model.ModelAgent
-	var key string
-	var baseUrl string
-	var path string
-	var completion string
-	var agentTotal int
-	var keyTotal int
-	var connTime int64
-	var duration int64
-	var totalTime int64
-	var isRetry bool
-	var usage *sdkm.Usage
+	var (
+		reqModel   *model.Model
+		realModel  = new(model.Model)
+		k          *model.Key
+		modelAgent *model.ModelAgent
+		key        string
+		baseUrl    string
+		path       string
+		completion string
+		agentTotal int
+		keyTotal   int
+		connTime   int64
+		duration   int64
+		totalTime  int64
+		isRetry    bool
+		usage      *sdkm.Usage
+	)
 
 	defer func() {
 

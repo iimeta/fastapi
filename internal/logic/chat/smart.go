@@ -29,15 +29,17 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		logger.Debugf(ctx, "sChat SmartCompletions time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	var realModel = new(model.Model)
-	var k *model.Key
-	var modelAgent *model.ModelAgent
-	var key string
-	var baseUrl string
-	var path string
-	var agentTotal int
-	var keyTotal int
-	var isRetry bool
+	var (
+		realModel  = new(model.Model)
+		k          *model.Key
+		modelAgent *model.ModelAgent
+		key        string
+		baseUrl    string
+		path       string
+		agentTotal int
+		keyTotal   int
+		isRetry    bool
+	)
 
 	defer func() {
 
