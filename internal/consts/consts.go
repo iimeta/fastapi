@@ -17,6 +17,7 @@ const (
 	CORP_ALIYUN     = "Aliyun"
 	CORP_ZHIPUAI    = "ZhipuAI"
 	CORP_GOOGLE     = "Google"
+	CORP_DEEPSEEK   = "DeepSeek"
 	CORP_MIDJOURNEY = "Midjourney"
 
 	QUOTA_USD_UNIT = 500000.0 // $1 = 50万tokens

@@ -4,7 +4,7 @@ type Key struct {
 	Id           string   `bson:"_id,omitempty"`            // ID
 	UserId       int      `bson:"user_id,omitempty"`        // 用户ID
 	AppId        int      `bson:"app_id,omitempty"`         // 应用ID
-	Corp         string   `bson:"corp,omitempty"`           // 公司[OpenAI;Baidu;Xfyun;Aliyun;ZhipuAI;Google;Midjourney]
+	Corp         string   `bson:"corp,omitempty"`           // 公司[OpenAI;Baidu;Xfyun;Aliyun;ZhipuAI;Google;DeepSeek;Midjourney]
 	Key          string   `bson:"key,omitempty"`            // 密钥
 	Type         int      `bson:"type,omitempty"`           // 密钥类型[1:应用, 2:模型]
 	Models       []string `bson:"models,omitempty"`         // 模型
