@@ -210,8 +210,8 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 	}
 
 	client := sdk.NewClient(ctx, realModel.Corp, realModel.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
-	if response, err = client.ChatCompletion(ctx, request); err != nil {
-
+	response, err = client.ChatCompletion(ctx, request)
+	if err != nil {
 		logger.Error(ctx, err)
 
 		if len(retry) > 0 {

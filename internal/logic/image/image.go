@@ -134,7 +134,8 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 	request.Model = m.Model
 
 	client := sdk.NewClient(ctx, m.Corp, m.Model, key.Key, baseUrl, path, config.Cfg.Http.ProxyUrl)
-	if response, err = client.Image(ctx, request); err != nil {
+	response, err = client.Image(ctx, request)
+	if err != nil {
 		logger.Error(ctx, err)
 
 		if len(retry) > 0 {

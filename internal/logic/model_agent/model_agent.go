@@ -187,8 +187,11 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (int, 
 		logger.Debugf(ctx, "sModelAgent PickModelAgent time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	var modelAgents []*model.ModelAgent
-	var roundRobin *util.RoundRobin
+	var (
+		modelAgents []*model.ModelAgent
+		roundRobin  *util.RoundRobin
+		err         error
+	)
 
 	if modelAgentsValue := s.modelAgentsCache.GetVal(ctx, m.Id); modelAgentsValue != nil {
 		modelAgents = modelAgentsValue.([]*model.ModelAgent)
@@ -196,7 +199,7 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (int, 
 
 	if len(modelAgents) == 0 {
 
-		modelAgents, err := s.GetCacheList(ctx, m.ModelAgents...)
+		modelAgents, err = s.GetCacheList(ctx, m.ModelAgents...)
 		if err != nil || len(modelAgents) != len(m.ModelAgents) {
 
 			if modelAgents, err = s.List(ctx, m.ModelAgents); err != nil {
@@ -238,7 +241,7 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (int, 
 
 	if roundRobin == nil {
 		roundRobin = new(util.RoundRobin)
-		if err := s.modelAgentsRoundRobinCache.Set(ctx, m.Id, roundRobin, 0); err != nil {
+		if err = s.modelAgentsRoundRobinCache.Set(ctx, m.Id, roundRobin, 0); err != nil {
 			logger.Error(ctx, err)
 			return 0, nil, err
 		}

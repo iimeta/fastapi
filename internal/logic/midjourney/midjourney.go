@@ -121,8 +121,8 @@ func (s *sMidjourney) Imagine(ctx context.Context, params sdkm.MidjourneyProxyRe
 	}
 
 	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, baseUrl, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
-
-	if response, err = sdk.Imagine(ctx, midjourneyProxy, params); err != nil {
+	response, err = sdk.Imagine(ctx, midjourneyProxy, params)
+	if err != nil {
 		logger.Error(ctx, err)
 
 		if len(retry) > 0 {
@@ -232,8 +232,8 @@ func (s *sMidjourney) Change(ctx context.Context, params sdkm.MidjourneyProxyReq
 	}
 
 	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, baseUrl, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
-
-	if response, err = sdk.Change(ctx, midjourneyProxy, params); err != nil {
+	response, err = sdk.Change(ctx, midjourneyProxy, params)
+	if err != nil {
 		logger.Error(ctx, err)
 
 		if len(retry) > 0 {
@@ -343,8 +343,8 @@ func (s *sMidjourney) Describe(ctx context.Context, params sdkm.MidjourneyProxyR
 	}
 
 	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, baseUrl, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
-
-	if response, err = sdk.Describe(ctx, midjourneyProxy, params); err != nil {
+	response, err = sdk.Describe(ctx, midjourneyProxy, params)
+	if err != nil {
 		logger.Error(ctx, err)
 
 		if len(retry) > 0 {
@@ -454,8 +454,8 @@ func (s *sMidjourney) Blend(ctx context.Context, params sdkm.MidjourneyProxyRequ
 	}
 
 	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, baseUrl, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
-
-	if response, err = sdk.Blend(ctx, midjourneyProxy, params); err != nil {
+	response, err = sdk.Blend(ctx, midjourneyProxy, params)
+	if err != nil {
 		logger.Error(ctx, err)
 
 		if len(retry) > 0 {
@@ -565,8 +565,8 @@ func (s *sMidjourney) SwapFace(ctx context.Context, params sdkm.MidjourneyProxyR
 	}
 
 	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, baseUrl, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
-
-	if response, err = sdk.Blend(ctx, midjourneyProxy, params); err != nil {
+	response, err = sdk.SwapFace(ctx, midjourneyProxy, params)
+	if err != nil {
 		logger.Error(ctx, err)
 
 		if len(retry) > 0 {
@@ -676,8 +676,8 @@ func (s *sMidjourney) Action(ctx context.Context, params sdkm.MidjourneyProxyReq
 	}
 
 	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, baseUrl, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
-
-	if response, err = sdk.Blend(ctx, midjourneyProxy, params); err != nil {
+	response, err = sdk.Action(ctx, midjourneyProxy, params)
+	if err != nil {
 		logger.Error(ctx, err)
 
 		if len(retry) > 0 {
@@ -787,8 +787,8 @@ func (s *sMidjourney) Modal(ctx context.Context, params sdkm.MidjourneyProxyRequ
 	}
 
 	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, baseUrl, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
-
-	if response, err = sdk.Blend(ctx, midjourneyProxy, params); err != nil {
+	response, err = sdk.Modal(ctx, midjourneyProxy, params)
+	if err != nil {
 		logger.Error(ctx, err)
 
 		if len(retry) > 0 {
@@ -898,8 +898,8 @@ func (s *sMidjourney) Shorten(ctx context.Context, params sdkm.MidjourneyProxyRe
 	}
 
 	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, baseUrl, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
-
-	if response, err = sdk.Blend(ctx, midjourneyProxy, params); err != nil {
+	response, err = sdk.Shorten(ctx, midjourneyProxy, params)
+	if err != nil {
 		logger.Error(ctx, err)
 
 		if len(retry) > 0 {
@@ -1009,8 +1009,8 @@ func (s *sMidjourney) UploadDiscordImages(ctx context.Context, params sdkm.Midjo
 	}
 
 	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, baseUrl, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
-
-	if response, err = sdk.Blend(ctx, midjourneyProxy, params); err != nil {
+	response, err = sdk.UploadDiscordImages(ctx, midjourneyProxy, params)
+	if err != nil {
 		logger.Error(ctx, err)
 
 		if len(retry) > 0 {
@@ -1127,8 +1127,8 @@ func (s *sMidjourney) Fetch(ctx context.Context, params sdkm.MidjourneyProxyRequ
 	}
 
 	midjourneyProxy := sdk.NewMidjourneyProxy(ctx, baseUrl, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
-
-	if response, err = sdk.Fetch(ctx, midjourneyProxy, params); err != nil {
+	response, err = sdk.Fetch(ctx, midjourneyProxy, params)
+	if err != nil {
 		logger.Error(ctx, err)
 
 		if len(retry) > 0 {
