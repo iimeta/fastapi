@@ -771,6 +771,7 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *mod
 		if chat.IsEnableModelAgent && model.ModelAgent != nil {
 			chat.ModelAgentId = model.ModelAgent.Id
 			chat.ModelAgent = &do.ModelAgent{
+				Corp:    model.ModelAgent.Corp,
 				Name:    model.ModelAgent.Name,
 				BaseUrl: model.ModelAgent.BaseUrl,
 				Path:    model.ModelAgent.Path,

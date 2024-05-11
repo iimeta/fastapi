@@ -16,9 +16,10 @@ const (
 	CORP_XFYUN      = "Xfyun"
 	CORP_ALIYUN     = "Aliyun"
 	CORP_ZHIPUAI    = "ZhipuAI"
+	CORP_GOOGLE     = "Google"
 	CORP_MIDJOURNEY = "Midjourney"
 
-	QUOTA_USD_UNIT = 500 * 1000.0 // $1 = 50万tokens
+	QUOTA_USD_UNIT = 500000.0 // $1 = 50万tokens
 
 	ROLE_SYSTEM    = "system"
 	ROLE_USER      = "user"

@@ -259,6 +259,7 @@ func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Ke
 		if chat.IsEnableModelAgent && model.ModelAgent != nil {
 			chat.ModelAgentId = model.ModelAgent.Id
 			chat.ModelAgent = &do.ModelAgent{
+				Corp:    model.ModelAgent.Corp,
 				Name:    model.ModelAgent.Name,
 				BaseUrl: model.ModelAgent.BaseUrl,
 				Path:    model.ModelAgent.Path,

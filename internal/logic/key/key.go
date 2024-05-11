@@ -156,15 +156,18 @@ func (s *sKey) List(ctx context.Context, typ int) ([]*model.Key, error) {
 }
 
 // 挑选模型密钥
-func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (keyTotal int, key *model.Key, err error) {
+func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (int, *model.Key, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "sKey PickModelKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	var modelKeys []*model.Key
-	var roundRobin *util.RoundRobin
+	var (
+		modelKeys  []*model.Key
+		roundRobin *util.RoundRobin
+		err        error
+	)
 
 	if modelKeysValue := s.modelKeysCache.GetVal(ctx, m.Id); modelKeysValue != nil {
 		modelKeys = modelKeysValue.([]*model.Key)

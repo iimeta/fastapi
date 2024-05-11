@@ -74,6 +74,7 @@ func (s *sModelAgent) GetModelAgent(ctx context.Context, id string) (*model.Mode
 
 	return &model.ModelAgent{
 		Id:         modelAgent.Id,
+		Corp:       modelAgent.Corp,
 		Name:       modelAgent.Name,
 		BaseUrl:    modelAgent.BaseUrl,
 		Path:       modelAgent.Path,
@@ -125,6 +126,7 @@ func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAge
 	for _, result := range results {
 		items = append(items, &model.ModelAgent{
 			Id:         result.Id,
+			Corp:       result.Corp,
 			Name:       result.Name,
 			BaseUrl:    result.BaseUrl,
 			Path:       result.Path,
@@ -178,7 +180,7 @@ func (s *sModelAgent) GetModelAgentKeys(ctx context.Context, id string) ([]*mode
 }
 
 // 挑选模型代理
-func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (agentTotal int, modelAgent *model.ModelAgent, err error) {
+func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (int, *model.ModelAgent, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -194,7 +196,7 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (agent
 
 	if len(modelAgents) == 0 {
 
-		modelAgents, err = s.GetCacheList(ctx, m.ModelAgents...)
+		modelAgents, err := s.GetCacheList(ctx, m.ModelAgents...)
 		if err != nil || len(modelAgents) != len(m.ModelAgents) {
 
 			if modelAgents, err = s.List(ctx, m.ModelAgents); err != nil {
@@ -236,7 +238,7 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (agent
 
 	if roundRobin == nil {
 		roundRobin = new(util.RoundRobin)
-		if err = s.modelAgentsRoundRobinCache.Set(ctx, m.Id, roundRobin, 0); err != nil {
+		if err := s.modelAgentsRoundRobinCache.Set(ctx, m.Id, roundRobin, 0); err != nil {
 			logger.Error(ctx, err)
 			return 0, nil, err
 		}
@@ -314,15 +316,18 @@ func (s *sModelAgent) DisabledModelAgent(ctx context.Context, modelAgent *model.
 }
 
 // 挑选模型代理密钥
-func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent) (keyTotal int, key *model.Key, err error) {
+func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent) (int, *model.Key, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "sModelAgent PickModelAgentKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	var keys []*model.Key
-	var roundRobin *util.RoundRobin
+	var (
+		keys       []*model.Key
+		roundRobin *util.RoundRobin
+		err        error
+	)
 
 	if keysValue := s.modelAgentKeysCache.GetVal(ctx, modelAgent.Id); keysValue != nil {
 		keys = keysValue.([]*model.Key)
@@ -563,6 +568,7 @@ func (s *sModelAgent) CreateCacheModelAgent(ctx context.Context, newData *model.
 
 	if err := s.SaveCacheList(ctx, []*model.ModelAgent{{
 		Id:      newData.Id,
+		Corp:    newData.Corp,
 		Name:    newData.Name,
 		BaseUrl: newData.BaseUrl,
 		Path:    newData.Path,
@@ -593,6 +599,7 @@ func (s *sModelAgent) UpdateCacheModelAgent(ctx context.Context, oldData *model.
 
 	if err := s.SaveCacheList(ctx, []*model.ModelAgent{{
 		Id:      newData.Id,
+		Corp:    newData.Corp,
 		Name:    newData.Name,
 		BaseUrl: newData.BaseUrl,
 		Path:    newData.Path,
@@ -897,7 +904,7 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 			newModelAgentKeys = append(newModelAgentKeys, key)
 		}
 
-		if err := s.SaveCacheModelAgentKeys(ctx, id, newModelAgentKeys); err != nil {
+		if err = s.SaveCacheModelAgentKeys(ctx, id, newModelAgentKeys); err != nil {
 			logger.Error(ctx, err)
 		}
 
@@ -937,7 +944,7 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 						if k.Id != oldData.Id {
 							newKeys = append(newKeys, k)
 						} else {
-							if _, err := redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id), oldData.Id); err != nil {
+							if _, err = redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id), oldData.Id); err != nil {
 								logger.Error(ctx, err)
 							}
 						}

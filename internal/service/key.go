@@ -21,7 +21,7 @@ type (
 		// 密钥列表
 		List(ctx context.Context, typ int) ([]*model.Key, error)
 		// 挑选模型密钥
-		PickModelKey(ctx context.Context, m *model.Model) (keyTotal int, key *model.Key, err error)
+		PickModelKey(ctx context.Context, m *model.Model) (int, *model.Key, error)
 		// 移除模型密钥
 		RemoveModelKey(ctx context.Context, m *model.Model, key *model.Key)
 		// 记录错误模型密钥

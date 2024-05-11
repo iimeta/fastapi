@@ -12,7 +12,7 @@ type Chat struct {
 	TraceId            string         `bson:"trace_id,omitempty"`              // 日志ID
 	UserId             int            `bson:"user_id,omitempty"`               // 用户ID
 	AppId              int            `bson:"app_id,omitempty"`                // 应用ID
-	Corp               string         `bson:"corp,omitempty"`                  // 公司[OpenAI;Baidu;Xfyun;Aliyun;Midjourney]
+	Corp               string         `bson:"corp,omitempty"`                  // 公司[OpenAI;Baidu;Xfyun;Aliyun;ZhipuAI;Google;Midjourney]
 	ModelId            string         `bson:"model_id,omitempty"`              // 模型ID
 	Name               string         `bson:"name,omitempty"`                  // 模型名称
 	Model              string         `bson:"model,omitempty"`                 // 模型

@@ -2,7 +2,7 @@ package model
 
 type Model struct {
 	Id                 string         `json:"id,omitempty"`                    // ID
-	Corp               string         `json:"corp,omitempty"`                  // 公司[OpenAI;Baidu;Xfyun;Aliyun;Midjourney]
+	Corp               string         `json:"corp,omitempty"`                  // 公司[OpenAI;Baidu;Xfyun;Aliyun;ZhipuAI;Google;Midjourney]
 	Name               string         `json:"name,omitempty"`                  // 模型名称
 	Model              string         `json:"model,omitempty"`                 // 模型
 	Type               int            `json:"type,omitempty"`                  // 模型类型[1:文生文, 2:文生图, 3:图生文, 4:图生图, 5:文生语音, 6:语音生文]
