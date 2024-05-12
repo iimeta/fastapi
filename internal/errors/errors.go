@@ -9,7 +9,7 @@ import (
 	"github.com/iimeta/fastapi-sdk/sdkerr"
 )
 
-type IFastAPIError interface {
+type IFastApiError interface {
 	Unwrap() error
 	Status() int
 	ErrCode() any
@@ -17,8 +17,8 @@ type IFastAPIError interface {
 	ErrType() string
 }
 
-type FastAPIError struct {
-	Err *sdkerr.APIError `json:"error,omitempty"`
+type FastApiError struct {
+	Err *sdkerr.ApiError `json:"error,omitempty"`
 }
 
 var (
@@ -60,9 +60,9 @@ func As(err error, target any) bool {
 }
 
 func NewError(status int, code any, message, typ string) error {
-	return &FastAPIError{
-		Err: &sdkerr.APIError{
-			HTTPStatusCode: status,
+	return &FastApiError{
+		Err: &sdkerr.ApiError{
+			HttpStatusCode: status,
 			Code:           code,
 			Message:        message,
 			Type:           typ,
@@ -71,9 +71,9 @@ func NewError(status int, code any, message, typ string) error {
 }
 
 func NewErrorf(status int, code any, message, typ string, args ...interface{}) error {
-	return &FastAPIError{
-		Err: &sdkerr.APIError{
-			HTTPStatusCode: status,
+	return &FastApiError{
+		Err: &sdkerr.ApiError{
+			HttpStatusCode: status,
 			Code:           code,
 			Message:        fmt.Sprintf(message, args...),
 			Type:           typ,
@@ -81,10 +81,10 @@ func NewErrorf(status int, code any, message, typ string, args ...interface{}) e
 	}
 }
 
-func Error(ctx context.Context, err error) IFastAPIError {
+func Error(ctx context.Context, err error) IFastApiError {
 
 	if err == nil {
-		return ERR_NIL.(IFastAPIError)
+		return ERR_NIL.(IFastApiError)
 	}
 
 	// 屏蔽不想对外暴露的错误
@@ -92,49 +92,49 @@ func Error(ctx context.Context, err error) IFastAPIError {
 		err = ERR_SYSTEM
 	}
 
-	if e, ok := err.(IFastAPIError); ok {
+	if e, ok := err.(IFastApiError); ok {
 		if e.ErrCode() == 0 {
-			return NewError(e.Status(), e.ErrCode(), e.ErrMessage(), e.ErrType()).(IFastAPIError)
+			return NewError(e.Status(), e.ErrCode(), e.ErrMessage(), e.ErrType()).(IFastApiError)
 		}
-		return NewErrorf(e.Status(), e.ErrCode(), e.ErrMessage()+" TraceId: %s", e.ErrType(), gctx.CtxId(ctx)).(IFastAPIError)
+		return NewErrorf(e.Status(), e.ErrCode(), e.ErrMessage()+" TraceId: %s", e.ErrType(), gctx.CtxId(ctx)).(IFastApiError)
 	}
 
-	apiError := &sdkerr.APIError{}
+	apiError := &sdkerr.ApiError{}
 	if As(err, &apiError) {
-		return NewError(apiError.HTTPStatusCode, apiError.Code, apiError.Message, apiError.Type).(IFastAPIError)
+		return NewError(apiError.HttpStatusCode, apiError.Code, apiError.Message, apiError.Type).(IFastApiError)
 	}
 
-	//return NewError(200, "fastapi_error", err.Error(), "fastapi_error").(IFastAPIError)
+	//return NewError(200, "fastapi_error", err.Error(), "fastapi_error").(IFastApiError)
 	// 未知的错误, 用统一描述处理
-	e := ERR_UNKNOWN.(IFastAPIError)
-	return NewErrorf(e.Status(), e.ErrCode(), e.ErrMessage()+" TraceId: %s", e.ErrType(), gctx.CtxId(ctx)).(IFastAPIError)
+	e := ERR_UNKNOWN.(IFastApiError)
+	return NewErrorf(e.Status(), e.ErrCode(), e.ErrMessage()+" TraceId: %s", e.ErrType(), gctx.CtxId(ctx)).(IFastApiError)
 }
 
-func (e *FastAPIError) Error() string {
+func (e *FastApiError) Error() string {
 
-	if e.Err.HTTPStatusCode > 0 {
-		return fmt.Sprintf("error, status code: %d, message: %s", e.Err.HTTPStatusCode, e.Err.Message)
+	if e.Err.HttpStatusCode > 0 {
+		return fmt.Sprintf("error, status code: %d, message: %s", e.Err.HttpStatusCode, e.Err.Message)
 	}
 
 	return e.Err.Message
 }
 
-func (e *FastAPIError) Unwrap() error {
+func (e *FastApiError) Unwrap() error {
 	return e.Err
 }
 
-func (e *FastAPIError) Status() int {
-	return e.Err.HTTPStatusCode
+func (e *FastApiError) Status() int {
+	return e.Err.HttpStatusCode
 }
 
-func (e *FastAPIError) ErrCode() any {
+func (e *FastApiError) ErrCode() any {
 	return e.Err.Code
 }
 
-func (e *FastAPIError) ErrMessage() string {
+func (e *FastApiError) ErrMessage() string {
 	return e.Err.Message
 }
 
-func (e *FastAPIError) ErrType() string {
+func (e *FastApiError) ErrType() string {
 	return e.Err.Type
 }

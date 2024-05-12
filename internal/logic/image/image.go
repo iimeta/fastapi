@@ -148,13 +148,13 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 			}
 		}
 
-		e := &sdkerr.APIError{}
+		e := &sdkerr.ApiError{}
 		if errors.As(err, &e) {
 
 			isRetry = true
 			service.Common().RecordError(ctx, m, key, modelAgent)
 
-			switch e.HTTPStatusCode {
+			switch e.HttpStatusCode {
 			case 400:
 
 				if gstr.Contains(err.Error(), "Please reduce the length of the messages") {

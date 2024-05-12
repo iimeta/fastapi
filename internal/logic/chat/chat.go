@@ -245,24 +245,24 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			}
 		}
 
-		apiError := &sdkerr.APIError{}
+		apiError := &sdkerr.ApiError{}
 		if errors.As(err, &apiError) {
 
 			isRetry = true
 			service.Common().RecordError(ctx, realModel, k, modelAgent)
 
-			switch apiError.HTTPStatusCode {
+			switch apiError.HttpStatusCode {
 			case 400:
 
-				if gstr.Contains(err.Error(), "Please reduce the length of the messages") {
+				if errors.Is(err, sdkerr.ERR_CONTEXT_LENGTH_EXCEEDED) {
 					return response, err
 				}
 
 				response, err = s.Completions(ctx, params, append(retry, 1)...)
 
-			case 429:
+			case 401, 429:
 
-				if gstr.Contains(err.Error(), "You exceeded your current quota") {
+				if errors.As(err, sdkerr.ERR_INVALID_API_KEY) || errors.As(err, sdkerr.ERR_INSUFFICIENT_QUOTA) {
 					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 						if realModel.IsEnableModelAgent {
@@ -279,21 +279,6 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				response, err = s.Completions(ctx, params, append(retry, 1)...)
 
 			default:
-
-				if gstr.Contains(err.Error(), "Incorrect API key provided") {
-					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-						if realModel.IsEnableModelAgent {
-							service.ModelAgent().DisabledModelAgentKey(ctx, k)
-						} else {
-							service.Key().DisabledModelKey(ctx, k)
-						}
-
-					}, nil); err != nil {
-						logger.Error(ctx, err)
-					}
-				}
-
 				response, err = s.Completions(ctx, params, append(retry, 1)...)
 			}
 
@@ -306,53 +291,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			isRetry = true
 			service.Common().RecordError(ctx, realModel, k, modelAgent)
 
-			switch reqError.HTTPStatusCode {
-			case 400:
-
-				if gstr.Contains(err.Error(), "Please reduce the length of the messages") {
-					return response, err
-				}
-
-				response, err = s.Completions(ctx, params, append(retry, 1)...)
-
-			case 429:
-
-				if gstr.Contains(err.Error(), "You exceeded your current quota") {
-					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-						if realModel.IsEnableModelAgent {
-							service.ModelAgent().DisabledModelAgentKey(ctx, k)
-						} else {
-							service.Key().DisabledModelKey(ctx, k)
-						}
-
-					}, nil); err != nil {
-						logger.Error(ctx, err)
-					}
-				}
-
-				response, err = s.Completions(ctx, params, append(retry, 1)...)
-
-			default:
-
-				if gstr.Contains(err.Error(), "Incorrect API key provided") {
-					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-						if realModel.IsEnableModelAgent {
-							service.ModelAgent().DisabledModelAgentKey(ctx, k)
-						} else {
-							service.Key().DisabledModelKey(ctx, k)
-						}
-
-					}, nil); err != nil {
-						logger.Error(ctx, err)
-					}
-				}
-
-				response, err = s.Completions(ctx, params, append(retry, 1)...)
-			}
-
-			return response, err
+			response, err = s.Completions(ctx, params, append(retry, 1)...)
 		}
 
 		return response, err
@@ -564,24 +503,24 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			}
 		}
 
-		apiError := &sdkerr.APIError{}
+		apiError := &sdkerr.ApiError{}
 		if errors.As(err, &apiError) {
 
 			isRetry = true
 			service.Common().RecordError(ctx, realModel, k, modelAgent)
 
-			switch apiError.HTTPStatusCode {
+			switch apiError.HttpStatusCode {
 			case 400:
 
-				if gstr.Contains(err.Error(), "Please reduce the length of the messages") {
+				if errors.Is(err, sdkerr.ERR_CONTEXT_LENGTH_EXCEEDED) {
 					return err
 				}
 
 				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
 
-			case 429:
+			case 401, 429:
 
-				if gstr.Contains(err.Error(), "You exceeded your current quota") {
+				if errors.As(err, sdkerr.ERR_INVALID_API_KEY) || errors.As(err, sdkerr.ERR_INSUFFICIENT_QUOTA) {
 					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 						if realModel.IsEnableModelAgent {
@@ -598,21 +537,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
 
 			default:
-
-				if gstr.Contains(err.Error(), "Incorrect API key provided") {
-					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-						if realModel.IsEnableModelAgent {
-							service.ModelAgent().DisabledModelAgentKey(ctx, k)
-						} else {
-							service.Key().DisabledModelKey(ctx, k)
-						}
-
-					}, nil); err != nil {
-						logger.Error(ctx, err)
-					}
-				}
-
 				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
 			}
 
@@ -625,53 +549,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			isRetry = true
 			service.Common().RecordError(ctx, realModel, k, modelAgent)
 
-			switch reqError.HTTPStatusCode {
-			case 400:
-
-				if gstr.Contains(err.Error(), "Please reduce the length of the messages") {
-					return err
-				}
-
-				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
-
-			case 429:
-
-				if gstr.Contains(err.Error(), "You exceeded your current quota") {
-					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-						if realModel.IsEnableModelAgent {
-							service.ModelAgent().DisabledModelAgentKey(ctx, k)
-						} else {
-							service.Key().DisabledModelKey(ctx, k)
-						}
-
-					}, nil); err != nil {
-						logger.Error(ctx, err)
-					}
-				}
-
-				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
-
-			default:
-
-				if gstr.Contains(err.Error(), "Incorrect API key provided") {
-					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-						if realModel.IsEnableModelAgent {
-							service.ModelAgent().DisabledModelAgentKey(ctx, k)
-						} else {
-							service.Key().DisabledModelKey(ctx, k)
-						}
-
-					}, nil); err != nil {
-						logger.Error(ctx, err)
-					}
-				}
-
-				err = s.CompletionsStream(ctx, params, append(retry, 1)...)
-			}
-
-			return err
+			err = s.CompletionsStream(ctx, params, append(retry, 1)...)
 		}
 
 		return err
