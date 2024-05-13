@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/model"
@@ -18,6 +19,11 @@ import (
 var baiduCache = cache.New() // [key]AccessToken
 
 func getAccessToken(ctx context.Context, key, baseURL, proxyURL string) string {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "getAccessToken Baidu time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	if accessTokenCacheValue := baiduCache.GetVal(ctx, fmt.Sprintf(consts.ACCESS_TOKEN_KEY, key)); accessTokenCacheValue != nil {
 		return accessTokenCacheValue.(string)
