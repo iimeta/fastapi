@@ -15,6 +15,7 @@ import (
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
+	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"math"
@@ -37,15 +38,10 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		path       string
 		agentTotal int
 		keyTotal   int
-		isRetry    bool
+		retryInfo  *do.Retry
 	)
 
 	defer func() {
-
-		// 不记录重试
-		if isRetry {
-			return
-		}
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
@@ -58,10 +54,10 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 				model := reqModel.Model
 
 				if reqModel.Corp != consts.CORP_OPENAI {
-					model = "gpt-3.5-turbo"
+					model = consts.DEFAULT_MODEL
 				} else {
 					if _, err := tiktoken.EncodingForModel(model); err != nil {
-						model = "gpt-3.5-turbo"
+						model = consts.DEFAULT_MODEL
 					}
 				}
 
@@ -125,7 +121,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 					completionsRes.Completion = response.Choices[0].Message.Content
 				}
 
-				s.SaveChat(ctx, reqModel, realModel, k, &params, completionsRes, true)
+				s.SaveChat(ctx, reqModel, realModel, k, &params, completionsRes, retryInfo, true)
 
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -232,7 +228,12 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		apiError := &sdkerr.ApiError{}
 		if errors.As(err, &apiError) {
 
-			isRetry = true
+			retryInfo = &do.Retry{
+				IsRetry:    true,
+				RetryCount: len(retry),
+				ErrMsg:     err.Error(),
+			}
+
 			service.Common().RecordError(ctx, realModel, k, modelAgent)
 
 			switch apiError.HttpStatusCode {
@@ -242,7 +243,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 					return response, err
 				}
 
-				response, err = s.Completions(ctx, params, append(retry, 1)...)
+				response, err = s.SmartCompletions(ctx, params, reqModel, append(retry, 1)...)
 
 			case 401, 429:
 
@@ -260,10 +261,10 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 					}
 				}
 
-				response, err = s.Completions(ctx, params, append(retry, 1)...)
+				response, err = s.SmartCompletions(ctx, params, reqModel, append(retry, 1)...)
 
 			default:
-				response, err = s.Completions(ctx, params, append(retry, 1)...)
+				response, err = s.SmartCompletions(ctx, params, reqModel, append(retry, 1)...)
 			}
 
 			return response, err
@@ -272,10 +273,15 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		reqError := &sdkerr.RequestError{}
 		if errors.As(err, &reqError) {
 
-			isRetry = true
+			retryInfo = &do.Retry{
+				IsRetry:    true,
+				RetryCount: len(retry),
+				ErrMsg:     err.Error(),
+			}
+
 			service.Common().RecordError(ctx, realModel, k, modelAgent)
 
-			response, err = s.Completions(ctx, params, append(retry, 1)...)
+			return s.SmartCompletions(ctx, params, reqModel, append(retry, 1)...)
 		}
 
 		return response, err

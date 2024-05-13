@@ -52,15 +52,10 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		path       string
 		agentTotal int
 		keyTotal   int
-		isRetry    bool
+		retryInfo  *do.Retry
 	)
 
 	defer func() {
-
-		// 不记录重试
-		if isRetry {
-			return
-		}
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
@@ -73,10 +68,10 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				model := reqModel.Model
 
 				if reqModel.Corp != consts.CORP_OPENAI {
-					model = "gpt-3.5-turbo"
+					model = consts.DEFAULT_MODEL
 				} else {
 					if _, err := tiktoken.EncodingForModel(model); err != nil {
-						model = "gpt-3.5-turbo"
+						model = consts.DEFAULT_MODEL
 					}
 				}
 
@@ -140,7 +135,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 					completionsRes.Completion = response.Choices[0].Message.Content
 				}
 
-				s.SaveChat(ctx, reqModel, realModel, k, &params, completionsRes)
+				s.SaveChat(ctx, reqModel, realModel, k, &params, completionsRes, retryInfo)
 
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -248,7 +243,12 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		apiError := &sdkerr.ApiError{}
 		if errors.As(err, &apiError) {
 
-			isRetry = true
+			retryInfo = &do.Retry{
+				IsRetry:    true,
+				RetryCount: len(retry),
+				ErrMsg:     err.Error(),
+			}
+
 			service.Common().RecordError(ctx, realModel, k, modelAgent)
 
 			switch apiError.HttpStatusCode {
@@ -288,10 +288,15 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		reqError := &sdkerr.RequestError{}
 		if errors.As(err, &reqError) {
 
-			isRetry = true
+			retryInfo = &do.Retry{
+				IsRetry:    true,
+				RetryCount: len(retry),
+				ErrMsg:     err.Error(),
+			}
+
 			service.Common().RecordError(ctx, realModel, k, modelAgent)
 
-			response, err = s.Completions(ctx, params, append(retry, 1)...)
+			return s.Completions(ctx, params, append(retry, 1)...)
 		}
 
 		return response, err
@@ -322,16 +327,11 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		connTime   int64
 		duration   int64
 		totalTime  int64
-		isRetry    bool
 		usage      *sdkm.Usage
+		retryInfo  *do.Retry
 	)
 
 	defer func() {
-
-		// 不记录重试
-		if isRetry {
-			return
-		}
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - totalTime
@@ -344,10 +344,10 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				model := reqModel.Model
 
 				if reqModel.Corp != consts.CORP_OPENAI {
-					model = "gpt-3.5-turbo"
+					model = consts.DEFAULT_MODEL
 				} else {
 					if _, err := tiktoken.EncodingForModel(model); err != nil {
-						model = "gpt-3.5-turbo"
+						model = consts.DEFAULT_MODEL
 					}
 				}
 
@@ -399,7 +399,8 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					completionsRes.Usage = *usage
 				}
 
-				s.SaveChat(ctx, reqModel, realModel, k, &params, completionsRes)
+				s.SaveChat(ctx, reqModel, realModel, k, &params, completionsRes, retryInfo)
+
 			}, nil); err != nil {
 				logger.Error(ctx, err)
 			}
@@ -506,7 +507,12 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		apiError := &sdkerr.ApiError{}
 		if errors.As(err, &apiError) {
 
-			isRetry = true
+			retryInfo = &do.Retry{
+				IsRetry:    true,
+				RetryCount: len(retry),
+				ErrMsg:     err.Error(),
+			}
+
 			service.Common().RecordError(ctx, realModel, k, modelAgent)
 
 			switch apiError.HttpStatusCode {
@@ -546,10 +552,15 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		reqError := &sdkerr.RequestError{}
 		if errors.As(err, &reqError) {
 
-			isRetry = true
+			retryInfo = &do.Retry{
+				IsRetry:    true,
+				RetryCount: len(retry),
+				ErrMsg:     err.Error(),
+			}
+
 			service.Common().RecordError(ctx, realModel, k, modelAgent)
 
-			err = s.CompletionsStream(ctx, params, append(retry, 1)...)
+			return s.CompletionsStream(ctx, params, append(retry, 1)...)
 		}
 
 		return err
@@ -605,7 +616,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 }
 
 // 保存文生文聊天数据
-func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes, isSmartMatch ...bool) {
+func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes, retryInfo *do.Retry, isSmartMatch ...bool) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -703,6 +714,21 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *mod
 			Role:    message.Role,
 			Content: message.Content,
 		})
+	}
+
+	if retryInfo != nil {
+
+		chat.IsRetry = retryInfo.IsRetry
+		chat.Retry = &do.Retry{
+			IsRetry:    retryInfo.IsRetry,
+			RetryCount: retryInfo.RetryCount,
+			ErrMsg:     retryInfo.ErrMsg,
+		}
+
+		if chat.IsRetry && completionsRes.Error == nil {
+			chat.Status = 3
+			chat.ErrMsg = retryInfo.ErrMsg
+		}
 	}
 
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {

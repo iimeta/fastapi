@@ -7,7 +7,6 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
-	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi-sdk/sdkerr"
@@ -40,33 +39,31 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 	}()
 
 	var (
-		m          *model.Model
-		key        *model.Key
+		reqModel   *model.Model
+		realModel  = new(model.Model)
+		k          *model.Key
 		modelAgent *model.ModelAgent
+		key        string
 		baseUrl    string
 		path       string
+		agentTotal int
 		keyTotal   int
-		isRetry    bool
+		retryInfo  *do.Retry
 	)
 
 	defer func() {
 
-		// 不记录重试
-		if isRetry {
-			return
-		}
-
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := &sdkm.Usage{
-			TotalTokens: m.FixedQuota,
+			TotalTokens: reqModel.FixedQuota,
 		}
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 			if err == nil {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, m, usage); err != nil {
+					if err := service.Common().RecordUsage(ctx, reqModel, usage); err != nil {
 						logger.Error(ctx, err)
 					}
 				}, nil); err != nil {
@@ -76,7 +73,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 
 			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
 
-				m.ModelAgent = modelAgent
+				reqModel.ModelAgent = modelAgent
 
 				imageRes := &model.ImageRes{
 					Created:      response.Created,
@@ -88,7 +85,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 					EnterTime:    enterTime,
 				}
 
-				s.SaveChat(ctx, m, key, &params, imageRes)
+				s.SaveChat(ctx, reqModel, k, &params, imageRes, retryInfo)
 
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -99,14 +96,18 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 		}
 	}()
 
-	if m, err = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx)); err != nil {
+	if reqModel, err = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx)); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
-	if m.IsEnableModelAgent {
+	*realModel = *reqModel
+	baseUrl = realModel.BaseUrl
+	path = realModel.Path
 
-		if _, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
+	if reqModel.IsEnableModelAgent {
+
+		if agentTotal, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, reqModel); err != nil {
 			logger.Error(ctx, err)
 			return response, err
 		}
@@ -116,24 +117,25 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 			baseUrl = modelAgent.BaseUrl
 			path = modelAgent.Path
 
-			if keyTotal, key, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
-				service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
+			if keyTotal, k, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
+				service.ModelAgent().RecordErrorModelAgent(ctx, reqModel, modelAgent)
 				logger.Error(ctx, err)
 				return response, err
 			}
 		}
 
 	} else {
-		if keyTotal, key, err = service.Key().PickModelKey(ctx, m); err != nil {
+		if keyTotal, k, err = service.Key().PickModelKey(ctx, reqModel); err != nil {
 			logger.Error(ctx, err)
 			return response, err
 		}
 	}
 
 	request := params
-	request.Model = m.Model
+	request.Model = realModel.Model
+	key = k.Key
 
-	client := sdk.NewClient(ctx, m.Corp, m.Model, key.Key, baseUrl, path, config.Cfg.Http.ProxyUrl)
+	client := sdk.NewClient(ctx, realModel.Corp, realModel.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
 	response, err = client.Image(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
@@ -141,8 +143,14 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 		if len(retry) > 0 {
 			if config.Cfg.Api.Retry > 0 && len(retry) == config.Cfg.Api.Retry {
 				return response, err
-			} else if config.Cfg.Api.Retry < 0 && len(retry) == keyTotal {
-				return response, err
+			} else if config.Cfg.Api.Retry < 0 {
+				if realModel.IsEnableModelAgent {
+					if len(retry) == agentTotal {
+						return response, err
+					}
+				} else if len(retry) == keyTotal {
+					return response, err
+				}
 			} else if config.Cfg.Api.Retry == 0 {
 				return response, err
 			}
@@ -151,27 +159,32 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 		e := &sdkerr.ApiError{}
 		if errors.As(err, &e) {
 
-			isRetry = true
-			service.Common().RecordError(ctx, m, key, modelAgent)
+			retryInfo = &do.Retry{
+				IsRetry:    true,
+				RetryCount: len(retry),
+				ErrMsg:     err.Error(),
+			}
+
+			service.Common().RecordError(ctx, reqModel, k, modelAgent)
 
 			switch e.HttpStatusCode {
 			case 400:
 
-				if gstr.Contains(err.Error(), "Please reduce the length of the messages") {
+				if errors.Is(err, sdkerr.ERR_CONTEXT_LENGTH_EXCEEDED) {
 					return response, err
 				}
 
 				response, err = s.Generations(ctx, params, append(retry, 1)...)
 
-			case 429:
+			case 401, 429:
 
-				if gstr.Contains(err.Error(), "You exceeded your current quota") {
+				if errors.As(err, sdkerr.ERR_INVALID_API_KEY) || errors.As(err, sdkerr.ERR_INSUFFICIENT_QUOTA) {
 					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-						if m.IsEnableModelAgent {
-							service.ModelAgent().DisabledModelAgentKey(ctx, key)
+						if reqModel.IsEnableModelAgent {
+							service.ModelAgent().DisabledModelAgentKey(ctx, k)
 						} else {
-							service.Key().DisabledModelKey(ctx, key)
+							service.Key().DisabledModelKey(ctx, k)
 						}
 
 					}, nil); err != nil {
@@ -182,25 +195,24 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 				response, err = s.Generations(ctx, params, append(retry, 1)...)
 
 			default:
-
-				if gstr.Contains(err.Error(), "Incorrect API key provided") {
-					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-						if m.IsEnableModelAgent {
-							service.ModelAgent().DisabledModelAgentKey(ctx, key)
-						} else {
-							service.Key().DisabledModelKey(ctx, key)
-						}
-
-					}, nil); err != nil {
-						logger.Error(ctx, err)
-					}
-				}
-
 				response, err = s.Generations(ctx, params, append(retry, 1)...)
 			}
 
 			return response, err
+		}
+
+		reqError := &sdkerr.RequestError{}
+		if errors.As(err, &reqError) {
+
+			retryInfo = &do.Retry{
+				IsRetry:    true,
+				RetryCount: len(retry),
+				ErrMsg:     err.Error(),
+			}
+
+			service.Common().RecordError(ctx, reqModel, k, modelAgent)
+
+			return s.Generations(ctx, params, append(retry, 1)...)
 		}
 
 		return response, err
@@ -210,7 +222,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 }
 
 // 保存文生图聊天数据
-func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes) {
+func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *do.Retry) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -282,6 +294,21 @@ func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Ke
 	if imageRes.Error != nil {
 		chat.ErrMsg = imageRes.Error.Error()
 		chat.Status = -1
+	}
+
+	if retryInfo != nil {
+
+		chat.IsRetry = retryInfo.IsRetry
+		chat.Retry = &do.Retry{
+			IsRetry:    retryInfo.IsRetry,
+			RetryCount: retryInfo.RetryCount,
+			ErrMsg:     retryInfo.ErrMsg,
+		}
+
+		if chat.IsRetry && imageRes.Error == nil {
+			chat.Status = 3
+			chat.ErrMsg = retryInfo.ErrMsg
+		}
 	}
 
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {

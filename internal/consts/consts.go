@@ -20,11 +20,12 @@ const (
 	CORP_DEEPSEEK   = "DeepSeek"
 	CORP_MIDJOURNEY = "Midjourney"
 
-	QUOTA_USD_UNIT = 500000.0 // $1 = 50万tokens
-
 	ROLE_SYSTEM    = "system"
 	ROLE_USER      = "user"
 	ROLE_ASSISTANT = "assistant"
 	ROLE_FUNCTION  = "function"
 	ROLE_TOOL      = "tool"
+
+	DEFAULT_MODEL  = "gpt-3.5-turbo"
+	QUOTA_USD_UNIT = 500000.0 // $1 = 50万tokens
 )

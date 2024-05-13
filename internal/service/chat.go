@@ -10,6 +10,7 @@ import (
 
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/model"
+	"github.com/iimeta/fastapi/internal/model/do"
 )
 
 type (
@@ -19,7 +20,7 @@ type (
 		// CompletionsStream
 		CompletionsStream(ctx context.Context, params sdkm.ChatCompletionRequest, retry ...int) (err error)
 		// 保存文生文聊天数据
-		SaveChat(ctx context.Context, model *model.Model, realModel *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes, isSmartMatch ...bool)
+		SaveChat(ctx context.Context, model *model.Model, realModel *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes, retryInfo *do.Retry, isSmartMatch ...bool)
 		// SmartCompletions
 		SmartCompletions(ctx context.Context, params sdkm.ChatCompletionRequest, reqModel *model.Model, retry ...int) (response sdkm.ChatCompletionResponse, err error)
 	}
