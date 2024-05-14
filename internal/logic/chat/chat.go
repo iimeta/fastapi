@@ -572,7 +572,11 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 		response := <-response
 
-		if response == nil || response.Error != nil {
+		connTime = response.ConnTime
+		duration = response.Duration
+		totalTime = response.TotalTime
+
+		if response.Error != nil {
 			return response.Error
 		}
 
@@ -588,10 +592,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 		// 替换成调用的模型
 		response.Model = reqModel.Model
-
-		connTime = response.ConnTime
-		duration = response.Duration
-		totalTime = response.TotalTime
 
 		if len(response.Choices) > 0 && response.Choices[0].FinishReason != "" {
 
