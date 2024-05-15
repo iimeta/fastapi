@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gregex"
@@ -155,7 +156,7 @@ func (s *sCommon) ParseSecretKey(ctx context.Context, secretKey string) (int, in
 // 记录错误次数和禁用
 func (s *sCommon) RecordError(ctx context.Context, model *model.Model, key *model.Key, modelAgent *model.ModelAgent) {
 
-	if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+	if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 		if model.IsEnableModelAgent {
 			service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
