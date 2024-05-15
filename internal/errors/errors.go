@@ -56,7 +56,7 @@ func Is(err, target error) bool {
 }
 
 func As(err error, target any) bool {
-	return errors.As(err, target)
+	return errors.As(err, &target)
 }
 
 func NewError(status int, code any, message, typ string) error {
@@ -100,7 +100,7 @@ func Error(ctx context.Context, err error) IFastApiError {
 	}
 
 	apiError := &sdkerr.ApiError{}
-	if As(err, &apiError) {
+	if errors.As(err, &apiError) {
 		return NewError(apiError.HttpStatusCode, apiError.Code, apiError.Message, apiError.Type).(IFastApiError)
 	}
 
