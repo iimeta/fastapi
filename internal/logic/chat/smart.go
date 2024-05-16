@@ -247,7 +247,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 			case 401, 429:
 
-				if errors.As(err, sdkerr.ERR_INVALID_API_KEY) || errors.As(err, sdkerr.ERR_INSUFFICIENT_QUOTA) {
+				if errors.Is(err, sdkerr.ERR_INVALID_API_KEY) || errors.Is(err, sdkerr.ERR_INSUFFICIENT_QUOTA) {
 					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 						if realModel.IsEnableModelAgent {

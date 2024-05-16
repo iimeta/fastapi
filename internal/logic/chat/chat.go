@@ -262,7 +262,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 			case 401, 429:
 
-				if errors.As(err, sdkerr.ERR_INVALID_API_KEY) || errors.As(err, sdkerr.ERR_INSUFFICIENT_QUOTA) {
+				if errors.Is(err, sdkerr.ERR_INVALID_API_KEY) || errors.Is(err, sdkerr.ERR_INSUFFICIENT_QUOTA) {
 					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 						if realModel.IsEnableModelAgent {
@@ -526,7 +526,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 			case 401, 429:
 
-				if errors.As(err, sdkerr.ERR_INVALID_API_KEY) || errors.As(err, sdkerr.ERR_INSUFFICIENT_QUOTA) {
+				if errors.Is(err, sdkerr.ERR_INVALID_API_KEY) || errors.Is(err, sdkerr.ERR_INSUFFICIENT_QUOTA) {
 					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 						if realModel.IsEnableModelAgent {

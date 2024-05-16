@@ -178,7 +178,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 
 			case 401, 429:
 
-				if errors.As(err, sdkerr.ERR_INVALID_API_KEY) || errors.As(err, sdkerr.ERR_INSUFFICIENT_QUOTA) {
+				if errors.Is(err, sdkerr.ERR_INVALID_API_KEY) || errors.Is(err, sdkerr.ERR_INSUFFICIENT_QUOTA) {
 					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 						if reqModel.IsEnableModelAgent {
