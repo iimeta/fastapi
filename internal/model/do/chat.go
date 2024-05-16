@@ -16,7 +16,7 @@ type Chat struct {
 	ModelId            string         `bson:"model_id,omitempty"`              // 模型ID
 	Name               string         `bson:"name,omitempty"`                  // 模型名称
 	Model              string         `bson:"model,omitempty"`                 // 模型
-	Type               int            `bson:"type,omitempty"`                  // 模型类型[1:文生文, 2:文生图, 3:图生文, 4:图生图, 5:文生语音, 6:语音生文]
+	Type               int            `bson:"type,omitempty"`                  // 模型类型[1:文生文, 2:文生图, 3:图生文, 4:图生图, 5:文生语音, 6:语音生文, 100:多模态]
 	Key                string         `bson:"key,omitempty"`                   // 密钥
 	IsEnableModelAgent bool           `bson:"is_enable_model_agent,omitempty"` // 是否启用模型代理
 	ModelAgentId       string         `bson:"model_agent_id,omitempty"`        // 模型代理ID
