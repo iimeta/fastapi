@@ -6,6 +6,8 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gcmd"
+	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/controller/chat"
@@ -120,11 +122,13 @@ func middleware(r *ghttp.Request) {
 	}
 
 	if config.Cfg.Debug {
-		if gstr.HasPrefix(r.GetHeader("Content-Type"), "application/json") {
-			logger.Debugf(r.GetCtx(), "url: %s, request body: %s", r.GetUrl(), r.GetBodyString())
-		} else {
-			logger.Debugf(r.GetCtx(), "url: %s, Content-Type: %s", r.GetUrl(), r.GetHeader("Content-Type"))
-		}
+		_ = grpool.AddWithRecover(gctx.NeverDone(r.GetCtx()), func(ctx context.Context) {
+			if gstr.HasPrefix(r.GetHeader("Content-Type"), "application/json") {
+				logger.Debugf(ctx, "url: %s, request body: %s", r.GetUrl(), r.GetBodyString())
+			} else {
+				logger.Debugf(ctx, "url: %s, Content-Type: %s", r.GetUrl(), r.GetHeader("Content-Type"))
+			}
+		}, nil)
 	}
 
 	r.Middleware.Next()
