@@ -45,7 +45,7 @@
 
 ## 公益站点
 
-- API地址: https://api.free.fastapi.ai/
+- API地址: https://api.free.fastapi.ai
 - 注册后请联系作者领取1000万额度
 
 ## 项目截图
