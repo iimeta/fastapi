@@ -13,7 +13,27 @@
 `智元 Fast API` 是一站式API管理系统，将各类大模型API进行统一格式、统一规范、统一管理，使其在功能、性能和用户体验上达到极致。
 
 ## 功能介绍
-- 支持 OpenAI 全模型
+
+### 已支持
+- 文生文
+  - OpenAI gpt3.5、4.0系列
+  - 百度 文心一言
+  - 科大讯飞 星火
+  - 阿里云 通义千问
+  - 智谱AI GLM-4
+  - Google Gemini
+  - DeepSeek deepseek-chat、deepseek-coder
+- 文生图
+  - OpenAI DALL-E-2、DALL-E-3
+  - Midjourney
+
+### 即将支持
+- 文生图
+  - 百度
+  - 科大讯飞
+  - 阿里云
+  - 智谱AI
+  - Google
 
 ## 项目预览
 
@@ -22,6 +42,11 @@
 
 - 管理端: https://demo.fastapi.ai/admin
 - 账号/密码: admin/admin123
+
+## 公益站点
+
+- API地址: https://api.free.fastapi.ai/
+- 注册后请联系作者领取1000万额度
 
 ## 项目截图
 ### 管理端
@@ -72,7 +97,7 @@ curl --location 'https://api.fastapi.ai/v1/chat/completions' \
 <img src="https://iim.ai/public/images/Author.png?t=20231207" width="320" alt="作者"/>
 
 ## 交流群
-<img src="https://iim.ai/public/images/WeChatGroup.jpg?t=20240510" width="320" alt="交流群"/>
+<img src="https://iim.ai/public/images/WeChatGroup.jpg?t=20240519" width="320" alt="交流群"/>
 
 
 ![Star History Chart](https://api.star-history.com/svg?repos=iimeta/fastapi&type=Date)
