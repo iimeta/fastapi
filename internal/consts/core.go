@@ -1,7 +1,7 @@
 package consts
 
 const (
-	API_USAGE_KEY = "api:%d:usage"
+	API_USAGE_KEY = "api:user:%d:usage"
 
 	USER_QUOTA_FIELD = "user.quota"
 	APP_QUOTA_FIELD  = "app.%d.quota"

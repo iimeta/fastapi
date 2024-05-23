@@ -100,11 +100,10 @@ func Error(ctx context.Context, err error) IFastApiError {
 	}
 
 	apiError := &sdkerr.ApiError{}
-	if As(err, &apiError) {
+	if As(err, &apiError) && apiError.HttpStatusCode != 500 {
 		return NewError(apiError.HttpStatusCode, apiError.Code, apiError.Message, apiError.Type).(IFastApiError)
 	}
 
-	//return NewError(200, "fastapi_error", err.Error(), "fastapi_error").(IFastApiError)
 	// 未知的错误, 用统一描述处理
 	e := ERR_UNKNOWN.(IFastApiError)
 	return NewErrorf(e.Status(), e.ErrCode(), e.ErrMessage()+" TraceId: %s", e.ErrType(), gctx.CtxId(ctx)).(IFastApiError)

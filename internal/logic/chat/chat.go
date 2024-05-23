@@ -224,6 +224,9 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 	if err != nil {
 		logger.Error(ctx, err)
 
+		// 记录错误次数和禁用
+		service.Common().RecordError(ctx, realModel, k, modelAgent)
+
 		if len(retry) > 0 {
 			if config.Cfg.Api.Retry > 0 && len(retry) == config.Cfg.Api.Retry {
 				return response, err
@@ -248,8 +251,6 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				RetryCount: len(retry),
 				ErrMsg:     err.Error(),
 			}
-
-			service.Common().RecordError(ctx, realModel, k, modelAgent)
 
 			switch apiError.HttpStatusCode {
 			case 400:
@@ -293,8 +294,6 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				RetryCount: len(retry),
 				ErrMsg:     err.Error(),
 			}
-
-			service.Common().RecordError(ctx, realModel, k, modelAgent)
 
 			return s.Completions(ctx, params, append(retry, 1)...)
 		}
@@ -488,6 +487,9 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	if err != nil {
 		logger.Error(ctx, err)
 
+		// 记录错误次数和禁用
+		service.Common().RecordError(ctx, realModel, k, modelAgent)
+
 		if len(retry) > 0 {
 			if config.Cfg.Api.Retry > 0 && len(retry) == config.Cfg.Api.Retry {
 				return err
@@ -512,8 +514,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				RetryCount: len(retry),
 				ErrMsg:     err.Error(),
 			}
-
-			service.Common().RecordError(ctx, realModel, k, modelAgent)
 
 			switch apiError.HttpStatusCode {
 			case 400:
@@ -558,8 +558,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				ErrMsg:     err.Error(),
 			}
 
-			service.Common().RecordError(ctx, realModel, k, modelAgent)
-
 			return s.CompletionsStream(ctx, params, append(retry, 1)...)
 		}
 
@@ -577,7 +575,68 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		totalTime = response.TotalTime
 
 		if response.Error != nil {
-			return response.Error
+
+			err = response.Error
+
+			// 记录错误次数和禁用
+			service.Common().RecordError(ctx, realModel, k, modelAgent)
+
+			apiError := &sdkerr.ApiError{}
+			if errors.As(err, &apiError) {
+
+				retryInfo = &do.Retry{
+					IsRetry:    true,
+					RetryCount: len(retry),
+					ErrMsg:     err.Error(),
+				}
+
+				switch apiError.HttpStatusCode {
+				case 400:
+
+					if errors.Is(err, sdkerr.ERR_CONTEXT_LENGTH_EXCEEDED) {
+						return err
+					}
+
+					err = s.CompletionsStream(ctx, params, append(retry, 1)...)
+
+				case 401, 429:
+
+					if errors.Is(err, sdkerr.ERR_INVALID_API_KEY) || errors.Is(err, sdkerr.ERR_INSUFFICIENT_QUOTA) {
+						if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+							if realModel.IsEnableModelAgent {
+								service.ModelAgent().DisabledModelAgentKey(ctx, k)
+							} else {
+								service.Key().DisabledModelKey(ctx, k)
+							}
+
+						}, nil); err != nil {
+							logger.Error(ctx, err)
+						}
+					}
+
+					err = s.CompletionsStream(ctx, params, append(retry, 1)...)
+
+				default:
+					err = s.CompletionsStream(ctx, params, append(retry, 1)...)
+				}
+
+				return err
+			}
+
+			reqError := &sdkerr.RequestError{}
+			if errors.As(err, &reqError) {
+
+				retryInfo = &do.Retry{
+					IsRetry:    true,
+					RetryCount: len(retry),
+					ErrMsg:     err.Error(),
+				}
+
+				return s.CompletionsStream(ctx, params, append(retry, 1)...)
+			}
+
+			return err
 		}
 
 		if len(response.Choices) > 0 {
