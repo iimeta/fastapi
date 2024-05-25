@@ -61,7 +61,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-			if err == nil {
+			if retryInfo == nil && err == nil {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
 					if err := service.Common().RecordUsage(ctx, reqModel, usage); err != nil {
 						logger.Error(ctx, err)
@@ -78,11 +78,14 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 				imageRes := &model.ImageRes{
 					Created:      response.Created,
 					Data:         response.Data,
-					Usage:        usage,
 					TotalTime:    response.TotalTime,
 					Error:        err,
 					InternalTime: internalTime,
 					EnterTime:    enterTime,
+				}
+
+				if retryInfo == nil && err == nil {
+					imageRes.Usage = usage
 				}
 
 				s.SaveChat(ctx, reqModel, k, &params, imageRes, retryInfo)
@@ -140,6 +143,9 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 	if err != nil {
 		logger.Error(ctx, err)
 
+		// 记录错误次数和禁用
+		service.Common().RecordError(ctx, reqModel, k, modelAgent)
+
 		if len(retry) > 0 {
 			if config.Cfg.Api.Retry > 0 && len(retry) == config.Cfg.Api.Retry {
 				return response, err
@@ -156,62 +162,26 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 			}
 		}
 
-		e := &sdkerr.ApiError{}
-		if errors.As(err, &e) {
+		isRetry, isDisabled := isNeedRetry(err)
 
-			retryInfo = &do.Retry{
-				IsRetry:    true,
-				RetryCount: len(retry),
-				ErrMsg:     err.Error(),
-			}
-
-			service.Common().RecordError(ctx, reqModel, k, modelAgent)
-
-			switch e.HttpStatusCode {
-			case 400:
-
-				if errors.Is(err, sdkerr.ERR_CONTEXT_LENGTH_EXCEEDED) {
-					return response, err
+		if isDisabled {
+			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+				if reqModel.IsEnableModelAgent {
+					service.ModelAgent().DisabledModelAgentKey(ctx, k)
+				} else {
+					service.Key().DisabledModelKey(ctx, k)
 				}
-
-				response, err = s.Generations(ctx, params, append(retry, 1)...)
-
-			case 401, 429:
-
-				if errors.Is(err, sdkerr.ERR_INVALID_API_KEY) || errors.Is(err, sdkerr.ERR_INSUFFICIENT_QUOTA) {
-					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-						if reqModel.IsEnableModelAgent {
-							service.ModelAgent().DisabledModelAgentKey(ctx, k)
-						} else {
-							service.Key().DisabledModelKey(ctx, k)
-						}
-
-					}, nil); err != nil {
-						logger.Error(ctx, err)
-					}
-				}
-
-				response, err = s.Generations(ctx, params, append(retry, 1)...)
-
-			default:
-				response, err = s.Generations(ctx, params, append(retry, 1)...)
+			}, nil); err != nil {
+				logger.Error(ctx, err)
 			}
-
-			return response, err
 		}
 
-		reqError := &sdkerr.RequestError{}
-		if errors.As(err, &reqError) {
-
+		if isRetry {
 			retryInfo = &do.Retry{
 				IsRetry:    true,
 				RetryCount: len(retry),
 				ErrMsg:     err.Error(),
 			}
-
-			service.Common().RecordError(ctx, reqModel, k, modelAgent)
-
 			return s.Generations(ctx, params, append(retry, 1)...)
 		}
 
@@ -314,4 +284,31 @@ func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Ke
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
 		logger.Error(ctx, err)
 	}
+}
+
+func isNeedRetry(err error) (isRetry bool, isDisabled bool) {
+
+	apiError := &sdkerr.ApiError{}
+	if errors.As(err, &apiError) {
+
+		switch apiError.HttpStatusCode {
+		case 400:
+			if errors.Is(err, sdkerr.ERR_CONTEXT_LENGTH_EXCEEDED) {
+				return false, false
+			}
+		case 401, 429:
+			if errors.Is(err, sdkerr.ERR_INVALID_API_KEY) || errors.Is(err, sdkerr.ERR_INSUFFICIENT_QUOTA) {
+				return true, true
+			}
+		}
+
+		return true, false
+	}
+
+	reqError := &sdkerr.RequestError{}
+	if errors.As(err, &reqError) {
+		return true, false
+	}
+
+	return false, false
 }

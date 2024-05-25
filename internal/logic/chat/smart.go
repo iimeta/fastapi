@@ -9,7 +9,6 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 	sdk "github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi-sdk/sdkerr"
 	"github.com/iimeta/fastapi-sdk/tiktoken"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
@@ -46,7 +45,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
-		if err == nil {
+		if retryInfo == nil && err == nil {
 
 			if response.Usage == nil || response.Usage.TotalTokens == 0 {
 
@@ -90,42 +89,26 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-			//if err == nil || isAborted(err) {
-			//	if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-			//		if err := service.Common().RecordUsage(ctx, reqModel, response.Usage); err != nil {
-			//			logger.Error(ctx, err)
-			//		}
-			//	}, nil); err != nil {
-			//		logger.Error(ctx, err)
-			//	}
-			//}
+			reqModel.ModelAgent = modelAgent
 
-			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-
-				reqModel.ModelAgent = modelAgent
-
-				completionsRes := &model.CompletionsRes{
-					Error:        err,
-					ConnTime:     response.ConnTime,
-					Duration:     response.Duration,
-					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
-				}
-
-				if response.Usage != nil {
-					completionsRes.Usage = *response.Usage
-				}
-
-				if len(response.Choices) > 0 {
-					completionsRes.Completion = response.Choices[0].Message.Content
-				}
-
-				s.SaveChat(ctx, reqModel, realModel, k, &params, completionsRes, retryInfo, true)
-
-			}, nil); err != nil {
-				logger.Error(ctx, err)
+			completionsRes := &model.CompletionsRes{
+				Error:        err,
+				ConnTime:     response.ConnTime,
+				Duration:     response.Duration,
+				TotalTime:    response.TotalTime,
+				InternalTime: internalTime,
+				EnterTime:    enterTime,
 			}
+
+			if retryInfo == nil && response.Usage != nil {
+				completionsRes.Usage = *response.Usage
+			}
+
+			if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
+				completionsRes.Completion = response.Choices[0].Message.Content
+			}
+
+			s.SaveChat(ctx, reqModel, realModel, k, &params, completionsRes, retryInfo, true)
 
 		}, nil); err != nil {
 			logger.Error(ctx, err)
@@ -157,14 +140,13 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 			path = modelAgent.Path
 
 			if keyTotal, k, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
+				logger.Error(ctx, err)
 
 				service.ModelAgent().RecordErrorModelAgent(ctx, realModel, modelAgent)
 
 				if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY) {
 					service.ModelAgent().DisabledModelAgent(ctx, modelAgent)
 				}
-
-				logger.Error(ctx, err)
 
 				return response, err
 			}
@@ -225,62 +207,26 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 			}
 		}
 
-		apiError := &sdkerr.ApiError{}
-		if errors.As(err, &apiError) {
+		isRetry, isDisabled := isNeedRetry(err)
 
-			retryInfo = &do.Retry{
-				IsRetry:    true,
-				RetryCount: len(retry),
-				ErrMsg:     err.Error(),
-			}
-
-			service.Common().RecordError(ctx, realModel, k, modelAgent)
-
-			switch apiError.HttpStatusCode {
-			case 400:
-
-				if errors.Is(err, sdkerr.ERR_CONTEXT_LENGTH_EXCEEDED) {
-					return response, err
+		if isDisabled {
+			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+				if realModel.IsEnableModelAgent {
+					service.ModelAgent().DisabledModelAgentKey(ctx, k)
+				} else {
+					service.Key().DisabledModelKey(ctx, k)
 				}
-
-				response, err = s.SmartCompletions(ctx, params, reqModel, append(retry, 1)...)
-
-			case 401, 429:
-
-				if errors.Is(err, sdkerr.ERR_INVALID_API_KEY) || errors.Is(err, sdkerr.ERR_INSUFFICIENT_QUOTA) {
-					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-						if realModel.IsEnableModelAgent {
-							service.ModelAgent().DisabledModelAgentKey(ctx, k)
-						} else {
-							service.Key().DisabledModelKey(ctx, k)
-						}
-
-					}, nil); err != nil {
-						logger.Error(ctx, err)
-					}
-				}
-
-				response, err = s.SmartCompletions(ctx, params, reqModel, append(retry, 1)...)
-
-			default:
-				response, err = s.SmartCompletions(ctx, params, reqModel, append(retry, 1)...)
+			}, nil); err != nil {
+				logger.Error(ctx, err)
 			}
-
-			return response, err
 		}
 
-		reqError := &sdkerr.RequestError{}
-		if errors.As(err, &reqError) {
-
+		if isRetry {
 			retryInfo = &do.Retry{
 				IsRetry:    true,
 				RetryCount: len(retry),
 				ErrMsg:     err.Error(),
 			}
-
-			service.Common().RecordError(ctx, realModel, k, modelAgent)
-
 			return s.SmartCompletions(ctx, params, reqModel, append(retry, 1)...)
 		}
 
