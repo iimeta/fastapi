@@ -114,7 +114,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-			reqModel.ModelAgent = modelAgent
+			realModel.ModelAgent = modelAgent
 
 			completionsRes := &model.CompletionsRes{
 				Error:        err,
@@ -343,7 +343,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
 
-				reqModel.ModelAgent = modelAgent
+				realModel.ModelAgent = modelAgent
 
 				completionsRes := &model.CompletionsRes{
 					Completion:   completion,
@@ -609,21 +609,7 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *mod
 		chat.PromptRatio = model.PromptRatio
 		chat.CompletionRatio = model.CompletionRatio
 		chat.FixedQuota = model.FixedQuota
-		chat.IsEnableModelAgent = model.IsEnableModelAgent
 		chat.IsForward = model.IsForward
-
-		if chat.IsEnableModelAgent && model.ModelAgent != nil {
-			chat.ModelAgentId = model.ModelAgent.Id
-			chat.ModelAgent = &do.ModelAgent{
-				Corp:    model.ModelAgent.Corp,
-				Name:    model.ModelAgent.Name,
-				BaseUrl: model.ModelAgent.BaseUrl,
-				Path:    model.ModelAgent.Path,
-				Weight:  model.ModelAgent.Weight,
-				Remark:  model.ModelAgent.Remark,
-				Status:  model.ModelAgent.Status,
-			}
-		}
 
 		if chat.IsForward && model.ForwardConfig != nil {
 
@@ -648,6 +634,20 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *mod
 			chat.TotalTokens = completionsRes.Usage.TotalTokens
 		} else {
 			chat.TotalTokens = chat.FixedQuota
+		}
+	}
+
+	if realModel.IsEnableModelAgent && realModel.ModelAgent != nil {
+		chat.IsEnableModelAgent = realModel.IsEnableModelAgent
+		chat.ModelAgentId = realModel.ModelAgent.Id
+		chat.ModelAgent = &do.ModelAgent{
+			Corp:    realModel.ModelAgent.Corp,
+			Name:    realModel.ModelAgent.Name,
+			BaseUrl: realModel.ModelAgent.BaseUrl,
+			Path:    realModel.ModelAgent.Path,
+			Weight:  realModel.ModelAgent.Weight,
+			Remark:  realModel.ModelAgent.Remark,
+			Status:  realModel.ModelAgent.Status,
 		}
 	}
 

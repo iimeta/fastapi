@@ -89,7 +89,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-			reqModel.ModelAgent = modelAgent
+			realModel.ModelAgent = modelAgent
 
 			completionsRes := &model.CompletionsRes{
 				Error:        err,
