@@ -23,17 +23,19 @@
   - 智谱AI GLM-4
   - Google Gemini
   - DeepSeek deepseek-chat、deepseek-coder
+  - 360AI
 - 文生图
   - OpenAI DALL-E-2、DALL-E-3
   - Midjourney
+  - 科大讯飞
 
 ### 即将支持
 - 文生图
   - 百度
-  - 科大讯飞
   - 阿里云
   - 智谱AI
   - Google
+  - 360AI
 
 ## 项目预览
 
@@ -42,6 +44,17 @@
 
 - 管理端: https://demo.fastapi.ai/admin
 - 账号/密码: admin/admin123
+
+## 部署支持
+- 集群部署
+- 多地部署
+- 跨区部署
+
+## Docker部署
+### [传送门](https://github.com/iimeta/fastapi/tree/docker)
+
+### [部署视频](https://www.fastapi.ai/public/video/install.mp4)
+https://www.fastapi.ai/public/video/install.mp4
 
 ## 公益站点
 
@@ -64,12 +77,6 @@
 ![appkey](https://github.com/iimeta/fastapi-admin/assets/138393700/662fe51d-9ed1-4672-b9db-f418b492b9a2)
 ![chat](https://github.com/iimeta/fastapi-admin/assets/138393700/5a92ab02-1319-436c-af2d-7d9ef0f49fe5)
 
-### 部署视频
-https://www.fastapi.ai/public/video/install.mp4
-
-## Docker部署
-### [传送门](https://github.com/iimeta/fastapi/tree/docker)
-
 ## API接口
 
 ### 同OpenAI接口
@@ -78,7 +85,7 @@ curl --location 'https://api.fastapi.ai/v1/chat/completions' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Bearer sk-FastAPI1YzE0kXf0zNb0ldX1nBLDm1Bh0SoSK0G0PzR1tNxW' \
 --data '{
-    "model": "gpt-3.5-turbo-16k",
+    "model": "gpt-3.5-turbo",
     "stream": true,
     "messages": [
         {"role": "system", "content": "You are a helpful assistant."},
@@ -88,16 +95,16 @@ curl --location 'https://api.fastapi.ai/v1/chat/completions' \
 ```
 
 ## 开源地址
-| 仓库 | 前端                                  | 后端                                    | API                               |
-| ---- | ------------------------------------- | --------------------------------------- | ----------------------------------|
-| 主库 | https://github.com/iimeta/fastapi-web | https://github.com/iimeta/fastapi-admin | https://github.com/iimeta/fastapi |
-| 码云 | https://gitee.com/iimeta/fastapi-web  | https://gitee.com/iimeta/fastapi-admin  | https://gitee.com/iimeta/fastapi  |
+| 仓库 | API                                          | Web                                                  | Admin                                                    | SDK                                                  |
+| ---- |----------------------------------------------|------------------------------------------------------|----------------------------------------------------------|------------------------------------------------------|
+| 主库 | [fastapi](https://github.com/iimeta/fastapi) | [fastapi-web](https://github.com/iimeta/fastapi-web) | [fastapi-admin](https://github.com/iimeta/fastapi-admin) | [fastapi-sdk](https://github.com/iimeta/fastapi-sdk) |
+| 码云 | [fastapi](https://gitee.com/iimeta/fastapi)  | [fastapi-web](https://gitee.com/iimeta/fastapi-web)  | [fastapi-admin](https://gitee.com/iimeta/fastapi-admin)  | [fastapi-sdk](https://gitee.com/iimeta/fastapi-sdk)  |
 
 ## 作者
 <img src="https://iim.ai/public/images/Author.png?t=20231207" width="320" alt="作者"/>
 
 ## 交流群
-<img src="https://iim.ai/public/images/WeChatGroup.jpg?t=20240519" width="320" alt="交流群"/>
+<img src="https://iim.ai/public/images/WeChatGroup.jpg?t=20240527" width="320" alt="交流群"/>
 
 
 ![Star History Chart](https://api.star-history.com/svg?repos=iimeta/fastapi&type=Date)
