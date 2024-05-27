@@ -31,10 +31,10 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 		return err
 	}
 
-	if err := s.CheckUser(g.RequestFromCtx(ctx).GetCtx(), service.Session().GetUserId(g.RequestFromCtx(ctx).GetCtx())); err != nil {
-		logger.Error(g.RequestFromCtx(ctx).GetCtx(), err)
-		return err
-	}
+	//if err := s.CheckUser(g.RequestFromCtx(ctx).GetCtx(), service.Session().GetUserId(g.RequestFromCtx(ctx).GetCtx())); err != nil {
+	//	logger.Error(g.RequestFromCtx(ctx).GetCtx(), err)
+	//	return err
+	//}
 
 	if err := service.Common().VerifySecretKey(g.RequestFromCtx(ctx).GetCtx(), secretKey); err != nil {
 		logger.Error(g.RequestFromCtx(ctx).GetCtx(), err)
@@ -50,6 +50,10 @@ func (s *sAuth) CheckUser(ctx context.Context, userId int) error {
 	defer func() {
 		logger.Debugf(ctx, "sAuth CheckUser time: %d", gtime.TimestampMilli()-now)
 	}()
+
+	if userId == 0 {
+		return errors.ERR_INVALID_API_KEY
+	}
 
 	user, err := service.User().GetCacheUser(ctx, userId)
 	if err != nil || user == nil {

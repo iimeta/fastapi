@@ -140,6 +140,58 @@ func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAge
 	return items, nil
 }
 
+// 全部模型代理列表
+func (s *sModelAgent) ListAll(ctx context.Context) ([]*model.ModelAgent, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModelAgent ListAll time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	filter := bson.M{
+		"status": 1,
+	}
+
+	results, err := dao.ModelAgent.Find(ctx, filter, "-weight")
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	modelList, err := dao.Model.Find(ctx, bson.M{"status": 1})
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	modelMap := make(map[string][]string)
+	modelNameMap := make(map[string][]string)
+
+	for _, model := range modelList {
+		for _, id := range model.ModelAgents {
+			modelMap[id] = append(modelMap[id], model.Id)
+			modelNameMap[id] = append(modelNameMap[id], model.Name)
+		}
+	}
+
+	items := make([]*model.ModelAgent, 0)
+	for _, result := range results {
+		items = append(items, &model.ModelAgent{
+			Id:         result.Id,
+			Corp:       result.Corp,
+			Name:       result.Name,
+			BaseUrl:    result.BaseUrl,
+			Path:       result.Path,
+			Weight:     result.Weight,
+			Models:     modelMap[result.Id],
+			ModelNames: modelNameMap[result.Id],
+			Status:     result.Status,
+		})
+	}
+
+	return items, nil
+}
+
 // 根据模型代理ID获取密钥列表
 func (s *sModelAgent) GetModelAgentKeys(ctx context.Context, id string) ([]*model.Key, error) {
 

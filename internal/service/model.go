@@ -22,9 +22,11 @@ type (
 		GetModelBySecretKey(ctx context.Context, m, secretKey string) (*model.Model, error)
 		// 模型列表
 		List(ctx context.Context, ids []string) ([]*model.Model, error)
+		// 区别模型列表
+		ListAll(ctx context.Context) ([]*model.Model, error)
 		// 根据模型ID获取模型信息并保存到缓存
 		GetModelAndSaveCache(ctx context.Context, id string) (*model.Model, error)
-		// 根据模型ID获取模型信息并保存到缓存
+		// 获取模型列表并保存到缓存
 		GetModelListAndSaveCacheList(ctx context.Context, ids []string) ([]*model.Model, error)
 		// 保存模型到缓存
 		SaveCache(ctx context.Context, m *model.Model) error

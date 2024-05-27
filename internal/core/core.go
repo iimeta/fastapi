@@ -19,7 +19,9 @@ import (
 
 func init() {
 
-	ctx := gctx.New()
+	var (
+		ctx = gctx.New()
+	)
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -85,6 +87,61 @@ func init() {
 			}
 
 			if _, err = redis.HSet(ctx, fmt.Sprintf(consts.API_USAGE_KEY, app.UserId), fields); err != nil {
+				panic(err)
+			}
+		}
+
+	}
+
+	// 获取所有模型
+	models, err := service.Model().ListAll(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	if len(models) > 0 {
+
+		// 初始化模型信息到缓存
+		if err = service.Model().SaveCacheList(ctx, models); err != nil {
+			panic(err)
+		}
+
+		// 初始化模型密钥到缓存
+		for _, model := range models {
+
+			modelKeys, err := service.Key().GetModelKeys(ctx, model.Id)
+			if err != nil {
+				panic(err)
+			}
+
+			if err = service.Key().SaveCacheModelKeys(ctx, model.Id, modelKeys); err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	// 获取所有模型代理
+	modelAgents, err := service.ModelAgent().ListAll(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	if len(modelAgents) > 0 {
+
+		// 初始化模型代理信息到缓存
+		if err = service.ModelAgent().SaveCacheList(ctx, modelAgents); err != nil {
+			panic(err)
+		}
+
+		// 初始化模型代理密钥到缓存
+		for _, modelAgent := range modelAgents {
+
+			agentKeys, err := service.ModelAgent().GetModelAgentKeys(ctx, modelAgent.Id)
+			if err != nil {
+				panic(err)
+			}
+
+			if err = service.ModelAgent().SaveCacheModelAgentKeys(ctx, modelAgent.Id, agentKeys); err != nil {
 				panic(err)
 			}
 		}

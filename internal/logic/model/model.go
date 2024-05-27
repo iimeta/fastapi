@@ -477,6 +477,66 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 	return items, nil
 }
 
+// 全部模型列表
+func (s *sModel) ListAll(ctx context.Context) ([]*model.Model, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModel ListAll time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	filter := bson.M{
+		"status": 1,
+	}
+
+	results, err := dao.Model.Find(ctx, filter, "-updated_at")
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	items := make([]*model.Model, 0)
+	for _, result := range results {
+
+		m := &model.Model{
+			Id:                 result.Id,
+			Corp:               result.Corp,
+			Name:               result.Name,
+			Model:              result.Model,
+			Type:               result.Type,
+			BaseUrl:            result.BaseUrl,
+			Path:               result.Path,
+			Prompt:             result.Prompt,
+			BillingMethod:      result.BillingMethod,
+			PromptRatio:        result.PromptRatio,
+			CompletionRatio:    result.CompletionRatio,
+			FixedQuota:         result.FixedQuota,
+			DataFormat:         result.DataFormat,
+			IsPublic:           result.IsPublic,
+			IsEnableModelAgent: result.IsEnableModelAgent,
+			ModelAgents:        result.ModelAgents,
+			IsForward:          result.IsForward,
+			Remark:             result.Remark,
+			Status:             result.Status,
+		}
+
+		if result.ForwardConfig != nil {
+			m.ForwardConfig = &model.ForwardConfig{
+				ForwardRule:   result.ForwardConfig.ForwardRule,
+				MatchRule:     result.ForwardConfig.MatchRule,
+				TargetModel:   result.ForwardConfig.TargetModel,
+				DecisionModel: result.ForwardConfig.DecisionModel,
+				Keywords:      result.ForwardConfig.Keywords,
+				TargetModels:  result.ForwardConfig.TargetModels,
+			}
+		}
+
+		items = append(items, m)
+	}
+
+	return items, nil
+}
+
 // 根据模型ID获取模型信息并保存到缓存
 func (s *sModel) GetModelAndSaveCache(ctx context.Context, id string) (*model.Model, error) {
 

@@ -18,6 +18,8 @@ type (
 		GetModelAgent(ctx context.Context, id string) (*model.ModelAgent, error)
 		// 模型代理列表
 		List(ctx context.Context, ids []string) ([]*model.ModelAgent, error)
+		// 全部模型代理列表
+		ListAll(ctx context.Context) ([]*model.ModelAgent, error)
 		// 根据模型代理ID获取密钥列表
 		GetModelAgentKeys(ctx context.Context, id string) ([]*model.Key, error)
 		// 挑选模型代理

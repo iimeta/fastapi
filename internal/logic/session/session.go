@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/iimeta/fastapi/internal/consts"
+	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
@@ -26,6 +27,10 @@ func (s *sSession) Save(ctx context.Context, secretKey string) error {
 	if err != nil {
 		logger.Error(ctx, err)
 		return err
+	}
+
+	if userId == 0 || appId == 0 {
+		return errors.ERR_INVALID_API_KEY
 	}
 
 	if r := g.RequestFromCtx(ctx); r != nil {
