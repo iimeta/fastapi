@@ -128,6 +128,7 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) error {
 		return err
 	}
 
+	service.Session().SaveUser(ctx, user)
 	service.Session().SaveIsLimitQuota(ctx, app.IsLimitQuota, key.IsLimitQuota)
 
 	return nil
