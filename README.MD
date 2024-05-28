@@ -23,7 +23,7 @@
   - 智谱AI GLM-4
   - Google Gemini
   - DeepSeek deepseek-chat、deepseek-coder
-  - 360AI
+  - 360智脑
 - 文生图
   - OpenAI DALL-E-2、DALL-E-3
   - Midjourney
@@ -35,7 +35,7 @@
   - 阿里云
   - 智谱AI
   - Google
-  - 360AI
+  - 360智脑
 
 ## 项目预览
 

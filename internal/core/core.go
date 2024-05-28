@@ -147,7 +147,16 @@ func init() {
 		}
 	}
 
-	conn, _, err := redis.Subscribe(ctx, consts.CHANGE_CHANNEL_USER, consts.CHANGE_CHANNEL_APP, consts.CHANGE_CHANNEL_MODEL, consts.CHANGE_CHANNEL_KEY, consts.CHANGE_CHANNEL_AGENT, consts.CHANGE_CHANNEL_APP_KEY)
+	channels := make([]string, 0)
+	channels = append(channels, consts.CHANGE_CHANNEL_USER)
+	channels = append(channels, consts.CHANGE_CHANNEL_APP)
+	channels = append(channels, consts.CHANGE_CHANNEL_APP_KEY)
+	channels = append(channels, consts.CHANGE_CHANNEL_CORP)
+	channels = append(channels, consts.CHANGE_CHANNEL_MODEL)
+	channels = append(channels, consts.CHANGE_CHANNEL_KEY)
+	channels = append(channels, consts.CHANGE_CHANNEL_AGENT)
+
+	conn, _, err := redis.Subscribe(ctx, channels[0], channels[1:]...)
 	if err != nil {
 		panic(err)
 	}
@@ -159,7 +168,7 @@ func init() {
 			if err != nil {
 				logger.Error(ctx, err)
 				time.Sleep(5 * time.Second)
-				conn, _, err = redis.Subscribe(ctx, consts.CHANGE_CHANNEL_USER, consts.CHANGE_CHANNEL_APP, consts.CHANGE_CHANNEL_MODEL, consts.CHANGE_CHANNEL_KEY, consts.CHANGE_CHANNEL_AGENT, consts.CHANGE_CHANNEL_APP_KEY)
+				conn, _, err = redis.Subscribe(ctx, channels[0], channels[1:]...)
 				if err != nil {
 					logger.Error(ctx, err)
 				}
