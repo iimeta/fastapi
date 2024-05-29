@@ -9,6 +9,7 @@ import (
 	_ "github.com/iimeta/fastapi/internal/logic/auth"
 	_ "github.com/iimeta/fastapi/internal/logic/chat"
 	_ "github.com/iimeta/fastapi/internal/logic/common"
+	_ "github.com/iimeta/fastapi/internal/logic/corp"
 	_ "github.com/iimeta/fastapi/internal/logic/dashboard"
 	_ "github.com/iimeta/fastapi/internal/logic/image"
 	_ "github.com/iimeta/fastapi/internal/logic/key"

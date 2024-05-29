@@ -499,7 +499,7 @@ func (s *sApp) SubscribeKey(ctx context.Context, msg string) error {
 
 	var key *entity.Key
 	switch message.Action {
-	case consts.ACTION_UPDATE, consts.ACTION_STATUS:
+	case consts.ACTION_CREATE, consts.ACTION_UPDATE, consts.ACTION_STATUS:
 
 		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &key); err != nil {
 			logger.Error(ctx, err)

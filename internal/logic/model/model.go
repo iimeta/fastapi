@@ -902,7 +902,7 @@ func (s *sModel) Subscribe(ctx context.Context, msg string) error {
 
 	var newData *entity.Model
 	switch message.Action {
-	case consts.ACTION_UPDATE:
+	case consts.ACTION_CREATE, consts.ACTION_UPDATE, consts.ACTION_STATUS:
 
 		var oldData *entity.Model
 		if message.OldData != nil {
@@ -918,15 +918,6 @@ func (s *sModel) Subscribe(ctx context.Context, msg string) error {
 		}
 
 		s.UpdateCacheModel(ctx, oldData, newData)
-
-	case consts.ACTION_STATUS:
-
-		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &newData); err != nil {
-			logger.Error(ctx, err)
-			return err
-		}
-
-		s.UpdateCacheModel(ctx, nil, newData)
 
 	case consts.ACTION_DELETE:
 

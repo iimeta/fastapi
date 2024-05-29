@@ -52,7 +52,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 				response.Usage = new(sdkm.Usage)
 				model := reqModel.Model
 
-				if reqModel.Corp != consts.CORP_OPENAI {
+				if getCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI {
 					model = consts.DEFAULT_MODEL
 				} else {
 					if _, err := tiktoken.EncodingForModel(model); err != nil {
@@ -167,7 +167,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 	request.Model = realModel.Model
 	key = k.Key
 
-	if realModel.Corp == consts.CORP_BAIDU {
+	if getCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
 		key = getAccessToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
@@ -186,7 +186,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		}
 	}
 
-	client := sdk.NewClient(ctx, realModel.Corp, realModel.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
+	client := sdk.NewClient(ctx, getCorpCode(ctx, realModel.Corp), realModel.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
 	response, err = client.ChatCompletion(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)

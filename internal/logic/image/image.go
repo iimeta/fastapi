@@ -138,7 +138,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 	request.Model = realModel.Model
 	key = k.Key
 
-	client := sdk.NewClient(ctx, realModel.Corp, realModel.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
+	client := sdk.NewClient(ctx, getCorpCode(ctx, realModel.Corp), realModel.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
 	response, err = client.Image(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
@@ -284,6 +284,20 @@ func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Ke
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
 		logger.Error(ctx, err)
 	}
+}
+
+func getCorpCode(ctx context.Context, corpId string) string {
+
+	corp, err := service.Corp().GetCacheCorp(ctx, corpId)
+	if err != nil || corp == nil {
+		corp, err = service.Corp().GetCorpAndSaveCache(ctx, corpId)
+	}
+
+	if corp != nil {
+		return corp.Code
+	}
+
+	return corpId
 }
 
 func isNeedRetry(err error) (isRetry bool, isDisabled bool) {

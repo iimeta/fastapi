@@ -67,7 +67,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				response.Usage = new(sdkm.Usage)
 				model := reqModel.Model
 
-				if reqModel.Corp != consts.CORP_OPENAI {
+				if getCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI {
 					model = consts.DEFAULT_MODEL
 				} else {
 					if _, err := tiktoken.EncodingForModel(model); err != nil {
@@ -193,7 +193,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 	request.Model = realModel.Model
 	key = k.Key
 
-	if realModel.Corp == consts.CORP_BAIDU {
+	if getCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
 		key = getAccessToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
@@ -212,7 +212,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		}
 	}
 
-	client := sdk.NewClient(ctx, realModel.Corp, realModel.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
+	client := sdk.NewClient(ctx, getCorpCode(ctx, realModel.Corp), realModel.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
 	response, err = client.ChatCompletion(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
@@ -303,7 +303,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				usage = new(sdkm.Usage)
 				model := reqModel.Model
 
-				if reqModel.Corp != consts.CORP_OPENAI {
+				if getCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI {
 					model = consts.DEFAULT_MODEL
 				} else {
 					if _, err := tiktoken.EncodingForModel(model); err != nil {
@@ -423,7 +423,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	request.Model = realModel.Model
 	key = k.Key
 
-	if realModel.Corp == consts.CORP_BAIDU {
+	if getCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
 		key = getAccessToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
@@ -442,7 +442,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		}
 	}
 
-	client := sdk.NewClient(ctx, realModel.Corp, realModel.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
+	client := sdk.NewClient(ctx, getCorpCode(ctx, realModel.Corp), realModel.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
 	response, err := client.ChatCompletionStream(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
@@ -689,6 +689,20 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *mod
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
 		logger.Error(ctx, err)
 	}
+}
+
+func getCorpCode(ctx context.Context, corpId string) string {
+
+	corp, err := service.Corp().GetCacheCorp(ctx, corpId)
+	if err != nil || corp == nil {
+		corp, err = service.Corp().GetCorpAndSaveCache(ctx, corpId)
+	}
+
+	if corp != nil {
+		return corp.Code
+	}
+
+	return corpId
 }
 
 func isAborted(err error) bool {

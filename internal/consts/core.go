@@ -11,6 +11,7 @@ const (
 	API_APP_KEY     = "api:app:%d"
 	API_APP_KEY_KEY = "api:app:key:%s"
 
+	API_CORPS_KEY            = "api:corps"
 	API_MODELS_KEY           = "api:models"
 	API_MODEL_KEYS_KEY       = "api:model:keys:%s"
 	API_MODEL_AGENTS_KEY     = "api:model_agents"
