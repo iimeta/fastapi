@@ -15,27 +15,31 @@
 ## 功能介绍
 
 ### 已支持
+
 - 文生文
-  - OpenAI gpt3.5、4.0系列
-  - 百度 文心一言
-  - 科大讯飞 星火
-  - 阿里云 通义千问
-  - 智谱AI GLM-4
-  - Google Gemini
-  - DeepSeek deepseek-chat、deepseek-coder
-  - 360智脑
+- [x] OpenAI gpt3.5、4.0系列
+- [x] 百度 文心一言
+- [x] 科大讯飞 星火
+- [x] 阿里云 通义千问
+- [x] 智谱AI GLM-4
+- [x] Google Gemini
+- [x] DeepSeek deepseek-chat、deepseek-coder
+- [x] 360智脑
+
+
 - 文生图
-  - OpenAI DALL-E-2、DALL-E-3
-  - Midjourney
-  - 科大讯飞
+- [x] OpenAI DALL-E-2、DALL-E-3
+- [x] Midjourney
+- [x] 科大讯飞
 
 ### 即将支持
+
 - 文生图
-  - 百度
-  - 阿里云
-  - 智谱AI
-  - Google
-  - 360智脑
+- [ ] 百度
+- [ ] 阿里云
+- [ ] 智谱AI
+- [ ] Google
+- [ ] 360智脑
 
 ## 项目预览
 
@@ -46,9 +50,9 @@
 - 账号/密码: admin/admin123
 
 ## 部署支持
-- 集群部署
-- 多地部署
-- 跨区部署
+- [x] 集群部署
+- [x] 多地部署
+- [x] 跨区部署
 
 ## Docker部署
 ### [传送门](https://github.com/iimeta/fastapi/tree/docker)
