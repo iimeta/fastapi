@@ -93,6 +93,19 @@ func init() {
 
 	}
 
+	// 获取所有公司
+	corps, err := service.Corp().List(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	if len(corps) > 0 {
+		// 初始化公司信息到缓存
+		if err = service.Corp().SaveCacheList(ctx, corps); err != nil {
+			panic(err)
+		}
+	}
+
 	// 获取所有模型
 	models, err := service.Model().ListAll(ctx)
 	if err != nil {
