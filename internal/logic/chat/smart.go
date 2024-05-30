@@ -13,6 +13,7 @@ import (
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/errors"
+	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/service"
@@ -29,6 +30,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 	}()
 
 	var (
+		client     sdk.Chat
 		realModel  = new(model.Model)
 		k          *model.Key
 		modelAgent *model.ModelAgent
@@ -52,7 +54,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 				response.Usage = new(sdkm.Usage)
 				model := reqModel.Model
 
-				if getCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI {
+				if common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI {
 					model = consts.DEFAULT_MODEL
 				} else {
 					if _, err := tiktoken.EncodingForModel(model); err != nil {
@@ -167,7 +169,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 	request.Model = realModel.Model
 	key = k.Key
 
-	if getCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
+	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
 		key = getAccessToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
@@ -186,7 +188,12 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		}
 	}
 
-	client := sdk.NewClient(ctx, getCorpCode(ctx, realModel.Corp), realModel.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
+	client, err = common.NewClient(ctx, realModel, key, baseUrl, path)
+	if err != nil {
+		logger.Error(ctx, err)
+		return response, err
+	}
+
 	response, err = client.ChatCompletion(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)

@@ -13,6 +13,7 @@ import (
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/dao"
+	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/service"
@@ -1154,6 +1155,11 @@ func (s *sMidjourney) SaveChat(ctx context.Context, model *model.Model, key *mod
 	defer func() {
 		logger.Debugf(ctx, "sMidjourney SaveChat time: %d", gtime.TimestampMilli()-now)
 	}()
+
+	// 不记录此错误日志
+	if response.Error != nil && errors.Is(response.Error, errors.ERR_MODEL_NOT_FOUND) {
+		return
+	}
 
 	chat := do.Chat{
 		TraceId:      gctx.CtxId(ctx),

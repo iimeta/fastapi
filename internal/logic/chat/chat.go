@@ -8,7 +8,7 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
-	"github.com/iimeta/fastapi-sdk"
+	sdk "github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi-sdk/sdkerr"
 	"github.com/iimeta/fastapi-sdk/tiktoken"
@@ -16,6 +16,7 @@ import (
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
+	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/service"
@@ -43,6 +44,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 	}()
 
 	var (
+		client     sdk.Chat
 		reqModel   *model.Model
 		realModel  = new(model.Model)
 		k          *model.Key
@@ -67,7 +69,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				response.Usage = new(sdkm.Usage)
 				model := reqModel.Model
 
-				if getCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI {
+				if common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI {
 					model = consts.DEFAULT_MODEL
 				} else {
 					if _, err := tiktoken.EncodingForModel(model); err != nil {
@@ -193,7 +195,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 	request.Model = realModel.Model
 	key = k.Key
 
-	if getCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
+	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
 		key = getAccessToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
@@ -212,7 +214,12 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		}
 	}
 
-	client := sdk.NewClient(ctx, getCorpCode(ctx, realModel.Corp), realModel.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
+	client, err = common.NewClient(ctx, realModel, key, baseUrl, path)
+	if err != nil {
+		logger.Error(ctx, err)
+		return response, err
+	}
+
 	response, err = client.ChatCompletion(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
@@ -274,6 +281,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	}()
 
 	var (
+		client     sdk.Chat
 		reqModel   *model.Model
 		realModel  = new(model.Model)
 		k          *model.Key
@@ -303,7 +311,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				usage = new(sdkm.Usage)
 				model := reqModel.Model
 
-				if getCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI {
+				if common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI {
 					model = consts.DEFAULT_MODEL
 				} else {
 					if _, err := tiktoken.EncodingForModel(model); err != nil {
@@ -423,7 +431,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	request.Model = realModel.Model
 	key = k.Key
 
-	if getCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
+	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
 		key = getAccessToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
@@ -442,7 +450,12 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		}
 	}
 
-	client := sdk.NewClient(ctx, getCorpCode(ctx, realModel.Corp), realModel.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
+	client, err = common.NewClient(ctx, realModel, key, baseUrl, path)
+	if err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
 	response, err := client.ChatCompletionStream(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
@@ -578,6 +591,11 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *mod
 		logger.Debugf(ctx, "sChat SaveChat time: %d", gtime.TimestampMilli()-now)
 	}()
 
+	// 不记录此错误日志
+	if completionsRes.Error != nil && errors.Is(completionsRes.Error, errors.ERR_MODEL_NOT_FOUND) {
+		return
+	}
+
 	chat := do.Chat{
 		TraceId:      gctx.CtxId(ctx),
 		UserId:       service.Session().GetUserId(ctx),
@@ -689,20 +707,6 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *mod
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
 		logger.Error(ctx, err)
 	}
-}
-
-func getCorpCode(ctx context.Context, corpId string) string {
-
-	corp, err := service.Corp().GetCacheCorp(ctx, corpId)
-	if err != nil || corp == nil {
-		corp, err = service.Corp().GetCorpAndSaveCache(ctx, corpId)
-	}
-
-	if corp != nil {
-		return corp.Code
-	}
-
-	return corpId
 }
 
 func isAborted(err error) bool {

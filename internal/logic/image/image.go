@@ -7,12 +7,13 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
-	"github.com/iimeta/fastapi-sdk"
+	sdk "github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi-sdk/sdkerr"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
+	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/service"
@@ -39,6 +40,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 	}()
 
 	var (
+		client     sdk.Chat
 		reqModel   *model.Model
 		realModel  = new(model.Model)
 		k          *model.Key
@@ -138,7 +140,12 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 	request.Model = realModel.Model
 	key = k.Key
 
-	client := sdk.NewClient(ctx, getCorpCode(ctx, realModel.Corp), realModel.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
+	client, err = common.NewClient(ctx, realModel, key, baseUrl, path)
+	if err != nil {
+		logger.Error(ctx, err)
+		return response, err
+	}
+
 	response, err = client.Image(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
@@ -198,6 +205,11 @@ func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Ke
 	defer func() {
 		logger.Debugf(ctx, "sImage SaveChat time: %d", gtime.TimestampMilli()-now)
 	}()
+
+	// 不记录此错误日志
+	if imageRes.Error != nil && errors.Is(imageRes.Error, errors.ERR_MODEL_NOT_FOUND) {
+		return
+	}
 
 	completion := ""
 	for i, data := range imageRes.Data {
@@ -284,20 +296,6 @@ func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Ke
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
 		logger.Error(ctx, err)
 	}
-}
-
-func getCorpCode(ctx context.Context, corpId string) string {
-
-	corp, err := service.Corp().GetCacheCorp(ctx, corpId)
-	if err != nil || corp == nil {
-		corp, err = service.Corp().GetCorpAndSaveCache(ctx, corpId)
-	}
-
-	if corp != nil {
-		return corp.Code
-	}
-
-	return corpId
 }
 
 func isNeedRetry(err error) (isRetry bool, isDisabled bool) {

@@ -16,7 +16,7 @@ func Info(ctx context.Context, v ...interface{}) {
 }
 
 func Error(ctx context.Context, v ...interface{}) {
-	_ = grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) { g.Log().Error(ctx, v...) }, nil)
+	g.Log().Error(ctx, v...)
 }
 
 func Debugf(ctx context.Context, format string, v ...interface{}) {
@@ -28,5 +28,5 @@ func Infof(ctx context.Context, format string, v ...interface{}) {
 }
 
 func Errorf(ctx context.Context, format string, v ...interface{}) {
-	_ = grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) { g.Log().Errorf(ctx, format, v...) }, nil)
+	g.Log().Errorf(ctx, format, v...)
 }
