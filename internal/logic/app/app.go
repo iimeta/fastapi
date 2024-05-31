@@ -48,19 +48,20 @@ func (s *sApp) GetApp(ctx context.Context, appId int) (*model.App, error) {
 	}
 
 	return &model.App{
-		Id:           app.Id,
-		AppId:        app.AppId,
-		Name:         app.Name,
-		Type:         app.Type,
-		Models:       app.Models,
-		IsLimitQuota: app.IsLimitQuota,
-		Quota:        app.Quota,
-		UsedQuota:    app.UsedQuota,
-		IpWhitelist:  app.IpWhitelist,
-		IpBlacklist:  app.IpBlacklist,
-		Remark:       app.Remark,
-		Status:       app.Status,
-		UserId:       app.UserId,
+		Id:             app.Id,
+		AppId:          app.AppId,
+		Name:           app.Name,
+		Type:           app.Type,
+		Models:         app.Models,
+		IsLimitQuota:   app.IsLimitQuota,
+		Quota:          app.Quota,
+		UsedQuota:      app.UsedQuota,
+		QuotaExpiresAt: app.QuotaExpiresAt,
+		IpWhitelist:    app.IpWhitelist,
+		IpBlacklist:    app.IpBlacklist,
+		Remark:         app.Remark,
+		Status:         app.Status,
+		UserId:         app.UserId,
 	}, nil
 }
 
@@ -85,19 +86,20 @@ func (s *sApp) List(ctx context.Context) ([]*model.App, error) {
 	items := make([]*model.App, 0)
 	for _, result := range results {
 		items = append(items, &model.App{
-			Id:           result.Id,
-			AppId:        result.AppId,
-			Name:         result.Name,
-			Type:         result.Type,
-			Models:       result.Models,
-			IsLimitQuota: result.IsLimitQuota,
-			Quota:        result.Quota,
-			UsedQuota:    result.UsedQuota,
-			IpWhitelist:  result.IpWhitelist,
-			IpBlacklist:  result.IpBlacklist,
-			Remark:       result.Remark,
-			Status:       result.Status,
-			UserId:       result.UserId,
+			Id:             result.Id,
+			AppId:          result.AppId,
+			Name:           result.Name,
+			Type:           result.Type,
+			Models:         result.Models,
+			IsLimitQuota:   result.IsLimitQuota,
+			Quota:          result.Quota,
+			UsedQuota:      result.UsedQuota,
+			QuotaExpiresAt: result.QuotaExpiresAt,
+			IpWhitelist:    result.IpWhitelist,
+			IpBlacklist:    result.IpBlacklist,
+			Remark:         result.Remark,
+			Status:         result.Status,
+			UserId:         result.UserId,
 		})
 	}
 
@@ -240,18 +242,19 @@ func (s *sApp) UpdateCacheApp(ctx context.Context, app *entity.App) {
 	}()
 
 	if err := s.SaveCacheApp(ctx, &model.App{
-		Id:           app.Id,
-		AppId:        app.AppId,
-		Name:         app.Name,
-		Type:         app.Type,
-		Models:       app.Models,
-		IsLimitQuota: app.IsLimitQuota,
-		Quota:        app.Quota,
-		UsedQuota:    app.UsedQuota,
-		IpWhitelist:  app.IpWhitelist,
-		IpBlacklist:  app.IpBlacklist,
-		Status:       app.Status,
-		UserId:       app.UserId,
+		Id:             app.Id,
+		AppId:          app.AppId,
+		Name:           app.Name,
+		Type:           app.Type,
+		Models:         app.Models,
+		IsLimitQuota:   app.IsLimitQuota,
+		Quota:          app.Quota,
+		UsedQuota:      app.UsedQuota,
+		QuotaExpiresAt: app.QuotaExpiresAt,
+		IpWhitelist:    app.IpWhitelist,
+		IpBlacklist:    app.IpBlacklist,
+		Status:         app.Status,
+		UserId:         app.UserId,
 	}); err != nil {
 		logger.Error(ctx, err)
 	}
@@ -352,22 +355,23 @@ func (s *sApp) UpdateCacheAppKey(ctx context.Context, key *entity.Key) {
 	}()
 
 	if err := s.SaveCacheAppKey(ctx, &model.Key{
-		Id:           key.Id,
-		UserId:       key.UserId,
-		AppId:        key.AppId,
-		Corp:         key.Corp,
-		Key:          key.Key,
-		Type:         key.Type,
-		Models:       key.Models,
-		ModelAgents:  key.ModelAgents,
-		IsLimitQuota: key.IsLimitQuota,
-		Quota:        key.Quota,
-		UsedQuota:    key.UsedQuota,
-		RPM:          key.RPM,
-		RPD:          key.RPD,
-		IpWhitelist:  key.IpWhitelist,
-		IpBlacklist:  key.IpBlacklist,
-		Status:       key.Status,
+		Id:             key.Id,
+		UserId:         key.UserId,
+		AppId:          key.AppId,
+		Corp:           key.Corp,
+		Key:            key.Key,
+		Type:           key.Type,
+		Models:         key.Models,
+		ModelAgents:    key.ModelAgents,
+		IsLimitQuota:   key.IsLimitQuota,
+		Quota:          key.Quota,
+		UsedQuota:      key.UsedQuota,
+		QuotaExpiresAt: key.QuotaExpiresAt,
+		RPM:            key.RPM,
+		RPD:            key.RPD,
+		IpWhitelist:    key.IpWhitelist,
+		IpBlacklist:    key.IpBlacklist,
+		Status:         key.Status,
 	}); err != nil {
 		logger.Error(ctx, err)
 	}

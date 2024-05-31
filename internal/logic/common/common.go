@@ -58,7 +58,7 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) error {
 		return err
 	}
 
-	if key.IsLimitQuota && key.Quota <= 0 {
+	if key.IsLimitQuota && (key.Quota <= 0 || (key.QuotaExpiresAt != 0 && key.QuotaExpiresAt < gtime.TimestampMilli())) {
 		err = errors.ERR_INSUFFICIENT_QUOTA
 		logger.Error(ctx, err)
 		return err
@@ -90,7 +90,7 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) error {
 		return err
 	}
 
-	if user.Quota <= 0 {
+	if user.Quota <= 0 || (user.QuotaExpiresAt != 0 && user.QuotaExpiresAt < gtime.TimestampMilli()) {
 		err = errors.ERR_INSUFFICIENT_QUOTA
 		logger.Error(ctx, err)
 		return err
@@ -122,7 +122,7 @@ func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) error {
 		return err
 	}
 
-	if app.IsLimitQuota && app.Quota <= 0 {
+	if app.IsLimitQuota && (app.Quota <= 0 || (app.QuotaExpiresAt != 0 && app.QuotaExpiresAt < gtime.TimestampMilli())) {
 		err = errors.ERR_INSUFFICIENT_QUOTA
 		logger.Error(ctx, err)
 		return err
