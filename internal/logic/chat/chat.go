@@ -149,7 +149,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 	*realModel = *reqModel
 
-	if realModel.IsForward {
+	if realModel.IsEnableForward {
 		if realModel, err = service.Model().GetTargetModel(ctx, realModel, params.Messages[len(params.Messages)-1].Content); err != nil {
 			logger.Error(ctx, err)
 			return response, err
@@ -385,7 +385,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 	*realModel = *reqModel
 
-	if realModel.IsForward {
+	if realModel.IsEnableForward {
 		if realModel, err = service.Model().GetTargetModel(ctx, realModel, params.Messages[len(params.Messages)-1].Content); err != nil {
 			logger.Error(ctx, err)
 			return err
@@ -627,9 +627,9 @@ func (s *sChat) SaveChat(ctx context.Context, model *model.Model, realModel *mod
 		chat.PromptRatio = model.PromptRatio
 		chat.CompletionRatio = model.CompletionRatio
 		chat.FixedQuota = model.FixedQuota
-		chat.IsForward = model.IsForward
+		chat.IsEnableForward = model.IsEnableForward
 
-		if chat.IsForward && model.ForwardConfig != nil {
+		if chat.IsEnableForward && model.ForwardConfig != nil {
 
 			chat.ForwardConfig = &do.ForwardConfig{
 				ForwardRule:   model.ForwardConfig.ForwardRule,

@@ -119,7 +119,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 	*realModel = *reqModel
 
-	if realModel.IsForward {
+	if realModel.IsEnableForward {
 		if realModel, err = service.Model().GetTargetModel(ctx, realModel, params.Messages[len(params.Messages)-1].Content); err != nil {
 			logger.Error(ctx, err)
 			return response, err

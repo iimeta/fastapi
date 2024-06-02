@@ -68,7 +68,7 @@ func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 		IsPublic:           result.IsPublic,
 		IsEnableModelAgent: result.IsEnableModelAgent,
 		ModelAgents:        result.ModelAgents,
-		IsForward:          result.IsForward,
+		IsEnableForward:    result.IsEnableForward,
 		Remark:             result.Remark,
 		Status:             result.Status,
 	}
@@ -118,7 +118,7 @@ func (s *sModel) GetModelById(ctx context.Context, id string) (*model.Model, err
 		IsPublic:           result.IsPublic,
 		IsEnableModelAgent: result.IsEnableModelAgent,
 		ModelAgents:        result.ModelAgents,
-		IsForward:          result.IsForward,
+		IsEnableForward:    result.IsEnableForward,
 		Remark:             result.Remark,
 		Status:             result.Status,
 	}
@@ -455,7 +455,7 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 			IsPublic:           result.IsPublic,
 			IsEnableModelAgent: result.IsEnableModelAgent,
 			ModelAgents:        result.ModelAgents,
-			IsForward:          result.IsForward,
+			IsEnableForward:    result.IsEnableForward,
 			Remark:             result.Remark,
 			Status:             result.Status,
 		}
@@ -515,7 +515,7 @@ func (s *sModel) ListAll(ctx context.Context) ([]*model.Model, error) {
 			IsPublic:           result.IsPublic,
 			IsEnableModelAgent: result.IsEnableModelAgent,
 			ModelAgents:        result.ModelAgents,
-			IsForward:          result.IsForward,
+			IsEnableForward:    result.IsEnableForward,
 			Remark:             result.Remark,
 			Status:             result.Status,
 		}
@@ -732,7 +732,7 @@ func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, ne
 		IsPublic:           newData.IsPublic,
 		IsEnableModelAgent: newData.IsEnableModelAgent,
 		ModelAgents:        newData.ModelAgents,
-		IsForward:          newData.IsForward,
+		IsEnableForward:    newData.IsEnableForward,
 		Status:             newData.Status,
 	}
 
@@ -777,7 +777,7 @@ func (s *sModel) GetTargetModel(ctx context.Context, m *model.Model, prompt stri
 		logger.Debugf(ctx, "sModel GetTargetModel time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	if !m.IsForward {
+	if !m.IsEnableForward {
 		return m, nil
 	}
 
