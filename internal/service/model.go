@@ -22,7 +22,7 @@ type (
 		GetModelBySecretKey(ctx context.Context, m, secretKey string) (*model.Model, error)
 		// 模型列表
 		List(ctx context.Context, ids []string) ([]*model.Model, error)
-		// 区别模型列表
+		// 全部模型列表
 		ListAll(ctx context.Context) ([]*model.Model, error)
 		// 根据模型ID获取模型信息并保存到缓存
 		GetModelAndSaveCache(ctx context.Context, id string) (*model.Model, error)
@@ -41,7 +41,9 @@ type (
 		// 移除缓存中的模型列表
 		RemoveCacheModel(ctx context.Context, id string)
 		// 获取目标模型
-		GetTargetModel(ctx context.Context, m *model.Model, prompt string) (model *model.Model, err error)
+		GetTargetModel(ctx context.Context, model *model.Model, prompt string) (targetModel *model.Model, err error)
+		// 获取后备模型
+		GetFallbackModel(ctx context.Context, model *model.Model) (fallbackModel *model.Model, err error)
 		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
 	}

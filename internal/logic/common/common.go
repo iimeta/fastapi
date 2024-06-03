@@ -4,13 +4,16 @@ import (
 	"context"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
-	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gregex"
+	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
+	"github.com/iimeta/fastapi-sdk/sdkerr"
+	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
+	"net"
 	"strings"
 )
 
@@ -22,116 +25,6 @@ func init() {
 
 func New() service.ICommon {
 	return &sCommon{}
-}
-
-// 核验密钥
-func (s *sCommon) VerifySecretKey(ctx context.Context, secretKey string) error {
-
-	now := gtime.TimestampMilli()
-	defer func() {
-		logger.Debugf(ctx, "sCommon VerifySecretKey time: %d", gtime.TimestampMilli()-now)
-	}()
-
-	key, err := service.App().GetCacheAppKey(ctx, secretKey)
-	if err != nil || key == nil {
-
-		if key, err = service.Key().GetKey(ctx, secretKey); err != nil {
-			logger.Error(ctx, err)
-			return errors.ERR_INVALID_API_KEY
-		}
-
-		if err = service.App().SaveCacheAppKey(ctx, key); err != nil {
-			logger.Error(ctx, err)
-			return err
-		}
-	}
-
-	if key == nil || key.Key != secretKey {
-		err = errors.ERR_INVALID_API_KEY
-		logger.Error(ctx, err)
-		return err
-	}
-
-	if key.Status == 2 {
-		err = errors.ERR_API_KEY_DISABLED
-		logger.Error(ctx, err)
-		return err
-	}
-
-	if key.IsLimitQuota && (key.Quota <= 0 || (key.QuotaExpiresAt != 0 && key.QuotaExpiresAt < gtime.TimestampMilli())) {
-		err = errors.ERR_INSUFFICIENT_QUOTA
-		logger.Error(ctx, err)
-		return err
-	}
-
-	user, err := service.User().GetCacheUser(ctx, service.Session().GetUserId(ctx))
-	if err != nil || user == nil {
-
-		if user, err = service.User().GetUser(ctx, service.Session().GetUserId(ctx)); err != nil {
-			logger.Error(ctx, err)
-			return errors.ERR_INVALID_USER
-		}
-
-		if err = service.User().SaveCacheUser(ctx, user); err != nil {
-			logger.Error(ctx, err)
-			return err
-		}
-	}
-
-	if user == nil {
-		err = errors.ERR_INVALID_USER
-		logger.Error(ctx, err)
-		return err
-	}
-
-	if user.Status == 2 {
-		err = errors.ERR_USER_DISABLED
-		logger.Error(ctx, err)
-		return err
-	}
-
-	if user.Quota <= 0 || (user.QuotaExpiresAt != 0 && user.QuotaExpiresAt < gtime.TimestampMilli()) {
-		err = errors.ERR_INSUFFICIENT_QUOTA
-		logger.Error(ctx, err)
-		return err
-	}
-
-	app, err := service.App().GetCacheApp(ctx, key.AppId)
-	if err != nil || app == nil {
-
-		if app, err = service.App().GetApp(ctx, key.AppId); err != nil {
-			logger.Error(ctx, err)
-			return errors.ERR_INVALID_APP
-		}
-
-		if err = service.App().SaveCacheApp(ctx, app); err != nil {
-			logger.Error(ctx, err)
-			return err
-		}
-	}
-
-	if app == nil {
-		err = errors.ERR_INVALID_APP
-		logger.Error(ctx, err)
-		return err
-	}
-
-	if app.Status == 2 {
-		err = errors.ERR_APP_DISABLED
-		logger.Error(ctx, err)
-		return err
-	}
-
-	if app.IsLimitQuota && (app.Quota <= 0 || (app.QuotaExpiresAt != 0 && app.QuotaExpiresAt < gtime.TimestampMilli())) {
-		err = errors.ERR_INSUFFICIENT_QUOTA
-		logger.Error(ctx, err)
-		return err
-	}
-
-	service.Session().SaveUser(ctx, user)
-	service.Session().SaveIsLimitQuota(ctx, app.IsLimitQuota, key.IsLimitQuota)
-
-	return nil
 }
 
 // 解析密钥
@@ -169,4 +62,61 @@ func (s *sCommon) RecordError(ctx context.Context, model *model.Model, key *mode
 	}, nil); err != nil {
 		logger.Error(ctx, err)
 	}
+}
+
+func IsAborted(err error) bool {
+	return errors.Is(err, context.Canceled) ||
+		gstr.Contains(err.Error(), "broken pipe") ||
+		gstr.Contains(err.Error(), "aborted")
+}
+
+func IsNeedRetry(err error) (isRetry bool, isDisabled bool) {
+
+	apiError := &sdkerr.ApiError{}
+	if errors.As(err, &apiError) {
+
+		switch apiError.HttpStatusCode {
+		case 400:
+			if errors.Is(err, sdkerr.ERR_CONTEXT_LENGTH_EXCEEDED) {
+				return false, false
+			}
+		case 401, 429:
+			if errors.Is(err, sdkerr.ERR_INVALID_API_KEY) || errors.Is(err, sdkerr.ERR_INSUFFICIENT_QUOTA) {
+				return true, true
+			}
+		}
+
+		return true, false
+	}
+
+	reqError := &sdkerr.RequestError{}
+	if errors.As(err, &reqError) {
+		return true, false
+	}
+
+	opError := &net.OpError{}
+	if errors.As(err, &opError) {
+		return true, false
+	}
+
+	return false, false
+}
+
+func IsMaxRetry(isEnableModelAgent bool, agentTotal, keyTotal, retry int) bool {
+
+	if config.Cfg.Api.Retry > 0 && retry == config.Cfg.Api.Retry {
+		return true
+	} else if config.Cfg.Api.Retry < 0 {
+		if isEnableModelAgent {
+			if retry == agentTotal {
+				return true
+			}
+		} else if retry == keyTotal {
+			return true
+		}
+	} else if config.Cfg.Api.Retry == 0 {
+		return true
+	}
+
+	return false
 }

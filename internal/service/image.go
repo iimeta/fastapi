@@ -16,9 +16,9 @@ import (
 type (
 	IImage interface {
 		// Generations
-		Generations(ctx context.Context, params sdkm.ImageRequest, retry ...int) (response sdkm.ImageResponse, err error)
+		Generations(ctx context.Context, params sdkm.ImageRequest, fallbackModel *model.Model, retry ...int) (response sdkm.ImageResponse, err error)
 		// 保存文生图聊天数据
-		SaveChat(ctx context.Context, model *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *do.Retry)
+		SaveChat(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *do.Retry)
 	}
 )
 

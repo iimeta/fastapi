@@ -9,8 +9,6 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 	sdk "github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi-sdk/sdkerr"
-	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
@@ -32,7 +30,7 @@ func New() service.IImage {
 }
 
 // Generations
-func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retry ...int) (response sdkm.ImageResponse, err error) {
+func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fallbackModel *model.Model, retry ...int) (response sdkm.ImageResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -87,10 +85,10 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 				}
 
 				if retryInfo == nil && err == nil {
-					imageRes.Usage = usage
+					imageRes.Usage = *usage
 				}
 
-				s.SaveChat(ctx, reqModel, k, &params, imageRes, retryInfo)
+				s.SaveChat(ctx, reqModel, realModel, fallbackModel, k, &params, imageRes, retryInfo)
 
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -106,14 +104,31 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 		return response, err
 	}
 
-	*realModel = *reqModel
+	if fallbackModel != nil {
+		*realModel = *fallbackModel
+	} else {
+		*realModel = *reqModel
+	}
+
 	baseUrl = realModel.BaseUrl
 	path = realModel.Path
 
-	if reqModel.IsEnableModelAgent {
+	if realModel.IsEnableModelAgent {
 
-		if agentTotal, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, reqModel); err != nil {
+		if agentTotal, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, realModel); err != nil {
 			logger.Error(ctx, err)
+
+			if realModel.IsEnableFallback {
+				if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+					retryInfo = &do.Retry{
+						IsRetry:    true,
+						RetryCount: len(retry),
+						ErrMsg:     err.Error(),
+					}
+					return s.Generations(ctx, params, fallbackModel)
+				}
+			}
+
 			return response, err
 		}
 
@@ -123,15 +138,44 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 			path = modelAgent.Path
 
 			if keyTotal, k, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
-				service.ModelAgent().RecordErrorModelAgent(ctx, reqModel, modelAgent)
 				logger.Error(ctx, err)
+
+				service.ModelAgent().RecordErrorModelAgent(ctx, realModel, modelAgent)
+
+				if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY) {
+					service.ModelAgent().DisabledModelAgent(ctx, modelAgent)
+				}
+
+				if realModel.IsEnableFallback {
+					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+						retryInfo = &do.Retry{
+							IsRetry:    true,
+							RetryCount: len(retry),
+							ErrMsg:     err.Error(),
+						}
+						return s.Generations(ctx, params, fallbackModel)
+					}
+				}
+
 				return response, err
 			}
 		}
 
 	} else {
-		if keyTotal, k, err = service.Key().PickModelKey(ctx, reqModel); err != nil {
+		if keyTotal, k, err = service.Key().PickModelKey(ctx, realModel); err != nil {
 			logger.Error(ctx, err)
+
+			if realModel.IsEnableFallback {
+				if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+					retryInfo = &do.Retry{
+						IsRetry:    true,
+						RetryCount: len(retry),
+						ErrMsg:     err.Error(),
+					}
+					return s.Generations(ctx, params, fallbackModel)
+				}
+			}
+
 			return response, err
 		}
 	}
@@ -143,6 +187,18 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 	client, err = common.NewClient(ctx, realModel, key, baseUrl, path)
 	if err != nil {
 		logger.Error(ctx, err)
+
+		if realModel.IsEnableFallback {
+			if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+				retryInfo = &do.Retry{
+					IsRetry:    true,
+					RetryCount: len(retry),
+					ErrMsg:     err.Error(),
+				}
+				return s.Generations(ctx, params, fallbackModel)
+			}
+		}
+
 		return response, err
 	}
 
@@ -151,29 +207,13 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 		logger.Error(ctx, err)
 
 		// 记录错误次数和禁用
-		service.Common().RecordError(ctx, reqModel, k, modelAgent)
+		service.Common().RecordError(ctx, realModel, k, modelAgent)
 
-		if len(retry) > 0 {
-			if config.Cfg.Api.Retry > 0 && len(retry) == config.Cfg.Api.Retry {
-				return response, err
-			} else if config.Cfg.Api.Retry < 0 {
-				if realModel.IsEnableModelAgent {
-					if len(retry) == agentTotal {
-						return response, err
-					}
-				} else if len(retry) == keyTotal {
-					return response, err
-				}
-			} else if config.Cfg.Api.Retry == 0 {
-				return response, err
-			}
-		}
-
-		isRetry, isDisabled := isNeedRetry(err)
+		isRetry, isDisabled := common.IsNeedRetry(err)
 
 		if isDisabled {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if reqModel.IsEnableModelAgent {
+				if realModel.IsEnableModelAgent {
 					service.ModelAgent().DisabledModelAgentKey(ctx, k)
 				} else {
 					service.Key().DisabledModelKey(ctx, k)
@@ -184,12 +224,28 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 		}
 
 		if isRetry {
+
+			if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
+				if realModel.IsEnableFallback {
+					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+						retryInfo = &do.Retry{
+							IsRetry:    true,
+							RetryCount: len(retry),
+							ErrMsg:     err.Error(),
+						}
+						return s.Generations(ctx, params, fallbackModel)
+					}
+				}
+				return response, err
+			}
+
 			retryInfo = &do.Retry{
 				IsRetry:    true,
 				RetryCount: len(retry),
 				ErrMsg:     err.Error(),
 			}
-			return s.Generations(ctx, params, append(retry, 1)...)
+
+			return s.Generations(ctx, params, fallbackModel, append(retry, 1)...)
 		}
 
 		return response, err
@@ -199,7 +255,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, retr
 }
 
 // 保存文生图聊天数据
-func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *do.Retry) {
+func (s *sImage) SaveChat(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *do.Retry) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -239,33 +295,55 @@ func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Ke
 		Status:       1,
 	}
 
-	if model != nil {
+	if reqModel != nil {
 
-		chat.Corp = model.Corp
-		chat.ModelId = model.Id
-		chat.Name = model.Name
-		chat.Model = model.Model
-		chat.Type = model.Type
-		chat.BillingMethod = model.BillingMethod
-		chat.PromptRatio = model.PromptRatio
-		chat.CompletionRatio = model.CompletionRatio
-		chat.FixedQuota = model.FixedQuota
-		chat.IsEnableModelAgent = model.IsEnableModelAgent
-		if chat.IsEnableModelAgent && model.ModelAgent != nil {
-			chat.ModelAgentId = model.ModelAgent.Id
-			chat.ModelAgent = &do.ModelAgent{
-				Corp:    model.ModelAgent.Corp,
-				Name:    model.ModelAgent.Name,
-				BaseUrl: model.ModelAgent.BaseUrl,
-				Path:    model.ModelAgent.Path,
-				Weight:  model.ModelAgent.Weight,
-				Remark:  model.ModelAgent.Remark,
-				Status:  model.ModelAgent.Status,
+		chat.Corp = reqModel.Corp
+		chat.ModelId = reqModel.Id
+		chat.Name = reqModel.Name
+		chat.Model = reqModel.Model
+		chat.Type = reqModel.Type
+		chat.BillingMethod = reqModel.BillingMethod
+		chat.PromptRatio = reqModel.PromptRatio
+		chat.CompletionRatio = reqModel.CompletionRatio
+		chat.FixedQuota = reqModel.FixedQuota
+		chat.IsEnableForward = reqModel.IsEnableForward
+		chat.IsEnableFallback = reqModel.IsEnableFallback
+
+		chat.RealModelId = realModel.Id
+		chat.RealModelName = realModel.Name
+		chat.RealModel = realModel.Model
+
+		chat.TotalTokens = imageRes.Usage.TotalTokens
+
+		if chat.IsEnableForward && reqModel.ForwardConfig != nil {
+			chat.ForwardConfig = &do.ForwardConfig{
+				ForwardRule:   reqModel.ForwardConfig.ForwardRule,
+				MatchRule:     reqModel.ForwardConfig.MatchRule,
+				TargetModel:   reqModel.ForwardConfig.TargetModel,
+				DecisionModel: reqModel.ForwardConfig.DecisionModel,
+				Keywords:      reqModel.ForwardConfig.Keywords,
+				TargetModels:  reqModel.ForwardConfig.TargetModels,
 			}
 		}
 
-		if imageRes.Error == nil {
-			chat.TotalTokens = imageRes.Usage.TotalTokens
+		if fallbackModel != nil && fallbackModel.FallbackConfig != nil {
+			chat.FallbackConfig = &do.FallbackConfig{
+				FallbackModel: fallbackModel.FallbackConfig.FallbackModel,
+			}
+		}
+	}
+
+	if realModel.IsEnableModelAgent && realModel.ModelAgent != nil {
+		chat.IsEnableModelAgent = realModel.IsEnableModelAgent
+		chat.ModelAgentId = realModel.ModelAgent.Id
+		chat.ModelAgent = &do.ModelAgent{
+			Corp:    realModel.ModelAgent.Corp,
+			Name:    realModel.ModelAgent.Name,
+			BaseUrl: realModel.ModelAgent.BaseUrl,
+			Path:    realModel.ModelAgent.Path,
+			Weight:  realModel.ModelAgent.Weight,
+			Remark:  realModel.ModelAgent.Remark,
+			Status:  realModel.ModelAgent.Status,
 		}
 	}
 
@@ -276,6 +354,15 @@ func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Ke
 	if imageRes.Error != nil {
 		chat.ErrMsg = imageRes.Error.Error()
 		chat.Status = -1
+	}
+
+	if imageRes.Error != nil {
+		chat.ErrMsg = imageRes.Error.Error()
+		if common.IsAborted(imageRes.Error) {
+			chat.Status = 2
+		} else {
+			chat.Status = -1
+		}
 	}
 
 	if retryInfo != nil {
@@ -296,31 +383,4 @@ func (s *sImage) SaveChat(ctx context.Context, model *model.Model, key *model.Ke
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
 		logger.Error(ctx, err)
 	}
-}
-
-func isNeedRetry(err error) (isRetry bool, isDisabled bool) {
-
-	apiError := &sdkerr.ApiError{}
-	if errors.As(err, &apiError) {
-
-		switch apiError.HttpStatusCode {
-		case 400:
-			if errors.Is(err, sdkerr.ERR_CONTEXT_LENGTH_EXCEEDED) {
-				return false, false
-			}
-		case 401, 429:
-			if errors.Is(err, sdkerr.ERR_INVALID_API_KEY) || errors.Is(err, sdkerr.ERR_INSUFFICIENT_QUOTA) {
-				return true, true
-			}
-		}
-
-		return true, false
-	}
-
-	reqError := &sdkerr.RequestError{}
-	if errors.As(err, &reqError) {
-		return true, false
-	}
-
-	return false, false
 }

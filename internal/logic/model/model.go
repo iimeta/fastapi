@@ -69,6 +69,7 @@ func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 		IsEnableModelAgent: result.IsEnableModelAgent,
 		ModelAgents:        result.ModelAgents,
 		IsEnableForward:    result.IsEnableForward,
+		IsEnableFallback:   result.IsEnableFallback,
 		Remark:             result.Remark,
 		Status:             result.Status,
 	}
@@ -81,6 +82,12 @@ func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 			DecisionModel: result.ForwardConfig.DecisionModel,
 			Keywords:      result.ForwardConfig.Keywords,
 			TargetModels:  result.ForwardConfig.TargetModels,
+		}
+	}
+
+	if result.FallbackConfig != nil {
+		detail.FallbackConfig = &model.FallbackConfig{
+			FallbackModel: result.FallbackConfig.FallbackModel,
 		}
 	}
 
@@ -119,6 +126,7 @@ func (s *sModel) GetModelById(ctx context.Context, id string) (*model.Model, err
 		IsEnableModelAgent: result.IsEnableModelAgent,
 		ModelAgents:        result.ModelAgents,
 		IsEnableForward:    result.IsEnableForward,
+		IsEnableFallback:   result.IsEnableFallback,
 		Remark:             result.Remark,
 		Status:             result.Status,
 	}
@@ -131,6 +139,12 @@ func (s *sModel) GetModelById(ctx context.Context, id string) (*model.Model, err
 			DecisionModel: result.ForwardConfig.DecisionModel,
 			Keywords:      result.ForwardConfig.Keywords,
 			TargetModels:  result.ForwardConfig.TargetModels,
+		}
+	}
+
+	if result.FallbackConfig != nil {
+		detail.FallbackConfig = &model.FallbackConfig{
+			FallbackModel: result.FallbackConfig.FallbackModel,
 		}
 	}
 
@@ -456,6 +470,7 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 			IsEnableModelAgent: result.IsEnableModelAgent,
 			ModelAgents:        result.ModelAgents,
 			IsEnableForward:    result.IsEnableForward,
+			IsEnableFallback:   result.IsEnableFallback,
 			Remark:             result.Remark,
 			Status:             result.Status,
 		}
@@ -468,6 +483,12 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 				DecisionModel: result.ForwardConfig.DecisionModel,
 				Keywords:      result.ForwardConfig.Keywords,
 				TargetModels:  result.ForwardConfig.TargetModels,
+			}
+		}
+
+		if result.FallbackConfig != nil {
+			m.FallbackConfig = &model.FallbackConfig{
+				FallbackModel: result.FallbackConfig.FallbackModel,
 			}
 		}
 
@@ -516,6 +537,7 @@ func (s *sModel) ListAll(ctx context.Context) ([]*model.Model, error) {
 			IsEnableModelAgent: result.IsEnableModelAgent,
 			ModelAgents:        result.ModelAgents,
 			IsEnableForward:    result.IsEnableForward,
+			IsEnableFallback:   result.IsEnableFallback,
 			Remark:             result.Remark,
 			Status:             result.Status,
 		}
@@ -528,6 +550,12 @@ func (s *sModel) ListAll(ctx context.Context) ([]*model.Model, error) {
 				DecisionModel: result.ForwardConfig.DecisionModel,
 				Keywords:      result.ForwardConfig.Keywords,
 				TargetModels:  result.ForwardConfig.TargetModels,
+			}
+		}
+
+		if result.FallbackConfig != nil {
+			m.FallbackConfig = &model.FallbackConfig{
+				FallbackModel: result.FallbackConfig.FallbackModel,
 			}
 		}
 
@@ -733,6 +761,7 @@ func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, ne
 		IsEnableModelAgent: newData.IsEnableModelAgent,
 		ModelAgents:        newData.ModelAgents,
 		IsEnableForward:    newData.IsEnableForward,
+		IsEnableFallback:   newData.IsEnableFallback,
 		Status:             newData.Status,
 	}
 
@@ -744,6 +773,12 @@ func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, ne
 			DecisionModel: newData.ForwardConfig.DecisionModel,
 			Keywords:      newData.ForwardConfig.Keywords,
 			TargetModels:  newData.ForwardConfig.TargetModels,
+		}
+	}
+
+	if newData.FallbackConfig != nil {
+		m.FallbackConfig = &model.FallbackConfig{
+			FallbackModel: newData.FallbackConfig.FallbackModel,
 		}
 	}
 
@@ -770,21 +805,21 @@ func (s *sModel) RemoveCacheModel(ctx context.Context, id string) {
 }
 
 // 获取目标模型
-func (s *sModel) GetTargetModel(ctx context.Context, m *model.Model, prompt string) (model *model.Model, err error) {
+func (s *sModel) GetTargetModel(ctx context.Context, model *model.Model, prompt string) (targetModel *model.Model, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "sModel GetTargetModel time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	if !m.IsEnableForward {
-		return m, nil
+	if !model.IsEnableForward {
+		return model, nil
 	}
 
-	if m.ForwardConfig.ForwardRule == 1 {
+	if model.ForwardConfig.ForwardRule == 1 {
 
-		if model, err = s.GetCacheModel(ctx, m.ForwardConfig.TargetModel); err != nil || model == nil {
-			if model, err = s.GetModelAndSaveCache(ctx, m.ForwardConfig.TargetModel); err != nil {
+		if targetModel, err = s.GetCacheModel(ctx, model.ForwardConfig.TargetModel); err != nil || targetModel == nil {
+			if targetModel, err = s.GetModelAndSaveCache(ctx, model.ForwardConfig.TargetModel); err != nil {
 				logger.Error(ctx, err)
 				return nil, err
 			}
@@ -792,15 +827,15 @@ func (s *sModel) GetTargetModel(ctx context.Context, m *model.Model, prompt stri
 
 	} else {
 
-		keywords := m.ForwardConfig.Keywords
-		if slices.Contains(m.ForwardConfig.MatchRule, 2) {
+		keywords := model.ForwardConfig.Keywords
+		if slices.Contains(model.ForwardConfig.MatchRule, 2) {
 
 			for i, keyword := range keywords {
 
 				if gregex.IsMatchString(gstr.ToLower(gstr.TrimAll(keyword)), gstr.ToLower(gstr.TrimAll(prompt))) {
 
-					if model, err = s.GetCacheModel(ctx, m.ForwardConfig.TargetModels[i]); err != nil || model == nil {
-						if model, err = s.GetModelAndSaveCache(ctx, m.ForwardConfig.TargetModels[i]); err != nil {
+					if targetModel, err = s.GetCacheModel(ctx, model.ForwardConfig.TargetModels[i]); err != nil || targetModel == nil {
+						if targetModel, err = s.GetModelAndSaveCache(ctx, model.ForwardConfig.TargetModels[i]); err != nil {
 							logger.Error(ctx, err)
 							return nil, err
 						}
@@ -809,15 +844,15 @@ func (s *sModel) GetTargetModel(ctx context.Context, m *model.Model, prompt stri
 			}
 		}
 
-		if model == nil && slices.Contains(m.ForwardConfig.MatchRule, 1) {
+		if targetModel == nil && slices.Contains(model.ForwardConfig.MatchRule, 1) {
 
-			decisionModel, err := s.GetCacheModel(ctx, m.ForwardConfig.DecisionModel)
+			decisionModel, err := s.GetCacheModel(ctx, model.ForwardConfig.DecisionModel)
 			if err != nil || decisionModel == nil {
-				decisionModel, err = s.GetModelAndSaveCache(ctx, m.ForwardConfig.DecisionModel)
+				decisionModel, err = s.GetModelAndSaveCache(ctx, model.ForwardConfig.DecisionModel)
 			}
 
 			if decisionModel == nil || decisionModel.Status != 1 {
-				return m, nil
+				return model, nil
 			}
 
 			systemPrompt := "You are an emotionless question judgment expert. You will only return the content within the options and will not add any other information. The enumerated content options that can be returned are as follows: [-1%s]"
@@ -849,7 +884,7 @@ func (s *sModel) GetTargetModel(ctx context.Context, m *model.Model, prompt stri
 			response, err := service.Chat().SmartCompletions(ctx, sdkm.ChatCompletionRequest{
 				Model:    decisionModel.Model,
 				Messages: messages,
-			}, decisionModel)
+			}, decisionModel, nil)
 
 			if err != nil {
 				logger.Error(ctx, err)
@@ -863,12 +898,12 @@ func (s *sModel) GetTargetModel(ctx context.Context, m *model.Model, prompt stri
 				if index, err := strconv.Atoi(response.Choices[0].Message.Content); err == nil {
 
 					if index == -1 {
-						return m, nil
+						return model, nil
 					}
 
-					model, err = s.GetCacheModel(ctx, m.ForwardConfig.TargetModels[index])
-					if err != nil || model == nil {
-						if model, err = s.GetModelAndSaveCache(ctx, m.ForwardConfig.TargetModels[index]); err != nil {
+					targetModel, err = s.GetCacheModel(ctx, model.ForwardConfig.TargetModels[index])
+					if err != nil || targetModel == nil {
+						if targetModel, err = s.GetModelAndSaveCache(ctx, model.ForwardConfig.TargetModels[index]); err != nil {
 							logger.Error(ctx, err)
 							return nil, err
 						}
@@ -878,11 +913,29 @@ func (s *sModel) GetTargetModel(ctx context.Context, m *model.Model, prompt stri
 		}
 	}
 
-	if model == nil || model.Status != 1 {
-		return m, nil
+	if targetModel == nil || targetModel.Status != 1 {
+		return model, nil
 	}
 
-	return s.GetTargetModel(ctx, model, prompt)
+	return s.GetTargetModel(ctx, targetModel, prompt)
+}
+
+// 获取后备模型
+func (s *sModel) GetFallbackModel(ctx context.Context, model *model.Model) (fallbackModel *model.Model, err error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModel GetFallbackModel time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	if fallbackModel, err = s.GetCacheModel(ctx, model.FallbackConfig.FallbackModel); err != nil || fallbackModel == nil {
+		if fallbackModel, err = s.GetModelAndSaveCache(ctx, model.FallbackConfig.FallbackModel); err != nil {
+			logger.Error(ctx, err)
+			return nil, err
+		}
+	}
+
+	return fallbackModel, nil
 }
 
 // 变更订阅

@@ -14,8 +14,6 @@ import (
 
 type (
 	ICommon interface {
-		// 核验密钥
-		VerifySecretKey(ctx context.Context, secretKey string) error
 		// 解析密钥
 		ParseSecretKey(ctx context.Context, secretKey string) (int, int, error)
 		// 记录错误次数和禁用

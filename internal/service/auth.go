@@ -11,6 +11,8 @@ import (
 
 type (
 	IAuth interface {
+		Authenticator(ctx context.Context, secretKey string) error
+		// 核验密钥
 		VerifySecretKey(ctx context.Context, secretKey string) error
 	}
 )
