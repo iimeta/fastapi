@@ -295,46 +295,43 @@ func (s *sImage) SaveChat(ctx context.Context, reqModel, realModel, fallbackMode
 		Status:       1,
 	}
 
-	if reqModel != nil {
+	chat.Corp = reqModel.Corp
+	chat.ModelId = reqModel.Id
+	chat.Name = reqModel.Name
+	chat.Model = reqModel.Model
+	chat.Type = reqModel.Type
+	chat.BillingMethod = reqModel.BillingMethod
+	chat.PromptRatio = reqModel.PromptRatio
+	chat.CompletionRatio = reqModel.CompletionRatio
+	chat.FixedQuota = reqModel.FixedQuota
+	chat.IsEnableForward = reqModel.IsEnableForward
+	chat.IsEnableModelAgent = realModel.IsEnableModelAgent
+	chat.RealModelId = realModel.Id
+	chat.RealModelName = realModel.Name
+	chat.RealModel = realModel.Model
 
-		chat.Corp = reqModel.Corp
-		chat.ModelId = reqModel.Id
-		chat.Name = reqModel.Name
-		chat.Model = reqModel.Model
-		chat.Type = reqModel.Type
-		chat.BillingMethod = reqModel.BillingMethod
-		chat.PromptRatio = reqModel.PromptRatio
-		chat.CompletionRatio = reqModel.CompletionRatio
-		chat.FixedQuota = reqModel.FixedQuota
-		chat.IsEnableForward = reqModel.IsEnableForward
-		chat.IsEnableFallback = reqModel.IsEnableFallback
+	chat.TotalTokens = imageRes.Usage.TotalTokens
 
-		chat.RealModelId = realModel.Id
-		chat.RealModelName = realModel.Name
-		chat.RealModel = realModel.Model
-
-		chat.TotalTokens = imageRes.Usage.TotalTokens
-
-		if chat.IsEnableForward && reqModel.ForwardConfig != nil {
-			chat.ForwardConfig = &do.ForwardConfig{
-				ForwardRule:   reqModel.ForwardConfig.ForwardRule,
-				MatchRule:     reqModel.ForwardConfig.MatchRule,
-				TargetModel:   reqModel.ForwardConfig.TargetModel,
-				DecisionModel: reqModel.ForwardConfig.DecisionModel,
-				Keywords:      reqModel.ForwardConfig.Keywords,
-				TargetModels:  reqModel.ForwardConfig.TargetModels,
-			}
-		}
-
-		if fallbackModel != nil && fallbackModel.FallbackConfig != nil {
-			chat.FallbackConfig = &do.FallbackConfig{
-				FallbackModel: fallbackModel.FallbackConfig.FallbackModel,
-			}
+	if chat.IsEnableForward && reqModel.ForwardConfig != nil {
+		chat.ForwardConfig = &do.ForwardConfig{
+			ForwardRule:   reqModel.ForwardConfig.ForwardRule,
+			MatchRule:     reqModel.ForwardConfig.MatchRule,
+			TargetModel:   reqModel.ForwardConfig.TargetModel,
+			DecisionModel: reqModel.ForwardConfig.DecisionModel,
+			Keywords:      reqModel.ForwardConfig.Keywords,
+			TargetModels:  reqModel.ForwardConfig.TargetModels,
 		}
 	}
 
-	if realModel.IsEnableModelAgent && realModel.ModelAgent != nil {
-		chat.IsEnableModelAgent = realModel.IsEnableModelAgent
+	if fallbackModel != nil {
+		chat.IsEnableFallback = true
+		chat.FallbackConfig = &do.FallbackConfig{
+			FallbackModel:     fallbackModel.Model,
+			FallbackModelName: fallbackModel.Name,
+		}
+	}
+
+	if chat.IsEnableModelAgent && realModel.ModelAgent != nil {
 		chat.ModelAgentId = realModel.ModelAgent.Id
 		chat.ModelAgent = &do.ModelAgent{
 			Corp:    realModel.ModelAgent.Corp,
@@ -349,11 +346,6 @@ func (s *sImage) SaveChat(ctx context.Context, reqModel, realModel, fallbackMode
 
 	if key != nil {
 		chat.Key = key.Key
-	}
-
-	if imageRes.Error != nil {
-		chat.ErrMsg = imageRes.Error.Error()
-		chat.Status = -1
 	}
 
 	if imageRes.Error != nil {

@@ -45,5 +45,6 @@ type ForwardConfig struct {
 }
 
 type FallbackConfig struct {
-	FallbackModel string `bson:"fallback_model,omitempty"` // 后备模型
+	FallbackModel     string `bson:"fallback_model,omitempty"`      // 后备模型
+	FallbackModelName string `bson:"fallback_model_name,omitempty"` // 后备模型名称
 }
