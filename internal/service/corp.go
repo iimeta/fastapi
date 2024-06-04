@@ -21,7 +21,7 @@ type (
 		// 根据公司ID获取公司信息并保存到缓存
 		GetCorpAndSaveCache(ctx context.Context, id string) (*model.Corp, error)
 		// 保存公司到缓存
-		SaveCache(ctx context.Context, m *model.Corp) error
+		SaveCache(ctx context.Context, corp *model.Corp) error
 		// 保存公司列表到缓存
 		SaveCacheList(ctx context.Context, corps []*model.Corp) error
 		// 获取缓存中的公司信息

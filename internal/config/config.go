@@ -41,12 +41,17 @@ func init() {
 
 // 配置信息
 type Config struct {
-	ApiServerAddress string      `json:"api_server_address"`
-	Http             *Http       `json:"http"`
-	Api              *Api        `json:"api"`
-	Midjourney       *Midjourney `json:"midjourney"`
-	Local            *Local      `json:"local"`
-	Debug            bool        `json:"debug"`
+	Core             Core       `json:"core"`
+	ApiServerAddress string     `json:"api_server_address"`
+	Http             Http       `json:"http"`
+	Api              Api        `json:"api"`
+	Midjourney       Midjourney `json:"midjourney"`
+	Local            Local      `json:"local"`
+	Debug            bool       `json:"debug"`
+}
+
+type Core struct {
+	ChannelPrefix string `json:"channel_prefix"`
 }
 
 type Api struct {
@@ -62,8 +67,8 @@ type Http struct {
 }
 
 type Midjourney struct {
-	CdnUrl          string           `json:"cdn_url"`
-	MidjourneyProxy *MidjourneyProxy `json:"midjourney_proxy"`
+	CdnUrl          string          `json:"cdn_url"`
+	MidjourneyProxy MidjourneyProxy `json:"midjourney_proxy"`
 }
 
 type MidjourneyProxy struct {

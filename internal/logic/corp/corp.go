@@ -109,14 +109,14 @@ func (s *sCorp) GetCorpAndSaveCache(ctx context.Context, id string) (*model.Corp
 }
 
 // 保存公司到缓存
-func (s *sCorp) SaveCache(ctx context.Context, m *model.Corp) error {
+func (s *sCorp) SaveCache(ctx context.Context, corp *model.Corp) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "sCorp SaveCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	return s.SaveCacheList(ctx, []*model.Corp{m})
+	return s.SaveCacheList(ctx, []*model.Corp{corp})
 }
 
 // 保存公司列表到缓存
@@ -238,7 +238,7 @@ func (s *sCorp) UpdateCacheCorp(ctx context.Context, newData *entity.Corp) {
 		logger.Debugf(ctx, "sCorp UpdateCacheCorp time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	m := &model.Corp{
+	corp := &model.Corp{
 		Id:     newData.Id,
 		Name:   newData.Name,
 		Code:   newData.Code,
@@ -246,7 +246,7 @@ func (s *sCorp) UpdateCacheCorp(ctx context.Context, newData *entity.Corp) {
 		Status: newData.Status,
 	}
 
-	if err := s.SaveCache(ctx, m); err != nil {
+	if err := s.SaveCache(ctx, corp); err != nil {
 		logger.Error(ctx, err)
 	}
 }

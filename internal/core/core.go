@@ -195,6 +195,8 @@ func init() {
 				err = service.App().Subscribe(ctx, msg.Payload)
 			case consts.CHANGE_CHANNEL_APP_KEY:
 				err = service.App().SubscribeKey(ctx, msg.Payload)
+			case consts.CHANGE_CHANNEL_CORP:
+				err = service.Corp().Subscribe(ctx, msg.Payload)
 			case consts.CHANGE_CHANNEL_MODEL:
 				err = service.Model().Subscribe(ctx, msg.Payload)
 			case consts.CHANGE_CHANNEL_KEY:
