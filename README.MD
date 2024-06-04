@@ -43,8 +43,8 @@
 ## Docker部署
 ### [传送门](https://github.com/iimeta/fastapi/tree/docker)
 
-### [部署视频](https://www.fastapi.ai/public/video/install.mp4)
-https://www.fastapi.ai/public/video/install.mp4
+### [部署视频](https://files.fastapi.ai/public/video/install.mp4)
+https://files.fastapi.ai/public/video/install.mp4
 
 ## 公益站点
 
