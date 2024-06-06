@@ -148,9 +148,7 @@ func (s *sModelAgent) ListAll(ctx context.Context) ([]*model.ModelAgent, error) 
 		logger.Debugf(ctx, "sModelAgent ListAll time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	filter := bson.M{
-		"status": 1,
-	}
+	filter := bson.M{}
 
 	results, err := dao.ModelAgent.Find(ctx, filter, "-weight")
 	if err != nil {

@@ -185,21 +185,48 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		return nil, err
 	}
 
-	userModelList := make([]*model.Model, 0)
+	userModels := make([]*model.Model, 0)
+	userWildcardModels := make([]*model.Model, 0)
+
 	for _, v := range models {
+
+		if gstr.Contains(v.Name, "*") {
+			userWildcardModels = append(userWildcardModels, v)
+		}
+
 		if v.Name == m {
-			userModelList = append(userModelList, v)
+			userModels = append(userModels, v)
 			break
 		}
 	}
 
 	for _, v := range models {
+
+		if gstr.Contains(v.Model, "*") {
+			userWildcardModels = append(userWildcardModels, v)
+		}
+
 		if v.Model == m {
-			userModelList = append(userModelList, v)
+			userModels = append(userModels, v)
 		}
 	}
 
-	if len(userModelList) == 0 {
+	if len(userModels) == 0 && len(userWildcardModels) > 0 {
+
+		for _, v := range userWildcardModels {
+			if gregex.IsMatchString(v.Name, m) {
+				userModels = append(userModels, v)
+			}
+		}
+
+		for _, v := range userWildcardModels {
+			if gregex.IsMatchString(v.Model, m) {
+				userModels = append(userModels, v)
+			}
+		}
+	}
+
+	if len(userModels) == 0 {
 		err = errors.ERR_MODEL_NOT_FOUND
 		logger.Error(ctx, err)
 		return nil, err
@@ -217,7 +244,9 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		return nil, err
 	}
 
-	keyModelList := make([]*model.Model, 0)
+	keyModels := make([]*model.Model, 0)
+	keyWildcardModels := make([]*model.Model, 0)
+
 	if len(key.Models) > 0 {
 
 		models, err = s.GetCacheList(ctx, key.Models...)
@@ -229,26 +258,53 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		}
 
 		for _, v := range models {
+
+			if gstr.Contains(v.Name, "*") {
+				keyWildcardModels = append(keyWildcardModels, v)
+			}
+
 			if v.Name == m {
-				keyModelList = append(keyModelList, v)
+				keyModels = append(keyModels, v)
 				break
 			}
 		}
 
 		for _, v := range models {
+
+			if gstr.Contains(v.Model, "*") {
+				keyWildcardModels = append(keyWildcardModels, v)
+			}
+
 			if v.Model == m {
-				keyModelList = append(keyModelList, v)
+				keyModels = append(keyModels, v)
 			}
 		}
 
-		if len(keyModelList) == 0 {
+		if len(keyModels) == 0 && len(keyWildcardModels) > 0 {
+
+			for _, v := range keyWildcardModels {
+				if gregex.IsMatchString(v.Name, m) {
+					keyModels = append(keyModels, v)
+				}
+			}
+
+			for _, v := range keyWildcardModels {
+				if gregex.IsMatchString(v.Model, m) {
+					keyModels = append(keyModels, v)
+				}
+			}
+		}
+
+		if len(keyModels) == 0 {
 			err = errors.ERR_MODEL_NOT_FOUND
 			logger.Error(ctx, err)
 			return nil, err
 		}
 	}
 
-	appModelList := make([]*model.Model, 0)
+	appModels := make([]*model.Model, 0)
+	appWildcardModels := make([]*model.Model, 0)
+
 	if len(app.Models) > 0 {
 
 		models, err = s.GetCacheList(ctx, app.Models...)
@@ -260,19 +316,44 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		}
 
 		for _, v := range models {
+
+			if gstr.Contains(v.Name, "*") {
+				appWildcardModels = append(appWildcardModels, v)
+			}
+
 			if v.Name == m {
-				appModelList = append(appModelList, v)
+				appModels = append(appModels, v)
 				break
 			}
 		}
 
 		for _, v := range models {
+
+			if gstr.Contains(v.Model, "*") {
+				appWildcardModels = append(appWildcardModels, v)
+			}
+
 			if v.Model == m {
-				appModelList = append(appModelList, v)
+				appModels = append(appModels, v)
 			}
 		}
 
-		if len(appModelList) == 0 {
+		if len(appModels) == 0 && len(appWildcardModels) > 0 {
+
+			for _, v := range appWildcardModels {
+				if gregex.IsMatchString(v.Name, m) {
+					appModels = append(appModels, v)
+				}
+			}
+
+			for _, v := range appWildcardModels {
+				if gregex.IsMatchString(v.Model, m) {
+					appModels = append(appModels, v)
+				}
+			}
+		}
+
+		if len(appModels) == 0 {
 			err = errors.ERR_MODEL_NOT_FOUND
 			logger.Error(ctx, err)
 			return nil, err
@@ -280,23 +361,23 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 	}
 
 	isModelDisabled := false
-	if len(keyModelList) > 0 { // 密钥层模型权限
+	if len(keyModels) > 0 { // 密钥层模型权限
 
-		for _, keyModel := range keyModelList {
+		for _, keyModel := range keyModels {
 
-			if keyModel.Name == m {
+			if keyModel.Name == m || (len(keyWildcardModels) > 0 && gregex.IsMatchString(keyModel.Name, m)) {
 
 				if keyModel.Status == 2 {
 					isModelDisabled = true
 					continue
 				}
 
-				if len(appModelList) > 0 {
+				if len(appModels) > 0 {
 
-					for _, appModel := range appModelList {
+					for _, appModel := range appModels {
 						// 应用层模型权限校验
 						if keyModel.Id == appModel.Id {
-							for _, userModel := range userModelList {
+							for _, userModel := range userModels {
 								// 用户层模型权限校验
 								if appModel.Id == userModel.Id {
 									return keyModel, nil
@@ -307,7 +388,7 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 
 				} else {
 
-					for _, userModel := range userModelList {
+					for _, userModel := range userModels {
 						// 用户层模型权限校验
 						if keyModel.Id == userModel.Id {
 							return keyModel, nil
@@ -317,21 +398,21 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 			}
 		}
 
-		for _, keyModel := range keyModelList {
+		for _, keyModel := range keyModels {
 
-			if keyModel.Model == m {
+			if keyModel.Model == m || (len(keyWildcardModels) > 0 && gregex.IsMatchString(keyModel.Model, m)) {
 
 				if keyModel.Status == 2 {
 					isModelDisabled = true
 					continue
 				}
 
-				if len(appModelList) > 0 {
+				if len(appModels) > 0 {
 
-					for _, appModel := range appModelList {
+					for _, appModel := range appModels {
 						// 应用层模型权限校验
 						if keyModel.Id == appModel.Id {
-							for _, userModel := range userModelList {
+							for _, userModel := range userModels {
 								// 用户层模型权限校验
 								if appModel.Id == userModel.Id {
 									return keyModel, nil
@@ -342,7 +423,7 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 
 				} else {
 
-					for _, userModel := range userModelList {
+					for _, userModel := range userModels {
 						// 用户层模型权限校验
 						if keyModel.Id == userModel.Id {
 							return keyModel, nil
@@ -352,18 +433,18 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 			}
 		}
 
-	} else if len(appModelList) > 0 { // 应用层模型权限
+	} else if len(appModels) > 0 { // 应用层模型权限
 
-		for _, appModel := range appModelList {
+		for _, appModel := range appModels {
 
-			if appModel.Name == m {
+			if appModel.Name == m || (len(appWildcardModels) > 0 && gregex.IsMatchString(appModel.Name, m)) {
 
 				if appModel.Status == 2 {
 					isModelDisabled = true
 					continue
 				}
 
-				for _, userModel := range userModelList {
+				for _, userModel := range userModels {
 					// 用户层模型权限校验
 					if appModel.Id == userModel.Id {
 						return appModel, nil
@@ -372,16 +453,16 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 			}
 		}
 
-		for _, appModel := range appModelList {
+		for _, appModel := range appModels {
 
-			if appModel.Model == m {
+			if appModel.Model == m || (len(appWildcardModels) > 0 && gregex.IsMatchString(appModel.Model, m)) {
 
 				if appModel.Status == 2 {
 					isModelDisabled = true
 					continue
 				}
 
-				for _, userModel := range userModelList {
+				for _, userModel := range userModels {
 					// 用户层模型权限校验
 					if appModel.Id == userModel.Id {
 						return appModel, nil
@@ -390,11 +471,11 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 			}
 		}
 
-	} else if len(userModelList) > 0 { // 用户层模型权限
+	} else if len(userModels) > 0 { // 用户层模型权限
 
-		for _, userModel := range userModelList {
+		for _, userModel := range userModels {
 
-			if userModel.Name == m {
+			if userModel.Name == m || (len(userWildcardModels) > 0 && gregex.IsMatchString(userModel.Name, m)) {
 
 				if userModel.Status == 2 {
 					isModelDisabled = true
@@ -405,9 +486,9 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 			}
 		}
 
-		for _, userModel := range userModelList {
+		for _, userModel := range userModels {
 
-			if userModel.Model == m {
+			if userModel.Model == m || (len(userWildcardModels) > 0 && gregex.IsMatchString(userModel.Model, m)) {
 
 				if userModel.Status == 2 {
 					isModelDisabled = true
@@ -506,9 +587,7 @@ func (s *sModel) ListAll(ctx context.Context) ([]*model.Model, error) {
 		logger.Debugf(ctx, "sModel ListAll time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	filter := bson.M{
-		"status": 1,
-	}
+	filter := bson.M{}
 
 	results, err := dao.Model.Find(ctx, filter, "-updated_at")
 	if err != nil {

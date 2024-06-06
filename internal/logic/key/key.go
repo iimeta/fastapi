@@ -122,8 +122,7 @@ func (s *sKey) List(ctx context.Context, typ int) ([]*model.Key, error) {
 	}()
 
 	filter := bson.M{
-		"type":   typ,
-		"status": 1,
+		"type": typ,
 	}
 
 	results, err := dao.Key.Find(ctx, filter, "-updated_at")

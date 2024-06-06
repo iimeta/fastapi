@@ -19,6 +19,7 @@ func New() service.IAuth {
 	return &sAuth{}
 }
 
+// 身份核验
 func (s *sAuth) Authenticator(ctx context.Context, secretKey string) error {
 
 	now := gtime.TimestampMilli()

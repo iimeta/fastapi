@@ -7,6 +7,7 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/gogf/gf/v2/text/gstr"
 	sdk "github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/dao"
@@ -56,7 +57,8 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := &sdkm.Usage{
-			TotalTokens: reqModel.FixedQuota,
+			CompletionTokens: reqModel.FixedQuota,
+			TotalTokens:      reqModel.FixedQuota,
 		}
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -181,8 +183,11 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 	}
 
 	request := params
-	request.Model = realModel.Model
 	key = k.Key
+
+	if !gstr.Contains(realModel.Model, "*") {
+		request.Model = realModel.Model
+	}
 
 	client, err = common.NewClient(ctx, realModel, key, baseUrl, path)
 	if err != nil {
@@ -310,6 +315,8 @@ func (s *sImage) SaveChat(ctx context.Context, reqModel, realModel, fallbackMode
 	chat.RealModelName = realModel.Name
 	chat.RealModel = realModel.Model
 
+	chat.PromptTokens = imageRes.Usage.PromptTokens
+	chat.CompletionTokens = imageRes.Usage.CompletionTokens
 	chat.TotalTokens = imageRes.Usage.TotalTokens
 
 	if chat.IsEnableForward && reqModel.ForwardConfig != nil {

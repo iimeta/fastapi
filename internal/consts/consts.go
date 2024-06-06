@@ -12,6 +12,7 @@ const (
 	KEY_IS_LIMIT_QUOTA_KEY = "key_is_limit_quota"
 
 	CORP_OPENAI     = "OpenAI"
+	CORP_AZURE      = "Azure"
 	CORP_BAIDU      = "Baidu"
 	CORP_XFYUN      = "Xfyun"
 	CORP_ALIYUN     = "Aliyun"

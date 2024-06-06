@@ -68,9 +68,7 @@ func (s *sUser) List(ctx context.Context) ([]*model.User, error) {
 		logger.Debugf(ctx, "sUser List time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	filter := bson.M{
-		"status": 1,
-	}
+	filter := bson.M{}
 
 	results, err := dao.User.Find(ctx, filter)
 	if err != nil {

@@ -54,7 +54,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 				response.Usage = new(sdkm.Usage)
 				model := reqModel.Model
 
-				if common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI {
+				if common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI && common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_AZURE {
 					model = consts.DEFAULT_MODEL
 				} else {
 					if _, err := tiktoken.EncodingForModel(model); err != nil {

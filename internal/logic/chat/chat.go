@@ -7,6 +7,7 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/gogf/gf/v2/text/gstr"
 	sdk "github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi-sdk/tiktoken"
@@ -67,7 +68,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				response.Usage = new(sdkm.Usage)
 				model := reqModel.Model
 
-				if common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI {
+				if common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI && common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_AZURE {
 					model = consts.DEFAULT_MODEL
 				} else {
 					if _, err := tiktoken.EncodingForModel(model); err != nil {
@@ -233,8 +234,11 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 	}
 
 	request := params
-	request.Model = realModel.Model
 	key = k.Key
+
+	if !gstr.Contains(realModel.Model, "*") {
+		request.Model = realModel.Model
+	}
 
 	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
 		key = getAccessToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
@@ -364,7 +368,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				usage = new(sdkm.Usage)
 				model := reqModel.Model
 
-				if common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI {
+				if common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI && common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_AZURE {
 					model = consts.DEFAULT_MODEL
 				} else {
 					if _, err := tiktoken.EncodingForModel(model); err != nil {
@@ -524,8 +528,11 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	}
 
 	request := params
-	request.Model = realModel.Model
 	key = k.Key
+
+	if !gstr.Contains(realModel.Model, "*") {
+		request.Model = realModel.Model
+	}
 
 	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
 		key = getAccessToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)

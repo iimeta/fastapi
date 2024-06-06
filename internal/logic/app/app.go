@@ -73,9 +73,7 @@ func (s *sApp) List(ctx context.Context) ([]*model.App, error) {
 		logger.Debugf(ctx, "sApp List time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	filter := bson.M{
-		"status": 1,
-	}
+	filter := bson.M{}
 
 	results, err := dao.App.Find(ctx, filter, "-updated_at")
 	if err != nil {
