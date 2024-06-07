@@ -2,7 +2,7 @@ package model
 
 type Model struct {
 	Id                 string          `json:"id,omitempty"`                    // ID
-	Corp               string          `json:"corp,omitempty"`                  // 公司[OpenAI;Baidu;Xfyun;Aliyun;ZhipuAI;Google;DeepSeek;Midjourney]
+	Corp               string          `json:"corp,omitempty"`                  // 公司
 	Name               string          `json:"name,omitempty"`                  // 模型名称
 	Model              string          `json:"model,omitempty"`                 // 模型
 	Type               int             `json:"type,omitempty"`                  // 模型类型[1:文生文, 2:文生图, 3:图生文, 4:图生图, 5:文生语音, 6:语音生文, 100:多模态]
@@ -27,8 +27,8 @@ type Model struct {
 	Status             int             `json:"status,omitempty"`                // 状态[1:正常, 2:禁用, -1:删除]
 	Creator            string          `json:"creator,omitempty"`               // 创建人
 	Updater            string          `json:"updater,omitempty"`               // 更新人
-	CreatedAt          string          `json:"created_at,omitempty"`            // 创建时间
-	UpdatedAt          string          `json:"updated_at,omitempty"`            // 更新时间
+	CreatedAt          int64           `json:"created_at,omitempty"`            // 创建时间
+	UpdatedAt          int64           `json:"updated_at,omitempty"`            // 更新时间
 }
 
 type ForwardConfig struct {

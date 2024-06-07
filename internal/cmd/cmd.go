@@ -50,6 +50,12 @@ var (
 				v1.Middleware(middleware)
 				v1.Middleware(middlewareHandlerResponse)
 
+				v1.Group("/", func(g *ghttp.RouterGroup) {
+					g.Bind(
+						dashboard.NewV1(),
+					)
+				})
+
 				v1.Group("/chat", func(g *ghttp.RouterGroup) {
 					g.Bind(
 						chat.NewV1(),

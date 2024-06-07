@@ -13,4 +13,5 @@ import (
 type IDashboardV1 interface {
 	Subscription(ctx context.Context, req *v1.SubscriptionReq) (res *v1.SubscriptionRes, err error)
 	Usage(ctx context.Context, req *v1.UsageReq) (res *v1.UsageRes, err error)
+	Models(ctx context.Context, req *v1.ModelsReq) (res *v1.ModelsRes, err error)
 }

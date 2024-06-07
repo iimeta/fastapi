@@ -554,6 +554,7 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 			IsEnableFallback:   result.IsEnableFallback,
 			Remark:             result.Remark,
 			Status:             result.Status,
+			CreatedAt:          result.CreatedAt,
 		}
 
 		if result.ForwardConfig != nil {
@@ -619,6 +620,7 @@ func (s *sModel) ListAll(ctx context.Context) ([]*model.Model, error) {
 			IsEnableFallback:   result.IsEnableFallback,
 			Remark:             result.Remark,
 			Status:             result.Status,
+			CreatedAt:          result.CreatedAt,
 		}
 
 		if result.ForwardConfig != nil {

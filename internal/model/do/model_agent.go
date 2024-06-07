@@ -8,7 +8,7 @@ const (
 
 type ModelAgent struct {
 	gmeta.Meta `collection:"model_agent" bson:"-"`
-	Corp       string `bson:"corp,omitempty"`       // 公司[OpenAI;Baidu;Xfyun;Aliyun;ZhipuAI;Google;DeepSeek;Midjourney]
+	Corp       string `bson:"corp,omitempty"`       // 公司
 	Name       string `bson:"name,omitempty"`       // 模型代理名称
 	BaseUrl    string `bson:"base_url,omitempty"`   // 模型代理地址
 	Path       string `bson:"path,omitempty"`       // 模型代理地址路径

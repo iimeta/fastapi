@@ -26,3 +26,13 @@ type UsageRes struct {
 	g.Meta `mime:"application/json" example:"json"`
 	*model.DashboardUsageRes
 }
+
+// models接口请求参数
+type ModelsReq struct {
+	g.Meta `path:"/models" tags:"dashboard" method:"get,post" summary:"models接口"`
+}
+
+// models接口响应参数
+type ModelsRes struct {
+	g.Meta `mime:"application/json" example:"json"`
+}
