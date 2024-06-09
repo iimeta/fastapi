@@ -467,17 +467,22 @@ func (s *sApp) Subscribe(ctx context.Context, msg string) error {
 
 	var app *entity.App
 	switch message.Action {
-	case consts.ACTION_UPDATE, consts.ACTION_STATUS:
+	case consts.ACTION_UPDATE, consts.ACTION_STATUS, consts.ACTION_MODELS:
+
 		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &app); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
+
 		s.UpdateCacheApp(ctx, app)
+
 	case consts.ACTION_DELETE:
+
 		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &app); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
+
 		s.RemoveCacheApp(ctx, app.AppId)
 	}
 

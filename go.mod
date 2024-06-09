@@ -9,7 +9,7 @@ require (
 	github.com/gogf/gf/contrib/nosql/redis/v2 v2.7.1
 	github.com/gogf/gf/v2 v2.7.1
 	github.com/iimeta/fastapi-sdk v0.2.0
-	github.com/redis/go-redis/v9 v9.5.1
+	github.com/redis/go-redis/v9 v9.5.3
 	go.mongodb.org/mongo-driver v1.15.0
 )
 

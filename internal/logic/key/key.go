@@ -627,7 +627,7 @@ func (s *sKey) Subscribe(ctx context.Context, msg string) error {
 			service.ModelAgent().CreateCacheModelAgentKey(ctx, key)
 		}
 
-	case consts.ACTION_UPDATE:
+	case consts.ACTION_UPDATE, consts.ACTION_MODELS:
 
 		var oldData *entity.Key
 		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &oldData); err != nil {
