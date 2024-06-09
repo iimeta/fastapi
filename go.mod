@@ -2,13 +2,11 @@ module github.com/iimeta/fastapi
 
 go 1.22
 
-replace github.com/iimeta/fastapi-sdk => ../fastapi-sdk
-
 require (
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/gogf/gf/contrib/nosql/redis/v2 v2.7.1
 	github.com/gogf/gf/v2 v2.7.1
-	github.com/iimeta/fastapi-sdk v0.2.0
+	github.com/iimeta/fastapi-sdk v0.3.0
 	github.com/redis/go-redis/v9 v9.5.3
 	go.mongodb.org/mongo-driver v1.15.0
 )
@@ -26,7 +24,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/gorilla/websocket v1.5.1 // indirect
+	github.com/gorilla/websocket v1.5.2 // indirect
 	github.com/grokify/html-strip-tags-go v0.1.0 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
