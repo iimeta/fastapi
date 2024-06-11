@@ -886,7 +886,7 @@ func (s *sModel) RemoveCacheModel(ctx context.Context, id string) {
 }
 
 // 获取目标模型
-func (s *sModel) GetTargetModel(ctx context.Context, model *model.Model, prompt string) (targetModel *model.Model, err error) {
+func (s *sModel) GetTargetModel(ctx context.Context, model *model.Model, messages []sdkm.ChatCompletionMessage) (targetModel *model.Model, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -906,7 +906,27 @@ func (s *sModel) GetTargetModel(ctx context.Context, model *model.Model, prompt 
 			}
 		}
 
+	} else if model.ForwardConfig.ForwardRule == 3 {
+
+		contentLength := 0
+		for _, message := range messages {
+			contentLength += len(message.Content)
+		}
+
+		if contentLength < model.ForwardConfig.ContentLength {
+			return model, nil
+		}
+
+		if targetModel, err = s.GetCacheModel(ctx, model.ForwardConfig.TargetModel); err != nil || targetModel == nil {
+			if targetModel, err = s.GetModelAndSaveCache(ctx, model.ForwardConfig.TargetModel); err != nil {
+				logger.Error(ctx, err)
+				return nil, err
+			}
+		}
+
 	} else {
+
+		prompt := messages[len(messages)-1].Content
 
 		keywords := model.ForwardConfig.Keywords
 		if slices.Contains(model.ForwardConfig.MatchRule, 2) {
@@ -998,7 +1018,7 @@ func (s *sModel) GetTargetModel(ctx context.Context, model *model.Model, prompt 
 		return model, nil
 	}
 
-	return s.GetTargetModel(ctx, targetModel, prompt)
+	return s.GetTargetModel(ctx, targetModel, messages)
 }
 
 // 获取后备模型

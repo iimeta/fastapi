@@ -30,12 +30,13 @@ type Model struct {
 }
 
 type ForwardConfig struct {
-	ForwardRule   int      `bson:"forward_rule,omitempty"`   // 转发规则[1:全部转发, 2:按关键字]
-	MatchRule     []int    `bson:"match_rule,omitempty"`     // 匹配规则[1:智能匹配, 2:正则匹配]
-	TargetModel   string   `bson:"target_model,omitempty"`   // 转发规则为1时的目标模型
+	ForwardRule   int      `bson:"forward_rule,omitempty"`   // 转发规则[1:全部转发, 2:按关键字, 3:内容长度]
+	MatchRule     []int    `bson:"match_rule,omitempty"`     // 转发规则为2时的匹配规则[1:智能匹配, 2:正则匹配]
+	TargetModel   string   `bson:"target_model,omitempty"`   // 转发规则为1和3时的目标模型
 	DecisionModel string   `bson:"decision_model,omitempty"` // 转发规则为2时并且匹配规则为1时的判定模型
 	Keywords      []string `bson:"keywords,omitempty"`       // 转发规则为2时的关键字
 	TargetModels  []string `bson:"target_models,omitempty"`  // 转发规则为2时的目标模型
+	ContentLength int      `bson:"content_length,omitempty"` // 转发规则为3时的内容长度
 }
 
 type FallbackConfig struct {
