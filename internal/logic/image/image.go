@@ -327,6 +327,7 @@ func (s *sImage) SaveChat(ctx context.Context, reqModel, realModel, fallbackMode
 			DecisionModel: reqModel.ForwardConfig.DecisionModel,
 			Keywords:      reqModel.ForwardConfig.Keywords,
 			TargetModels:  reqModel.ForwardConfig.TargetModels,
+			ContentLength: reqModel.ForwardConfig.ContentLength,
 		}
 	}
 

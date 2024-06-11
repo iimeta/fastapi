@@ -778,6 +778,7 @@ func (s *sChat) SaveChat(ctx context.Context, reqModel, realModel, fallbackModel
 			DecisionModel: reqModel.ForwardConfig.DecisionModel,
 			Keywords:      reqModel.ForwardConfig.Keywords,
 			TargetModels:  reqModel.ForwardConfig.TargetModels,
+			ContentLength: reqModel.ForwardConfig.ContentLength,
 		}
 	}
 

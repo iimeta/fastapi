@@ -82,6 +82,7 @@ func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 			DecisionModel: result.ForwardConfig.DecisionModel,
 			Keywords:      result.ForwardConfig.Keywords,
 			TargetModels:  result.ForwardConfig.TargetModels,
+			ContentLength: result.ForwardConfig.ContentLength,
 		}
 	}
 
@@ -139,6 +140,7 @@ func (s *sModel) GetModelById(ctx context.Context, id string) (*model.Model, err
 			DecisionModel: result.ForwardConfig.DecisionModel,
 			Keywords:      result.ForwardConfig.Keywords,
 			TargetModels:  result.ForwardConfig.TargetModels,
+			ContentLength: result.ForwardConfig.ContentLength,
 		}
 	}
 
@@ -565,6 +567,7 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 				DecisionModel: result.ForwardConfig.DecisionModel,
 				Keywords:      result.ForwardConfig.Keywords,
 				TargetModels:  result.ForwardConfig.TargetModels,
+				ContentLength: result.ForwardConfig.ContentLength,
 			}
 		}
 
@@ -631,6 +634,7 @@ func (s *sModel) ListAll(ctx context.Context) ([]*model.Model, error) {
 				DecisionModel: result.ForwardConfig.DecisionModel,
 				Keywords:      result.ForwardConfig.Keywords,
 				TargetModels:  result.ForwardConfig.TargetModels,
+				ContentLength: result.ForwardConfig.ContentLength,
 			}
 		}
 
@@ -854,6 +858,7 @@ func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, ne
 			DecisionModel: newData.ForwardConfig.DecisionModel,
 			Keywords:      newData.ForwardConfig.Keywords,
 			TargetModels:  newData.ForwardConfig.TargetModels,
+			ContentLength: newData.ForwardConfig.ContentLength,
 		}
 	}
 
