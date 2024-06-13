@@ -42,6 +42,13 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		logger.Debugf(ctx, "sChat Completions time: %d", gtime.TimestampMilli()-now)
 	}()
 
+	if len(params.Functions) == 0 {
+		params.Messages = common.HandleMessages(params.Messages)
+		if len(params.Messages) == 0 {
+			return response, errors.ERR_INVALID_PARAMETER
+		}
+	}
+
 	var (
 		client     sdk.Chat
 		reqModel   *model.Model
@@ -336,6 +343,13 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	defer func() {
 		logger.Debugf(ctx, "sChat CompletionsStream time: %d", gtime.TimestampMilli()-now)
 	}()
+
+	if len(params.Functions) == 0 {
+		params.Messages = common.HandleMessages(params.Messages)
+		if len(params.Messages) == 0 {
+			return errors.ERR_INVALID_PARAMETER
+		}
+	}
 
 	var (
 		client     sdk.Chat

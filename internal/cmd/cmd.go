@@ -98,7 +98,7 @@ var (
 )
 
 func beforeServeHook(r *ghttp.Request) {
-	logger.Debugf(r.GetCtx(), "beforeServeHook [isFile: %t] URI: %s", r.IsFileRequest(), r.RequestURI)
+	logger.Debugf(r.GetCtx(), "beforeServeHook ClientIp: %s, RemoteIp: %s, IsFile: %t, URI: %s", r.GetClientIp(), r.GetRemoteIp(), r.IsFileRequest(), r.RequestURI)
 	r.Response.CORSDefault()
 }
 
