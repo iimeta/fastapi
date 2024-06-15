@@ -13,6 +13,7 @@ type Model struct {
 	PromptRatio        float64         `json:"prompt_ratio,omitempty"`          // 提示倍率(提问倍率)
 	CompletionRatio    float64         `json:"completion_ratio,omitempty"`      // 补全倍率(回答倍率)
 	FixedQuota         int             `json:"fixed_quota,omitempty"`           // 固定额度
+	ImageQuotas        []ImageQuota    `json:"image_quotas,omitempty"`          // 图像额度
 	DataFormat         int             `json:"data_format,omitempty"`           // 数据格式[1:统一格式, 2:官方格式]
 	IsPublic           bool            `json:"is_public,omitempty"`             // 是否公开
 	IsEnableModelAgent bool            `json:"is_enable_model_agent,omitempty"` // 是否启用模型代理
@@ -29,6 +30,13 @@ type Model struct {
 	Updater            string          `json:"updater,omitempty"`               // 更新人
 	CreatedAt          int64           `json:"created_at,omitempty"`            // 创建时间
 	UpdatedAt          int64           `json:"updated_at,omitempty"`            // 更新时间
+}
+
+type ImageQuota struct {
+	FixedQuota int  `json:"fixed_quota,omitempty"` // 固定额度
+	Width      int  `json:"width,omitempty"`       // 宽度
+	Height     int  `json:"height,omitempty"`      // 高度
+	IsDefault  bool `json:"is_default,omitempty"`  // 是否默认选项
 }
 
 type ForwardConfig struct {
