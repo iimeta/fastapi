@@ -36,9 +36,10 @@
 - 账号/密码: admin/admin123
 
 ## 部署支持
-- ✔️ 集群部署
-- ✔️ 多地部署
-- ✔️ 跨区部署
+
+✔️ 集群部署  
+✔️ 多地部署  
+✔️ 跨区部署
 
 ## Docker部署
 ### [传送门](https://github.com/iimeta/fastapi/tree/docker)
