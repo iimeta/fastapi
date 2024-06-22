@@ -10,6 +10,7 @@ import (
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/controller/chat"
 	"github.com/iimeta/fastapi/internal/controller/dashboard"
+	"github.com/iimeta/fastapi/internal/controller/health"
 	"github.com/iimeta/fastapi/internal/controller/image"
 	"github.com/iimeta/fastapi/internal/controller/midjourney"
 	"github.com/iimeta/fastapi/internal/errors"
@@ -35,20 +36,24 @@ var (
 
 			s.BindHookHandler("/*", ghttp.HookBeforeServe, beforeServeHook)
 
-			s.Group("/", func(r *ghttp.RouterGroup) {
-				r.Bind(
+			s.Group("/", func(g *ghttp.RouterGroup) {
+
+				g.Middleware(middlewareHandlerResponse)
+
+				g.Bind(
 					func(r *ghttp.Request) {
-						r.Response.WriteStatus(http.StatusOK, "Hello FastAPI")
+						r.Response.WriteStatus(http.StatusOK, "Hello Fast API")
 						r.Exit()
 						return
 					},
+					health.NewV1(),
 				)
 			})
 
 			s.Group("/v1", func(v1 *ghttp.RouterGroup) {
 
-				v1.Middleware(middleware)
 				v1.Middleware(middlewareHandlerResponse)
+				v1.Middleware(middleware)
 
 				v1.Group("/", func(g *ghttp.RouterGroup) {
 					g.Bind(
@@ -77,8 +82,8 @@ var (
 
 			s.Group("/mj", func(v1 *ghttp.RouterGroup) {
 
-				v1.Middleware(middleware)
 				v1.Middleware(middlewareHandlerResponse)
+				v1.Middleware(middleware)
 
 				v1.Group("/", func(g *ghttp.RouterGroup) {
 					g.Bind(
