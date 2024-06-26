@@ -14,6 +14,7 @@ import (
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
+	mcommon "github.com/iimeta/fastapi/internal/model/common"
 	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
@@ -49,7 +50,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 		path       string
 		agentTotal int
 		keyTotal   int
-		retryInfo  *do.Retry
+		retryInfo  *mcommon.Retry
 	)
 
 	defer func() {
@@ -57,8 +58,8 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := &sdkm.Usage{
-			CompletionTokens: reqModel.FixedQuota,
-			TotalTokens:      reqModel.FixedQuota,
+			CompletionTokens: reqModel.TextQuota.FixedQuota,
+			TotalTokens:      reqModel.TextQuota.FixedQuota,
 		}
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -122,7 +123,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 
 			if realModel.IsEnableFallback {
 				if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-					retryInfo = &do.Retry{
+					retryInfo = &mcommon.Retry{
 						IsRetry:    true,
 						RetryCount: len(retry),
 						ErrMsg:     err.Error(),
@@ -150,7 +151,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 
 				if realModel.IsEnableFallback {
 					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-						retryInfo = &do.Retry{
+						retryInfo = &mcommon.Retry{
 							IsRetry:    true,
 							RetryCount: len(retry),
 							ErrMsg:     err.Error(),
@@ -169,7 +170,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 
 			if realModel.IsEnableFallback {
 				if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-					retryInfo = &do.Retry{
+					retryInfo = &mcommon.Retry{
 						IsRetry:    true,
 						RetryCount: len(retry),
 						ErrMsg:     err.Error(),
@@ -195,7 +196,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 
 		if realModel.IsEnableFallback {
 			if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-				retryInfo = &do.Retry{
+				retryInfo = &mcommon.Retry{
 					IsRetry:    true,
 					RetryCount: len(retry),
 					ErrMsg:     err.Error(),
@@ -233,7 +234,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 			if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
 				if realModel.IsEnableFallback {
 					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-						retryInfo = &do.Retry{
+						retryInfo = &mcommon.Retry{
 							IsRetry:    true,
 							RetryCount: len(retry),
 							ErrMsg:     err.Error(),
@@ -244,7 +245,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 				return response, err
 			}
 
-			retryInfo = &do.Retry{
+			retryInfo = &mcommon.Retry{
 				IsRetry:    true,
 				RetryCount: len(retry),
 				ErrMsg:     err.Error(),
@@ -260,7 +261,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 }
 
 // 保存文生图聊天数据
-func (s *sImage) SaveChat(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *do.Retry) {
+func (s *sImage) SaveChat(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *mcommon.Retry) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -305,11 +306,12 @@ func (s *sImage) SaveChat(ctx context.Context, reqModel, realModel, fallbackMode
 	chat.Name = reqModel.Name
 	chat.Model = reqModel.Model
 	chat.Type = reqModel.Type
-	chat.BillingMethod = reqModel.BillingMethod
-	chat.PromptRatio = reqModel.PromptRatio
-	chat.CompletionRatio = reqModel.CompletionRatio
-	chat.FixedQuota = reqModel.FixedQuota
-	chat.IsEnableForward = reqModel.IsEnableForward
+	chat.ImageQuotas = reqModel.ImageQuotas
+
+	chat.IsEnablePresetConfig = realModel.IsEnablePresetConfig
+	chat.PresetConfig = realModel.PresetConfig
+	chat.IsEnableForward = realModel.IsEnableForward
+	chat.ForwardConfig = realModel.ForwardConfig
 	chat.IsEnableModelAgent = realModel.IsEnableModelAgent
 	chat.RealModelId = realModel.Id
 	chat.RealModelName = realModel.Name
@@ -319,21 +321,9 @@ func (s *sImage) SaveChat(ctx context.Context, reqModel, realModel, fallbackMode
 	chat.CompletionTokens = imageRes.Usage.CompletionTokens
 	chat.TotalTokens = imageRes.Usage.TotalTokens
 
-	if chat.IsEnableForward && reqModel.ForwardConfig != nil {
-		chat.ForwardConfig = &do.ForwardConfig{
-			ForwardRule:   reqModel.ForwardConfig.ForwardRule,
-			MatchRule:     reqModel.ForwardConfig.MatchRule,
-			TargetModel:   reqModel.ForwardConfig.TargetModel,
-			DecisionModel: reqModel.ForwardConfig.DecisionModel,
-			Keywords:      reqModel.ForwardConfig.Keywords,
-			TargetModels:  reqModel.ForwardConfig.TargetModels,
-			ContentLength: reqModel.ForwardConfig.ContentLength,
-		}
-	}
-
 	if fallbackModel != nil {
 		chat.IsEnableFallback = true
-		chat.FallbackConfig = &do.FallbackConfig{
+		chat.FallbackConfig = &mcommon.FallbackConfig{
 			FallbackModel:     fallbackModel.Model,
 			FallbackModelName: fallbackModel.Name,
 		}
@@ -368,7 +358,7 @@ func (s *sImage) SaveChat(ctx context.Context, reqModel, realModel, fallbackMode
 	if retryInfo != nil {
 
 		chat.IsRetry = retryInfo.IsRetry
-		chat.Retry = &do.Retry{
+		chat.Retry = &mcommon.Retry{
 			IsRetry:    retryInfo.IsRetry,
 			RetryCount: retryInfo.RetryCount,
 			ErrMsg:     retryInfo.ErrMsg,

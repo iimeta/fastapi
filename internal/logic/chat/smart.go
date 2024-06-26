@@ -15,7 +15,7 @@ import (
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
-	"github.com/iimeta/fastapi/internal/model/do"
+	mcommon "github.com/iimeta/fastapi/internal/model/common"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"math"
@@ -39,7 +39,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		path       string
 		agentTotal int
 		keyTotal   int
-		retryInfo  *do.Retry
+		retryInfo  *mcommon.Retry
 	)
 
 	defer func() {
@@ -85,10 +85,10 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 				// 替换成调用的模型
 				response.Model = reqModel.Model
 				// 实际消费额度
-				if reqModel.BillingMethod == 1 {
-					response.Usage.TotalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.PromptRatio + float64(response.Usage.CompletionTokens)*reqModel.CompletionRatio))
+				if reqModel.TextQuota.BillingMethod == 1 {
+					response.Usage.TotalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
 				} else {
-					response.Usage.TotalTokens = reqModel.FixedQuota
+					response.Usage.TotalTokens = reqModel.TextQuota.FixedQuota
 				}
 			}
 		}
@@ -144,7 +144,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 			if realModel.IsEnableFallback {
 				if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-					retryInfo = &do.Retry{
+					retryInfo = &mcommon.Retry{
 						IsRetry:    true,
 						RetryCount: len(retry),
 						ErrMsg:     err.Error(),
@@ -172,7 +172,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 				if realModel.IsEnableFallback {
 					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-						retryInfo = &do.Retry{
+						retryInfo = &mcommon.Retry{
 							IsRetry:    true,
 							RetryCount: len(retry),
 							ErrMsg:     err.Error(),
@@ -191,7 +191,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 			if realModel.IsEnableFallback {
 				if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-					retryInfo = &do.Retry{
+					retryInfo = &mcommon.Retry{
 						IsRetry:    true,
 						RetryCount: len(retry),
 						ErrMsg:     err.Error(),
@@ -217,16 +217,16 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 	}
 
 	// 替换预设提示词
-	if reqModel.Prompt != "" {
+	if reqModel.IsEnablePresetConfig && reqModel.PresetConfig.IsSupportSystemRole && reqModel.PresetConfig.SystemRolePrompt != "" {
 		if request.Messages[0].Role == consts.ROLE_SYSTEM {
 			request.Messages = append([]sdkm.ChatCompletionMessage{{
 				Role:    consts.ROLE_SYSTEM,
-				Content: reqModel.Prompt,
+				Content: reqModel.PresetConfig.SystemRolePrompt,
 			}}, request.Messages[1:]...)
 		} else {
 			request.Messages = append([]sdkm.ChatCompletionMessage{{
 				Role:    consts.ROLE_SYSTEM,
-				Content: reqModel.Prompt,
+				Content: reqModel.PresetConfig.SystemRolePrompt,
 			}}, request.Messages...)
 		}
 	}
@@ -237,7 +237,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 		if realModel.IsEnableFallback {
 			if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-				retryInfo = &do.Retry{
+				retryInfo = &mcommon.Retry{
 					IsRetry:    true,
 					RetryCount: len(retry),
 					ErrMsg:     err.Error(),
@@ -272,7 +272,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 			if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
 				if realModel.IsEnableFallback {
 					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-						retryInfo = &do.Retry{
+						retryInfo = &mcommon.Retry{
 							IsRetry:    true,
 							RetryCount: len(retry),
 							ErrMsg:     err.Error(),
@@ -283,7 +283,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 				return response, err
 			}
 
-			retryInfo = &do.Retry{
+			retryInfo = &mcommon.Retry{
 				IsRetry:    true,
 				RetryCount: len(retry),
 				ErrMsg:     err.Error(),

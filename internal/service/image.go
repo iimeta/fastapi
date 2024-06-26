@@ -10,7 +10,7 @@ import (
 
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/model"
-	"github.com/iimeta/fastapi/internal/model/do"
+	mcommon "github.com/iimeta/fastapi/internal/model/common"
 )
 
 type (
@@ -18,7 +18,7 @@ type (
 		// Generations
 		Generations(ctx context.Context, params sdkm.ImageRequest, fallbackModel *model.Model, retry ...int) (response sdkm.ImageResponse, err error)
 		// 保存文生图聊天数据
-		SaveChat(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *do.Retry)
+		SaveChat(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *mcommon.Retry)
 	}
 )
 

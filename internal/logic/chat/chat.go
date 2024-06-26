@@ -17,6 +17,7 @@ import (
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
+	mcommon "github.com/iimeta/fastapi/internal/model/common"
 	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
@@ -60,7 +61,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		path       string
 		agentTotal int
 		keyTotal   int
-		retryInfo  *do.Retry
+		retryInfo  *mcommon.Retry
 	)
 
 	defer func() {
@@ -106,10 +107,10 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				// 替换成调用的模型
 				response.Model = reqModel.Model
 				// 实际消费额度
-				if reqModel.BillingMethod == 1 {
-					response.Usage.TotalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.PromptRatio + float64(response.Usage.CompletionTokens)*reqModel.CompletionRatio))
+				if reqModel.TextQuota.BillingMethod == 1 {
+					response.Usage.TotalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
 				} else {
-					response.Usage.TotalTokens = reqModel.FixedQuota
+					response.Usage.TotalTokens = reqModel.TextQuota.FixedQuota
 				}
 			}
 		}
@@ -180,7 +181,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 			if realModel.IsEnableFallback {
 				if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-					retryInfo = &do.Retry{
+					retryInfo = &mcommon.Retry{
 						IsRetry:    true,
 						RetryCount: len(retry),
 						ErrMsg:     err.Error(),
@@ -208,7 +209,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 				if realModel.IsEnableFallback {
 					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-						retryInfo = &do.Retry{
+						retryInfo = &mcommon.Retry{
 							IsRetry:    true,
 							RetryCount: len(retry),
 							ErrMsg:     err.Error(),
@@ -227,7 +228,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 			if realModel.IsEnableFallback {
 				if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-					retryInfo = &do.Retry{
+					retryInfo = &mcommon.Retry{
 						IsRetry:    true,
 						RetryCount: len(retry),
 						ErrMsg:     err.Error(),
@@ -252,16 +253,16 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 	}
 
 	// 替换预设提示词
-	if reqModel.Prompt != "" {
+	if reqModel.IsEnablePresetConfig && reqModel.PresetConfig.IsSupportSystemRole && reqModel.PresetConfig.SystemRolePrompt != "" {
 		if request.Messages[0].Role == consts.ROLE_SYSTEM {
 			request.Messages = append([]sdkm.ChatCompletionMessage{{
 				Role:    consts.ROLE_SYSTEM,
-				Content: reqModel.Prompt,
+				Content: reqModel.PresetConfig.SystemRolePrompt,
 			}}, request.Messages[1:]...)
 		} else {
 			request.Messages = append([]sdkm.ChatCompletionMessage{{
 				Role:    consts.ROLE_SYSTEM,
-				Content: reqModel.Prompt,
+				Content: reqModel.PresetConfig.SystemRolePrompt,
 			}}, request.Messages...)
 		}
 	}
@@ -272,7 +273,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 		if realModel.IsEnableFallback {
 			if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-				retryInfo = &do.Retry{
+				retryInfo = &mcommon.Retry{
 					IsRetry:    true,
 					RetryCount: len(retry),
 					ErrMsg:     err.Error(),
@@ -310,7 +311,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
 				if realModel.IsEnableFallback {
 					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-						retryInfo = &do.Retry{
+						retryInfo = &mcommon.Retry{
 							IsRetry:    true,
 							RetryCount: len(retry),
 							ErrMsg:     err.Error(),
@@ -321,7 +322,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				return response, err
 			}
 
-			retryInfo = &do.Retry{
+			retryInfo = &mcommon.Retry{
 				IsRetry:    true,
 				RetryCount: len(retry),
 				ErrMsg:     err.Error(),
@@ -367,7 +368,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		duration   int64
 		totalTime  int64
 		usage      *sdkm.Usage
-		retryInfo  *do.Retry
+		retryInfo  *mcommon.Retry
 	)
 
 	defer func() {
@@ -407,10 +408,10 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				}
 
 				// 实际消费额度
-				if reqModel.BillingMethod == 1 {
-					usage.TotalTokens = int(math.Ceil(float64(usage.PromptTokens)*reqModel.PromptRatio + float64(usage.CompletionTokens)*reqModel.CompletionRatio))
+				if reqModel.TextQuota.BillingMethod == 1 {
+					usage.TotalTokens = int(math.Ceil(float64(usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
 				} else {
-					usage.TotalTokens = reqModel.FixedQuota
+					usage.TotalTokens = reqModel.TextQuota.FixedQuota
 				}
 			}
 
@@ -481,7 +482,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 			if realModel.IsEnableFallback {
 				if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-					retryInfo = &do.Retry{
+					retryInfo = &mcommon.Retry{
 						IsRetry:    true,
 						RetryCount: len(retry),
 						ErrMsg:     err.Error(),
@@ -509,7 +510,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 				if realModel.IsEnableFallback {
 					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-						retryInfo = &do.Retry{
+						retryInfo = &mcommon.Retry{
 							IsRetry:    true,
 							RetryCount: len(retry),
 							ErrMsg:     err.Error(),
@@ -528,7 +529,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 			if realModel.IsEnableFallback {
 				if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-					retryInfo = &do.Retry{
+					retryInfo = &mcommon.Retry{
 						IsRetry:    true,
 						RetryCount: len(retry),
 						ErrMsg:     err.Error(),
@@ -553,16 +554,16 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	}
 
 	// 替换预设提示词
-	if reqModel.Prompt != "" {
+	if reqModel.IsEnablePresetConfig && reqModel.PresetConfig.IsSupportSystemRole && reqModel.PresetConfig.SystemRolePrompt != "" {
 		if request.Messages[0].Role == consts.ROLE_SYSTEM {
 			request.Messages = append([]sdkm.ChatCompletionMessage{{
 				Role:    consts.ROLE_SYSTEM,
-				Content: reqModel.Prompt,
+				Content: reqModel.PresetConfig.SystemRolePrompt,
 			}}, request.Messages[1:]...)
 		} else {
 			request.Messages = append([]sdkm.ChatCompletionMessage{{
 				Role:    consts.ROLE_SYSTEM,
-				Content: reqModel.Prompt,
+				Content: reqModel.PresetConfig.SystemRolePrompt,
 			}}, request.Messages...)
 		}
 	}
@@ -573,7 +574,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 		if realModel.IsEnableFallback {
 			if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-				retryInfo = &do.Retry{
+				retryInfo = &mcommon.Retry{
 					IsRetry:    true,
 					RetryCount: len(retry),
 					ErrMsg:     err.Error(),
@@ -611,7 +612,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
 				if realModel.IsEnableFallback {
 					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-						retryInfo = &do.Retry{
+						retryInfo = &mcommon.Retry{
 							IsRetry:    true,
 							RetryCount: len(retry),
 							ErrMsg:     err.Error(),
@@ -622,7 +623,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				return err
 			}
 
-			retryInfo = &do.Retry{
+			retryInfo = &mcommon.Retry{
 				IsRetry:    true,
 				RetryCount: len(retry),
 				ErrMsg:     err.Error(),
@@ -670,7 +671,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
 					if realModel.IsEnableFallback {
 						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-							retryInfo = &do.Retry{
+							retryInfo = &mcommon.Retry{
 								IsRetry:    true,
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
@@ -681,7 +682,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					return err
 				}
 
-				retryInfo = &do.Retry{
+				retryInfo = &mcommon.Retry{
 					IsRetry:    true,
 					RetryCount: len(retry),
 					ErrMsg:     err.Error(),
@@ -699,10 +700,10 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 		if response.Usage != nil {
 			// 实际消费额度
-			if reqModel.BillingMethod == 1 {
-				response.Usage.TotalTokens = int(math.Ceil(reqModel.PromptRatio*float64(response.Usage.PromptTokens) + reqModel.CompletionRatio*float64(response.Usage.CompletionTokens)))
+			if reqModel.TextQuota.BillingMethod == 1 {
+				response.Usage.TotalTokens = int(math.Ceil(reqModel.TextQuota.PromptRatio*float64(response.Usage.PromptTokens) + reqModel.TextQuota.CompletionRatio*float64(response.Usage.CompletionTokens)))
 			} else {
-				response.Usage.TotalTokens = reqModel.FixedQuota
+				response.Usage.TotalTokens = reqModel.TextQuota.FixedQuota
 			}
 			usage = response.Usage
 		}
@@ -733,7 +734,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 }
 
 // 保存文生文聊天数据
-func (s *sChat) SaveChat(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes, retryInfo *do.Retry, isSmartMatch ...bool) {
+func (s *sChat) SaveChat(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, isSmartMatch ...bool) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -770,11 +771,12 @@ func (s *sChat) SaveChat(ctx context.Context, reqModel, realModel, fallbackModel
 	chat.Name = reqModel.Name
 	chat.Model = reqModel.Model
 	chat.Type = reqModel.Type
-	chat.BillingMethod = reqModel.BillingMethod
-	chat.PromptRatio = reqModel.PromptRatio
-	chat.CompletionRatio = reqModel.CompletionRatio
-	chat.FixedQuota = reqModel.FixedQuota
-	chat.IsEnableForward = reqModel.IsEnableForward
+	chat.TextQuota = reqModel.TextQuota
+
+	chat.IsEnablePresetConfig = realModel.IsEnablePresetConfig
+	chat.PresetConfig = realModel.PresetConfig
+	chat.IsEnableForward = realModel.IsEnableForward
+	chat.ForwardConfig = realModel.ForwardConfig
 	chat.IsEnableModelAgent = realModel.IsEnableModelAgent
 	chat.RealModelId = realModel.Id
 	chat.RealModelName = realModel.Name
@@ -784,21 +786,9 @@ func (s *sChat) SaveChat(ctx context.Context, reqModel, realModel, fallbackModel
 	chat.CompletionTokens = completionsRes.Usage.CompletionTokens
 	chat.TotalTokens = completionsRes.Usage.TotalTokens
 
-	if chat.IsEnableForward && reqModel.ForwardConfig != nil {
-		chat.ForwardConfig = &do.ForwardConfig{
-			ForwardRule:   reqModel.ForwardConfig.ForwardRule,
-			MatchRule:     reqModel.ForwardConfig.MatchRule,
-			TargetModel:   reqModel.ForwardConfig.TargetModel,
-			DecisionModel: reqModel.ForwardConfig.DecisionModel,
-			Keywords:      reqModel.ForwardConfig.Keywords,
-			TargetModels:  reqModel.ForwardConfig.TargetModels,
-			ContentLength: reqModel.ForwardConfig.ContentLength,
-		}
-	}
-
 	if fallbackModel != nil {
 		chat.IsEnableFallback = true
-		chat.FallbackConfig = &do.FallbackConfig{
+		chat.FallbackConfig = &mcommon.FallbackConfig{
 			FallbackModel:     fallbackModel.Model,
 			FallbackModelName: fallbackModel.Name,
 		}
@@ -831,7 +821,7 @@ func (s *sChat) SaveChat(ctx context.Context, reqModel, realModel, fallbackModel
 	}
 
 	for _, message := range completionsReq.Messages {
-		chat.Messages = append(chat.Messages, do.Message{
+		chat.Messages = append(chat.Messages, mcommon.Message{
 			Role:    message.Role,
 			Content: message.Content,
 		})
@@ -840,7 +830,7 @@ func (s *sChat) SaveChat(ctx context.Context, reqModel, realModel, fallbackModel
 	if retryInfo != nil {
 
 		chat.IsRetry = retryInfo.IsRetry
-		chat.Retry = &do.Retry{
+		chat.Retry = &mcommon.Retry{
 			IsRetry:    retryInfo.IsRetry,
 			RetryCount: retryInfo.RetryCount,
 			ErrMsg:     retryInfo.ErrMsg,

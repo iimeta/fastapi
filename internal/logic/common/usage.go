@@ -27,10 +27,10 @@ func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage *sd
 	}
 
 	var totalTokens int64
-	if model.BillingMethod == 1 {
-		totalTokens = int64(math.Ceil(float64(usage.PromptTokens)*model.PromptRatio + float64(usage.CompletionTokens)*model.CompletionRatio))
+	if model.TextQuota.BillingMethod == 1 {
+		totalTokens = int64(math.Ceil(float64(usage.PromptTokens)*model.TextQuota.PromptRatio + float64(usage.CompletionTokens)*model.TextQuota.CompletionRatio))
 	} else {
-		totalTokens = int64(model.FixedQuota)
+		totalTokens = int64(model.TextQuota.FixedQuota)
 	}
 
 	usageKey := s.GetUserUsageKey(ctx)

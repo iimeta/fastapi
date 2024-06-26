@@ -51,48 +51,30 @@ func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 		return nil, err
 	}
 
-	detail := &model.Model{
-		Id:                 result.Id,
-		Corp:               result.Corp,
-		Name:               result.Name,
-		Model:              result.Model,
-		Type:               result.Type,
-		BaseUrl:            result.BaseUrl,
-		Path:               result.Path,
-		Prompt:             result.Prompt,
-		BillingMethod:      result.BillingMethod,
-		PromptRatio:        result.PromptRatio,
-		CompletionRatio:    result.CompletionRatio,
-		FixedQuota:         result.FixedQuota,
-		DataFormat:         result.DataFormat,
-		IsPublic:           result.IsPublic,
-		IsEnableModelAgent: result.IsEnableModelAgent,
-		ModelAgents:        result.ModelAgents,
-		IsEnableForward:    result.IsEnableForward,
-		IsEnableFallback:   result.IsEnableFallback,
-		Remark:             result.Remark,
-		Status:             result.Status,
-	}
-
-	if result.ForwardConfig != nil {
-		detail.ForwardConfig = &model.ForwardConfig{
-			ForwardRule:   result.ForwardConfig.ForwardRule,
-			MatchRule:     result.ForwardConfig.MatchRule,
-			TargetModel:   result.ForwardConfig.TargetModel,
-			DecisionModel: result.ForwardConfig.DecisionModel,
-			Keywords:      result.ForwardConfig.Keywords,
-			TargetModels:  result.ForwardConfig.TargetModels,
-			ContentLength: result.ForwardConfig.ContentLength,
-		}
-	}
-
-	if result.FallbackConfig != nil {
-		detail.FallbackConfig = &model.FallbackConfig{
-			FallbackModel: result.FallbackConfig.FallbackModel,
-		}
-	}
-
-	return detail, nil
+	return &model.Model{
+		Id:                   result.Id,
+		Corp:                 result.Corp,
+		Name:                 result.Name,
+		Model:                result.Model,
+		Type:                 result.Type,
+		BaseUrl:              result.BaseUrl,
+		Path:                 result.Path,
+		IsEnablePresetConfig: result.IsEnablePresetConfig,
+		PresetConfig:         result.PresetConfig,
+		TextQuota:            result.TextQuota,
+		ImageQuotas:          result.ImageQuotas,
+		MultimodalQuota:      result.MultimodalQuota,
+		DataFormat:           result.DataFormat,
+		IsPublic:             result.IsPublic,
+		IsEnableModelAgent:   result.IsEnableModelAgent,
+		ModelAgents:          result.ModelAgents,
+		IsEnableForward:      result.IsEnableForward,
+		ForwardConfig:        result.ForwardConfig,
+		IsEnableFallback:     result.IsEnableFallback,
+		FallbackConfig:       result.FallbackConfig,
+		Remark:               result.Remark,
+		Status:               result.Status,
+	}, nil
 }
 
 // 根据模型ID获取模型信息
@@ -109,48 +91,30 @@ func (s *sModel) GetModelById(ctx context.Context, id string) (*model.Model, err
 		return nil, err
 	}
 
-	detail := &model.Model{
-		Id:                 result.Id,
-		Corp:               result.Corp,
-		Name:               result.Name,
-		Model:              result.Model,
-		Type:               result.Type,
-		BaseUrl:            result.BaseUrl,
-		Path:               result.Path,
-		Prompt:             result.Prompt,
-		BillingMethod:      result.BillingMethod,
-		PromptRatio:        result.PromptRatio,
-		CompletionRatio:    result.CompletionRatio,
-		FixedQuota:         result.FixedQuota,
-		DataFormat:         result.DataFormat,
-		IsPublic:           result.IsPublic,
-		IsEnableModelAgent: result.IsEnableModelAgent,
-		ModelAgents:        result.ModelAgents,
-		IsEnableForward:    result.IsEnableForward,
-		IsEnableFallback:   result.IsEnableFallback,
-		Remark:             result.Remark,
-		Status:             result.Status,
-	}
-
-	if result.ForwardConfig != nil {
-		detail.ForwardConfig = &model.ForwardConfig{
-			ForwardRule:   result.ForwardConfig.ForwardRule,
-			MatchRule:     result.ForwardConfig.MatchRule,
-			TargetModel:   result.ForwardConfig.TargetModel,
-			DecisionModel: result.ForwardConfig.DecisionModel,
-			Keywords:      result.ForwardConfig.Keywords,
-			TargetModels:  result.ForwardConfig.TargetModels,
-			ContentLength: result.ForwardConfig.ContentLength,
-		}
-	}
-
-	if result.FallbackConfig != nil {
-		detail.FallbackConfig = &model.FallbackConfig{
-			FallbackModel: result.FallbackConfig.FallbackModel,
-		}
-	}
-
-	return detail, nil
+	return &model.Model{
+		Id:                   result.Id,
+		Corp:                 result.Corp,
+		Name:                 result.Name,
+		Model:                result.Model,
+		Type:                 result.Type,
+		BaseUrl:              result.BaseUrl,
+		Path:                 result.Path,
+		IsEnablePresetConfig: result.IsEnablePresetConfig,
+		PresetConfig:         result.PresetConfig,
+		TextQuota:            result.TextQuota,
+		ImageQuotas:          result.ImageQuotas,
+		MultimodalQuota:      result.MultimodalQuota,
+		DataFormat:           result.DataFormat,
+		IsPublic:             result.IsPublic,
+		IsEnableModelAgent:   result.IsEnableModelAgent,
+		ModelAgents:          result.ModelAgents,
+		IsEnableForward:      result.IsEnableForward,
+		ForwardConfig:        result.ForwardConfig,
+		IsEnableFallback:     result.IsEnableFallback,
+		FallbackConfig:       result.FallbackConfig,
+		Remark:               result.Remark,
+		Status:               result.Status,
+	}, nil
 }
 
 // 根据model和secretKey获取模型信息
@@ -534,50 +498,31 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 
 	items := make([]*model.Model, 0)
 	for _, result := range results {
-
-		m := &model.Model{
-			Id:                 result.Id,
-			Corp:               result.Corp,
-			Name:               result.Name,
-			Model:              result.Model,
-			Type:               result.Type,
-			BaseUrl:            result.BaseUrl,
-			Path:               result.Path,
-			Prompt:             result.Prompt,
-			BillingMethod:      result.BillingMethod,
-			PromptRatio:        result.PromptRatio,
-			CompletionRatio:    result.CompletionRatio,
-			FixedQuota:         result.FixedQuota,
-			DataFormat:         result.DataFormat,
-			IsPublic:           result.IsPublic,
-			IsEnableModelAgent: result.IsEnableModelAgent,
-			ModelAgents:        result.ModelAgents,
-			IsEnableForward:    result.IsEnableForward,
-			IsEnableFallback:   result.IsEnableFallback,
-			Remark:             result.Remark,
-			Status:             result.Status,
-			CreatedAt:          result.CreatedAt,
-		}
-
-		if result.ForwardConfig != nil {
-			m.ForwardConfig = &model.ForwardConfig{
-				ForwardRule:   result.ForwardConfig.ForwardRule,
-				MatchRule:     result.ForwardConfig.MatchRule,
-				TargetModel:   result.ForwardConfig.TargetModel,
-				DecisionModel: result.ForwardConfig.DecisionModel,
-				Keywords:      result.ForwardConfig.Keywords,
-				TargetModels:  result.ForwardConfig.TargetModels,
-				ContentLength: result.ForwardConfig.ContentLength,
-			}
-		}
-
-		if result.FallbackConfig != nil {
-			m.FallbackConfig = &model.FallbackConfig{
-				FallbackModel: result.FallbackConfig.FallbackModel,
-			}
-		}
-
-		items = append(items, m)
+		items = append(items, &model.Model{
+			Id:                   result.Id,
+			Corp:                 result.Corp,
+			Name:                 result.Name,
+			Model:                result.Model,
+			Type:                 result.Type,
+			BaseUrl:              result.BaseUrl,
+			Path:                 result.Path,
+			IsEnablePresetConfig: result.IsEnablePresetConfig,
+			PresetConfig:         result.PresetConfig,
+			TextQuota:            result.TextQuota,
+			ImageQuotas:          result.ImageQuotas,
+			MultimodalQuota:      result.MultimodalQuota,
+			DataFormat:           result.DataFormat,
+			IsPublic:             result.IsPublic,
+			IsEnableModelAgent:   result.IsEnableModelAgent,
+			ModelAgents:          result.ModelAgents,
+			IsEnableForward:      result.IsEnableForward,
+			ForwardConfig:        result.ForwardConfig,
+			IsEnableFallback:     result.IsEnableFallback,
+			FallbackConfig:       result.FallbackConfig,
+			Remark:               result.Remark,
+			Status:               result.Status,
+			CreatedAt:            result.CreatedAt,
+		})
 	}
 
 	return items, nil
@@ -601,50 +546,31 @@ func (s *sModel) ListAll(ctx context.Context) ([]*model.Model, error) {
 
 	items := make([]*model.Model, 0)
 	for _, result := range results {
-
-		m := &model.Model{
-			Id:                 result.Id,
-			Corp:               result.Corp,
-			Name:               result.Name,
-			Model:              result.Model,
-			Type:               result.Type,
-			BaseUrl:            result.BaseUrl,
-			Path:               result.Path,
-			Prompt:             result.Prompt,
-			BillingMethod:      result.BillingMethod,
-			PromptRatio:        result.PromptRatio,
-			CompletionRatio:    result.CompletionRatio,
-			FixedQuota:         result.FixedQuota,
-			DataFormat:         result.DataFormat,
-			IsPublic:           result.IsPublic,
-			IsEnableModelAgent: result.IsEnableModelAgent,
-			ModelAgents:        result.ModelAgents,
-			IsEnableForward:    result.IsEnableForward,
-			IsEnableFallback:   result.IsEnableFallback,
-			Remark:             result.Remark,
-			Status:             result.Status,
-			CreatedAt:          result.CreatedAt,
-		}
-
-		if result.ForwardConfig != nil {
-			m.ForwardConfig = &model.ForwardConfig{
-				ForwardRule:   result.ForwardConfig.ForwardRule,
-				MatchRule:     result.ForwardConfig.MatchRule,
-				TargetModel:   result.ForwardConfig.TargetModel,
-				DecisionModel: result.ForwardConfig.DecisionModel,
-				Keywords:      result.ForwardConfig.Keywords,
-				TargetModels:  result.ForwardConfig.TargetModels,
-				ContentLength: result.ForwardConfig.ContentLength,
-			}
-		}
-
-		if result.FallbackConfig != nil {
-			m.FallbackConfig = &model.FallbackConfig{
-				FallbackModel: result.FallbackConfig.FallbackModel,
-			}
-		}
-
-		items = append(items, m)
+		items = append(items, &model.Model{
+			Id:                   result.Id,
+			Corp:                 result.Corp,
+			Name:                 result.Name,
+			Model:                result.Model,
+			Type:                 result.Type,
+			BaseUrl:              result.BaseUrl,
+			Path:                 result.Path,
+			IsEnablePresetConfig: result.IsEnablePresetConfig,
+			PresetConfig:         result.PresetConfig,
+			TextQuota:            result.TextQuota,
+			ImageQuotas:          result.ImageQuotas,
+			MultimodalQuota:      result.MultimodalQuota,
+			DataFormat:           result.DataFormat,
+			IsPublic:             result.IsPublic,
+			IsEnableModelAgent:   result.IsEnableModelAgent,
+			ModelAgents:          result.ModelAgents,
+			IsEnableForward:      result.IsEnableForward,
+			ForwardConfig:        result.ForwardConfig,
+			IsEnableFallback:     result.IsEnableFallback,
+			FallbackConfig:       result.FallbackConfig,
+			Remark:               result.Remark,
+			Status:               result.Status,
+			CreatedAt:            result.CreatedAt,
+		})
 	}
 
 	return items, nil
@@ -828,47 +754,29 @@ func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, ne
 		logger.Debugf(ctx, "sModel UpdateCacheModel time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	m := &model.Model{
-		Id:                 newData.Id,
-		Corp:               newData.Corp,
-		Name:               newData.Name,
-		Model:              newData.Model,
-		Type:               newData.Type,
-		BaseUrl:            newData.BaseUrl,
-		Path:               newData.Path,
-		Prompt:             newData.Prompt,
-		BillingMethod:      newData.BillingMethod,
-		PromptRatio:        newData.PromptRatio,
-		CompletionRatio:    newData.CompletionRatio,
-		FixedQuota:         newData.FixedQuota,
-		DataFormat:         newData.DataFormat,
-		IsPublic:           newData.IsPublic,
-		IsEnableModelAgent: newData.IsEnableModelAgent,
-		ModelAgents:        newData.ModelAgents,
-		IsEnableForward:    newData.IsEnableForward,
-		IsEnableFallback:   newData.IsEnableFallback,
-		Status:             newData.Status,
-	}
-
-	if newData.ForwardConfig != nil {
-		m.ForwardConfig = &model.ForwardConfig{
-			ForwardRule:   newData.ForwardConfig.ForwardRule,
-			MatchRule:     newData.ForwardConfig.MatchRule,
-			TargetModel:   newData.ForwardConfig.TargetModel,
-			DecisionModel: newData.ForwardConfig.DecisionModel,
-			Keywords:      newData.ForwardConfig.Keywords,
-			TargetModels:  newData.ForwardConfig.TargetModels,
-			ContentLength: newData.ForwardConfig.ContentLength,
-		}
-	}
-
-	if newData.FallbackConfig != nil {
-		m.FallbackConfig = &model.FallbackConfig{
-			FallbackModel: newData.FallbackConfig.FallbackModel,
-		}
-	}
-
-	if err := s.SaveCache(ctx, m); err != nil {
+	if err := s.SaveCache(ctx, &model.Model{
+		Id:                   newData.Id,
+		Corp:                 newData.Corp,
+		Name:                 newData.Name,
+		Model:                newData.Model,
+		Type:                 newData.Type,
+		BaseUrl:              newData.BaseUrl,
+		Path:                 newData.Path,
+		IsEnablePresetConfig: newData.IsEnablePresetConfig,
+		PresetConfig:         newData.PresetConfig,
+		TextQuota:            newData.TextQuota,
+		ImageQuotas:          newData.ImageQuotas,
+		MultimodalQuota:      newData.MultimodalQuota,
+		DataFormat:           newData.DataFormat,
+		IsPublic:             newData.IsPublic,
+		IsEnableModelAgent:   newData.IsEnableModelAgent,
+		ModelAgents:          newData.ModelAgents,
+		IsEnableForward:      newData.IsEnableForward,
+		ForwardConfig:        newData.ForwardConfig,
+		IsEnableFallback:     newData.IsEnableFallback,
+		FallbackConfig:       newData.FallbackConfig,
+		Status:               newData.Status,
+	}); err != nil {
 		logger.Error(ctx, err)
 	}
 }

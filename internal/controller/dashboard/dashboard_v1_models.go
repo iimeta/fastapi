@@ -44,10 +44,9 @@ func (c *ControllerV1) Models(ctx context.Context, req *v1.ModelsReq) (res *v1.M
 					Type:            m.Type,
 					BaseUrl:         m.BaseUrl,
 					Path:            m.Path,
-					BillingMethod:   m.BillingMethod,
-					PromptRatio:     m.PromptRatio,
-					CompletionRatio: m.CompletionRatio,
-					FixedQuota:      m.FixedQuota,
+					TextQuota:       m.TextQuota,
+					ImageQuotas:     m.ImageQuotas,
+					MultimodalQuota: m.MultimodalQuota,
 				},
 			})
 		}
