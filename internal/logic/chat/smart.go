@@ -216,18 +216,31 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		key = getAccessToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
-	// 替换预设提示词
-	if reqModel.IsEnablePresetConfig && reqModel.PresetConfig.IsSupportSystemRole && reqModel.PresetConfig.SystemRolePrompt != "" {
-		if request.Messages[0].Role == consts.ROLE_SYSTEM {
-			request.Messages = append([]sdkm.ChatCompletionMessage{{
-				Role:    consts.ROLE_SYSTEM,
-				Content: reqModel.PresetConfig.SystemRolePrompt,
-			}}, request.Messages[1:]...)
-		} else {
-			request.Messages = append([]sdkm.ChatCompletionMessage{{
-				Role:    consts.ROLE_SYSTEM,
-				Content: reqModel.PresetConfig.SystemRolePrompt,
-			}}, request.Messages...)
+	// 预设配置
+	if realModel.IsEnablePresetConfig {
+
+		// 替换预设提示词
+		if realModel.PresetConfig.IsSupportSystemRole && realModel.PresetConfig.SystemRolePrompt != "" {
+			if request.Messages[0].Role == consts.ROLE_SYSTEM {
+				request.Messages = append([]sdkm.ChatCompletionMessage{{
+					Role:    consts.ROLE_SYSTEM,
+					Content: realModel.PresetConfig.SystemRolePrompt,
+				}}, request.Messages[1:]...)
+			} else {
+				request.Messages = append([]sdkm.ChatCompletionMessage{{
+					Role:    consts.ROLE_SYSTEM,
+					Content: realModel.PresetConfig.SystemRolePrompt,
+				}}, request.Messages...)
+			}
+		}
+
+		// 检查MaxTokens取值范围
+		if request.MaxTokens != 0 {
+			if realModel.PresetConfig.MinTokens != 0 && request.MaxTokens < realModel.PresetConfig.MinTokens {
+				request.MaxTokens = realModel.PresetConfig.MinTokens
+			} else if realModel.PresetConfig.MaxTokens != 0 && request.MaxTokens > realModel.PresetConfig.MaxTokens {
+				request.MaxTokens = realModel.PresetConfig.MaxTokens
+			}
 		}
 	}
 

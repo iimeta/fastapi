@@ -1,10 +1,10 @@
 package common
 
 type PresetConfig struct {
-	IsSupportSystemRole bool   `bson:"is_support_system_role,omitempty" json:"is_support_system_role,omitempty"` // 是否支持System角色
-	SystemRolePrompt    string `bson:"system_role_prompt,omitempty"     json:"system_role_prompt,omitempty"`     // System角色提示词
-	MinTokens           int    `bson:"min_tokens,omitempty"             json:"min_tokens,omitempty"`             // 最小上下文值
-	MaxTokens           int    `bson:"max_tokens,omitempty"             json:"max_tokens,omitempty"`             // 最大上下文值
+	IsSupportSystemRole bool   `bson:"is_support_system_role,omitempty" json:"is_support_system_role,omitempty"` // 是否支持system角色
+	SystemRolePrompt    string `bson:"system_role_prompt,omitempty"     json:"system_role_prompt,omitempty"`     // system角色预设提示词
+	MinTokens           int    `bson:"min_tokens,omitempty"             json:"min_tokens,omitempty"`             // max_tokens取值的最小值
+	MaxTokens           int    `bson:"max_tokens,omitempty"             json:"max_tokens,omitempty"`             // max_tokens取值的最大值
 }
 
 type TextQuota struct {
