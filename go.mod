@@ -6,8 +6,8 @@ replace github.com/iimeta/fastapi-sdk => ../fastapi-sdk
 
 require (
 	github.com/bwmarrin/snowflake v0.3.0
-	github.com/gogf/gf/contrib/nosql/redis/v2 v2.7.1
-	github.com/gogf/gf/v2 v2.7.1
+	github.com/gogf/gf/contrib/nosql/redis/v2 v2.7.2
+	github.com/gogf/gf/v2 v2.7.2
 	github.com/iimeta/fastapi-sdk v0.3.0
 	github.com/redis/go-redis/v9 v9.5.3
 	go.mongodb.org/mongo-driver v1.15.1
@@ -19,6 +19,7 @@ require (
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dlclark/regexp2 v1.10.0 // indirect
+	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
