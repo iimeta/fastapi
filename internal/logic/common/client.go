@@ -10,7 +10,12 @@ import (
 )
 
 func NewClient(ctx context.Context, model *model.Model, key, baseURL, path string) (sdk.Chat, error) {
-	return sdk.NewClient(ctx, GetCorpCode(ctx, model.Corp), model.Model, key, baseURL, path, config.Cfg.Http.ProxyUrl), nil
+
+	if model.IsEnablePresetConfig {
+		return sdk.NewClient(ctx, GetCorpCode(ctx, model.Corp), model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, config.Cfg.Http.ProxyUrl), nil
+	}
+
+	return sdk.NewClient(ctx, GetCorpCode(ctx, model.Corp), model.Model, key, baseURL, path, nil, config.Cfg.Http.ProxyUrl), nil
 }
 
 func GetCorpCode(ctx context.Context, corpId string) string {
