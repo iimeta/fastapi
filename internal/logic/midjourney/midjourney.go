@@ -60,7 +60,7 @@ func (s *sMidjourney) Imagine(ctx context.Context, params sdkm.MidjourneyProxyRe
 
 			if err == nil {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, m, usage); err != nil {
+					if err := service.Common().RecordUsage(ctx, usage.TotalTokens); err != nil {
 						logger.Error(ctx, err)
 					}
 				}, nil); err != nil {
@@ -175,7 +175,7 @@ func (s *sMidjourney) Change(ctx context.Context, params sdkm.MidjourneyProxyReq
 
 			if err == nil {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, m, usage); err != nil {
+					if err := service.Common().RecordUsage(ctx, usage.TotalTokens); err != nil {
 						logger.Error(ctx, err)
 					}
 				}, nil); err != nil {
@@ -290,7 +290,7 @@ func (s *sMidjourney) Describe(ctx context.Context, params sdkm.MidjourneyProxyR
 
 			if err == nil {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, m, usage); err != nil {
+					if err := service.Common().RecordUsage(ctx, usage.TotalTokens); err != nil {
 						logger.Error(ctx, err)
 					}
 				}, nil); err != nil {
@@ -405,7 +405,7 @@ func (s *sMidjourney) Blend(ctx context.Context, params sdkm.MidjourneyProxyRequ
 
 			if err == nil {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, m, usage); err != nil {
+					if err := service.Common().RecordUsage(ctx, usage.TotalTokens); err != nil {
 						logger.Error(ctx, err)
 					}
 				}, nil); err != nil {
@@ -520,7 +520,7 @@ func (s *sMidjourney) SwapFace(ctx context.Context, params sdkm.MidjourneyProxyR
 
 			if err == nil {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, m, usage); err != nil {
+					if err := service.Common().RecordUsage(ctx, usage.TotalTokens); err != nil {
 						logger.Error(ctx, err)
 					}
 				}, nil); err != nil {
@@ -635,7 +635,7 @@ func (s *sMidjourney) Action(ctx context.Context, params sdkm.MidjourneyProxyReq
 
 			if err == nil {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, m, usage); err != nil {
+					if err := service.Common().RecordUsage(ctx, usage.TotalTokens); err != nil {
 						logger.Error(ctx, err)
 					}
 				}, nil); err != nil {
@@ -750,7 +750,7 @@ func (s *sMidjourney) Modal(ctx context.Context, params sdkm.MidjourneyProxyRequ
 
 			if err == nil {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, m, usage); err != nil {
+					if err := service.Common().RecordUsage(ctx, usage.TotalTokens); err != nil {
 						logger.Error(ctx, err)
 					}
 				}, nil); err != nil {
@@ -865,7 +865,7 @@ func (s *sMidjourney) Shorten(ctx context.Context, params sdkm.MidjourneyProxyRe
 
 			if err == nil {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, m, usage); err != nil {
+					if err := service.Common().RecordUsage(ctx, usage.TotalTokens); err != nil {
 						logger.Error(ctx, err)
 					}
 				}, nil); err != nil {
@@ -980,7 +980,7 @@ func (s *sMidjourney) UploadDiscordImages(ctx context.Context, params sdkm.Midjo
 
 			if err == nil {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, m, usage); err != nil {
+					if err := service.Common().RecordUsage(ctx, usage.TotalTokens); err != nil {
 						logger.Error(ctx, err)
 					}
 				}, nil); err != nil {
@@ -1100,7 +1100,7 @@ func (s *sMidjourney) Fetch(ctx context.Context, params sdkm.MidjourneyProxyRequ
 
 			if err == nil {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, m, usage); err != nil {
+					if err := service.Common().RecordUsage(ctx, usage.TotalTokens); err != nil {
 						logger.Error(ctx, err)
 					}
 				}, nil); err != nil {

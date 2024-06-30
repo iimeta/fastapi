@@ -8,7 +8,6 @@ package service
 import (
 	"context"
 
-	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/model"
 )
 
@@ -19,7 +18,7 @@ type (
 		// 记录错误次数和禁用
 		RecordError(ctx context.Context, model *model.Model, key *model.Key, modelAgent *model.ModelAgent)
 		// 记录使用额度
-		RecordUsage(ctx context.Context, model *model.Model, usage *sdkm.Usage) error
+		RecordUsage(ctx context.Context, totalTokens int) error
 		GetUserTotalTokens(ctx context.Context) (int, error)
 		GetAppTotalTokens(ctx context.Context) (int, error)
 		GetKeyTotalTokens(ctx context.Context) (int, error)

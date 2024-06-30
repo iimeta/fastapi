@@ -66,7 +66,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 
 			if retryInfo == nil && err == nil {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, reqModel, usage); err != nil {
+					if err := service.Common().RecordUsage(ctx, usage.TotalTokens); err != nil {
 						logger.Error(ctx, err)
 					}
 				}, nil); err != nil {

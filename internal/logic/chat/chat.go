@@ -69,7 +69,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
-		if retryInfo == nil && err == nil {
+		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 
 			if response.Usage == nil || response.Usage.TotalTokens == 0 {
 
@@ -117,7 +117,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, reqModel, response.Usage); err != nil {
+				if err := service.Common().RecordUsage(ctx, response.Usage.TotalTokens); err != nil {
 					logger.Error(ctx, err)
 				}
 			}, nil); err != nil {
@@ -430,7 +430,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 			if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, reqModel, usage); err != nil {
+					if err := service.Common().RecordUsage(ctx, usage.TotalTokens); err != nil {
 						logger.Error(ctx, err)
 					}
 				}, nil); err != nil {

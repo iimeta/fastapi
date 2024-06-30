@@ -5,63 +5,53 @@ import (
 	"fmt"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/consts"
-	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
-	"math"
 )
 
 // 记录使用额度
-func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage *sdkm.Usage) error {
+func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "sCommon RecordUsage time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	if usage == nil {
+	if totalTokens == 0 {
 		return nil
-	}
-
-	var totalTokens int64
-	if model.TextQuota.BillingMethod == 1 {
-		totalTokens = int64(math.Ceil(float64(usage.PromptTokens)*model.TextQuota.PromptRatio + float64(usage.CompletionTokens)*model.TextQuota.CompletionRatio))
-	} else {
-		totalTokens = int64(model.TextQuota.FixedQuota)
 	}
 
 	usageKey := s.GetUserUsageKey(ctx)
 
-	currentQuota, err := redis.HIncrBy(ctx, usageKey, consts.USER_QUOTA_FIELD, -totalTokens)
+	currentQuota, err := redis.HIncrBy(ctx, usageKey, consts.USER_QUOTA_FIELD, int64(-totalTokens))
 	if err != nil {
 		logger.Error(ctx, err)
 	}
 
 	if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
-		service.User().SpendQuota(ctx, service.Session().GetUserId(ctx), int(totalTokens), int(currentQuota))
+		service.User().SpendQuota(ctx, service.Session().GetUserId(ctx), totalTokens, int(currentQuota))
 	}, nil); err != nil {
 		logger.Error(ctx, err)
 	}
 
 	if service.Session().GetAppIsLimitQuota(ctx) {
 
-		currentQuota, err = redis.HIncrBy(ctx, usageKey, s.GetAppTotalTokensField(ctx), -totalTokens)
+		currentQuota, err = redis.HIncrBy(ctx, usageKey, s.GetAppTotalTokensField(ctx), int64(-totalTokens))
 		if err != nil {
 			logger.Error(ctx, err)
 		}
 
 		if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
-			service.App().SpendQuota(ctx, service.Session().GetAppId(ctx), int(totalTokens), int(currentQuota))
+			service.App().SpendQuota(ctx, service.Session().GetAppId(ctx), totalTokens, int(currentQuota))
 		}, nil); err != nil {
 			logger.Error(ctx, err)
 		}
 
 	} else {
 		if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
-			service.App().UsedQuota(ctx, service.Session().GetAppId(ctx), int(totalTokens))
+			service.App().UsedQuota(ctx, service.Session().GetAppId(ctx), totalTokens)
 		}, nil); err != nil {
 			logger.Error(ctx, err)
 		}
@@ -69,20 +59,20 @@ func (s *sCommon) RecordUsage(ctx context.Context, model *model.Model, usage *sd
 
 	if service.Session().GetKeyIsLimitQuota(ctx) {
 
-		currentQuota, err = redis.HIncrBy(ctx, usageKey, s.GetKeyTotalTokensField(ctx), -totalTokens)
+		currentQuota, err = redis.HIncrBy(ctx, usageKey, s.GetKeyTotalTokensField(ctx), int64(-totalTokens))
 		if err != nil {
 			logger.Error(ctx, err)
 		}
 
 		if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
-			service.App().AppKeySpendQuota(ctx, service.Session().GetSecretKey(ctx), int(totalTokens), int(currentQuota))
+			service.App().AppKeySpendQuota(ctx, service.Session().GetSecretKey(ctx), totalTokens, int(currentQuota))
 		}, nil); err != nil {
 			logger.Error(ctx, err)
 		}
 
 	} else {
 		if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
-			service.App().AppKeyUsedQuota(ctx, service.Session().GetSecretKey(ctx), int(totalTokens))
+			service.App().AppKeyUsedQuota(ctx, service.Session().GetSecretKey(ctx), totalTokens)
 		}, nil); err != nil {
 			logger.Error(ctx, err)
 		}
