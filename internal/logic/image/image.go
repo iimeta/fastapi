@@ -2,7 +2,6 @@ package image
 
 import (
 	"context"
-	"fmt"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
@@ -91,7 +90,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 					imageRes.Usage = *usage
 				}
 
-				s.SaveChat(ctx, reqModel, realModel, fallbackModel, k, &params, imageRes, retryInfo)
+				s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, imageRes, retryInfo)
 
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -186,6 +185,9 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 	request := params
 	key = k.Key
 
+	// todo
+	common.GetWidthHeight(request.Size)
+
 	if !gstr.Contains(realModel.Model, "*") {
 		request.Model = realModel.Model
 	}
@@ -260,12 +262,12 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 	return response, nil
 }
 
-// 保存文生图聊天数据
-func (s *sImage) SaveChat(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *mcommon.Retry) {
+// 保存文生图日志
+func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *mcommon.Retry) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sImage SaveChat time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sImage SaveLog time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	// 不记录此错误日志
@@ -273,65 +275,65 @@ func (s *sImage) SaveChat(ctx context.Context, reqModel, realModel, fallbackMode
 		return
 	}
 
-	completion := ""
-	for i, data := range imageRes.Data {
-
-		if len(completion) > 0 {
-			completion += "\n\n"
-		}
-
-		completion += fmt.Sprintf("%d. %s", i+1, data.URL)
+	image := do.Image{
+		TraceId:        gctx.CtxId(ctx),
+		UserId:         service.Session().GetUserId(ctx),
+		AppId:          service.Session().GetAppId(ctx),
+		Prompt:         imageReq.Prompt,
+		Size:           imageReq.Size,
+		N:              imageReq.N,
+		Quality:        imageReq.Quality,
+		Style:          imageReq.Style,
+		ResponseFormat: imageReq.ResponseFormat,
+		ConnTime:       imageRes.ConnTime,
+		Duration:       imageRes.Duration,
+		TotalTime:      imageRes.TotalTime,
+		InternalTime:   imageRes.InternalTime,
+		ReqTime:        imageRes.EnterTime,
+		ReqDate:        gtime.NewFromTimeStamp(imageRes.EnterTime).Format("Y-m-d"),
+		ClientIp:       g.RequestFromCtx(ctx).GetClientIp(),
+		RemoteIp:       g.RequestFromCtx(ctx).GetRemoteIp(),
+		LocalIp:        util.GetLocalIp(),
+		Status:         1,
 	}
 
-	chat := do.Chat{
-		TraceId:      gctx.CtxId(ctx),
-		UserId:       service.Session().GetUserId(ctx),
-		AppId:        service.Session().GetAppId(ctx),
-		Prompt:       imageReq.Prompt,
-		Completion:   completion,
-		ConnTime:     imageRes.ConnTime,
-		Duration:     imageRes.Duration,
-		TotalTime:    imageRes.TotalTime,
-		InternalTime: imageRes.InternalTime,
-		ReqTime:      imageRes.EnterTime,
-		ReqDate:      gtime.NewFromTimeStamp(imageRes.EnterTime).Format("Y-m-d"),
-		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
-		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
-		LocalIp:      util.GetLocalIp(),
-		Status:       1,
+	for _, data := range imageRes.Data {
+		image.ImageData = append(image.ImageData, mcommon.ImageData{
+			URL:           data.URL,
+			B64JSON:       data.B64JSON,
+			RevisedPrompt: data.RevisedPrompt,
+		})
 	}
 
-	chat.Corp = reqModel.Corp
-	chat.ModelId = reqModel.Id
-	chat.Name = reqModel.Name
-	chat.Model = reqModel.Model
-	chat.Type = reqModel.Type
-	chat.ImageQuotas = reqModel.ImageQuotas
+	image.Corp = reqModel.Corp
+	image.ModelId = reqModel.Id
+	image.Name = reqModel.Name
+	image.Model = reqModel.Model
+	image.Type = reqModel.Type
+	image.ImageQuotas = reqModel.ImageQuotas
 
-	chat.IsEnablePresetConfig = realModel.IsEnablePresetConfig
-	chat.PresetConfig = realModel.PresetConfig
-	chat.IsEnableForward = realModel.IsEnableForward
-	chat.ForwardConfig = realModel.ForwardConfig
-	chat.IsEnableModelAgent = realModel.IsEnableModelAgent
-	chat.RealModelId = realModel.Id
-	chat.RealModelName = realModel.Name
-	chat.RealModel = realModel.Model
+	image.IsEnablePresetConfig = realModel.IsEnablePresetConfig
+	image.PresetConfig = realModel.PresetConfig
+	image.IsEnableForward = realModel.IsEnableForward
+	image.ForwardConfig = realModel.ForwardConfig
+	image.IsEnableModelAgent = realModel.IsEnableModelAgent
+	image.RealModelId = realModel.Id
+	image.RealModelName = realModel.Name
+	image.RealModel = realModel.Model
 
-	chat.PromptTokens = imageRes.Usage.PromptTokens
-	chat.CompletionTokens = imageRes.Usage.CompletionTokens
-	chat.TotalTokens = imageRes.Usage.TotalTokens
+	image.TotalTokens = imageRes.Usage.TotalTokens
 
 	if fallbackModel != nil {
-		chat.IsEnableFallback = true
-		chat.FallbackConfig = &mcommon.FallbackConfig{
+		image.IsEnableFallback = true
+		image.FallbackConfig = &mcommon.FallbackConfig{
 			FallbackModel:     fallbackModel.Model,
 			FallbackModelName: fallbackModel.Name,
 		}
 	}
 
-	if chat.IsEnableModelAgent && realModel.ModelAgent != nil {
-		chat.ModelAgentId = realModel.ModelAgent.Id
-		chat.ModelAgent = &do.ModelAgent{
+	if image.IsEnableModelAgent && realModel.ModelAgent != nil {
+		image.ModelAgentId = realModel.ModelAgent.Id
+		image.ModelAgent = &do.ModelAgent{
 			Corp:    realModel.ModelAgent.Corp,
 			Name:    realModel.ModelAgent.Name,
 			BaseUrl: realModel.ModelAgent.BaseUrl,
@@ -343,34 +345,34 @@ func (s *sImage) SaveChat(ctx context.Context, reqModel, realModel, fallbackMode
 	}
 
 	if key != nil {
-		chat.Key = key.Key
+		image.Key = key.Key
 	}
 
 	if imageRes.Error != nil {
-		chat.ErrMsg = imageRes.Error.Error()
+		image.ErrMsg = imageRes.Error.Error()
 		if common.IsAborted(imageRes.Error) {
-			chat.Status = 2
+			image.Status = 2
 		} else {
-			chat.Status = -1
+			image.Status = -1
 		}
 	}
 
 	if retryInfo != nil {
 
-		chat.IsRetry = retryInfo.IsRetry
-		chat.Retry = &mcommon.Retry{
+		image.IsRetry = retryInfo.IsRetry
+		image.Retry = &mcommon.Retry{
 			IsRetry:    retryInfo.IsRetry,
 			RetryCount: retryInfo.RetryCount,
 			ErrMsg:     retryInfo.ErrMsg,
 		}
 
-		if chat.IsRetry && imageRes.Error == nil {
-			chat.Status = 3
-			chat.ErrMsg = retryInfo.ErrMsg
+		if image.IsRetry && imageRes.Error == nil {
+			image.Status = 3
+			image.ErrMsg = retryInfo.ErrMsg
 		}
 	}
 
-	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
+	if _, err := dao.Chat.Insert(ctx, image); err != nil {
 		logger.Error(ctx, err)
 	}
 }

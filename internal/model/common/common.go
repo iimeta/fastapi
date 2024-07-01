@@ -51,3 +51,9 @@ type Retry struct {
 	RetryCount int    `bson:"retry_count,omitempty" json:"retry_count,omitempty"` // 重试次数
 	ErrMsg     string `bson:"err_msg,omitempty"     json:"err_msg,omitempty"`     // 错误信息
 }
+
+type ImageData struct {
+	URL           string `bson:"url,omitempty"`
+	B64JSON       string `bson:"b64_json,omitempty"`
+	RevisedPrompt string `bson:"revised_prompt,omitempty"`
+}

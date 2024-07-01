@@ -136,3 +136,37 @@ func HandleMessages(messages []sdkm.ChatCompletionMessage) []sdkm.ChatCompletion
 
 	return newMessages
 }
+
+func GetWidthHeight(size string) (int, int) {
+
+	width := 1024
+	height := 1024
+
+	if size != "" {
+
+		widthHeight := gstr.Split(size, `×`)
+
+		if len(widthHeight) != 2 {
+			widthHeight = gstr.Split(size, `x`)
+		}
+
+		if len(widthHeight) != 2 {
+			widthHeight = gstr.Split(size, `X`)
+		}
+
+		if len(widthHeight) != 2 {
+			widthHeight = gstr.Split(size, `*`)
+		}
+
+		if len(widthHeight) != 2 {
+			widthHeight = gstr.Split(size, `:`)
+		}
+
+		if len(widthHeight) == 2 {
+			width = gconv.Int(widthHeight[0])
+			height = gconv.Int(widthHeight[1])
+		}
+	}
+
+	return width, height
+}

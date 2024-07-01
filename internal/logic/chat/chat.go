@@ -146,7 +146,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				completionsRes.Completion = response.Choices[0].Message.Content
 			}
 
-			s.SaveChat(ctx, reqModel, realModel, fallbackModel, k, &params, completionsRes, retryInfo)
+			s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, completionsRes, retryInfo)
 
 		}, nil); err != nil {
 			logger.Error(ctx, err)
@@ -456,7 +456,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					completionsRes.Usage = *usage
 				}
 
-				s.SaveChat(ctx, reqModel, realModel, fallbackModel, k, &params, completionsRes, retryInfo)
+				s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, completionsRes, retryInfo)
 
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -746,12 +746,12 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	}
 }
 
-// 保存文生文聊天数据
-func (s *sChat) SaveChat(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, isSmartMatch ...bool) {
+// 保存文生文日志
+func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, isSmartMatch ...bool) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sChat SaveChat time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sChat SaveLog time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	// 不记录此错误日志
