@@ -2,6 +2,7 @@ package image
 
 import (
 	"context"
+	"fmt"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
@@ -44,6 +45,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 		realModel  = new(model.Model)
 		k          *model.Key
 		modelAgent *model.ModelAgent
+		imageQuota mcommon.ImageQuota
 		key        string
 		baseUrl    string
 		path       string
@@ -57,8 +59,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := &sdkm.Usage{
-			CompletionTokens: reqModel.TextQuota.FixedQuota,
-			TotalTokens:      reqModel.TextQuota.FixedQuota,
+			TotalTokens: imageQuota.FixedQuota * len(response.Data),
 		}
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -185,8 +186,8 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 	request := params
 	key = k.Key
 
-	// todo
-	common.GetWidthHeight(request.Size)
+	imageQuota = common.GetImageQuota(realModel, request.Size)
+	request.Size = fmt.Sprintf("%dx%d", imageQuota.Width, imageQuota.Height)
 
 	if !gstr.Contains(realModel.Model, "*") {
 		request.Model = realModel.Model

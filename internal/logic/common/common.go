@@ -12,6 +12,7 @@ import (
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
+	mcommon "github.com/iimeta/fastapi/internal/model/common"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"net"
@@ -137,10 +138,12 @@ func HandleMessages(messages []sdkm.ChatCompletionMessage) []sdkm.ChatCompletion
 	return newMessages
 }
 
-func GetWidthHeight(size string) (int, int) {
+func GetImageQuota(model *model.Model, size string) (imageQuota mcommon.ImageQuota) {
 
-	width := 1024
-	height := 1024
+	var (
+		width  int
+		height int
+	)
 
 	if size != "" {
 
@@ -168,5 +171,16 @@ func GetWidthHeight(size string) (int, int) {
 		}
 	}
 
-	return width, height
+	for _, quota := range model.ImageQuotas {
+
+		if quota.Width == width && quota.Height == height {
+			return quota
+		}
+
+		if quota.IsDefault {
+			imageQuota = quota
+		}
+	}
+
+	return imageQuota
 }
