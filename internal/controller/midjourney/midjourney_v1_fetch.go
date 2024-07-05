@@ -14,7 +14,7 @@ func (c *ControllerV1) Fetch(ctx context.Context, req *v1.FetchReq) (res *v1.Fet
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "Controller Fetch time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "Controller Midjourney Fetch time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	response, err := service.Midjourney().Fetch(ctx, req.MidjourneyProxyRequest)

@@ -4,8 +4,8 @@ import (
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 )
 
-type MidjourneyProxyResponse struct {
-	sdkm.MidjourneyProxyResponse
+type MidjourneyResponse struct {
+	sdkm.MidjourneyResponse
 	Usage        sdkm.Usage `json:"usage"`
 	Error        error      `json:"err"`
 	ConnTime     int64      `json:"-"`
