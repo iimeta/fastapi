@@ -2,7 +2,6 @@ package v1
 
 import (
 	"github.com/gogf/gf/v2/frame/g"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
 )
 
 type MainReq struct {
@@ -15,7 +14,6 @@ type MainRes struct {
 
 type FetchReq struct {
 	g.Meta `path:"/task/:taskId/fetch" tags:"midjourney" method:"get" summary:"midjourney api"`
-	sdkm.MidjourneyProxyRequest
 }
 
 type FetchRes struct {

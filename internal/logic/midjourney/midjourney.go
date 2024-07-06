@@ -3,6 +3,7 @@ package midjourney
 import (
 	"context"
 	"fmt"
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gctx"
@@ -20,6 +21,7 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
+	"net/http"
 )
 
 type sMidjourney struct{}
@@ -33,7 +35,7 @@ func New() service.IMidjourney {
 }
 
 // Main
-func (s *sMidjourney) Main(ctx context.Context, request *ghttp.Request, retry ...int) (res []byte, err error) {
+func (s *sMidjourney) Main(ctx context.Context, request *ghttp.Request, retry ...int) (response sdkm.MidjourneyResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -46,7 +48,6 @@ func (s *sMidjourney) Main(ctx context.Context, request *ghttp.Request, retry ..
 		modelAgent *model.ModelAgent
 		baseUrl    = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
 		keyTotal   int
-		response   sdkm.MidjourneyResponse
 	)
 
 	defer func() {
@@ -99,14 +100,14 @@ func (s *sMidjourney) Main(ctx context.Context, request *ghttp.Request, retry ..
 
 	if m, err = service.Model().GetModelBySecretKey(ctx, "Midjourney", service.Session().GetSecretKey(ctx)); err != nil {
 		logger.Error(ctx, err)
-		return nil, err
+		return response, err
 	}
 
 	if m.IsEnableModelAgent {
 
 		if _, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, m); err != nil {
 			logger.Error(ctx, err)
-			return nil, err
+			return response, err
 		}
 
 		if modelAgent != nil {
@@ -116,40 +117,40 @@ func (s *sMidjourney) Main(ctx context.Context, request *ghttp.Request, retry ..
 			if keyTotal, key, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
 				service.ModelAgent().RecordErrorModelAgent(ctx, m, modelAgent)
 				logger.Error(ctx, err)
-				return nil, err
+				return response, err
 			}
 		}
 
 	} else {
 		if keyTotal, key, err = service.Key().PickModelKey(ctx, m); err != nil {
 			logger.Error(ctx, err)
-			return nil, err
+			return response, err
 		}
 	}
 
-	client := sdk.NewMidjourneyClient(ctx, baseUrl, request.RequestURI, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
+	client := sdk.NewMidjourneyClient(ctx, baseUrl, request.RequestURI, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader, http.MethodPost, config.Cfg.Http.ProxyUrl)
 	response, err = client.Main(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
 
 		if len(retry) > 0 {
 			if config.Cfg.Api.Retry > 0 && len(retry) == config.Cfg.Api.Retry {
-				return nil, err
+				return response, err
 			} else if config.Cfg.Api.Retry < 0 && len(retry) == keyTotal {
-				return nil, err
+				return response, err
 			} else if config.Cfg.Api.Retry == 0 {
-				return nil, err
+				return response, err
 			}
 		}
 
 		return s.Main(ctx, request, append(retry, 1)...)
 	}
 
-	return response.Response, nil
+	return response, nil
 }
 
 // Fetch
-func (s *sMidjourney) Fetch(ctx context.Context, params sdkm.MidjourneyProxyRequest, retry ...int) (response sdkm.MidjourneyProxyFetchResponse, err error) {
+func (s *sMidjourney) Fetch(ctx context.Context, request *ghttp.Request, retry ...int) (response sdkm.MidjourneyResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -162,14 +163,11 @@ func (s *sMidjourney) Fetch(ctx context.Context, params sdkm.MidjourneyProxyRequ
 		modelAgent *model.ModelAgent
 		baseUrl    = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
 		keyTotal   int
+		taskId     = request.GetRouterMap()["taskId"]
+		imageUrl   string
 	)
 
 	defer func() {
-
-		// 替换图片CDN地址
-		if config.Cfg.Midjourney.CdnUrl != "" && config.Cfg.Midjourney.MidjourneyProxy.CdnOriginalUrl != "" {
-			response.ImageUrl = gstr.Replace(response.ImageUrl, config.Cfg.Midjourney.MidjourneyProxy.CdnOriginalUrl, config.Cfg.Midjourney.CdnUrl)
-		}
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
@@ -196,7 +194,7 @@ func (s *sMidjourney) Fetch(ctx context.Context, params sdkm.MidjourneyProxyRequ
 
 				midjourneyProxyResponse := model.MidjourneyResponse{
 					MidjourneyResponse: sdkm.MidjourneyResponse{
-						Response: []byte(fmt.Sprintf("taskId: %s\nimageUrl: %s", params.TaskId, response.ImageUrl)),
+						Response: []byte(fmt.Sprintf("taskId: %s\nimageUrl: %s", taskId, imageUrl)),
 					},
 					TotalTime:    response.TotalTime,
 					Error:        err,
@@ -208,7 +206,7 @@ func (s *sMidjourney) Fetch(ctx context.Context, params sdkm.MidjourneyProxyRequ
 					midjourneyProxyResponse.Usage = *usage
 				}
 
-				s.SaveLog(ctx, m, key, params.TaskId, midjourneyProxyResponse)
+				s.SaveLog(ctx, m, key, taskId, midjourneyProxyResponse)
 
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -249,8 +247,8 @@ func (s *sMidjourney) Fetch(ctx context.Context, params sdkm.MidjourneyProxyRequ
 		}
 	}
 
-	client := sdk.NewMidjourneyClient(ctx, baseUrl, "/mj/task/${taskId}/fetch", key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
-	response, err = client.Fetch(ctx, params)
+	client := sdk.NewMidjourneyClient(ctx, baseUrl, request.RequestURI, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader, http.MethodGet, config.Cfg.Http.ProxyUrl)
+	response, err = client.Main(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -264,7 +262,27 @@ func (s *sMidjourney) Fetch(ctx context.Context, params sdkm.MidjourneyProxyRequ
 			}
 		}
 
-		return s.Fetch(ctx, params, append(retry, 1)...)
+		return s.Fetch(ctx, request, append(retry, 1)...)
+	}
+
+	data := map[string]interface{}{}
+	if err = gjson.Unmarshal(response.Response, &data); err != nil {
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	imageUrl = data["imageUrl"].(string)
+
+	// 替换图片CDN地址
+	if config.Cfg.Midjourney.CdnUrl != "" && config.Cfg.Midjourney.MidjourneyProxy.CdnOriginalUrl != "" {
+
+		imageUrl = gstr.Replace(imageUrl, config.Cfg.Midjourney.MidjourneyProxy.CdnOriginalUrl, config.Cfg.Midjourney.CdnUrl)
+		data["imageUrl"] = imageUrl
+
+		if response.Response, err = gjson.Marshal(data); err != nil {
+			logger.Error(ctx, err)
+			return response, err
+		}
 	}
 
 	return response, nil

@@ -17,12 +17,12 @@ func (c *ControllerV1) Fetch(ctx context.Context, req *v1.FetchReq) (res *v1.Fet
 		logger.Debugf(ctx, "Controller Midjourney Fetch time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	response, err := service.Midjourney().Fetch(ctx, req.MidjourneyProxyRequest)
+	response, err := service.Midjourney().Fetch(ctx, g.RequestFromCtx(ctx))
 	if err != nil {
 		return nil, err
 	}
 
-	g.RequestFromCtx(ctx).Response.WriteJson(response)
+	g.RequestFromCtx(ctx).Response.WriteJson(response.Response)
 
 	return
 }

@@ -22,7 +22,7 @@ func (c *ControllerV1) Main(ctx context.Context, req *v1.MainReq) (res *v1.MainR
 		return nil, err
 	}
 
-	g.RequestFromCtx(ctx).Response.WriteJson(response)
+	g.RequestFromCtx(ctx).Response.WriteJson(response.Response)
 
 	return
 }
