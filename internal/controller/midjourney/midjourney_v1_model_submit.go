@@ -10,14 +10,14 @@ import (
 	"github.com/iimeta/fastapi/api/midjourney/v1"
 )
 
-func (c *ControllerV1) Fetch(ctx context.Context, req *v1.FetchReq) (res *v1.FetchRes, err error) {
+func (c *ControllerV1) ModelSubmit(ctx context.Context, req *v1.ModelSubmitReq) (res *v1.ModelSubmitRes, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "Controller Midjourney Fetch time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "Controller Midjourney ModelSubmit time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	response, err := service.Midjourney().Fetch(ctx, g.RequestFromCtx(ctx))
+	response, err := service.Midjourney().Submit(ctx, g.RequestFromCtx(ctx))
 	if err != nil {
 		return nil, err
 	}

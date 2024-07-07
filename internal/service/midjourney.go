@@ -16,9 +16,9 @@ import (
 type (
 	IMidjourney interface {
 		// Main
-		Main(ctx context.Context, request *ghttp.Request, retry ...int) (response sdkm.MidjourneyResponse, err error)
+		Submit(ctx context.Context, request *ghttp.Request, retry ...int) (response sdkm.MidjourneyResponse, err error)
 		// Fetch
-		Fetch(ctx context.Context, request *ghttp.Request, retry ...int) (response sdkm.MidjourneyResponse, err error)
+		Task(ctx context.Context, request *ghttp.Request, retry ...int) (response sdkm.MidjourneyResponse, err error)
 		// 保存Midjourney日志
 		SaveLog(ctx context.Context, model *model.Model, key *model.Key, prompt string, response model.MidjourneyResponse)
 	}

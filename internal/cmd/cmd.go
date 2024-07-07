@@ -80,16 +80,12 @@ var (
 				})
 			})
 
-			s.Group("/mj", func(v1 *ghttp.RouterGroup) {
-
+			s.Group("/mj**", func(v1 *ghttp.RouterGroup) {
 				v1.Middleware(middlewareHandlerResponse)
 				v1.Middleware(middleware)
-
-				v1.Group("/", func(g *ghttp.RouterGroup) {
-					g.Bind(
-						midjourney.NewV1(),
-					)
-				})
+				v1.Bind(
+					midjourney.NewV1(),
+				)
 			})
 
 			if config.Cfg.ApiServerAddress != "" {

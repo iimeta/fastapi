@@ -11,6 +11,8 @@ import (
 )
 
 type IMidjourneyV1 interface {
-	Main(ctx context.Context, req *v1.MainReq) (res *v1.MainRes, err error)
-	Fetch(ctx context.Context, req *v1.FetchReq) (res *v1.FetchRes, err error)
+	Submit(ctx context.Context, req *v1.SubmitReq) (res *v1.SubmitRes, err error)
+	ModelSubmit(ctx context.Context, req *v1.ModelSubmitReq) (res *v1.ModelSubmitRes, err error)
+	Task(ctx context.Context, req *v1.TaskReq) (res *v1.TaskRes, err error)
+	ModelTask(ctx context.Context, req *v1.ModelTaskReq) (res *v1.ModelTaskRes, err error)
 }

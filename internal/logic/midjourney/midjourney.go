@@ -34,21 +34,28 @@ func New() service.IMidjourney {
 	return &sMidjourney{}
 }
 
-// Main
-func (s *sMidjourney) Main(ctx context.Context, request *ghttp.Request, retry ...int) (response sdkm.MidjourneyResponse, err error) {
+// 任务提交
+func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, retry ...int) (response sdkm.MidjourneyResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sMidjourney Main time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sMidjourney Submit time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var (
+		reqModel   = "midjourney"
 		m          *model.Model
 		key        *model.Key
 		modelAgent *model.ModelAgent
 		baseUrl    = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
+		path       = request.RequestURI[3:]
 		keyTotal   int
 	)
+
+	if model := request.GetRouterMap()["model"]; model != "" {
+		reqModel = model
+		path = gstr.Replace(path, "/"+reqModel, "")
+	}
 
 	defer func() {
 
@@ -98,7 +105,7 @@ func (s *sMidjourney) Main(ctx context.Context, request *ghttp.Request, retry ..
 		}
 	}()
 
-	if m, err = service.Model().GetModelBySecretKey(ctx, "Midjourney", service.Session().GetSecretKey(ctx)); err != nil {
+	if m, err = service.Model().GetModelBySecretKey(ctx, reqModel, service.Session().GetSecretKey(ctx)); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
@@ -128,8 +135,8 @@ func (s *sMidjourney) Main(ctx context.Context, request *ghttp.Request, retry ..
 		}
 	}
 
-	client := sdk.NewMidjourneyClient(ctx, baseUrl, request.RequestURI, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader, http.MethodPost, config.Cfg.Http.ProxyUrl)
-	response, err = client.Main(ctx, request.GetBody())
+	client := sdk.NewMidjourneyClient(ctx, baseUrl, path, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader, request.Method, config.Cfg.Http.ProxyUrl)
+	response, err = client.Request(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -143,29 +150,36 @@ func (s *sMidjourney) Main(ctx context.Context, request *ghttp.Request, retry ..
 			}
 		}
 
-		return s.Main(ctx, request, append(retry, 1)...)
+		return s.Submit(ctx, request, append(retry, 1)...)
 	}
 
 	return response, nil
 }
 
-// Fetch
-func (s *sMidjourney) Fetch(ctx context.Context, request *ghttp.Request, retry ...int) (response sdkm.MidjourneyResponse, err error) {
+// 任务查询
+func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, retry ...int) (response sdkm.MidjourneyResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sMidjourney Fetch time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sMidjourney Task time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var (
+		reqModel   = "midjourney"
 		m          *model.Model
 		key        *model.Key
 		modelAgent *model.ModelAgent
 		baseUrl    = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
+		path       = request.RequestURI[3:]
 		keyTotal   int
 		taskId     = request.GetRouterMap()["taskId"]
 		imageUrl   string
 	)
+
+	if model := request.GetRouterMap()["model"]; model != "" {
+		reqModel = model
+		path = gstr.Replace(path, "/"+reqModel, "")
+	}
 
 	defer func() {
 
@@ -217,7 +231,7 @@ func (s *sMidjourney) Fetch(ctx context.Context, request *ghttp.Request, retry .
 		}
 	}()
 
-	if m, err = service.Model().GetModelBySecretKey(ctx, "Midjourney", service.Session().GetSecretKey(ctx)); err != nil {
+	if m, err = service.Model().GetModelBySecretKey(ctx, reqModel, service.Session().GetSecretKey(ctx)); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
@@ -247,8 +261,8 @@ func (s *sMidjourney) Fetch(ctx context.Context, request *ghttp.Request, retry .
 		}
 	}
 
-	client := sdk.NewMidjourneyClient(ctx, baseUrl, request.RequestURI, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader, http.MethodGet, config.Cfg.Http.ProxyUrl)
-	response, err = client.Main(ctx, request.GetBody())
+	client := sdk.NewMidjourneyClient(ctx, baseUrl, path, key.Key, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader, http.MethodGet, config.Cfg.Http.ProxyUrl)
+	response, err = client.Request(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -262,7 +276,7 @@ func (s *sMidjourney) Fetch(ctx context.Context, request *ghttp.Request, retry .
 			}
 		}
 
-		return s.Fetch(ctx, request, append(retry, 1)...)
+		return s.Task(ctx, request, append(retry, 1)...)
 	}
 
 	data := map[string]interface{}{}
@@ -274,7 +288,7 @@ func (s *sMidjourney) Fetch(ctx context.Context, request *ghttp.Request, retry .
 	imageUrl = data["imageUrl"].(string)
 
 	// 替换图片CDN地址
-	if config.Cfg.Midjourney.CdnUrl != "" && config.Cfg.Midjourney.MidjourneyProxy.CdnOriginalUrl != "" {
+	if config.Cfg.Midjourney.CdnUrl != "" && config.Cfg.Midjourney.MidjourneyProxy.CdnOriginalUrl != "" && imageUrl != "" {
 
 		imageUrl = gstr.Replace(imageUrl, config.Cfg.Midjourney.MidjourneyProxy.CdnOriginalUrl, config.Cfg.Midjourney.CdnUrl)
 		data["imageUrl"] = imageUrl

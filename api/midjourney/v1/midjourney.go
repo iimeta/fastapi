@@ -4,18 +4,34 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 )
 
-type MainReq struct {
-	g.Meta `path:"/*" tags:"midjourney" method:"all" summary:"midjourney api"`
+type SubmitReq struct {
+	g.Meta `path:"/submit/*" tags:"midjourney" method:"all" summary:"midjourney api"`
 }
 
-type MainRes struct {
+type SubmitRes struct {
 	g.Meta `mime:"application/json" example:"json"`
 }
 
-type FetchReq struct {
-	g.Meta `path:"/task/:taskId/fetch" tags:"midjourney" method:"get" summary:"midjourney api"`
+type ModelSubmitReq struct {
+	g.Meta `path:"/:model/submit/*" tags:"midjourney" method:"all" summary:"midjourney api"`
 }
 
-type FetchRes struct {
+type ModelSubmitRes struct {
+	g.Meta `mime:"application/json" example:"json"`
+}
+
+type TaskReq struct {
+	g.Meta `path:"/task/*" tags:"midjourney" method:"all" summary:"midjourney api"`
+}
+
+type TaskRes struct {
+	g.Meta `mime:"application/json" example:"json"`
+}
+
+type ModelTaskReq struct {
+	g.Meta `path:"/:model/task/*" tags:"midjourney" method:"all" summary:"midjourney api"`
+}
+
+type ModelTaskRes struct {
 	g.Meta `mime:"application/json" example:"json"`
 }
