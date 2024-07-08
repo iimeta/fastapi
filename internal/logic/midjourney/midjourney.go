@@ -307,7 +307,7 @@ func (s *sMidjourney) SaveLog(ctx context.Context, model *model.Model, key *mode
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sMidjourney SaveChat time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sMidjourney SaveLog time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	// 不记录此错误日志

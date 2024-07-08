@@ -26,6 +26,13 @@ type MultimodalQuota struct {
 	ImageQuotas []ImageQuota `bson:"image_quotas,omitempty" json:"image_quotas,omitempty"` // 图像额度
 }
 
+type MidjourneyQuota struct {
+	Name       string `bson:"name,omitempty"        json:"name,omitempty"`        // 名称
+	Action     string `bson:"action,omitempty"      json:"action,omitempty"`      // 动作
+	Path       string `bson:"path,omitempty"        json:"path,omitempty"`        // 路径
+	FixedQuota int    `bson:"fixed_quota,omitempty" json:"fixed_quota,omitempty"` // 固定额度
+}
+
 type ForwardConfig struct {
 	ForwardRule   int      `bson:"forward_rule,omitempty"   json:"forward_rule,omitempty"`   // 转发规则[1:全部转发, 2:按关键字, 3:内容长度]
 	MatchRule     []int    `bson:"match_rule,omitempty"     json:"match_rule,omitempty"`     // 转发规则为2时的匹配规则[1:智能匹配, 2:正则匹配]
