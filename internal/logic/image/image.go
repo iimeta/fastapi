@@ -263,7 +263,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 	return response, nil
 }
 
-// 保存文生图日志
+// 保存日志
 func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *mcommon.Retry) {
 
 	now := gtime.TimestampMilli()

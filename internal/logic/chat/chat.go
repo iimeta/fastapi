@@ -746,7 +746,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	}
 }
 
-// 保存文生文日志
+// 保存日志
 func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, isSmartMatch ...bool) {
 
 	now := gtime.TimestampMilli()

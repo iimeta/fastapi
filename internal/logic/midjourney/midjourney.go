@@ -302,7 +302,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, retry ..
 	return response, nil
 }
 
-// 保存Midjourney日志
+// 保存日志
 func (s *sMidjourney) SaveLog(ctx context.Context, model *model.Model, key *model.Key, prompt string, response model.MidjourneyResponse) {
 
 	now := gtime.TimestampMilli()
