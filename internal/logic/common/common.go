@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/text/gregex"
@@ -183,4 +184,15 @@ func GetImageQuota(model *model.Model, size string) (imageQuota mcommon.ImageQuo
 	}
 
 	return imageQuota
+}
+
+func GetMidjourneyQuota(model *model.Model, request *ghttp.Request, path string) (mcommon.MidjourneyQuota, error) {
+
+	for _, quota := range model.MidjourneyQuotas {
+		if quota.Path == path {
+			return quota, nil
+		}
+	}
+
+	return mcommon.MidjourneyQuota{}, errors.ERR_PATH_NOT_FOUND
 }

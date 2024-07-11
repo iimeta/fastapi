@@ -28,7 +28,7 @@ type MultimodalQuota struct {
 
 type MidjourneyQuota struct {
 	Name       string `bson:"name,omitempty"        json:"name,omitempty"`        // 名称
-	Action     string `bson:"action,omitempty"      json:"action,omitempty"`      // 动作
+	Action     string `bson:"action,omitempty"      json:"action,omitempty"`      // 动作[IMAGINE, UPSCALE, VARIATION, ZOOM, PAN, DESCRIBE, BLEND, SHORTEN, SWAP_FACE]
 	Path       string `bson:"path,omitempty"        json:"path,omitempty"`        // 路径
 	FixedQuota int    `bson:"fixed_quota,omitempty" json:"fixed_quota,omitempty"` // 固定额度
 }

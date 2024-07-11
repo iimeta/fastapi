@@ -40,6 +40,7 @@ var (
 	ERR_INVALID_APP                  = NewError(401, "invalid_app", "App does not exist or has been disabled.", "fastapi_request_error")
 	ERR_APP_DISABLED                 = NewError(401, "app_disabled", "App has been disabled.", "fastapi_error")
 	ERR_MODEL_NOT_FOUND              = NewError(404, "model_not_found", "The model does not exist or you do not have access to it.", "fastapi_request_error")
+	ERR_PATH_NOT_FOUND               = NewError(404, "path_not_found", "The path does not exist or you do not have access to it.", "fastapi_request_error")
 	ERR_MODEL_DISABLED               = NewError(401, "model_disabled", "Model has been disabled.", "fastapi_request_error")
 	ERR_INSUFFICIENT_QUOTA           = NewError(429, "insufficient_quota", "You exceeded your current quota.", "insufficient_quota")
 )

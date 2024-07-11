@@ -76,7 +76,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 
 			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
 
-				reqModel.ModelAgent = modelAgent
+				realModel.ModelAgent = modelAgent
 
 				imageRes := &model.ImageRes{
 					Created:      response.Created,
@@ -373,7 +373,7 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 		}
 	}
 
-	if _, err := dao.Chat.Insert(ctx, image); err != nil {
+	if _, err := dao.Image.Insert(ctx, image); err != nil {
 		logger.Error(ctx, err)
 	}
 }

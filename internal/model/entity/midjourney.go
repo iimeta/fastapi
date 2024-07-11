@@ -28,6 +28,7 @@ type Midjourney struct {
 	RealModelId          string                   `bson:"real_model_id,omitempty"`           // 真实模型ID
 	RealModelName        string                   `bson:"real_model_name,omitempty"`         // 真实模型名称
 	RealModel            string                   `bson:"real_model,omitempty"`              // 真实模型
+	ReqUrl               string                   `bson:"req_url,omitempty"`                 // 请求地址
 	TaskId               string                   `bson:"task_id,omitempty"`                 // 任务ID
 	Action               string                   `bson:"action,omitempty"`                  // 动作[IMAGINE, UPSCALE, VARIATION, ZOOM, PAN, DESCRIBE, BLEND, SHORTEN, SWAP_FACE]
 	Prompt               string                   `bson:"prompt,omitempty"`                  // 提示(提问)

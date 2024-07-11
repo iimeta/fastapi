@@ -11,16 +11,17 @@ import (
 	"github.com/gogf/gf/v2/net/ghttp"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/model"
+	mcommon "github.com/iimeta/fastapi/internal/model/common"
 )
 
 type (
 	IMidjourney interface {
-		// Main
-		Submit(ctx context.Context, request *ghttp.Request, retry ...int) (response sdkm.MidjourneyResponse, err error)
-		// Fetch
-		Task(ctx context.Context, request *ghttp.Request, retry ...int) (response sdkm.MidjourneyResponse, err error)
-		// 保存Midjourney日志
-		SaveLog(ctx context.Context, model *model.Model, key *model.Key, prompt string, response model.MidjourneyResponse)
+		// 任务提交
+		Submit(ctx context.Context, request *ghttp.Request, fallbackModel *model.Model, retry ...int) (response sdkm.MidjourneyResponse, err error)
+		// 任务查询
+		Task(ctx context.Context, request *ghttp.Request, fallbackModel *model.Model, retry ...int) (response sdkm.MidjourneyResponse, err error)
+		// 保存日志
+		SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, response model.MidjourneyResponse, retryInfo *mcommon.Retry)
 	}
 )
 
