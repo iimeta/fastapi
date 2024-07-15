@@ -109,8 +109,13 @@ func (s *sUser) SpendQuota(ctx context.Context, userId, quota, currentQuota int)
 		logger.Error(ctx, err)
 	}
 
-	user.Quota = currentQuota
 	user.UsedQuota += quota
+
+	if currentQuota <= 0 {
+		user.Quota -= quota
+	} else {
+		user.Quota = currentQuota
+	}
 
 	if err = s.SaveCacheUser(ctx, user); err != nil {
 		logger.Error(ctx, err)

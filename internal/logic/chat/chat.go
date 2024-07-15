@@ -391,11 +391,13 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-			if retryInfo == nil && (completion != "" && usage == nil) {
+			if retryInfo == nil && (completion != "" && (usage == nil || usage.PromptTokens == 0 || usage.CompletionTokens == 0)) {
 
-				usage = new(sdkm.Usage)
+				if usage == nil {
+					usage = new(sdkm.Usage)
+				}
+
 				model := reqModel.Model
-
 				if common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI && common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_AZURE {
 					model = consts.DEFAULT_MODEL
 				} else {
@@ -404,20 +406,24 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					}
 				}
 
-				promptTime := gtime.TimestampMilli()
-				if promptTokens, err := tiktoken.NumTokensFromMessages(model, params.Messages); err != nil {
-					logger.Errorf(ctx, "sChat CompletionsStream model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
-				} else {
-					usage.PromptTokens = promptTokens
-					logger.Debugf(ctx, "sChat CompletionsStream NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-promptTime)
+				if usage.PromptTokens == 0 {
+					promptTime := gtime.TimestampMilli()
+					if promptTokens, err := tiktoken.NumTokensFromMessages(model, params.Messages); err != nil {
+						logger.Errorf(ctx, "sChat CompletionsStream model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
+					} else {
+						usage.PromptTokens = promptTokens
+						logger.Debugf(ctx, "sChat CompletionsStream NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-promptTime)
+					}
 				}
 
-				completionTime := gtime.TimestampMilli()
-				if completionTokens, err := tiktoken.NumTokensFromString(model, completion); err != nil {
-					logger.Errorf(ctx, "sChat CompletionsStream model: %s, completion: %s, NumTokensFromString error: %v", params.Model, completion, err)
-				} else {
-					usage.CompletionTokens = completionTokens
-					logger.Debugf(ctx, "sChat CompletionsStream NumTokensFromString len(completion): %d, time: %d", len(completion), gtime.TimestampMilli()-completionTime)
+				if usage.CompletionTokens == 0 {
+					completionTime := gtime.TimestampMilli()
+					if completionTokens, err := tiktoken.NumTokensFromString(model, completion); err != nil {
+						logger.Errorf(ctx, "sChat CompletionsStream model: %s, completion: %s, NumTokensFromString error: %v", params.Model, completion, err)
+					} else {
+						usage.CompletionTokens = completionTokens
+						logger.Debugf(ctx, "sChat CompletionsStream NumTokensFromString len(completion): %d, time: %d", len(completion), gtime.TimestampMilli()-completionTime)
+					}
 				}
 
 				// 实际消费额度

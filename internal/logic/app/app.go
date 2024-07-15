@@ -117,8 +117,13 @@ func (s *sApp) SpendQuota(ctx context.Context, appId, quota, currentQuota int) {
 		logger.Error(ctx, err)
 	}
 
-	app.Quota = currentQuota
 	app.UsedQuota += quota
+
+	if currentQuota <= 0 {
+		app.Quota -= quota
+	} else {
+		app.Quota = currentQuota
+	}
 
 	if err = s.SaveCacheApp(ctx, app); err != nil {
 		logger.Error(ctx, err)
@@ -405,8 +410,13 @@ func (s *sApp) AppKeySpendQuota(ctx context.Context, secretKey string, quota, cu
 		logger.Error(ctx, err)
 	}
 
-	key.Quota = currentQuota
 	key.UsedQuota += quota
+
+	if currentQuota <= 0 {
+		key.Quota -= quota
+	} else {
+		key.Quota = currentQuota
+	}
 
 	if err = s.SaveCacheAppKey(ctx, key); err != nil {
 		logger.Error(ctx, err)
