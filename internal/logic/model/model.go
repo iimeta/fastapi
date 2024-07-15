@@ -882,10 +882,10 @@ func (s *sModel) GetTargetModel(ctx context.Context, model *model.Model, message
 			for i, keyword := range keywords {
 				if i == 0 {
 					systemEnum = fmt.Sprintf(",%d", i)
-					decisionEnum = fmt.Sprintf("About %s, return %d;", gstr.Replace(keyword, "|", " or "), i)
+					decisionEnum = fmt.Sprintf("About %s, return %d;", gstr.Replace(keyword, "|", " or about "), i)
 				} else {
 					systemEnum += fmt.Sprintf(",%d", i)
-					decisionEnum += fmt.Sprintf(" About %s, return %d;", gstr.Replace(keyword, "|", " or "), i)
+					decisionEnum += fmt.Sprintf(" About %s, return %d;", gstr.Replace(keyword, "|", " or about "), i)
 				}
 			}
 

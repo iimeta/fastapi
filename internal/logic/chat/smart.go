@@ -208,8 +208,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		return response, errors.ERR_NO_AVAILABLE_KEY
 	}
 
-	request := params
-	request.Model = realModel.Model
+	params.Model = realModel.Model
 	key = k.Key
 
 	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
@@ -221,25 +220,25 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 		// 替换预设提示词
 		if realModel.PresetConfig.IsSupportSystemRole && realModel.PresetConfig.SystemRolePrompt != "" {
-			if request.Messages[0].Role == consts.ROLE_SYSTEM {
-				request.Messages = append([]sdkm.ChatCompletionMessage{{
+			if params.Messages[0].Role == consts.ROLE_SYSTEM {
+				params.Messages = append([]sdkm.ChatCompletionMessage{{
 					Role:    consts.ROLE_SYSTEM,
 					Content: realModel.PresetConfig.SystemRolePrompt,
-				}}, request.Messages[1:]...)
+				}}, params.Messages[1:]...)
 			} else {
-				request.Messages = append([]sdkm.ChatCompletionMessage{{
+				params.Messages = append([]sdkm.ChatCompletionMessage{{
 					Role:    consts.ROLE_SYSTEM,
 					Content: realModel.PresetConfig.SystemRolePrompt,
-				}}, request.Messages...)
+				}}, params.Messages...)
 			}
 		}
 
 		// 检查MaxTokens取值范围
-		if request.MaxTokens != 0 {
-			if realModel.PresetConfig.MinTokens != 0 && request.MaxTokens < realModel.PresetConfig.MinTokens {
-				request.MaxTokens = realModel.PresetConfig.MinTokens
-			} else if realModel.PresetConfig.MaxTokens != 0 && request.MaxTokens > realModel.PresetConfig.MaxTokens {
-				request.MaxTokens = realModel.PresetConfig.MaxTokens
+		if params.MaxTokens != 0 {
+			if realModel.PresetConfig.MinTokens != 0 && params.MaxTokens < realModel.PresetConfig.MinTokens {
+				params.MaxTokens = realModel.PresetConfig.MinTokens
+			} else if realModel.PresetConfig.MaxTokens != 0 && params.MaxTokens > realModel.PresetConfig.MaxTokens {
+				params.MaxTokens = realModel.PresetConfig.MaxTokens
 			}
 		}
 	}
@@ -262,7 +261,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		return response, err
 	}
 
-	response, err = client.ChatCompletion(ctx, request)
+	response, err = client.ChatCompletion(ctx, params)
 	if err != nil {
 		logger.Error(ctx, err)
 
