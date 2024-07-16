@@ -47,6 +47,7 @@ type Config struct {
 	Api              Api        `json:"api"`
 	Midjourney       Midjourney `json:"midjourney"`
 	Local            Local      `json:"local"`
+	RecordLogs       []string   `json:"record_logs"`
 	Debug            bool       `json:"debug"`
 }
 

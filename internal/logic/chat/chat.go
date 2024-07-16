@@ -23,6 +23,7 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
 	"math"
+	"slices"
 )
 
 type sChat struct{}
@@ -771,8 +772,6 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel 
 		AppId:        service.Session().GetAppId(ctx),
 		IsSmartMatch: len(isSmartMatch) > 0 && isSmartMatch[0],
 		Stream:       completionsReq.Stream,
-		Prompt:       completionsReq.Messages[len(completionsReq.Messages)-1].Content,
-		Completion:   completionsRes.Completion,
 		ConnTime:     completionsRes.ConnTime,
 		Duration:     completionsRes.Duration,
 		TotalTime:    completionsRes.TotalTime,
@@ -783,6 +782,14 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel 
 		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
 		LocalIp:      util.GetLocalIp(),
 		Status:       1,
+	}
+
+	if slices.Contains(config.Cfg.RecordLogs, "prompt") {
+		chat.Prompt = completionsReq.Messages[len(completionsReq.Messages)-1].Content
+	}
+
+	if slices.Contains(config.Cfg.RecordLogs, "completion") {
+		chat.Completion = completionsRes.Completion
 	}
 
 	chat.Corp = reqModel.Corp
@@ -839,11 +846,13 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel 
 		}
 	}
 
-	for _, message := range completionsReq.Messages {
-		chat.Messages = append(chat.Messages, mcommon.Message{
-			Role:    message.Role,
-			Content: message.Content,
-		})
+	if slices.Contains(config.Cfg.RecordLogs, "messages") {
+		for _, message := range completionsReq.Messages {
+			chat.Messages = append(chat.Messages, mcommon.Message{
+				Role:    message.Role,
+				Content: message.Content,
+			})
+		}
 	}
 
 	if retryInfo != nil {
