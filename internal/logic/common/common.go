@@ -102,7 +102,8 @@ func IsNeedRetry(err error) (isRetry bool, isDisabled bool) {
 		return true, false
 	}
 
-	return false, false
+	// todo
+	return true, false
 }
 
 func IsMaxRetry(isEnableModelAgent bool, agentTotal, keyTotal, retry int) bool {

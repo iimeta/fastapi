@@ -8,6 +8,7 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
+	"github.com/gogf/gf/v2/util/gconv"
 	sdk "github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi-sdk/tiktoken"
@@ -785,7 +786,7 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel 
 	}
 
 	if slices.Contains(config.Cfg.RecordLogs, "prompt") {
-		chat.Prompt = completionsReq.Messages[len(completionsReq.Messages)-1].Content
+		chat.Prompt = gconv.String(completionsReq.Messages[len(completionsReq.Messages)-1].Content)
 	}
 
 	if slices.Contains(config.Cfg.RecordLogs, "completion") {
@@ -850,7 +851,7 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel 
 		for _, message := range completionsReq.Messages {
 			chat.Messages = append(chat.Messages, mcommon.Message{
 				Role:    message.Role,
-				Content: message.Content,
+				Content: gconv.String(message.Content),
 			})
 		}
 	}

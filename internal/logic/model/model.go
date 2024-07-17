@@ -8,6 +8,7 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gregex"
 	"github.com/gogf/gf/v2/text/gstr"
+	"github.com/gogf/gf/v2/util/gconv"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
@@ -828,7 +829,7 @@ func (s *sModel) GetTargetModel(ctx context.Context, model *model.Model, message
 
 		contentLength := 0
 		for _, message := range messages {
-			contentLength += len(message.Content)
+			contentLength += len(gconv.String(message.Content))
 		}
 
 		if contentLength < model.ForwardConfig.ContentLength {
@@ -844,7 +845,7 @@ func (s *sModel) GetTargetModel(ctx context.Context, model *model.Model, message
 
 	} else {
 
-		prompt := messages[len(messages)-1].Content
+		prompt := gconv.String(messages[len(messages)-1].Content)
 
 		keywords := model.ForwardConfig.Keywords
 		if slices.Contains(model.ForwardConfig.MatchRule, 2) {
