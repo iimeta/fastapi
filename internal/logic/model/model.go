@@ -860,6 +860,10 @@ func (s *sModel) GetTargetModel(ctx context.Context, model *model.Model, message
 							return nil, err
 						}
 					}
+
+					if targetModel != nil {
+						break
+					}
 				}
 			}
 		}

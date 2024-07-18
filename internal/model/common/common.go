@@ -15,10 +15,11 @@ type TextQuota struct {
 }
 
 type ImageQuota struct {
-	Width      int  `bson:"width,omitempty"       json:"width,omitempty"`       // 宽度
-	Height     int  `bson:"height,omitempty"      json:"height,omitempty"`      // 高度
-	FixedQuota int  `bson:"fixed_quota,omitempty" json:"fixed_quota,omitempty"` // 固定额度
-	IsDefault  bool `bson:"is_default,omitempty"  json:"is_default,omitempty"`  // 是否默认选项
+	Width      int    `bson:"width,omitempty"       json:"width,omitempty"`       // 宽度
+	Height     int    `bson:"height,omitempty"      json:"height,omitempty"`      // 高度
+	Mode       string `bson:"mode,omitempty"        json:"mode,omitempty"`        // 模式[low, high, auto]
+	FixedQuota int    `bson:"fixed_quota,omitempty" json:"fixed_quota,omitempty"` // 固定额度
+	IsDefault  bool   `bson:"is_default,omitempty"  json:"is_default,omitempty"`  // 是否默认选项
 }
 
 type MultimodalQuota struct {
