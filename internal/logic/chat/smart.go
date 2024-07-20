@@ -30,16 +30,17 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 	}()
 
 	var (
-		client     sdk.Chat
-		realModel  = new(model.Model)
-		k          *model.Key
-		modelAgent *model.ModelAgent
-		key        string
-		baseUrl    string
-		path       string
-		agentTotal int
-		keyTotal   int
-		retryInfo  *mcommon.Retry
+		client      sdk.Chat
+		realModel   = new(model.Model)
+		k           *model.Key
+		modelAgent  *model.ModelAgent
+		key         string
+		baseUrl     string
+		path        string
+		agentTotal  int
+		keyTotal    int
+		retryInfo   *mcommon.Retry
+		totalTokens int
 	)
 
 	defer func() {
@@ -52,9 +53,9 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 			if response.Usage == nil || response.Usage.TotalTokens == 0 {
 
 				response.Usage = new(sdkm.Usage)
-				model := reqModel.Model
+				model := realModel.Model
 
-				if common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI && common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_AZURE {
+				if common.GetCorpCode(ctx, realModel.Corp) != consts.CORP_OPENAI && common.GetCorpCode(ctx, realModel.Corp) != consts.CORP_AZURE {
 					model = consts.DEFAULT_MODEL
 				} else {
 					if _, err := tiktoken.EncodingForModel(model); err != nil {
@@ -81,15 +82,15 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 				}
 			}
 
-			if reqModel != nil {
-				// 替换成调用的模型
-				response.Model = reqModel.Model
-				// 实际消费额度
-				if reqModel.TextQuota.BillingMethod == 1 {
-					response.Usage.TotalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
-				} else {
-					response.Usage.TotalTokens = reqModel.TextQuota.FixedQuota
-				}
+			response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
+		}
+
+		if realModel != nil && response.Usage != nil {
+			// 实际消费额度
+			if realModel.TextQuota.BillingMethod == 1 {
+				totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*realModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*realModel.TextQuota.CompletionRatio))
+			} else {
+				totalTokens = realModel.TextQuota.FixedQuota
 			}
 		}
 
@@ -108,6 +109,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 			if retryInfo == nil && response.Usage != nil {
 				completionsRes.Usage = *response.Usage
+				completionsRes.Usage.TotalTokens = totalTokens
 			}
 
 			if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {

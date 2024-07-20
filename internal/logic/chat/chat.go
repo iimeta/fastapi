@@ -53,17 +53,18 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 	}
 
 	var (
-		client     sdk.Chat
-		reqModel   *model.Model
-		realModel  = new(model.Model)
-		k          *model.Key
-		modelAgent *model.ModelAgent
-		key        string
-		baseUrl    string
-		path       string
-		agentTotal int
-		keyTotal   int
-		retryInfo  *mcommon.Retry
+		client      sdk.Chat
+		reqModel    *model.Model
+		realModel   = new(model.Model)
+		k           *model.Key
+		modelAgent  *model.ModelAgent
+		key         string
+		baseUrl     string
+		path        string
+		agentTotal  int
+		keyTotal    int
+		retryInfo   *mcommon.Retry
+		totalTokens int
 	)
 
 	defer func() {
@@ -108,18 +109,22 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			if reqModel != nil {
 				// 替换成调用的模型
 				response.Model = reqModel.Model
-				// 实际消费额度
-				if reqModel.TextQuota.BillingMethod == 1 {
-					response.Usage.TotalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
-				} else {
-					response.Usage.TotalTokens = reqModel.TextQuota.FixedQuota
-				}
+				response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
+			}
+		}
+
+		if reqModel != nil && response.Usage != nil {
+			// 实际消费额度
+			if reqModel.TextQuota.BillingMethod == 1 {
+				totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
+			} else {
+				totalTokens = reqModel.TextQuota.FixedQuota
 			}
 		}
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, response.Usage.TotalTokens); err != nil {
+				if err := service.Common().RecordUsage(ctx, totalTokens); err != nil {
 					logger.Error(ctx, err)
 				}
 			}, nil); err != nil {
@@ -142,6 +147,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 			if retryInfo == nil && response.Usage != nil {
 				completionsRes.Usage = *response.Usage
+				completionsRes.Usage.TotalTokens = totalTokens
 			}
 
 			if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
