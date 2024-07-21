@@ -104,30 +104,38 @@ func (s *sUser) SpendQuota(ctx context.Context, userId, quota, currentQuota int)
 		logger.Debugf(ctx, "sUser SpendQuota time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	user, err := s.GetCacheUser(ctx, userId)
-	if err != nil {
-		logger.Error(ctx, err)
-	}
-
-	user.UsedQuota += quota
-
-	if currentQuota <= 0 {
-		user.Quota -= quota
-	} else {
-		user.Quota = currentQuota
-	}
-
-	if err = s.SaveCacheUser(ctx, user); err != nil {
-		logger.Error(ctx, err)
-	}
-
-	if err = dao.User.UpdateOne(ctx, bson.M{"user_id": userId}, bson.M{
+	if err := dao.User.UpdateOne(ctx, bson.M{"user_id": userId}, bson.M{
 		"$inc": bson.M{
 			"quota":      -quota,
 			"used_quota": quota,
 		},
 	}); err != nil {
 		logger.Error(ctx, err)
+	}
+
+	user, err := s.GetCacheUser(ctx, userId)
+	if err != nil {
+		logger.Error(ctx, err)
+	}
+
+	if user.Quota > 0 {
+
+		if currentQuota <= 0 {
+			if result, err := dao.User.FindOne(ctx, bson.M{"user_id": userId}); err != nil {
+				user.Quota -= quota
+				logger.Error(ctx, err)
+			} else {
+				user.Quota = result.Quota
+			}
+		} else {
+			user.Quota = currentQuota
+		}
+
+		user.UsedQuota += quota
+
+		if err = s.SaveCacheUser(ctx, user); err != nil {
+			logger.Error(ctx, err)
+		}
 	}
 }
 

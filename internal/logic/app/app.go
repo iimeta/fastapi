@@ -112,30 +112,38 @@ func (s *sApp) SpendQuota(ctx context.Context, appId, quota, currentQuota int) {
 		logger.Debugf(ctx, "sApp SpendQuota time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	app, err := s.GetCacheApp(ctx, appId)
-	if err != nil {
-		logger.Error(ctx, err)
-	}
-
-	app.UsedQuota += quota
-
-	if currentQuota <= 0 {
-		app.Quota -= quota
-	} else {
-		app.Quota = currentQuota
-	}
-
-	if err = s.SaveCacheApp(ctx, app); err != nil {
-		logger.Error(ctx, err)
-	}
-
-	if err = dao.App.UpdateOne(ctx, bson.M{"app_id": appId}, bson.M{
+	if err := dao.App.UpdateOne(ctx, bson.M{"app_id": appId}, bson.M{
 		"$inc": bson.M{
 			"quota":      -quota,
 			"used_quota": quota,
 		},
 	}); err != nil {
 		logger.Error(ctx, err)
+	}
+
+	app, err := s.GetCacheApp(ctx, appId)
+	if err != nil {
+		logger.Error(ctx, err)
+	}
+
+	if app.Quota > 0 {
+
+		if currentQuota <= 0 {
+			if result, err := dao.App.FindOne(ctx, bson.M{"app_id": appId}); err != nil {
+				app.Quota -= quota
+				logger.Error(ctx, err)
+			} else {
+				app.Quota = result.Quota
+			}
+		} else {
+			app.Quota = currentQuota
+		}
+
+		app.UsedQuota += quota
+
+		if err = s.SaveCacheApp(ctx, app); err != nil {
+			logger.Error(ctx, err)
+		}
 	}
 }
 
@@ -405,30 +413,38 @@ func (s *sApp) AppKeySpendQuota(ctx context.Context, secretKey string, quota, cu
 		logger.Debugf(ctx, "sApp AppKeySpendQuota time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	key, err := s.GetCacheAppKey(ctx, secretKey)
-	if err != nil {
-		logger.Error(ctx, err)
-	}
-
-	key.UsedQuota += quota
-
-	if currentQuota <= 0 {
-		key.Quota -= quota
-	} else {
-		key.Quota = currentQuota
-	}
-
-	if err = s.SaveCacheAppKey(ctx, key); err != nil {
-		logger.Error(ctx, err)
-	}
-
-	if err = dao.Key.UpdateOne(ctx, bson.M{"key": secretKey}, bson.M{
+	if err := dao.Key.UpdateOne(ctx, bson.M{"key": secretKey}, bson.M{
 		"$inc": bson.M{
 			"quota":      -quota,
 			"used_quota": quota,
 		},
 	}); err != nil {
 		logger.Error(ctx, err)
+	}
+
+	key, err := s.GetCacheAppKey(ctx, secretKey)
+	if err != nil {
+		logger.Error(ctx, err)
+	}
+
+	if key.Quota > 0 {
+
+		if currentQuota <= 0 {
+			if result, err := dao.Key.FindOne(ctx, bson.M{"key": secretKey}); err != nil {
+				key.Quota -= quota
+				logger.Error(ctx, err)
+			} else {
+				key.Quota = result.Quota
+			}
+		} else {
+			key.Quota = currentQuota
+		}
+
+		key.UsedQuota += quota
+
+		if err = s.SaveCacheAppKey(ctx, key); err != nil {
+			logger.Error(ctx, err)
+		}
 	}
 }
 
