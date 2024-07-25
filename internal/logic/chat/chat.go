@@ -78,10 +78,6 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 			if common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI && common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_AZURE {
 				model = consts.DEFAULT_MODEL
-			} else {
-				if _, err := tiktoken.EncodingForModel(model); err != nil {
-					model = consts.DEFAULT_MODEL
-				}
 			}
 
 			// 多模态
@@ -448,12 +444,9 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				}
 
 				model := reqModel.Model
+
 				if common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI && common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_AZURE {
 					model = consts.DEFAULT_MODEL
-				} else {
-					if _, err := tiktoken.EncodingForModel(model); err != nil {
-						model = consts.DEFAULT_MODEL
-					}
 				}
 
 				if content, ok := params.Messages[len(params.Messages)-1].Content.([]interface{}); ok {

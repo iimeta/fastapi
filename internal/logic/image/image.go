@@ -300,8 +300,8 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 
 	for _, data := range imageRes.Data {
 		image.ImageData = append(image.ImageData, mcommon.ImageData{
-			URL:           data.URL,
-			B64JSON:       data.B64JSON,
+			URL: data.URL,
+			//B64JSON:       data.B64JSON, // 太大了, 不存
 			RevisedPrompt: data.RevisedPrompt,
 		})
 	}

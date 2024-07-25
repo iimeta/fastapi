@@ -18,6 +18,10 @@ func NewClient(ctx context.Context, model *model.Model, key, baseURL, path strin
 	return sdk.NewClient(ctx, GetCorpCode(ctx, model.Corp), model.Model, key, baseURL, path, nil, config.Cfg.Http.ProxyUrl), nil
 }
 
+func NewEmbeddingClient(ctx context.Context, model *model.Model, key, baseURL, path string) (*sdk.EmbeddingClient, error) {
+	return sdk.NewEmbeddingClient(ctx, model.Model, key, baseURL, path, config.Cfg.Http.ProxyUrl), nil
+}
+
 func GetCorpCode(ctx context.Context, corpId string) string {
 
 	corp, err := service.Corp().GetCacheCorp(ctx, corpId)

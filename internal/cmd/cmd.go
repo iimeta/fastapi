@@ -10,6 +10,7 @@ import (
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/controller/chat"
 	"github.com/iimeta/fastapi/internal/controller/dashboard"
+	"github.com/iimeta/fastapi/internal/controller/embedding"
 	"github.com/iimeta/fastapi/internal/controller/health"
 	"github.com/iimeta/fastapi/internal/controller/image"
 	"github.com/iimeta/fastapi/internal/controller/midjourney"
@@ -58,6 +59,7 @@ var (
 				v1.Group("/", func(g *ghttp.RouterGroup) {
 					g.Bind(
 						dashboard.NewV1(),
+						embedding.NewV1(),
 					)
 				})
 

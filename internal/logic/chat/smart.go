@@ -57,10 +57,6 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 				if common.GetCorpCode(ctx, realModel.Corp) != consts.CORP_OPENAI && common.GetCorpCode(ctx, realModel.Corp) != consts.CORP_AZURE {
 					model = consts.DEFAULT_MODEL
-				} else {
-					if _, err := tiktoken.EncodingForModel(model); err != nil {
-						model = consts.DEFAULT_MODEL
-					}
 				}
 
 				promptTime := gtime.TimestampMilli()
