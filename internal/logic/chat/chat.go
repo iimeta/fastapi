@@ -775,6 +775,10 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			completion += response.Choices[0].Delta.Content
 		}
 
+		if len(response.Choices) > 0 && len(response.Choices[0].Delta.ToolCalls) > 0 {
+			completion += response.Choices[0].Delta.ToolCalls[0].Function.Arguments
+		}
+
 		if response.Usage != nil {
 			// 实际消费额度
 			if reqModel.TextQuota.BillingMethod == 1 {
@@ -790,7 +794,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 		if len(response.Choices) > 0 && response.Choices[0].FinishReason != "" {
 
-			if err = util.SSEServer(ctx, gjson.MustEncode(response)); err != nil {
+			if err = util.SSEServer(ctx, gjson.MustEncodeString(response)); err != nil {
 				logger.Error(ctx, err)
 				return err
 			}
@@ -803,7 +807,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			return nil
 		}
 
-		if err = util.SSEServer(ctx, gjson.MustEncode(response)); err != nil {
+		if err = util.SSEServer(ctx, gjson.MustEncodeString(response)); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}

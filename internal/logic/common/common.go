@@ -77,6 +77,10 @@ func IsAborted(err error) bool {
 
 func IsNeedRetry(err error) (isRetry bool, isDisabled bool) {
 
+	if IsAborted(err) {
+		return false, false
+	}
+
 	apiError := &sdkerr.ApiError{}
 	if errors.As(err, &apiError) {
 

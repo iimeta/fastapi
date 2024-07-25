@@ -151,7 +151,7 @@ func HttpDownloadFile(ctx context.Context, fileURL string, proxyURL ...string) [
 	return client.GetBytes(ctx, fileURL)
 }
 
-func SSEServer(ctx context.Context, data any) error {
+func SSEServer(ctx context.Context, data string) error {
 
 	r := g.RequestFromCtx(ctx)
 	rw := r.Response.RawWriter()
@@ -162,11 +162,12 @@ func SSEServer(ctx context.Context, data any) error {
 	}
 
 	r.Response.Header().Set("Trace-Id", gctx.CtxId(ctx))
-	r.Response.Header().Set("Content-Type", "text/event-stream")
-	r.Response.Header().Set("Cache-Control", "no-cache, must-revalidate")
+	r.Response.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
+	r.Response.Header().Set("Cache-Control", "no-cache")
 	r.Response.Header().Set("Connection", "keep-alive")
 
 	if _, err := fmt.Fprintf(rw, "data: %s\n\n", data); err != nil {
+		logger.Error(ctx, err)
 		return err
 	}
 
