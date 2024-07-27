@@ -9,7 +9,7 @@ require (
 	github.com/gogf/gf/contrib/nosql/redis/v2 v2.7.2
 	github.com/gogf/gf/v2 v2.7.2
 	github.com/iimeta/fastapi-sdk v0.3.0
-	github.com/redis/go-redis/v9 v9.6.0
+	github.com/redis/go-redis/v9 v9.6.1
 	go.mongodb.org/mongo-driver v1.16.0
 )
 
@@ -18,7 +18,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
-	github.com/dlclark/regexp2 v1.10.0 // indirect
+	github.com/dlclark/regexp2 v1.11.2 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
@@ -26,9 +26,10 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/uuid v1.3.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/grokify/html-strip-tags-go v0.1.0 // indirect
+	github.com/iimeta/tiktoken-go v0.0.0-20240727093849-292e86033509 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
@@ -36,7 +37,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
-	github.com/pkoukk/tiktoken-go v0.1.7 // indirect
 	github.com/sashabaranov/go-openai v1.27.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
