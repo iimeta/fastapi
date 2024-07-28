@@ -34,7 +34,7 @@ func (s *sDashboard) Subscription(ctx context.Context) (*model.DashboardSubscrip
 
 		app, err := service.App().GetApp(ctx, service.Session().GetAppId(ctx))
 		if err != nil {
-			logger.Errorf(ctx, "sDashboard Subscription GetApp err: %v", err)
+			logger.Errorf(ctx, "sDashboard Subscription GetApp error: %v", err)
 			return nil, err
 		}
 
@@ -45,7 +45,7 @@ func (s *sDashboard) Subscription(ctx context.Context) (*model.DashboardSubscrip
 
 		key, err := service.Key().GetKey(ctx, service.Session().GetSecretKey(ctx))
 		if err != nil {
-			logger.Errorf(ctx, "sDashboard Subscription GetKey err: %v", err)
+			logger.Errorf(ctx, "sDashboard Subscription GetKey error: %v", err)
 			return nil, err
 		}
 
@@ -76,7 +76,7 @@ func (s *sDashboard) Usage(ctx context.Context) (*model.DashboardUsageRes, error
 
 		app, err := service.App().GetApp(ctx, service.Session().GetAppId(ctx))
 		if err != nil {
-			logger.Errorf(ctx, "sDashboard Usage GetApp err: %v", err)
+			logger.Errorf(ctx, "sDashboard Usage GetApp error: %v", err)
 			return nil, err
 		}
 
@@ -87,7 +87,7 @@ func (s *sDashboard) Usage(ctx context.Context) (*model.DashboardUsageRes, error
 
 		key, err := service.Key().GetKey(ctx, service.Session().GetSecretKey(ctx))
 		if err != nil {
-			logger.Errorf(ctx, "sDashboard Usage GetKey err: %v", err)
+			logger.Errorf(ctx, "sDashboard Usage GetKey error: %v", err)
 			return nil, err
 		}
 

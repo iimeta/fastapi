@@ -17,7 +17,6 @@ import (
 	mcommon "github.com/iimeta/fastapi/internal/model/common"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
-	"math"
 	"net"
 	"strings"
 )
@@ -193,7 +192,7 @@ func GetImageQuota(model *model.Model, size string) (imageQuota mcommon.ImageQuo
 	return imageQuota
 }
 
-func GetMultimodalTokens(ctx context.Context, model string, multiContent []interface{}, multimodalQuota mcommon.MultimodalQuota) (tokens int) {
+func GetMultimodalTokens(ctx context.Context, model string, multiContent []interface{}, reqModel *model.Model) (textTokens, imageTokens int) {
 
 	for _, value := range multiContent {
 
@@ -205,7 +204,7 @@ func GetMultimodalTokens(ctx context.Context, model string, multiContent []inter
 			detail := imageUrl["detail"]
 
 			var imageQuota mcommon.ImageQuota
-			for _, quota := range multimodalQuota.ImageQuotas {
+			for _, quota := range reqModel.MultimodalQuota.ImageQuotas {
 
 				if quota.Mode == detail {
 					imageQuota = quota
@@ -217,19 +216,18 @@ func GetMultimodalTokens(ctx context.Context, model string, multiContent []inter
 				}
 			}
 
-			tokens += imageQuota.FixedQuota
+			imageTokens += imageQuota.FixedQuota
 
 		} else {
-			// 实际消费额度
-			if textTokens, err := tiktoken.NumTokensFromString(model, gconv.String(content["text"])); err != nil {
-				logger.Errorf(ctx, "GetMultimodalQuota model: %s, text: %s, NumTokensFromString error: %v", model, gconv.String(content["text"]), err)
+			if tokens, err := tiktoken.NumTokensFromString(model, gconv.String(content)); err != nil {
+				logger.Errorf(ctx, "GetMultimodalQuota model: %s, text: %s, NumTokensFromString error: %v", model, gconv.String(content), err)
 			} else {
-				tokens += int(math.Ceil(float64(textTokens) * multimodalQuota.TextQuota.PromptRatio))
+				textTokens += tokens
 			}
 		}
 	}
 
-	return tokens
+	return textTokens, imageTokens
 }
 
 func GetMidjourneyQuota(model *model.Model, request *ghttp.Request, path string) (mcommon.MidjourneyQuota, error) {

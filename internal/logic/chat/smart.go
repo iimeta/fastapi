@@ -82,7 +82,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		}
 
 		if realModel != nil && response.Usage != nil {
-			// 实际消费额度
+			// 实际花费额度
 			if realModel.TextQuota.BillingMethod == 1 {
 				totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*realModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*realModel.TextQuota.CompletionRatio))
 			} else {

@@ -62,7 +62,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if reqModel != nil && response.Usage != nil {
-			// 实际消费额度
+			// 实际花费额度
 			if reqModel.TextQuota.BillingMethod == 1 {
 				totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
 			} else {
