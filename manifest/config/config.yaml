@@ -52,10 +52,10 @@ logger:
 
 # API接口配置
 api:
-  retry: 3                         # 重试次数, N > 0 重试 N 次, N < 0 重试所有key一轮, N = 0 不重试
-  model_key_err_disable: 20        # 模型密钥错误禁用次数, 出现报错 N 次后禁用
-  model_agent_err_disable: 20      # 模型代理错误禁用次数, 出现报错 N 次后禁用, 注意: 模型代理密钥发生错误时, 也会记录模型代理错误次数
-  model_agent_key_err_disable: 20  # 模型代理密钥错误禁用次数, 出现报错 N 次后禁用
+  retry: 3                            # 重试次数, N > 0 重试 N 次, N < 0 重试所有key一轮, N = 0 不重试
+  model_key_err_disable: 10000        # 模型密钥错误禁用次数, 出现报错 N 次后禁用, 禁用后需手动启动, 错误次数每天0点自动重置
+  model_agent_err_disable: 10000      # 模型代理错误禁用次数, 出现报错 N 次后禁用, 禁用后需手动启动, 错误次数每天0点自动重置, 注意: 模型代理密钥发生错误时, 也会记录模型代理错误次数
+  model_agent_key_err_disable: 10000  # 模型代理密钥错误禁用次数, 出现报错 N 次后禁用, 禁用后需手动启动, 错误次数每天0点自动重置
 
 # http配置
 http:
@@ -70,6 +70,12 @@ midjourney:
     api_secret: xxx
     api_secret_header: mj-api-secret
     cdn_original_url: https://cdn.discordapp.com
+
+# 调用日志记录内容
+record_logs:
+  - prompt
+  - completion
+  - messages
 
 local:
   public_ip: # 获取公网IP的API接口地址, 如若配置, 调用日志中记录的本机IP将使用以下接口获取到的公网IP
