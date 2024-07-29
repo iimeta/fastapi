@@ -520,7 +520,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 			if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, usage.TotalTokens); err != nil {
+					if err := service.Common().RecordUsage(ctx, totalTokens); err != nil {
 						logger.Error(ctx, err)
 					}
 				}, nil); err != nil {
