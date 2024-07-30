@@ -107,11 +107,11 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 					if response.Usage.CompletionTokens == 0 && len(response.Choices) > 0 {
 						completionTime := gtime.TimestampMilli()
-						if completionTokens, err := tiktoken.NumTokensFromString(model, response.Choices[0].Message.Content); err != nil {
+						if completionTokens, err := tiktoken.NumTokensFromString(model, gconv.String(response.Choices[0].Message.Content)); err != nil {
 							logger.Errorf(ctx, "sChat Completions model: %s, completion: %s, NumTokensFromString error: %v", params.Model, response.Choices[0].Message.Content, err)
 						} else {
 							response.Usage.CompletionTokens = completionTokens
-							logger.Debugf(ctx, "sChat Completions NumTokensFromString len(completion): %d, time: %d", len(response.Choices[0].Message.Content), gtime.TimestampMilli()-completionTime)
+							logger.Debugf(ctx, "sChat Completions NumTokensFromString len(completion): %d, time: %d", len(gconv.String(response.Choices[0].Message.Content)), gtime.TimestampMilli()-completionTime)
 						}
 					}
 
@@ -141,11 +141,11 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 				if len(response.Choices) > 0 {
 					completionTime := gtime.TimestampMilli()
-					if completionTokens, err := tiktoken.NumTokensFromString(model, response.Choices[0].Message.Content); err != nil {
+					if completionTokens, err := tiktoken.NumTokensFromString(model, gconv.String(response.Choices[0].Message.Content)); err != nil {
 						logger.Errorf(ctx, "sChat Completions model: %s, completion: %s, NumTokensFromString error: %v", params.Model, response.Choices[0].Message.Content, err)
 					} else {
 						response.Usage.CompletionTokens = completionTokens
-						logger.Debugf(ctx, "sChat Completions NumTokensFromString len(completion): %d, time: %d", len(response.Choices[0].Message.Content), gtime.TimestampMilli()-completionTime)
+						logger.Debugf(ctx, "sChat Completions NumTokensFromString len(completion): %d, time: %d", len(gconv.String(response.Choices[0].Message.Content)), gtime.TimestampMilli()-completionTime)
 					}
 				}
 
@@ -197,7 +197,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			}
 
 			if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
-				completionsRes.Completion = response.Choices[0].Message.Content
+				completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
 			}
 
 			s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, completionsRes, retryInfo)

@@ -919,7 +919,7 @@ func (s *sModel) GetTargetModel(ctx context.Context, model *model.Model, message
 
 			if len(response.Choices) > 0 {
 
-				if index, err := strconv.Atoi(response.Choices[0].Message.Content); err == nil {
+				if index, err := strconv.Atoi(gconv.String(response.Choices[0].Message.Content)); err == nil {
 
 					if index == -1 {
 						return model, nil

@@ -7,6 +7,7 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/gogf/gf/v2/util/gconv"
 	sdk "github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi-sdk/tiktoken"
@@ -69,11 +70,11 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 				if len(response.Choices) > 0 {
 					completionTime := gtime.TimestampMilli()
-					if completionTokens, err := tiktoken.NumTokensFromString(model, response.Choices[0].Message.Content); err != nil {
+					if completionTokens, err := tiktoken.NumTokensFromString(model, gconv.String(response.Choices[0].Message.Content)); err != nil {
 						logger.Errorf(ctx, "sChat SmartCompletions model: %s, completion: %s, NumTokensFromString error: %v", params.Model, response.Choices[0].Message.Content, err)
 					} else {
 						response.Usage.CompletionTokens = completionTokens
-						logger.Debugf(ctx, "sChat SmartCompletions NumTokensFromString len(completion): %d, time: %d", len(response.Choices[0].Message.Content), gtime.TimestampMilli()-completionTime)
+						logger.Debugf(ctx, "sChat SmartCompletions NumTokensFromString len(completion): %d, time: %d", len(gconv.String(response.Choices[0].Message.Content)), gtime.TimestampMilli()-completionTime)
 					}
 				}
 			}
@@ -109,7 +110,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 			}
 
 			if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
-				completionsRes.Completion = response.Choices[0].Message.Content
+				completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
 			}
 
 			s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, completionsRes, retryInfo, true)
