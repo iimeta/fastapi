@@ -4,8 +4,6 @@ go 1.22
 
 replace github.com/iimeta/fastapi-sdk => ../fastapi-sdk
 
-replace github.com/iimeta/go-openai => ../go-openai
-
 require (
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/gogf/gf/contrib/nosql/redis/v2 v2.7.2
@@ -31,7 +29,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/grokify/html-strip-tags-go v0.1.0 // indirect
-	github.com/iimeta/go-openai v0.0.0-20240730040448-2f9841dafa42 // indirect
+	github.com/iimeta/go-openai v0.0.0-20240730081821-64b1175d8b6d // indirect
 	github.com/iimeta/tiktoken-go v0.0.0-20240727093849-292e86033509 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
