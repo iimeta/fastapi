@@ -72,6 +72,10 @@ midjourney:
     api_secret_header: mj-api-secret
     cdn_original_url: https://cdn.discordapp.com
 
+# GCP
+gcp:
+  get_token_url: https://www.googleapis.com/oauth2/v4/token  # 获取Token接口
+
 # 调用日志记录内容
 record_logs:
   - prompt

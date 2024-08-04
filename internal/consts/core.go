@@ -22,6 +22,7 @@ const (
 	ERROR_MODEL_AGENT_KEY = "api:error:model:agent:key:%s"
 
 	ACCESS_TOKEN_KEY = "api:baidu:access_token:%s"
+	GCP_TOKEN_KEY    = "api:gcp:token:%s"
 )
 
 const (

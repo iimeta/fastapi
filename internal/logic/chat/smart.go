@@ -2,11 +2,13 @@ package chat
 
 import (
 	"context"
+	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	sdk "github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
@@ -210,7 +212,10 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 	params.Model = realModel.Model
 	key = k.Key
 
-	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
+	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_GCP_CLAUDE {
+		key = getGcpToken(ctx, k.Key, config.Cfg.Http.ProxyUrl)
+		path = fmt.Sprintf(path, gstr.Split(k.Key, "|")[0], realModel.Model)
+	} else if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
 		key = getAccessToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 

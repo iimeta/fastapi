@@ -20,6 +20,7 @@ const (
 	CORP_GOOGLE     = "Google"
 	CORP_DEEPSEEK   = "DeepSeek"
 	CORP_MIDJOURNEY = "Midjourney"
+	CORP_GCP_CLAUDE = "GCPClaude"
 
 	ROLE_SYSTEM    = "system"
 	ROLE_USER      = "user"

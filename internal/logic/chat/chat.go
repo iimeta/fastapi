@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
@@ -302,7 +303,10 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		request.Model = realModel.Model
 	}
 
-	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
+	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_GCP_CLAUDE {
+		key = getGcpToken(ctx, k.Key, config.Cfg.Http.ProxyUrl)
+		path = fmt.Sprintf(path, gstr.Split(k.Key, "|")[0], realModel.Model)
+	} else if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
 		key = getAccessToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
@@ -653,7 +657,10 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		request.Model = realModel.Model
 	}
 
-	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
+	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_GCP_CLAUDE {
+		key = getGcpToken(ctx, k.Key, config.Cfg.Http.ProxyUrl)
+		path = fmt.Sprintf(path, gstr.Split(k.Key, "|")[0], realModel.Model)
+	} else if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
 		key = getAccessToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
@@ -752,6 +759,25 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		if response.Error != nil {
 
 			if errors.Is(response.Error, io.EOF) {
+
+				if response.Usage != nil {
+					if usage == nil {
+						usage = response.Usage
+					} else {
+						if response.Usage.PromptTokens != 0 {
+							usage.PromptTokens = response.Usage.PromptTokens
+						}
+						if response.Usage.CompletionTokens != 0 {
+							usage.CompletionTokens = response.Usage.CompletionTokens
+						}
+						if response.Usage.TotalTokens != 0 {
+							usage.TotalTokens = response.Usage.TotalTokens
+						} else {
+							usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+						}
+					}
+				}
+
 				if err = util.SSEServer(ctx, "[DONE]"); err != nil {
 					logger.Error(ctx, err)
 					return err
@@ -806,41 +832,34 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			return err
 		}
 
-		if len(response.Choices) > 0 {
+		if len(response.Choices) > 0 && response.Choices[0].Delta != nil {
 			completion += response.Choices[0].Delta.Content
 		}
 
-		if len(response.Choices) > 0 && len(response.Choices[0].Delta.ToolCalls) > 0 {
+		if len(response.Choices) > 0 && response.Choices[0].Delta != nil && len(response.Choices[0].Delta.ToolCalls) > 0 {
 			completion += response.Choices[0].Delta.ToolCalls[0].Function.Arguments
 		}
 
 		if response.Usage != nil {
-			// 实际花费额度
-			//if reqModel.TextQuota.BillingMethod == 1 {
-			//	response.Usage.TotalTokens = int(math.Ceil(reqModel.TextQuota.PromptRatio*float64(response.Usage.PromptTokens) + reqModel.TextQuota.CompletionRatio*float64(response.Usage.CompletionTokens)))
-			//} else {
-			//	response.Usage.TotalTokens = reqModel.TextQuota.FixedQuota
-			//}
-			usage = response.Usage
+			if usage == nil {
+				usage = response.Usage
+			} else {
+				if response.Usage.PromptTokens != 0 {
+					usage.PromptTokens = response.Usage.PromptTokens
+				}
+				if response.Usage.CompletionTokens != 0 {
+					usage.CompletionTokens = response.Usage.CompletionTokens
+				}
+				if response.Usage.TotalTokens != 0 {
+					usage.TotalTokens = response.Usage.TotalTokens
+				} else {
+					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+				}
+			}
 		}
 
 		// 替换成调用的模型
 		response.Model = reqModel.Model
-
-		//if len(response.Choices) > 0 && response.Choices[0].FinishReason != "" {
-		//
-		//	if err = util.SSEServer(ctx, gjson.MustEncodeString(response)); err != nil {
-		//		logger.Error(ctx, err)
-		//		return err
-		//	}
-		//
-		//	if err = util.SSEServer(ctx, "[DONE]"); err != nil {
-		//		logger.Error(ctx, err)
-		//		return err
-		//	}
-		//
-		//	return nil
-		//}
 
 		if err = util.SSEServer(ctx, gjson.MustEncodeString(response)); err != nil {
 			logger.Error(ctx, err)
