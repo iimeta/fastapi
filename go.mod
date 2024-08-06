@@ -29,7 +29,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/grokify/html-strip-tags-go v0.1.0 // indirect
-	github.com/iimeta/go-openai v0.0.0-20240730081821-64b1175d8b6d // indirect
+	github.com/iimeta/go-openai v0.0.0-20240806170040-196db14935c3 // indirect
 	github.com/iimeta/tiktoken-go v0.0.0-20240727093849-292e86033509 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect

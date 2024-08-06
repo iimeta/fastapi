@@ -78,6 +78,8 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 
+			// 替换成调用的模型
+			response.Model = reqModel.Model
 			model := reqModel.Model
 
 			if common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI && common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_AZURE {
@@ -116,12 +118,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 						}
 					}
 
-					if reqModel != nil {
-						// 替换成调用的模型
-						response.Model = reqModel.Model
-						response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
-					}
-
+					response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
 					totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*reqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*reqModel.MultimodalQuota.TextQuota.CompletionRatio))
 
 				} else {
@@ -150,11 +147,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 					}
 				}
 
-				if reqModel != nil {
-					// 替换成调用的模型
-					response.Model = reqModel.Model
-					response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
-				}
+				response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
 			}
 		}
 
@@ -452,72 +445,69 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-			if retryInfo == nil {
+			if retryInfo == nil && completion != "" && (usage == nil || usage.PromptTokens == 0 || usage.CompletionTokens == 0) {
 
-				if completion != "" && (usage == nil || usage.PromptTokens == 0 || usage.CompletionTokens == 0) {
+				if usage == nil {
+					usage = new(sdkm.Usage)
+				}
 
-					if usage == nil {
-						usage = new(sdkm.Usage)
-					}
+				model := reqModel.Model
 
-					model := reqModel.Model
+				if common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI && common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_AZURE {
+					model = consts.DEFAULT_MODEL
+				}
 
-					if common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI && common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_AZURE {
-						model = consts.DEFAULT_MODEL
-					}
-
-					if content, ok := params.Messages[len(params.Messages)-1].Content.([]interface{}); ok {
-						textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, reqModel)
-						usage.PromptTokens = textTokens + imageTokens
-					} else {
-						if usage.PromptTokens == 0 {
-							promptTime := gtime.TimestampMilli()
-							if promptTokens, err := tiktoken.NumTokensFromMessages(model, params.Messages); err != nil {
-								logger.Errorf(ctx, "sChat CompletionsStream model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
-							} else {
-								usage.PromptTokens = promptTokens
-								logger.Debugf(ctx, "sChat CompletionsStream NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-promptTime)
-							}
-						}
-					}
-
-					if usage.CompletionTokens == 0 {
-						completionTime := gtime.TimestampMilli()
-						if completionTokens, err := tiktoken.NumTokensFromString(model, completion); err != nil {
-							logger.Errorf(ctx, "sChat CompletionsStream model: %s, completion: %s, NumTokensFromString error: %v", params.Model, completion, err)
+				if content, ok := params.Messages[len(params.Messages)-1].Content.([]interface{}); ok {
+					textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, reqModel)
+					usage.PromptTokens = textTokens + imageTokens
+				} else {
+					if usage.PromptTokens == 0 {
+						promptTime := gtime.TimestampMilli()
+						if promptTokens, err := tiktoken.NumTokensFromMessages(model, params.Messages); err != nil {
+							logger.Errorf(ctx, "sChat CompletionsStream model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
 						} else {
-							usage.CompletionTokens = completionTokens
-							logger.Debugf(ctx, "sChat CompletionsStream NumTokensFromString len(completion): %d, time: %d", len(completion), gtime.TimestampMilli()-completionTime)
+							usage.PromptTokens = promptTokens
+							logger.Debugf(ctx, "sChat CompletionsStream NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-promptTime)
 						}
 					}
+				}
 
-					// 实际花费额度
-					if reqModel.Type == 100 { // 多模态
+				if usage.CompletionTokens == 0 {
+					completionTime := gtime.TimestampMilli()
+					if completionTokens, err := tiktoken.NumTokensFromString(model, completion); err != nil {
+						logger.Errorf(ctx, "sChat CompletionsStream model: %s, completion: %s, NumTokensFromString error: %v", params.Model, completion, err)
+					} else {
+						usage.CompletionTokens = completionTokens
+						logger.Debugf(ctx, "sChat CompletionsStream NumTokensFromString len(completion): %d, time: %d", len(completion), gtime.TimestampMilli()-completionTime)
+					}
+				}
+
+				// 实际花费额度
+				if reqModel.Type == 100 { // 多模态
+					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+					totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*reqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*reqModel.MultimodalQuota.TextQuota.CompletionRatio))
+				} else {
+					if reqModel.TextQuota.BillingMethod == 1 {
 						usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-						totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*reqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*reqModel.MultimodalQuota.TextQuota.CompletionRatio))
+						totalTokens = int(math.Ceil(float64(usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
 					} else {
-						if reqModel.TextQuota.BillingMethod == 1 {
-							usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-							totalTokens = int(math.Ceil(float64(usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
-						} else {
-							usage.TotalTokens = reqModel.TextQuota.FixedQuota
-							totalTokens = reqModel.TextQuota.FixedQuota
-						}
+						usage.TotalTokens = reqModel.TextQuota.FixedQuota
+						totalTokens = reqModel.TextQuota.FixedQuota
 					}
+				}
 
-				} else if usage != nil {
+			} else if retryInfo == nil && usage != nil {
 
-					if reqModel.Type == 100 { // 多模态
+				if reqModel.Type == 100 { // 多模态
+					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*reqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*reqModel.MultimodalQuota.TextQuota.CompletionRatio))
+				} else {
+					if reqModel.TextQuota.BillingMethod == 1 {
 						usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-						totalTokens = int(math.Ceil(float64(usage.PromptTokens)*reqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*reqModel.MultimodalQuota.TextQuota.CompletionRatio))
+						totalTokens = int(math.Ceil(float64(usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
 					} else {
-						if reqModel.TextQuota.BillingMethod == 1 {
-							usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-							totalTokens = int(math.Ceil(float64(usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
-						} else {
-							usage.TotalTokens = reqModel.TextQuota.FixedQuota
-							totalTokens = reqModel.TextQuota.FixedQuota
-						}
+						usage.TotalTokens = reqModel.TextQuota.FixedQuota
+						totalTokens = reqModel.TextQuota.FixedQuota
 					}
 				}
 			}
@@ -861,9 +851,30 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		// 替换成调用的模型
 		response.Model = reqModel.Model
 
-		if err = util.SSEServer(ctx, gjson.MustEncodeString(response)); err != nil {
-			logger.Error(ctx, err)
-			return err
+		// OpenAI官方格式
+		if len(response.ResponseBytes) > 0 {
+
+			data := make(map[string]interface{})
+			if err = gjson.Unmarshal(response.ResponseBytes, &data); err != nil {
+				logger.Error(ctx, err)
+				return err
+			}
+
+			// 替换成调用的模型
+			if _, ok := data["model"]; ok {
+				data["model"] = reqModel.Model
+			}
+
+			if err = util.SSEServer(ctx, gjson.MustEncodeString(data)); err != nil {
+				logger.Error(ctx, err)
+				return err
+			}
+
+		} else {
+			if err = util.SSEServer(ctx, gjson.MustEncodeString(response)); err != nil {
+				logger.Error(ctx, err)
+				return err
+			}
 		}
 	}
 }

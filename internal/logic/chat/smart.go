@@ -43,6 +43,8 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		agentTotal  int
 		keyTotal    int
 		retryInfo   *mcommon.Retry
+		textTokens  int
+		imageTokens int
 		totalTokens int
 	)
 
@@ -51,45 +53,86 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
-		if retryInfo == nil && err == nil {
+		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 
-			if response.Usage == nil || response.Usage.TotalTokens == 0 {
+			model := realModel.Model
+			if common.GetCorpCode(ctx, realModel.Corp) != consts.CORP_OPENAI && common.GetCorpCode(ctx, realModel.Corp) != consts.CORP_AZURE {
+				model = consts.DEFAULT_MODEL
+			}
+
+			// 多模态
+			if realModel.Type == 100 {
+
+				if response.Usage == nil {
+
+					response.Usage = new(sdkm.Usage)
+
+					if content, ok := params.Messages[len(params.Messages)-1].Content.([]interface{}); ok {
+						textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, realModel)
+						response.Usage.PromptTokens = textTokens + imageTokens
+					} else {
+						if response.Usage.PromptTokens == 0 {
+							promptTime := gtime.TimestampMilli()
+							if promptTokens, err := tiktoken.NumTokensFromMessages(model, params.Messages); err != nil {
+								logger.Errorf(ctx, "sChat Completions model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
+							} else {
+								response.Usage.PromptTokens = promptTokens
+								logger.Debugf(ctx, "sChat Completions NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-promptTime)
+							}
+						}
+					}
+
+					if response.Usage.CompletionTokens == 0 && len(response.Choices) > 0 {
+						completionTime := gtime.TimestampMilli()
+						if completionTokens, err := tiktoken.NumTokensFromString(model, gconv.String(response.Choices[0].Message.Content)); err != nil {
+							logger.Errorf(ctx, "sChat Completions model: %s, completion: %s, NumTokensFromString error: %v", params.Model, response.Choices[0].Message.Content, err)
+						} else {
+							response.Usage.CompletionTokens = completionTokens
+							logger.Debugf(ctx, "sChat Completions NumTokensFromString len(completion): %d, time: %d", len(gconv.String(response.Choices[0].Message.Content)), gtime.TimestampMilli()-completionTime)
+						}
+					}
+
+					response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
+					totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*realModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*realModel.MultimodalQuota.TextQuota.CompletionRatio))
+
+				} else {
+					totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*realModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*realModel.MultimodalQuota.TextQuota.CompletionRatio))
+				}
+
+			} else if response.Usage == nil || response.Usage.TotalTokens == 0 {
 
 				response.Usage = new(sdkm.Usage)
-				model := realModel.Model
-
-				if common.GetCorpCode(ctx, realModel.Corp) != consts.CORP_OPENAI && common.GetCorpCode(ctx, realModel.Corp) != consts.CORP_AZURE {
-					model = consts.DEFAULT_MODEL
-				}
 
 				promptTime := gtime.TimestampMilli()
 				if promptTokens, err := tiktoken.NumTokensFromMessages(model, params.Messages); err != nil {
-					logger.Errorf(ctx, "sChat SmartCompletions model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
+					logger.Errorf(ctx, "sChat Completions model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
 				} else {
 					response.Usage.PromptTokens = promptTokens
-					logger.Debugf(ctx, "sChat SmartCompletions NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-promptTime)
+					logger.Debugf(ctx, "sChat Completions NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-promptTime)
 				}
 
 				if len(response.Choices) > 0 {
 					completionTime := gtime.TimestampMilli()
 					if completionTokens, err := tiktoken.NumTokensFromString(model, gconv.String(response.Choices[0].Message.Content)); err != nil {
-						logger.Errorf(ctx, "sChat SmartCompletions model: %s, completion: %s, NumTokensFromString error: %v", params.Model, response.Choices[0].Message.Content, err)
+						logger.Errorf(ctx, "sChat Completions model: %s, completion: %s, NumTokensFromString error: %v", params.Model, response.Choices[0].Message.Content, err)
 					} else {
 						response.Usage.CompletionTokens = completionTokens
-						logger.Debugf(ctx, "sChat SmartCompletions NumTokensFromString len(completion): %d, time: %d", len(gconv.String(response.Choices[0].Message.Content)), gtime.TimestampMilli()-completionTime)
+						logger.Debugf(ctx, "sChat Completions NumTokensFromString len(completion): %d, time: %d", len(gconv.String(response.Choices[0].Message.Content)), gtime.TimestampMilli()-completionTime)
 					}
 				}
-			}
 
-			response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
+				response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
+			}
 		}
 
 		if realModel != nil && response.Usage != nil {
-			// 实际花费额度
-			if realModel.TextQuota.BillingMethod == 1 {
-				totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*realModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*realModel.TextQuota.CompletionRatio))
-			} else {
-				totalTokens = realModel.TextQuota.FixedQuota
+			if realModel.Type != 100 {
+				// 实际花费额度
+				if realModel.TextQuota.BillingMethod == 1 {
+					totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*realModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*realModel.TextQuota.CompletionRatio))
+				} else {
+					totalTokens = realModel.TextQuota.FixedQuota
+				}
 			}
 		}
 
