@@ -2,9 +2,11 @@ package common
 
 import (
 	"context"
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
+	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gregex"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
@@ -12,6 +14,7 @@ import (
 	"github.com/iimeta/fastapi-sdk/sdkerr"
 	"github.com/iimeta/fastapi-sdk/tiktoken"
 	"github.com/iimeta/fastapi/internal/config"
+	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
 	mcommon "github.com/iimeta/fastapi/internal/model/common"
@@ -145,6 +148,37 @@ func HandleMessages(messages []sdkm.ChatCompletionMessage) []sdkm.ChatCompletion
 	return newMessages
 }
 
+func GetPromptTokens(ctx context.Context, model string, messages []sdkm.ChatCompletionMessage) int {
+
+	promptTime := gtime.TimestampMilli()
+
+	promptTokens, err := tiktoken.NumTokensFromMessages(model, messages)
+	if err != nil {
+		logger.Errorf(ctx, "GetPromptTokens NumTokensFromMessages model: %s, messages: %s, error: %v", model, gjson.MustEncodeString(messages), err)
+		if promptTokens, err = tiktoken.NumTokensFromMessages(consts.DEFAULT_MODEL, messages); err != nil {
+			logger.Errorf(ctx, "GetPromptTokens NumTokensFromMessages model: %s, messages: %s, error: %v", consts.DEFAULT_MODEL, gjson.MustEncodeString(messages), err)
+		}
+	}
+	logger.Debugf(ctx, "GetPromptTokens NumTokensFromMessages model: %s, len(messages): %d, promptTokens: %d, time: %d", model, len(gjson.MustEncodeString(messages)), promptTokens, gtime.TimestampMilli()-promptTime)
+
+	return promptTokens
+}
+
+func GetCompletionTokens(ctx context.Context, model, completion string) int {
+
+	completionTime := gtime.TimestampMilli()
+	completionTokens, err := tiktoken.NumTokensFromString(model, completion)
+	if err != nil {
+		logger.Errorf(ctx, "GetCompletionTokens NumTokensFromString model: %s, completion: %s, error: %v", model, completion, err)
+		if completionTokens, err = tiktoken.NumTokensFromString(consts.DEFAULT_MODEL, completion); err != nil {
+			logger.Errorf(ctx, "GetCompletionTokens NumTokensFromString model: %s, completion: %s, error: %v", consts.DEFAULT_MODEL, completion, err)
+		}
+	}
+	logger.Debugf(ctx, "GetCompletionTokens NumTokensFromString model: %s, len(completion): %d, completionTokens: %d, time: %d", model, len(completion), completionTokens, gtime.TimestampMilli()-completionTime)
+
+	return completionTokens
+}
+
 func GetImageQuota(model *model.Model, size string) (imageQuota mcommon.ImageQuota) {
 
 	var (
@@ -219,11 +253,16 @@ func GetMultimodalTokens(ctx context.Context, model string, multiContent []inter
 			imageTokens += imageQuota.FixedQuota
 
 		} else {
-			if tokens, err := tiktoken.NumTokensFromString(model, gconv.String(content)); err != nil {
-				logger.Errorf(ctx, "GetMultimodalQuota model: %s, text: %s, NumTokensFromString error: %v", model, gconv.String(content), err)
-			} else {
-				textTokens += tokens
+			contentTime := gtime.TimestampMilli()
+			tokens, err := tiktoken.NumTokensFromString(model, gconv.String(content))
+			if err != nil {
+				logger.Errorf(ctx, "GetMultimodalQuota NumTokensFromString model: %s, content: %s, error: %v", model, gconv.String(content), err)
+				if tokens, err = tiktoken.NumTokensFromString(consts.DEFAULT_MODEL, gconv.String(content)); err != nil {
+					logger.Errorf(ctx, "GetMultimodalQuota NumTokensFromString model: %s, content: %s, error: %v", consts.DEFAULT_MODEL, gconv.String(content), err)
+				}
 			}
+			textTokens += tokens
+			logger.Debugf(ctx, "GetMultimodalQuota NumTokensFromString model: %s, len(content): %d, tokens: %d, time: %d", model, len(gconv.String(content)), tokens, gtime.TimestampMilli()-contentTime)
 		}
 	}
 

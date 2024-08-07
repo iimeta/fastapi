@@ -22,7 +22,7 @@ func getGcpToken(ctx context.Context, key, proxyURL string) string {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "getGcpToken GCP time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "getGcpToken time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if gcpTokenCacheValue := gcpCache.GetVal(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, key)); gcpTokenCacheValue != nil {
@@ -33,10 +33,10 @@ func getGcpToken(ctx context.Context, key, proxyURL string) string {
 	if err == nil && reply != "" {
 
 		if expiresIn, err := redis.TTL(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, key)); err != nil {
-			logger.Errorf(ctx, "getGcpToken GCP key: %s, error: %v", key, err)
+			logger.Errorf(ctx, "getGcpToken key: %s, error: %v", key, err)
 		} else {
 			if err = gcpCache.Set(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, key), reply, time.Second*time.Duration(expiresIn-60)); err != nil {
-				logger.Errorf(ctx, "getGcpToken GCP key: %s, error: %v", key, err)
+				logger.Errorf(ctx, "getGcpToken key: %s, error: %v", key, err)
 			}
 		}
 
@@ -54,21 +54,21 @@ func getGcpToken(ctx context.Context, key, proxyURL string) string {
 
 	getGcpTokenRes := new(model.GetGcpTokenRes)
 	if err = util.HttpPost(ctx, config.Cfg.Gcp.GetTokenUrl, nil, data, &getGcpTokenRes, proxyURL); err != nil {
-		logger.Errorf(ctx, "getGcpToken GCP key: %s, error: %v", key, err)
+		logger.Errorf(ctx, "getGcpToken key: %s, error: %v", key, err)
 		return ""
 	}
 
 	if getGcpTokenRes.Error != "" {
-		logger.Errorf(ctx, "getGcpToken GCP key: %s, getGcpTokenRes.Error: %s", key, getGcpTokenRes.Error)
+		logger.Errorf(ctx, "getGcpToken key: %s, getGcpTokenRes.Error: %s", key, getGcpTokenRes.Error)
 		return ""
 	}
 
 	if err = gcpCache.Set(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, key), getGcpTokenRes.AccessToken, time.Second*time.Duration(getGcpTokenRes.ExpiresIn-60)); err != nil {
-		logger.Errorf(ctx, "getGcpToken GCP key: %s, error: %v", key, err)
+		logger.Errorf(ctx, "getGcpToken key: %s, error: %v", key, err)
 	}
 
 	if err = redis.SetEX(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, key), getGcpTokenRes.AccessToken, getGcpTokenRes.ExpiresIn-60); err != nil {
-		logger.Errorf(ctx, "getGcpToken GCP key: %s, error: %v", key, err)
+		logger.Errorf(ctx, "getGcpToken key: %s, error: %v", key, err)
 	}
 
 	return getGcpTokenRes.AccessToken

@@ -12,7 +12,6 @@ import (
 	"github.com/gogf/gf/v2/util/gconv"
 	sdk "github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi-sdk/tiktoken"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
@@ -84,11 +83,11 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 			if common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI && common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_AZURE {
 				model = consts.DEFAULT_MODEL
+			} else if !gstr.HasPrefix(model, consts.GPT_PREFIX) {
+				model = consts.DEFAULT_MODEL
 			}
 
-			// 多模态
-			if reqModel.Type == 100 {
-
+			if reqModel.Type == 100 { // 多模态
 				if response.Usage == nil {
 
 					response.Usage = new(sdkm.Usage)
@@ -98,24 +97,12 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 						response.Usage.PromptTokens = textTokens + imageTokens
 					} else {
 						if response.Usage.PromptTokens == 0 {
-							promptTime := gtime.TimestampMilli()
-							if promptTokens, err := tiktoken.NumTokensFromMessages(model, params.Messages); err != nil {
-								logger.Errorf(ctx, "sChat Completions model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
-							} else {
-								response.Usage.PromptTokens = promptTokens
-								logger.Debugf(ctx, "sChat Completions NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-promptTime)
-							}
+							response.Usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
 						}
 					}
 
-					if response.Usage.CompletionTokens == 0 && len(response.Choices) > 0 {
-						completionTime := gtime.TimestampMilli()
-						if completionTokens, err := tiktoken.NumTokensFromString(model, gconv.String(response.Choices[0].Message.Content)); err != nil {
-							logger.Errorf(ctx, "sChat Completions model: %s, completion: %s, NumTokensFromString error: %v", params.Model, response.Choices[0].Message.Content, err)
-						} else {
-							response.Usage.CompletionTokens = completionTokens
-							logger.Debugf(ctx, "sChat Completions NumTokensFromString len(completion): %d, time: %d", len(gconv.String(response.Choices[0].Message.Content)), gtime.TimestampMilli()-completionTime)
-						}
+					if response.Usage.CompletionTokens == 0 && len(response.Choices) > 0 && response.Choices[0].Message != nil {
+						response.Usage.CompletionTokens = common.GetCompletionTokens(ctx, model, gconv.String(response.Choices[0].Message.Content))
 					}
 
 					response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
@@ -129,22 +116,10 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 				response.Usage = new(sdkm.Usage)
 
-				promptTime := gtime.TimestampMilli()
-				if promptTokens, err := tiktoken.NumTokensFromMessages(model, params.Messages); err != nil {
-					logger.Errorf(ctx, "sChat Completions model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
-				} else {
-					response.Usage.PromptTokens = promptTokens
-					logger.Debugf(ctx, "sChat Completions NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-promptTime)
-				}
+				response.Usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
 
-				if len(response.Choices) > 0 {
-					completionTime := gtime.TimestampMilli()
-					if completionTokens, err := tiktoken.NumTokensFromString(model, gconv.String(response.Choices[0].Message.Content)); err != nil {
-						logger.Errorf(ctx, "sChat Completions model: %s, completion: %s, NumTokensFromString error: %v", params.Model, response.Choices[0].Message.Content, err)
-					} else {
-						response.Usage.CompletionTokens = completionTokens
-						logger.Debugf(ctx, "sChat Completions NumTokensFromString len(completion): %d, time: %d", len(gconv.String(response.Choices[0].Message.Content)), gtime.TimestampMilli()-completionTime)
-					}
+				if len(response.Choices) > 0 && response.Choices[0].Message != nil {
+					response.Usage.CompletionTokens = common.GetCompletionTokens(ctx, model, gconv.String(response.Choices[0].Message.Content))
 				}
 
 				response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
@@ -153,7 +128,6 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 		if reqModel != nil && response.Usage != nil {
 			if reqModel.Type != 100 {
-				// 实际花费额度
 				if reqModel.TextQuota.BillingMethod == 1 {
 					totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
 				} else {
@@ -223,7 +197,6 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 	path = realModel.Path
 
 	if realModel.IsEnableModelAgent {
-
 		if agentTotal, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, realModel); err != nil {
 			logger.Error(ctx, err)
 
@@ -300,7 +273,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		key = getGcpToken(ctx, k.Key, config.Cfg.Http.ProxyUrl)
 		path = fmt.Sprintf(path, gstr.Split(k.Key, "|")[0], realModel.Model)
 	} else if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
-		key = getAccessToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
+		key = getBaiduToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
 	// 预设配置
@@ -371,7 +344,6 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		}
 
 		if isRetry {
-
 			if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
 				if realModel.IsEnableFallback {
 					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
@@ -444,7 +416,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
 			if retryInfo == nil && completion != "" && (usage == nil || usage.PromptTokens == 0 || usage.CompletionTokens == 0) {
 
 				if usage == nil {
@@ -455,6 +426,8 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 				if common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_OPENAI && common.GetCorpCode(ctx, reqModel.Corp) != consts.CORP_AZURE {
 					model = consts.DEFAULT_MODEL
+				} else if !gstr.HasPrefix(model, consts.GPT_PREFIX) {
+					model = consts.DEFAULT_MODEL
 				}
 
 				if content, ok := params.Messages[len(params.Messages)-1].Content.([]interface{}); ok {
@@ -462,27 +435,14 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					usage.PromptTokens = textTokens + imageTokens
 				} else {
 					if usage.PromptTokens == 0 {
-						promptTime := gtime.TimestampMilli()
-						if promptTokens, err := tiktoken.NumTokensFromMessages(model, params.Messages); err != nil {
-							logger.Errorf(ctx, "sChat CompletionsStream model: %s, messages: %s, NumTokensFromMessages error: %v", params.Model, gjson.MustEncodeString(params.Messages), err)
-						} else {
-							usage.PromptTokens = promptTokens
-							logger.Debugf(ctx, "sChat CompletionsStream NumTokensFromMessages len(params.Messages): %d, time: %d", len(params.Messages), gtime.TimestampMilli()-promptTime)
-						}
+						usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
 					}
 				}
 
 				if usage.CompletionTokens == 0 {
-					completionTime := gtime.TimestampMilli()
-					if completionTokens, err := tiktoken.NumTokensFromString(model, completion); err != nil {
-						logger.Errorf(ctx, "sChat CompletionsStream model: %s, completion: %s, NumTokensFromString error: %v", params.Model, completion, err)
-					} else {
-						usage.CompletionTokens = completionTokens
-						logger.Debugf(ctx, "sChat CompletionsStream NumTokensFromString len(completion): %d, time: %d", len(completion), gtime.TimestampMilli()-completionTime)
-					}
+					usage.CompletionTokens = common.GetCompletionTokens(ctx, model, completion)
 				}
 
-				// 实际花费额度
 				if reqModel.Type == 100 { // 多模态
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 					totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*reqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*reqModel.MultimodalQuota.TextQuota.CompletionRatio))
@@ -574,7 +534,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	path = realModel.Path
 
 	if realModel.IsEnableModelAgent {
-
 		if agentTotal, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, realModel); err != nil {
 			logger.Error(ctx, err)
 
@@ -651,7 +610,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		key = getGcpToken(ctx, k.Key, config.Cfg.Http.ProxyUrl)
 		path = fmt.Sprintf(path, gstr.Split(k.Key, "|")[0], realModel.Model)
 	} else if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
-		key = getAccessToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
+		key = getBaiduToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
 	// 替换预设提示词
@@ -709,7 +668,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		}
 
 		if isRetry {
-
 			if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
 				if realModel.IsEnableFallback {
 					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
@@ -772,6 +730,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					logger.Error(ctx, err)
 					return err
 				}
+
 				return nil
 			}
 
@@ -795,7 +754,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			}
 
 			if isRetry {
-
 				if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
 					if realModel.IsEnableFallback {
 						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {

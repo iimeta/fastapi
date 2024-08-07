@@ -18,11 +18,11 @@ import (
 
 var baiduCache = cache.New() // [key]AccessToken
 
-func getAccessToken(ctx context.Context, key, baseURL, proxyURL string) string {
+func getBaiduToken(ctx context.Context, key, baseURL, proxyURL string) string {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "getAccessToken Baidu time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "getBaiduToken time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if accessTokenCacheValue := baiduCache.GetVal(ctx, fmt.Sprintf(consts.ACCESS_TOKEN_KEY, key)); accessTokenCacheValue != nil {
@@ -33,10 +33,10 @@ func getAccessToken(ctx context.Context, key, baseURL, proxyURL string) string {
 	if err == nil && reply != "" {
 
 		if expiresIn, err := redis.TTL(ctx, fmt.Sprintf(consts.ACCESS_TOKEN_KEY, key)); err != nil {
-			logger.Errorf(ctx, "getAccessToken Baidu key: %s, error: %v", key, err)
+			logger.Errorf(ctx, "getBaiduToken key: %s, error: %v", key, err)
 		} else {
 			if err = baiduCache.Set(ctx, fmt.Sprintf(consts.ACCESS_TOKEN_KEY, key), reply, time.Second*time.Duration(expiresIn-60)); err != nil {
-				logger.Errorf(ctx, "getAccessToken Baidu key: %s, error: %v", key, err)
+				logger.Errorf(ctx, "getBaiduToken key: %s, error: %v", key, err)
 			}
 		}
 
@@ -46,37 +46,37 @@ func getAccessToken(ctx context.Context, key, baseURL, proxyURL string) string {
 	result := gstr.Split(key, "|")
 
 	data := g.Map{
-		"grant_type":    "client_credentials",
 		"client_id":     result[0],
 		"client_secret": result[1],
+		"grant_type":    "client_credentials",
 	}
 
 	parse, err := url.Parse(baseURL)
 	if err != nil {
-		logger.Errorf(ctx, "getAccessToken Baidu url.Parse baseURL: %s, error: %s", baseURL, err)
+		logger.Errorf(ctx, "getBaiduToken url.Parse baseURL: %s, error: %s", baseURL, err)
 		return ""
 	}
 
 	url := fmt.Sprintf("%s://%s/oauth/2.0/token", parse.Scheme, parse.Host)
 
-	getAccessTokenRes := new(model.GetAccessTokenRes)
-	if err = util.HttpPost(ctx, url, nil, data, &getAccessTokenRes, proxyURL); err != nil {
-		logger.Errorf(ctx, "getAccessToken Baidu key: %s, error: %v", key, err)
+	getBaiduTokenRes := new(model.GetBaiduTokenRes)
+	if err = util.HttpPost(ctx, url, nil, data, &getBaiduTokenRes, proxyURL); err != nil {
+		logger.Errorf(ctx, "getBaiduToken key: %s, error: %v", key, err)
 		return ""
 	}
 
-	if getAccessTokenRes.Error != "" {
-		logger.Errorf(ctx, "getAccessToken Baidu key: %s, getAccessTokenRes.Error: %s", key, getAccessTokenRes.Error)
+	if getBaiduTokenRes.Error != "" {
+		logger.Errorf(ctx, "getBaiduToken key: %s, getBaiduTokenRes.Error: %s", key, getBaiduTokenRes.Error)
 		return ""
 	}
 
-	if err = baiduCache.Set(ctx, fmt.Sprintf(consts.ACCESS_TOKEN_KEY, key), getAccessTokenRes.AccessToken, time.Second*time.Duration(getAccessTokenRes.ExpiresIn-60)); err != nil {
-		logger.Errorf(ctx, "getAccessToken Baidu key: %s, error: %v", key, err)
+	if err = baiduCache.Set(ctx, fmt.Sprintf(consts.ACCESS_TOKEN_KEY, key), getBaiduTokenRes.AccessToken, time.Second*time.Duration(getBaiduTokenRes.ExpiresIn-60)); err != nil {
+		logger.Errorf(ctx, "getBaiduToken key: %s, error: %v", key, err)
 	}
 
-	if err = redis.SetEX(ctx, fmt.Sprintf(consts.ACCESS_TOKEN_KEY, key), getAccessTokenRes.AccessToken, getAccessTokenRes.ExpiresIn-60); err != nil {
-		logger.Errorf(ctx, "getAccessToken Baidu key: %s, error: %v", key, err)
+	if err = redis.SetEX(ctx, fmt.Sprintf(consts.ACCESS_TOKEN_KEY, key), getBaiduTokenRes.AccessToken, getBaiduTokenRes.ExpiresIn-60); err != nil {
+		logger.Errorf(ctx, "getBaiduToken key: %s, error: %v", key, err)
 	}
 
-	return getAccessTokenRes.AccessToken
+	return getBaiduTokenRes.AccessToken
 }
