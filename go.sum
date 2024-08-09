@@ -43,8 +43,8 @@ github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aN
 github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/grokify/html-strip-tags-go v0.1.0 h1:03UrQLjAny8xci+R+qjCce/MYnpNXCtgzltlQbOBae4=
 github.com/grokify/html-strip-tags-go v0.1.0/go.mod h1:ZdzgfHEzAfz9X6Xe5eBLVblWIxXfYSQ40S/VKrAOGpc=
-github.com/iimeta/go-openai v0.0.0-20240808145112-596383df2757 h1:1YTx28F9FcdNFvciEI4JrC2T0cPRqfDsY6IPH5mYpyg=
-github.com/iimeta/go-openai v0.0.0-20240808145112-596383df2757/go.mod h1:7vOUOtganSn9UG2rfFHKKgFDFCIxZBJlVa0kqncrFRY=
+github.com/iimeta/go-openai v0.0.0-20240809024851-bfbfac125988 h1:8Hf7YsAyirzP6CmXV8/GDQm2gdr2sKjL0+YOBr9ik8o=
+github.com/iimeta/go-openai v0.0.0-20240809024851-bfbfac125988/go.mod h1:7vOUOtganSn9UG2rfFHKKgFDFCIxZBJlVa0kqncrFRY=
 github.com/iimeta/tiktoken-go v0.0.0-20240727093849-292e86033509 h1:U1048KUz/aNrjlLbycSM0vF8u+Cg/daJpDsTorApEBs=
 github.com/iimeta/tiktoken-go v0.0.0-20240727093849-292e86033509/go.mod h1:3RjX+Jrckkk+CtEaH24PQMOLqGVRMVtUsjJ3Zo30pag=
 github.com/klauspost/compress v1.13.6 h1:P76CopJELS0TiO2mebmnzgWaajssP/EszplttgQxcgc=
