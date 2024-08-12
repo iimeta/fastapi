@@ -137,16 +137,18 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		}
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 				if err := service.Common().RecordUsage(ctx, totalTokens); err != nil {
 					logger.Error(ctx, err)
+					panic(err)
 				}
-			}, nil); err != nil {
+			}); err != nil {
 				logger.Error(ctx, err)
+				panic(err)
 			}
 		}
 
-		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 			realModel.ModelAgent = modelAgent
 
@@ -170,8 +172,9 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 			s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, completionsRes, retryInfo)
 
-		}, nil); err != nil {
+		}); err != nil {
 			logger.Error(ctx, err)
+			panic(err)
 		}
 	}()
 
@@ -415,7 +418,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 
-		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 			if retryInfo == nil && completion != "" && (usage == nil || usage.PromptTokens == 0 || usage.CompletionTokens == 0) {
 
 				if usage == nil {
@@ -473,16 +476,18 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			}
 
 			if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+				if err := grpool.Add(ctx, func(ctx context.Context) {
 					if err := service.Common().RecordUsage(ctx, totalTokens); err != nil {
 						logger.Error(ctx, err)
+						panic(err)
 					}
-				}, nil); err != nil {
+				}); err != nil {
 					logger.Error(ctx, err)
+					panic(err)
 				}
 			}
 
-			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
+			if err := grpool.Add(ctx, func(ctx context.Context) {
 
 				realModel.ModelAgent = modelAgent
 
@@ -503,12 +508,14 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 				s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, completionsRes, retryInfo)
 
-			}, nil); err != nil {
+			}); err != nil {
 				logger.Error(ctx, err)
+				panic(err)
 			}
 
-		}, nil); err != nil {
+		}); err != nil {
 			logger.Error(ctx, err)
+			panic(err)
 		}
 	}()
 
@@ -957,5 +964,6 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel 
 
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
 		logger.Error(ctx, err)
+		panic(err)
 	}
 }

@@ -119,11 +119,13 @@ func (s *sApp) SpendQuota(ctx context.Context, appId, quota, currentQuota int) {
 		},
 	}); err != nil {
 		logger.Error(ctx, err)
+		panic(err)
 	}
 
 	app, err := s.GetCacheApp(ctx, appId)
 	if err != nil {
 		logger.Error(ctx, err)
+		panic(err)
 	}
 
 	if app.Quota > 0 {
@@ -143,6 +145,7 @@ func (s *sApp) SpendQuota(ctx context.Context, appId, quota, currentQuota int) {
 
 		if err = s.SaveCacheApp(ctx, app); err != nil {
 			logger.Error(ctx, err)
+			panic(err)
 		}
 	}
 }
@@ -158,12 +161,14 @@ func (s *sApp) UsedQuota(ctx context.Context, appId, quota int) {
 	app, err := s.GetCacheApp(ctx, appId)
 	if err != nil {
 		logger.Error(ctx, err)
+		panic(err)
 	}
 
 	app.UsedQuota += quota
 
 	if err = s.SaveCacheApp(ctx, app); err != nil {
 		logger.Error(ctx, err)
+		panic(err)
 	}
 
 	if err = dao.App.UpdateOne(ctx, bson.M{"app_id": appId}, bson.M{
@@ -172,6 +177,7 @@ func (s *sApp) UsedQuota(ctx context.Context, appId, quota int) {
 		},
 	}); err != nil {
 		logger.Error(ctx, err)
+		panic(err)
 	}
 }
 
@@ -420,11 +426,13 @@ func (s *sApp) AppKeySpendQuota(ctx context.Context, secretKey string, quota, cu
 		},
 	}); err != nil {
 		logger.Error(ctx, err)
+		panic(err)
 	}
 
 	key, err := s.GetCacheAppKey(ctx, secretKey)
 	if err != nil {
 		logger.Error(ctx, err)
+		panic(err)
 	}
 
 	if key.Quota > 0 {
@@ -444,6 +452,7 @@ func (s *sApp) AppKeySpendQuota(ctx context.Context, secretKey string, quota, cu
 
 		if err = s.SaveCacheAppKey(ctx, key); err != nil {
 			logger.Error(ctx, err)
+			panic(err)
 		}
 	}
 }
@@ -459,12 +468,14 @@ func (s *sApp) AppKeyUsedQuota(ctx context.Context, secretKey string, quota int)
 	key, err := s.GetCacheAppKey(ctx, secretKey)
 	if err != nil {
 		logger.Error(ctx, err)
+		panic(err)
 	}
 
 	key.UsedQuota += quota
 
 	if err = s.SaveCacheAppKey(ctx, key); err != nil {
 		logger.Error(ctx, err)
+		panic(err)
 	}
 
 	if err = dao.Key.UpdateOne(ctx, bson.M{"key": secretKey}, bson.M{
@@ -473,6 +484,7 @@ func (s *sApp) AppKeyUsedQuota(ctx context.Context, secretKey string, quota int)
 		},
 	}); err != nil {
 		logger.Error(ctx, err)
+		panic(err)
 	}
 }
 

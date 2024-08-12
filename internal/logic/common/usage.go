@@ -28,12 +28,14 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int) error {
 	currentQuota, err := redis.HIncrBy(ctx, usageKey, consts.USER_QUOTA_FIELD, int64(-totalTokens))
 	if err != nil {
 		logger.Error(ctx, err)
+		panic(err)
 	}
 
-	if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
+	if err = grpool.Add(ctx, func(ctx context.Context) {
 		service.User().SpendQuota(ctx, service.Session().GetUserId(ctx), totalTokens, int(currentQuota))
-	}, nil); err != nil {
+	}); err != nil {
 		logger.Error(ctx, err)
+		panic(err)
 	}
 
 	if service.Session().GetAppIsLimitQuota(ctx) {
@@ -41,19 +43,22 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int) error {
 		currentQuota, err = redis.HIncrBy(ctx, usageKey, s.GetAppTotalTokensField(ctx), int64(-totalTokens))
 		if err != nil {
 			logger.Error(ctx, err)
+			panic(err)
 		}
 
-		if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
+		if err = grpool.Add(ctx, func(ctx context.Context) {
 			service.App().SpendQuota(ctx, service.Session().GetAppId(ctx), totalTokens, int(currentQuota))
-		}, nil); err != nil {
+		}); err != nil {
 			logger.Error(ctx, err)
+			panic(err)
 		}
 
 	} else {
-		if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
+		if err = grpool.Add(ctx, func(ctx context.Context) {
 			service.App().UsedQuota(ctx, service.Session().GetAppId(ctx), totalTokens)
-		}, nil); err != nil {
+		}); err != nil {
 			logger.Error(ctx, err)
+			panic(err)
 		}
 	}
 
@@ -62,23 +67,26 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int) error {
 		currentQuota, err = redis.HIncrBy(ctx, usageKey, s.GetKeyTotalTokensField(ctx), int64(-totalTokens))
 		if err != nil {
 			logger.Error(ctx, err)
+			panic(err)
 		}
 
-		if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
+		if err = grpool.Add(ctx, func(ctx context.Context) {
 			service.App().AppKeySpendQuota(ctx, service.Session().GetSecretKey(ctx), totalTokens, int(currentQuota))
-		}, nil); err != nil {
+		}); err != nil {
 			logger.Error(ctx, err)
+			panic(err)
 		}
 
 	} else {
-		if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
+		if err = grpool.Add(ctx, func(ctx context.Context) {
 			service.App().AppKeyUsedQuota(ctx, service.Session().GetSecretKey(ctx), totalTokens)
-		}, nil); err != nil {
+		}); err != nil {
 			logger.Error(ctx, err)
+			panic(err)
 		}
 	}
 
-	return nil
+	return err
 }
 
 func (s *sCommon) GetUserTotalTokens(ctx context.Context) (int, error) {

@@ -111,11 +111,13 @@ func (s *sUser) SpendQuota(ctx context.Context, userId, quota, currentQuota int)
 		},
 	}); err != nil {
 		logger.Error(ctx, err)
+		panic(err)
 	}
 
 	user, err := s.GetCacheUser(ctx, userId)
 	if err != nil {
 		logger.Error(ctx, err)
+		panic(err)
 	}
 
 	if user.Quota > 0 {
@@ -135,6 +137,7 @@ func (s *sUser) SpendQuota(ctx context.Context, userId, quota, currentQuota int)
 
 		if err = s.SaveCacheUser(ctx, user); err != nil {
 			logger.Error(ctx, err)
+			panic(err)
 		}
 	}
 }
