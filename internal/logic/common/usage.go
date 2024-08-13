@@ -35,7 +35,6 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int) error {
 		service.User().SpendQuota(ctx, service.Session().GetUserId(ctx), totalTokens, int(currentQuota))
 	}); err != nil {
 		logger.Error(ctx, err)
-		panic(err)
 	}
 
 	if service.Session().GetAppIsLimitQuota(ctx) {
@@ -50,7 +49,6 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int) error {
 			service.App().SpendQuota(ctx, service.Session().GetAppId(ctx), totalTokens, int(currentQuota))
 		}); err != nil {
 			logger.Error(ctx, err)
-			panic(err)
 		}
 
 	} else {
@@ -58,7 +56,6 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int) error {
 			service.App().UsedQuota(ctx, service.Session().GetAppId(ctx), totalTokens)
 		}); err != nil {
 			logger.Error(ctx, err)
-			panic(err)
 		}
 	}
 
@@ -74,7 +71,6 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int) error {
 			service.App().AppKeySpendQuota(ctx, service.Session().GetSecretKey(ctx), totalTokens, int(currentQuota))
 		}); err != nil {
 			logger.Error(ctx, err)
-			panic(err)
 		}
 
 	} else {
@@ -82,7 +78,6 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int) error {
 			service.App().AppKeyUsedQuota(ctx, service.Session().GetSecretKey(ctx), totalTokens)
 		}); err != nil {
 			logger.Error(ctx, err)
-			panic(err)
 		}
 	}
 

@@ -144,7 +144,6 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				}
 			}); err != nil {
 				logger.Error(ctx, err)
-				panic(err)
 			}
 		}
 
@@ -483,7 +482,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					}
 				}); err != nil {
 					logger.Error(ctx, err)
-					panic(err)
 				}
 			}
 
@@ -515,7 +513,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 		}); err != nil {
 			logger.Error(ctx, err)
-			panic(err)
 		}
 	}()
 
