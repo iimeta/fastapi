@@ -536,21 +536,39 @@ func (s *sMidjourney) SaveLog(ctx context.Context, reqModel, realModel, fallback
 		Status:       1,
 	}
 
-	midjourney.Corp = reqModel.Corp
-	midjourney.ModelId = reqModel.Id
-	midjourney.Name = reqModel.Name
-	midjourney.Model = reqModel.Model
-	midjourney.Type = reqModel.Type
-	midjourney.MidjourneyQuotas = reqModel.MidjourneyQuotas
+	if reqModel != nil {
+		midjourney.Corp = reqModel.Corp
+		midjourney.ModelId = reqModel.Id
+		midjourney.Name = reqModel.Name
+		midjourney.Model = reqModel.Model
+		midjourney.Type = reqModel.Type
+		midjourney.MidjourneyQuotas = reqModel.MidjourneyQuotas
+	}
 
-	midjourney.IsEnablePresetConfig = realModel.IsEnablePresetConfig
-	midjourney.PresetConfig = realModel.PresetConfig
-	midjourney.IsEnableForward = realModel.IsEnableForward
-	midjourney.ForwardConfig = realModel.ForwardConfig
-	midjourney.IsEnableModelAgent = realModel.IsEnableModelAgent
-	midjourney.RealModelId = realModel.Id
-	midjourney.RealModelName = realModel.Name
-	midjourney.RealModel = realModel.Model
+	if realModel != nil {
+
+		midjourney.IsEnablePresetConfig = realModel.IsEnablePresetConfig
+		midjourney.PresetConfig = realModel.PresetConfig
+		midjourney.IsEnableForward = realModel.IsEnableForward
+		midjourney.ForwardConfig = realModel.ForwardConfig
+		midjourney.IsEnableModelAgent = realModel.IsEnableModelAgent
+		midjourney.RealModelId = realModel.Id
+		midjourney.RealModelName = realModel.Name
+		midjourney.RealModel = realModel.Model
+
+		if midjourney.IsEnableModelAgent && realModel.ModelAgent != nil {
+			midjourney.ModelAgentId = realModel.ModelAgent.Id
+			midjourney.ModelAgent = &do.ModelAgent{
+				Corp:    realModel.ModelAgent.Corp,
+				Name:    realModel.ModelAgent.Name,
+				BaseUrl: realModel.ModelAgent.BaseUrl,
+				Path:    realModel.ModelAgent.Path,
+				Weight:  realModel.ModelAgent.Weight,
+				Remark:  realModel.ModelAgent.Remark,
+				Status:  realModel.ModelAgent.Status,
+			}
+		}
+	}
 
 	midjourney.TotalTokens = response.Usage.TotalTokens
 
@@ -559,19 +577,6 @@ func (s *sMidjourney) SaveLog(ctx context.Context, reqModel, realModel, fallback
 		midjourney.FallbackConfig = &mcommon.FallbackConfig{
 			FallbackModel:     fallbackModel.Model,
 			FallbackModelName: fallbackModel.Name,
-		}
-	}
-
-	if midjourney.IsEnableModelAgent && realModel.ModelAgent != nil {
-		midjourney.ModelAgentId = realModel.ModelAgent.Id
-		midjourney.ModelAgent = &do.ModelAgent{
-			Corp:    realModel.ModelAgent.Corp,
-			Name:    realModel.ModelAgent.Name,
-			BaseUrl: realModel.ModelAgent.BaseUrl,
-			Path:    realModel.ModelAgent.Path,
-			Weight:  realModel.ModelAgent.Weight,
-			Remark:  realModel.ModelAgent.Remark,
-			Status:  realModel.ModelAgent.Status,
 		}
 	}
 

@@ -883,22 +883,40 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel 
 		chat.Completion = completionsRes.Completion
 	}
 
-	chat.Corp = reqModel.Corp
-	chat.ModelId = reqModel.Id
-	chat.Name = reqModel.Name
-	chat.Model = reqModel.Model
-	chat.Type = reqModel.Type
-	chat.TextQuota = reqModel.TextQuota
-	chat.MultimodalQuota = reqModel.MultimodalQuota
+	if reqModel != nil {
+		chat.Corp = reqModel.Corp
+		chat.ModelId = reqModel.Id
+		chat.Name = reqModel.Name
+		chat.Model = reqModel.Model
+		chat.Type = reqModel.Type
+		chat.TextQuota = reqModel.TextQuota
+		chat.MultimodalQuota = reqModel.MultimodalQuota
+	}
 
-	chat.IsEnablePresetConfig = realModel.IsEnablePresetConfig
-	chat.PresetConfig = realModel.PresetConfig
-	chat.IsEnableForward = realModel.IsEnableForward
-	chat.ForwardConfig = realModel.ForwardConfig
-	chat.IsEnableModelAgent = realModel.IsEnableModelAgent
-	chat.RealModelId = realModel.Id
-	chat.RealModelName = realModel.Name
-	chat.RealModel = realModel.Model
+	if realModel != nil {
+
+		chat.IsEnablePresetConfig = realModel.IsEnablePresetConfig
+		chat.PresetConfig = realModel.PresetConfig
+		chat.IsEnableForward = realModel.IsEnableForward
+		chat.ForwardConfig = realModel.ForwardConfig
+		chat.IsEnableModelAgent = realModel.IsEnableModelAgent
+		chat.RealModelId = realModel.Id
+		chat.RealModelName = realModel.Name
+		chat.RealModel = realModel.Model
+
+		if chat.IsEnableModelAgent && realModel.ModelAgent != nil {
+			chat.ModelAgentId = realModel.ModelAgent.Id
+			chat.ModelAgent = &do.ModelAgent{
+				Corp:    realModel.ModelAgent.Corp,
+				Name:    realModel.ModelAgent.Name,
+				BaseUrl: realModel.ModelAgent.BaseUrl,
+				Path:    realModel.ModelAgent.Path,
+				Weight:  realModel.ModelAgent.Weight,
+				Remark:  realModel.ModelAgent.Remark,
+				Status:  realModel.ModelAgent.Status,
+			}
+		}
+	}
 
 	chat.PromptTokens = completionsRes.Usage.PromptTokens
 	chat.CompletionTokens = completionsRes.Usage.CompletionTokens
@@ -909,19 +927,6 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel 
 		chat.FallbackConfig = &mcommon.FallbackConfig{
 			FallbackModel:     fallbackModel.Model,
 			FallbackModelName: fallbackModel.Name,
-		}
-	}
-
-	if chat.IsEnableModelAgent && realModel.ModelAgent != nil {
-		chat.ModelAgentId = realModel.ModelAgent.Id
-		chat.ModelAgent = &do.ModelAgent{
-			Corp:    realModel.ModelAgent.Corp,
-			Name:    realModel.ModelAgent.Name,
-			BaseUrl: realModel.ModelAgent.BaseUrl,
-			Path:    realModel.ModelAgent.Path,
-			Weight:  realModel.ModelAgent.Weight,
-			Remark:  realModel.ModelAgent.Remark,
-			Status:  realModel.ModelAgent.Status,
 		}
 	}
 

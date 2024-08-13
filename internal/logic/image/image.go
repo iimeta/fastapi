@@ -306,21 +306,39 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 		})
 	}
 
-	image.Corp = reqModel.Corp
-	image.ModelId = reqModel.Id
-	image.Name = reqModel.Name
-	image.Model = reqModel.Model
-	image.Type = reqModel.Type
-	image.ImageQuotas = reqModel.ImageQuotas
+	if reqModel != nil {
+		image.Corp = reqModel.Corp
+		image.ModelId = reqModel.Id
+		image.Name = reqModel.Name
+		image.Model = reqModel.Model
+		image.Type = reqModel.Type
+		image.ImageQuotas = reqModel.ImageQuotas
+	}
 
-	image.IsEnablePresetConfig = realModel.IsEnablePresetConfig
-	image.PresetConfig = realModel.PresetConfig
-	image.IsEnableForward = realModel.IsEnableForward
-	image.ForwardConfig = realModel.ForwardConfig
-	image.IsEnableModelAgent = realModel.IsEnableModelAgent
-	image.RealModelId = realModel.Id
-	image.RealModelName = realModel.Name
-	image.RealModel = realModel.Model
+	if realModel != nil {
+
+		image.IsEnablePresetConfig = realModel.IsEnablePresetConfig
+		image.PresetConfig = realModel.PresetConfig
+		image.IsEnableForward = realModel.IsEnableForward
+		image.ForwardConfig = realModel.ForwardConfig
+		image.IsEnableModelAgent = realModel.IsEnableModelAgent
+		image.RealModelId = realModel.Id
+		image.RealModelName = realModel.Name
+		image.RealModel = realModel.Model
+
+		if image.IsEnableModelAgent && realModel.ModelAgent != nil {
+			image.ModelAgentId = realModel.ModelAgent.Id
+			image.ModelAgent = &do.ModelAgent{
+				Corp:    realModel.ModelAgent.Corp,
+				Name:    realModel.ModelAgent.Name,
+				BaseUrl: realModel.ModelAgent.BaseUrl,
+				Path:    realModel.ModelAgent.Path,
+				Weight:  realModel.ModelAgent.Weight,
+				Remark:  realModel.ModelAgent.Remark,
+				Status:  realModel.ModelAgent.Status,
+			}
+		}
+	}
 
 	image.TotalTokens = imageRes.Usage.TotalTokens
 
@@ -329,19 +347,6 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 		image.FallbackConfig = &mcommon.FallbackConfig{
 			FallbackModel:     fallbackModel.Model,
 			FallbackModelName: fallbackModel.Name,
-		}
-	}
-
-	if image.IsEnableModelAgent && realModel.ModelAgent != nil {
-		image.ModelAgentId = realModel.ModelAgent.Id
-		image.ModelAgent = &do.ModelAgent{
-			Corp:    realModel.ModelAgent.Corp,
-			Name:    realModel.ModelAgent.Name,
-			BaseUrl: realModel.ModelAgent.BaseUrl,
-			Path:    realModel.ModelAgent.Path,
-			Weight:  realModel.ModelAgent.Weight,
-			Remark:  realModel.ModelAgent.Remark,
-			Status:  realModel.ModelAgent.Status,
 		}
 	}
 
