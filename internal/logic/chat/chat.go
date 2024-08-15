@@ -272,7 +272,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 	}
 
 	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_GCP_CLAUDE {
-		key = getGcpToken(ctx, k.Key, config.Cfg.Http.ProxyUrl)
+		key = getGcpToken(ctx, k, config.Cfg.Http.ProxyUrl)
 		path = fmt.Sprintf(path, gstr.Split(k.Key, "|")[0], realModel.Model)
 	} else if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
 		key = getBaiduToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
@@ -611,7 +611,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	}
 
 	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_GCP_CLAUDE {
-		key = getGcpToken(ctx, k.Key, config.Cfg.Http.ProxyUrl)
+		key = getGcpToken(ctx, k, config.Cfg.Http.ProxyUrl)
 		path = fmt.Sprintf(path, gstr.Split(k.Key, "|")[0], realModel.Model)
 	} else if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
 		key = getBaiduToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)

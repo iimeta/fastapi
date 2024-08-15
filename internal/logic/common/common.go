@@ -102,6 +102,14 @@ func IsNeedRetry(err error) (isRetry bool, isDisabled bool) {
 
 	reqError := &sdkerr.RequestError{}
 	if errors.As(err, &reqError) {
+
+		switch reqError.HttpStatusCode {
+		case 403:
+			if gstr.Contains(reqError.Error(), "PERMISSION_DENIED") {
+				return true, true
+			}
+		}
+
 		return true, false
 	}
 
