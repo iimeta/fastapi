@@ -12,7 +12,7 @@ import (
 )
 
 // 记录使用额度
-func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int) error {
+func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -79,6 +79,12 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int) error {
 		}); err != nil {
 			logger.Error(ctx, err)
 		}
+	}
+
+	if err = grpool.Add(ctx, func(ctx context.Context) {
+		service.Key().UsedQuota(ctx, key, totalTokens)
+	}); err != nil {
+		logger.Error(ctx, err)
 	}
 
 	return err

@@ -596,6 +596,24 @@ func (s *sKey) RemoveCacheModelKey(ctx context.Context, key *entity.Key) {
 	}
 }
 
+// 密钥已用额度
+func (s *sKey) UsedQuota(ctx context.Context, key string, quota int) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sKey UsedQuota time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	if err := dao.Key.UpdateOne(ctx, bson.M{"key": key}, bson.M{
+		"$inc": bson.M{
+			"used_quota": quota,
+		},
+	}); err != nil {
+		logger.Error(ctx, err)
+		panic(err)
+	}
+}
+
 // 变更订阅
 func (s *sKey) Subscribe(ctx context.Context, msg string) error {
 

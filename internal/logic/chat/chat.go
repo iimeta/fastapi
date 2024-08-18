@@ -138,7 +138,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, totalTokens); err != nil {
+				if err := service.Common().RecordUsage(ctx, totalTokens, k.Key); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -476,7 +476,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 			if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 				if err := grpool.Add(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, totalTokens); err != nil {
+					if err := service.Common().RecordUsage(ctx, totalTokens, k.Key); err != nil {
 						logger.Error(ctx, err)
 						panic(err)
 					}

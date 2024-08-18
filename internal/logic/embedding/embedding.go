@@ -72,7 +72,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, totalTokens); err != nil {
+				if err := service.Common().RecordUsage(ctx, totalTokens, k.Key); err != nil {
 					logger.Error(ctx, err)
 				}
 			}, nil); err != nil {

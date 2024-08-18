@@ -78,7 +78,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 
 			if err == nil {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, usage.TotalTokens); err != nil {
+					if err := service.Common().RecordUsage(ctx, usage.TotalTokens, k.Key); err != nil {
 						logger.Error(ctx, err)
 					}
 				}, nil); err != nil {
@@ -304,7 +304,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 
 			if err == nil {
 				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, usage.TotalTokens); err != nil {
+					if err := service.Common().RecordUsage(ctx, usage.TotalTokens, k.Key); err != nil {
 						logger.Error(ctx, err)
 					}
 				}, nil); err != nil {
