@@ -83,6 +83,21 @@ func IsNeedRetry(err error) (isRetry bool, isDisabled bool) {
 		return false, false
 	}
 
+	// gcp-claude
+	if gstr.Contains(err.Error(), "PERMISSION_DENIED") {
+		return true, true
+	}
+
+	// gcp-claude
+	if gstr.Contains(err.Error(), "is not allowed to use Publisher Model") {
+		return true, true
+	}
+
+	// gemini
+	if gstr.Contains(err.Error(), "RESOURCE_EXHAUSTED") {
+		return true, true
+	}
+
 	apiError := &sdkerr.ApiError{}
 	if errors.As(err, &apiError) {
 
@@ -116,21 +131,6 @@ func IsNeedRetry(err error) (isRetry bool, isDisabled bool) {
 	opError := &net.OpError{}
 	if errors.As(err, &opError) {
 		return true, false
-	}
-
-	// gcp-claude
-	if gstr.Contains(err.Error(), "PERMISSION_DENIED") {
-		return true, true
-	}
-
-	// gcp-claude
-	if gstr.Contains(err.Error(), "is not allowed to use Publisher Model") {
-		return true, true
-	}
-
-	// gemini
-	if gstr.Contains(err.Error(), "RESOURCE_EXHAUSTED") {
-		return true, true
 	}
 
 	// todo
