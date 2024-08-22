@@ -89,6 +89,11 @@ func IsNeedRetry(err error) (isRetry bool, isDisabled bool) {
 	}
 
 	// gcp-claude
+	if gstr.Contains(err.Error(), "BILLING_DISABLED") {
+		return true, true
+	}
+
+	// gcp-claude
 	if gstr.Contains(err.Error(), "is not allowed to use Publisher Model") {
 		return true, true
 	}
