@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi/internal/config"
@@ -61,7 +63,11 @@ func getGcpToken(ctx context.Context, key *model.Key, proxyURL string) string {
 
 	if getGcpTokenRes.Error != "" {
 		logger.Errorf(ctx, "getGcpToken key: %s, getGcpTokenRes.Error: %s", key.Key, getGcpTokenRes.Error)
-		service.Key().DisabledModelKey(ctx, key)
+		if err = grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+			service.Key().DisabledModelKey(ctx, key)
+		}); err != nil {
+			logger.Error(ctx, err)
+		}
 		return ""
 	}
 

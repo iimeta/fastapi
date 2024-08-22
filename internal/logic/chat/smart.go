@@ -229,10 +229,10 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 	key = k.Key
 
 	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_GCP_CLAUDE {
-		key = getGcpToken(gctx.NeverDone(ctx), k, config.Cfg.Http.ProxyUrl)
+		key = getGcpToken(ctx, k, config.Cfg.Http.ProxyUrl)
 		path = fmt.Sprintf(path, gstr.Split(k.Key, "|")[0], realModel.Model)
 	} else if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
-		key = getBaiduToken(gctx.NeverDone(ctx), k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
+		key = getBaiduToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
 
 	// 预设配置
