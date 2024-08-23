@@ -83,6 +83,11 @@ func IsNeedRetry(err error) (isRetry bool, isDisabled bool) {
 		return false, false
 	}
 
+	// openai
+	if gstr.Contains(err.Error(), "The OpenAI account associated with this API key has been deactivated.") {
+		return true, true
+	}
+
 	// gcp-claude
 	if gstr.Contains(err.Error(), "PERMISSION_DENIED") {
 		return true, true
