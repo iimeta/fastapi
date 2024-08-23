@@ -157,11 +157,11 @@ func getGcpTokenNew(ctx context.Context, key *model.Key, proxyURL string) (strin
 		return "", err
 	}
 
-	if err = gcpCache.Set(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, key.Key), response.AccessToken, time.Second*time.Duration(response.ExpireTime.Seconds-60)); err != nil {
+	if err = gcpCache.Set(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, crypto.SM3(key.Key)), response.AccessToken, time.Minute*50); err != nil {
 		logger.Errorf(ctx, "getGcpTokenNew key: %s, error: %v", key.Key, err)
 	}
 
-	if err = redis.SetEX(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, key.Key), response.AccessToken, response.ExpireTime.Seconds-60); err != nil {
+	if err = redis.SetEX(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, crypto.SM3(key.Key)), response.AccessToken, 60*50); err != nil {
 		logger.Errorf(ctx, "getGcpTokenNew key: %s, error: %v", key.Key, err)
 	}
 

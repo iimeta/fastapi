@@ -272,6 +272,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 	}
 
 	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_GCP_CLAUDE {
+
 		key, err = getGcpTokenNew(ctx, k, config.Cfg.Http.ProxyUrl)
 		if err != nil {
 			logger.Error(ctx, err)
@@ -321,6 +322,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		}
 
 		path = fmt.Sprintf(path, gstr.Split(k.Key, "|")[0], realModel.Model)
+
 	} else if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
 		key = getBaiduToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
@@ -658,8 +660,57 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	}
 
 	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_GCP_CLAUDE {
-		key = getGcpToken(ctx, k, config.Cfg.Http.ProxyUrl)
+
+		key, err = getGcpTokenNew(ctx, k, config.Cfg.Http.ProxyUrl)
+		if err != nil {
+			logger.Error(ctx, err)
+
+			// 记录错误次数和禁用
+			service.Common().RecordError(ctx, realModel, k, modelAgent)
+
+			isRetry, isDisabled := common.IsNeedRetry(err)
+
+			if isDisabled {
+				if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+					if realModel.IsEnableModelAgent {
+						service.ModelAgent().DisabledModelAgentKey(ctx, k)
+					} else {
+						service.Key().DisabledModelKey(ctx, k)
+					}
+				}, nil); err != nil {
+					logger.Error(ctx, err)
+				}
+			}
+
+			if isRetry {
+				if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
+					if realModel.IsEnableFallback {
+						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+							retryInfo = &mcommon.Retry{
+								IsRetry:    true,
+								RetryCount: len(retry),
+								ErrMsg:     err.Error(),
+							}
+							return s.CompletionsStream(ctx, params, fallbackModel)
+						}
+					}
+					return err
+				}
+
+				retryInfo = &mcommon.Retry{
+					IsRetry:    true,
+					RetryCount: len(retry),
+					ErrMsg:     err.Error(),
+				}
+
+				return s.CompletionsStream(ctx, params, fallbackModel, append(retry, 1)...)
+			}
+
+			return err
+		}
+
 		path = fmt.Sprintf(path, gstr.Split(k.Key, "|")[0], realModel.Model)
+
 	} else if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
 		key = getBaiduToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
 	}
