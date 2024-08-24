@@ -152,6 +152,13 @@ func getGcpTokenNew(ctx context.Context, key *model.Key, proxyURL string) (strin
 	response, err := client.GenerateAccessToken(ctx, request)
 	if err != nil {
 		logger.Errorf(ctx, "getGcpTokenNew GenerateAccessToken key: %s, error: %v", key.Key, err)
+		if gstr.Contains(err.Error(), "IAM_PERMISSION_DENIED") || gstr.Contains(err.Error(), "SERVICE_DISABLED") {
+			if err = grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+				service.Key().DisabledModelKey(ctx, key)
+			}); err != nil {
+				logger.Error(ctx, err)
+			}
+		}
 		return "", "", err
 	}
 
