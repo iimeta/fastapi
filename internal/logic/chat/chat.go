@@ -68,6 +68,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		textTokens  int
 		imageTokens int
 		totalTokens int
+		projectId   string
 	)
 
 	defer func() {
@@ -273,7 +274,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_GCP_CLAUDE {
 
-		key, err = getGcpTokenNew(ctx, k, config.Cfg.Http.ProxyUrl)
+		projectId, key, err = getGcpTokenNew(ctx, k, config.Cfg.Http.ProxyUrl)
 		if err != nil {
 			logger.Error(ctx, err)
 
@@ -321,7 +322,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			return response, err
 		}
 
-		path = fmt.Sprintf(path, gstr.Split(k.Key, "|")[0], realModel.Model)
+		path = fmt.Sprintf(path, projectId, realModel.Model)
 
 	} else if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
 		key = getBaiduToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
@@ -459,6 +460,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		totalTokens int
 		usage       *sdkm.Usage
 		retryInfo   *mcommon.Retry
+		projectId   string
 	)
 
 	defer func() {
@@ -661,7 +663,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_GCP_CLAUDE {
 
-		key, err = getGcpTokenNew(ctx, k, config.Cfg.Http.ProxyUrl)
+		projectId, key, err = getGcpTokenNew(ctx, k, config.Cfg.Http.ProxyUrl)
 		if err != nil {
 			logger.Error(ctx, err)
 
@@ -709,7 +711,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			return err
 		}
 
-		path = fmt.Sprintf(path, gstr.Split(k.Key, "|")[0], realModel.Model)
+		path = fmt.Sprintf(path, projectId, realModel.Model)
 
 	} else if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
 		key = getBaiduToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)

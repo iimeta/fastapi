@@ -44,6 +44,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		textTokens  int
 		imageTokens int
 		totalTokens int
+		projectId   string
 	)
 
 	defer func() {
@@ -230,7 +231,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_GCP_CLAUDE {
 
-		key, err = getGcpTokenNew(ctx, k, config.Cfg.Http.ProxyUrl)
+		projectId, key, err = getGcpTokenNew(ctx, k, config.Cfg.Http.ProxyUrl)
 		if err != nil {
 			logger.Error(ctx, err)
 
@@ -278,7 +279,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 			return response, err
 		}
 
-		path = fmt.Sprintf(path, gstr.Split(k.Key, "|")[0], realModel.Model)
+		path = fmt.Sprintf(path, projectId, realModel.Model)
 
 	} else if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
 		key = getBaiduToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)

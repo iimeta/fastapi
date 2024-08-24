@@ -89,27 +89,33 @@ func getGcpToken(ctx context.Context, key *model.Key, proxyURL string) string {
 
 type ApplicationDefaultCredentials struct {
 	Type                    string `json:"type"`
-	ProjectID               string `json:"project_id"`
-	PrivateKeyID            string `json:"private_key_id"`
+	ProjectId               string `json:"project_id"`
+	PrivateKeyId            string `json:"private_key_id"`
 	PrivateKey              string `json:"private_key"`
 	ClientEmail             string `json:"client_email"`
-	ClientID                string `json:"client_id"`
-	AuthURI                 string `json:"auth_uri"`
-	TokenURI                string `json:"token_uri"`
-	AuthProviderX509CertURL string `json:"auth_provider_x509_cert_url"`
-	ClientX509CertURL       string `json:"client_x509_cert_url"`
+	ClientId                string `json:"client_id"`
+	AuthUri                 string `json:"auth_uri"`
+	TokenUri                string `json:"token_uri"`
+	AuthProviderX509CertUrl string `json:"auth_provider_x509_cert_url"`
+	ClientX509CertUrl       string `json:"client_x509_cert_url"`
 	UniverseDomain          string `json:"universe_domain"`
 }
 
-func getGcpTokenNew(ctx context.Context, key *model.Key, proxyURL string) (string, error) {
+func getGcpTokenNew(ctx context.Context, key *model.Key, proxyURL string) (string, string, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "getGcpTokenNew time: %d", gtime.TimestampMilli()-now)
 	}()
 
+	adc := &ApplicationDefaultCredentials{}
+	if err := gjson.Unmarshal([]byte(key.Key), adc); err != nil {
+		logger.Errorf(ctx, "getGcpTokenNew gjson.Unmarshal key: %s, error: %v", key.Key, err)
+		return "", "", err
+	}
+
 	if gcpTokenCacheValue := gcpCache.GetVal(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, crypto.SM3(key.Key))); gcpTokenCacheValue != nil {
-		return gcpTokenCacheValue.(string), nil
+		return adc.ProjectId, gcpTokenCacheValue.(string), nil
 	}
 
 	reply, err := redis.GetStr(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, crypto.SM3(key.Key)))
@@ -123,21 +129,13 @@ func getGcpTokenNew(ctx context.Context, key *model.Key, proxyURL string) (strin
 			}
 		}
 
-		return reply, nil
+		return adc.ProjectId, reply, nil
 	}
 
-	result := gstr.Split(key.Key, "|")
-
-	adc := &ApplicationDefaultCredentials{}
-	if err := gjson.Unmarshal([]byte(result[1]), adc); err != nil {
-		logger.Errorf(ctx, "getGcpTokenNew gjson.Unmarshal key: %s, error: %v", key.Key, err)
-		return "", err
-	}
-
-	client, err := credentials.NewIamCredentialsClient(ctx, option.WithCredentialsJSON([]byte(result[1])))
+	client, err := credentials.NewIamCredentialsClient(ctx, option.WithCredentialsJSON([]byte(key.Key)))
 	if err != nil {
 		logger.Errorf(ctx, "getGcpTokenNew NewIamCredentialsClient key: %s, error: %v", key.Key, err)
-		return "", err
+		return "", "", err
 	}
 
 	defer func() {
@@ -154,7 +152,7 @@ func getGcpTokenNew(ctx context.Context, key *model.Key, proxyURL string) (strin
 	response, err := client.GenerateAccessToken(ctx, request)
 	if err != nil {
 		logger.Errorf(ctx, "getGcpTokenNew GenerateAccessToken key: %s, error: %v", key.Key, err)
-		return "", err
+		return "", "", err
 	}
 
 	if err = gcpCache.Set(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, crypto.SM3(key.Key)), response.AccessToken, time.Minute*50); err != nil {
@@ -165,5 +163,5 @@ func getGcpTokenNew(ctx context.Context, key *model.Key, proxyURL string) (strin
 		logger.Errorf(ctx, "getGcpTokenNew key: %s, error: %v", key.Key, err)
 	}
 
-	return response.AccessToken, nil
+	return adc.ProjectId, response.AccessToken, nil
 }
