@@ -104,9 +104,9 @@ func IsNeedRetry(err error) (isRetry bool, isDisabled bool) {
 	}
 
 	// gemini
-	//if gstr.Contains(err.Error(), "RESOURCE_EXHAUSTED") {
-	//	return true, true
-	//}
+	if gstr.Contains(err.Error(), "Resource has been exhausted") {
+		return true, true
+	}
 
 	apiError := &sdkerr.ApiError{}
 	if errors.As(err, &apiError) {
