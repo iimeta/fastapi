@@ -31,7 +31,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 	}()
 
 	var (
-		client      sdk.Chat
+		client      sdk.Client
 		realModel   = new(model.Model)
 		k           *model.Key
 		modelAgent  *model.ModelAgent

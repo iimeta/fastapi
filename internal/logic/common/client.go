@@ -9,7 +9,7 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 )
 
-func NewClient(ctx context.Context, model *model.Model, key, baseURL, path string) (sdk.Chat, error) {
+func NewClient(ctx context.Context, model *model.Model, key, baseURL, path string) (sdk.Client, error) {
 
 	if model.IsEnablePresetConfig {
 		return sdk.NewClient(ctx, GetCorpCode(ctx, model.Corp), model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, config.Cfg.Http.ProxyUrl), nil

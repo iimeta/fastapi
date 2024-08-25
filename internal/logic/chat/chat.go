@@ -54,7 +54,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 	}
 
 	var (
-		client      sdk.Chat
+		client      sdk.Client
 		reqModel    *model.Model
 		realModel   = new(model.Model)
 		k           *model.Key
@@ -441,7 +441,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	}
 
 	var (
-		client      sdk.Chat
+		client      sdk.Client
 		reqModel    *model.Model
 		realModel   = new(model.Model)
 		k           *model.Key

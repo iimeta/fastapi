@@ -40,7 +40,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 	}()
 
 	var (
-		client     sdk.Chat
+		client     sdk.Client
 		reqModel   *model.Model
 		realModel  = new(model.Model)
 		k          *model.Key
