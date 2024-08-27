@@ -260,12 +260,12 @@ func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallback
 	return response, nil
 }
 
-// Transcription
-func (s *sAudio) Transcription(ctx context.Context, params sdkm.AudioRequest, fallbackModel *model.Model, retry ...int) (response sdkm.AudioResponse, err error) {
+// Transcriptions
+func (s *sAudio) Transcriptions(ctx context.Context, params sdkm.AudioRequest, fallbackModel *model.Model, retry ...int) (response sdkm.AudioResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sAudio Transcription time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sAudio Transcriptions time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var (
@@ -360,7 +360,7 @@ func (s *sAudio) Transcription(ctx context.Context, params sdkm.AudioRequest, fa
 						RetryCount: len(retry),
 						ErrMsg:     err.Error(),
 					}
-					return s.Transcription(ctx, params, fallbackModel)
+					return s.Transcriptions(ctx, params, fallbackModel)
 				}
 			}
 
@@ -388,7 +388,7 @@ func (s *sAudio) Transcription(ctx context.Context, params sdkm.AudioRequest, fa
 							RetryCount: len(retry),
 							ErrMsg:     err.Error(),
 						}
-						return s.Transcription(ctx, params, fallbackModel)
+						return s.Transcriptions(ctx, params, fallbackModel)
 					}
 				}
 
@@ -407,7 +407,7 @@ func (s *sAudio) Transcription(ctx context.Context, params sdkm.AudioRequest, fa
 						RetryCount: len(retry),
 						ErrMsg:     err.Error(),
 					}
-					return s.Transcription(ctx, params, fallbackModel)
+					return s.Transcriptions(ctx, params, fallbackModel)
 				}
 			}
 
@@ -429,7 +429,7 @@ func (s *sAudio) Transcription(ctx context.Context, params sdkm.AudioRequest, fa
 					RetryCount: len(retry),
 					ErrMsg:     err.Error(),
 				}
-				return s.Transcription(ctx, params, fallbackModel)
+				return s.Transcriptions(ctx, params, fallbackModel)
 			}
 		}
 
@@ -467,7 +467,7 @@ func (s *sAudio) Transcription(ctx context.Context, params sdkm.AudioRequest, fa
 							RetryCount: len(retry),
 							ErrMsg:     err.Error(),
 						}
-						return s.Transcription(ctx, params, fallbackModel)
+						return s.Transcriptions(ctx, params, fallbackModel)
 					}
 				}
 				return response, err
@@ -479,7 +479,7 @@ func (s *sAudio) Transcription(ctx context.Context, params sdkm.AudioRequest, fa
 				ErrMsg:     err.Error(),
 			}
 
-			return s.Transcription(ctx, params, fallbackModel, append(retry, 1)...)
+			return s.Transcriptions(ctx, params, fallbackModel, append(retry, 1)...)
 		}
 
 		return response, err
