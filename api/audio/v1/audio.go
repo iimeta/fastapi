@@ -2,6 +2,7 @@ package v1
 
 import (
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/net/ghttp"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 )
 
@@ -20,6 +21,7 @@ type SpeechRes struct {
 type TranscriptionsReq struct {
 	g.Meta `path:"/transcriptions" tags:"audio" method:"post" summary:"transcriptions接口"`
 	sdkm.AudioRequest
+	File *ghttp.UploadFile `json:"file" type:"file"`
 }
 
 // Transcriptions接口响应参数
