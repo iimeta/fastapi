@@ -15,3 +15,14 @@ type SpeechReq struct {
 type SpeechRes struct {
 	g.Meta `mime:"application/json" example:"json"`
 }
+
+// Transcriptions接口请求参数
+type TranscriptionsReq struct {
+	g.Meta `path:"/transcriptions" tags:"audio" method:"post" summary:"transcriptions接口"`
+	sdkm.AudioRequest
+}
+
+// Transcriptions接口响应参数
+type TranscriptionsRes struct {
+	g.Meta `mime:"application/json" example:"json"`
+}
