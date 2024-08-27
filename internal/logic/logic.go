@@ -6,6 +6,7 @@ package logic
 
 import (
 	_ "github.com/iimeta/fastapi/internal/logic/app"
+	_ "github.com/iimeta/fastapi/internal/logic/audio"
 	_ "github.com/iimeta/fastapi/internal/logic/auth"
 	_ "github.com/iimeta/fastapi/internal/logic/chat"
 	_ "github.com/iimeta/fastapi/internal/logic/common"

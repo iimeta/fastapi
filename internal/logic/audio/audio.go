@@ -19,30 +19,29 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
-	"math"
 	"slices"
 )
 
-type sEmbedding struct{}
+type sAudio struct{}
 
 func init() {
-	service.RegisterEmbedding(New())
+	service.RegisterAudio(New())
 }
 
-func New() service.IEmbedding {
-	return &sEmbedding{}
+func New() service.IAudio {
+	return &sAudio{}
 }
 
-// Embeddings
-func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingRequest, fallbackModel *model.Model, retry ...int) (response sdkm.EmbeddingResponse, err error) {
+// Speech
+func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallbackModel *model.Model, retry ...int) (response sdkm.SpeechResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sEmbedding Embeddings time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sAudio Speech time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var (
-		client      *sdk.EmbeddingClient
+		client      sdk.Client
 		reqModel    *model.Model
 		realModel   = new(model.Model)
 		k           *model.Key
@@ -58,17 +57,17 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 
 	defer func() {
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
+		//enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
+		//internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
-		if reqModel != nil && response.Usage != nil {
-			// 实际花费额度
-			if reqModel.TextQuota.BillingMethod == 1 {
-				totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
-			} else {
-				totalTokens = reqModel.TextQuota.FixedQuota
-			}
-		}
+		//if reqModel != nil && response.Usage != nil {
+		//	// 实际花费额度
+		//	if reqModel.TextQuota.BillingMethod == 1 {
+		//		totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
+		//	} else {
+		//		totalTokens = reqModel.TextQuota.FixedQuota
+		//	}
+		//}
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -80,31 +79,31 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 			}
 		}
 
-		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-			realModel.ModelAgent = modelAgent
-
-			completionsRes := &model.CompletionsRes{
-				Error:        err,
-				TotalTime:    response.TotalTime,
-				InternalTime: internalTime,
-				EnterTime:    enterTime,
-			}
-
-			if retryInfo == nil && response.Usage != nil {
-				completionsRes.Usage = *response.Usage
-				completionsRes.Usage.TotalTokens = totalTokens
-			}
-
-			if retryInfo == nil && len(response.Data) > 0 && len(response.Data[0].Embedding) > 0 {
-				completionsRes.Completion = gconv.String(response.Data[0].Embedding)
-			}
-
-			s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, completionsRes, retryInfo)
-
-		}, nil); err != nil {
-			logger.Error(ctx, err)
-		}
+		//if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+		//
+		//	realModel.ModelAgent = modelAgent
+		//
+		//	completionsRes := &model.CompletionsRes{
+		//		Error:        err,
+		//		TotalTime:    response.TotalTime,
+		//		InternalTime: internalTime,
+		//		EnterTime:    enterTime,
+		//	}
+		//
+		//	if retryInfo == nil && response.Usage != nil {
+		//		completionsRes.Usage = *response.Usage
+		//		completionsRes.Usage.TotalTokens = totalTokens
+		//	}
+		//
+		//	if retryInfo == nil && len(response.Data) > 0 && len(response.Data[0].Audio) > 0 {
+		//		completionsRes.Completion = gconv.String(response.Data[0].Audio)
+		//	}
+		//
+		//	s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, completionsRes, retryInfo)
+		//
+		//}, nil); err != nil {
+		//	logger.Error(ctx, err)
+		//}
 	}()
 
 	if reqModel, err = service.Model().GetModelBySecretKey(ctx, gconv.String(params.Model), service.Session().GetSecretKey(ctx)); err != nil {
@@ -133,7 +132,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 						RetryCount: len(retry),
 						ErrMsg:     err.Error(),
 					}
-					return s.Embeddings(ctx, params, fallbackModel)
+					return s.Speech(ctx, params, fallbackModel)
 				}
 			}
 
@@ -161,7 +160,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 							RetryCount: len(retry),
 							ErrMsg:     err.Error(),
 						}
-						return s.Embeddings(ctx, params, fallbackModel)
+						return s.Speech(ctx, params, fallbackModel)
 					}
 				}
 
@@ -180,7 +179,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 						RetryCount: len(retry),
 						ErrMsg:     err.Error(),
 					}
-					return s.Embeddings(ctx, params, fallbackModel)
+					return s.Speech(ctx, params, fallbackModel)
 				}
 			}
 
@@ -191,7 +190,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 	request := params
 	key = k.Key
 
-	client, err = common.NewEmbeddingClient(ctx, realModel, key, baseUrl, path)
+	client, err = common.NewClient(ctx, realModel, key, baseUrl, path)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -202,14 +201,14 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 					RetryCount: len(retry),
 					ErrMsg:     err.Error(),
 				}
-				return s.Embeddings(ctx, params, fallbackModel)
+				return s.Speech(ctx, params, fallbackModel)
 			}
 		}
 
 		return response, err
 	}
 
-	response, err = client.Embeddings(ctx, request)
+	response, err = client.Speech(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -240,7 +239,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 							RetryCount: len(retry),
 							ErrMsg:     err.Error(),
 						}
-						return s.Embeddings(ctx, params, fallbackModel)
+						return s.Speech(ctx, params, fallbackModel)
 					}
 				}
 				return response, err
@@ -252,7 +251,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 				ErrMsg:     err.Error(),
 			}
 
-			return s.Embeddings(ctx, params, fallbackModel, append(retry, 1)...)
+			return s.Speech(ctx, params, fallbackModel, append(retry, 1)...)
 		}
 
 		return response, err
@@ -262,11 +261,11 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 }
 
 // 保存日志
-func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.EmbeddingRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, isSmartMatch ...bool) {
+func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.AudioRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, isSmartMatch ...bool) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sEmbedding SaveLog time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sAudio SaveLog time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	// 不记录此错误日志
@@ -292,7 +291,7 @@ func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel, fallbackM
 	}
 
 	if slices.Contains(config.Cfg.RecordLogs, "prompt") {
-		chat.Prompt = gconv.String(completionsReq.Input)
+		//chat.Prompt = gconv.String(completionsReq.Input)
 	}
 
 	if slices.Contains(config.Cfg.RecordLogs, "completion") {
