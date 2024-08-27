@@ -35,7 +35,8 @@ type Audio struct {
 	RealModelName        string                 `bson:"real_model_name,omitempty"`         // 真实模型名称
 	RealModel            string                 `bson:"real_model,omitempty"`              // 真实模型
 	Prompt               string                 `bson:"prompt,omitempty"`                  // 提示(提问)
-	TextQuota            common.TextQuota       `bson:"text_quota,omitempty"`              // 文本额度
+	Minute               int                    `bson:"minute,omitempty"`                  // 分钟数
+	AudioQuota           common.AudioQuota      `bson:"audio_quota,omitempty"`             // 音频额度
 	TotalTokens          int                    `bson:"total_tokens,omitempty"`            // 总令牌数
 	ConnTime             int64                  `bson:"conn_time,omitempty"`               // 连接时间
 	Duration             int64                  `bson:"duration,omitempty"`                // 持续时间

@@ -501,7 +501,7 @@ func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 		return
 	}
 
-	chat := do.Chat{
+	audio := do.Audio{
 		TraceId:      gctx.CtxId(ctx),
 		UserId:       service.Session().GetUserId(ctx),
 		AppId:        service.Session().GetAppId(ctx),
@@ -519,45 +519,45 @@ func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 	}
 
 	if slices.Contains(config.Cfg.RecordLogs, "prompt") {
-		//chat.Prompt = gconv.String(completionsReq.Input)
+		//audio.Prompt = gconv.String(completionsReq.Input)
 	}
 
 	if slices.Contains(config.Cfg.RecordLogs, "completion") {
-		chat.Completion = completionsRes.Completion
+		//audio.Completion = completionsRes.Completion
 	}
 
-	chat.Corp = reqModel.Corp
-	chat.ModelId = reqModel.Id
-	chat.Name = reqModel.Name
-	chat.Model = reqModel.Model
-	chat.Type = reqModel.Type
-	chat.TextQuota = reqModel.TextQuota
-	chat.MultimodalQuota = reqModel.MultimodalQuota
+	audio.Corp = reqModel.Corp
+	audio.ModelId = reqModel.Id
+	audio.Name = reqModel.Name
+	audio.Model = reqModel.Model
+	audio.Type = reqModel.Type
+	//audio.TextQuota = reqModel.TextQuota
+	//audio.MultimodalQuota = reqModel.MultimodalQuota
 
-	chat.IsEnablePresetConfig = realModel.IsEnablePresetConfig
-	chat.PresetConfig = realModel.PresetConfig
-	chat.IsEnableForward = realModel.IsEnableForward
-	chat.ForwardConfig = realModel.ForwardConfig
-	chat.IsEnableModelAgent = realModel.IsEnableModelAgent
-	chat.RealModelId = realModel.Id
-	chat.RealModelName = realModel.Name
-	chat.RealModel = realModel.Model
+	audio.IsEnablePresetConfig = realModel.IsEnablePresetConfig
+	audio.PresetConfig = realModel.PresetConfig
+	audio.IsEnableForward = realModel.IsEnableForward
+	audio.ForwardConfig = realModel.ForwardConfig
+	audio.IsEnableModelAgent = realModel.IsEnableModelAgent
+	audio.RealModelId = realModel.Id
+	audio.RealModelName = realModel.Name
+	audio.RealModel = realModel.Model
 
-	chat.PromptTokens = completionsRes.Usage.PromptTokens
-	chat.CompletionTokens = completionsRes.Usage.CompletionTokens
-	chat.TotalTokens = completionsRes.Usage.TotalTokens
+	//audio.PromptTokens = completionsRes.Usage.PromptTokens
+	//audio.CompletionTokens = completionsRes.Usage.CompletionTokens
+	audio.TotalTokens = completionsRes.Usage.TotalTokens
 
 	if fallbackModel != nil {
-		chat.IsEnableFallback = true
-		chat.FallbackConfig = &mcommon.FallbackConfig{
+		audio.IsEnableFallback = true
+		audio.FallbackConfig = &mcommon.FallbackConfig{
 			FallbackModel:     fallbackModel.Model,
 			FallbackModelName: fallbackModel.Name,
 		}
 	}
 
-	if chat.IsEnableModelAgent && realModel.ModelAgent != nil {
-		chat.ModelAgentId = realModel.ModelAgent.Id
-		chat.ModelAgent = &do.ModelAgent{
+	if audio.IsEnableModelAgent && realModel.ModelAgent != nil {
+		audio.ModelAgentId = realModel.ModelAgent.Id
+		audio.ModelAgent = &do.ModelAgent{
 			Corp:    realModel.ModelAgent.Corp,
 			Name:    realModel.ModelAgent.Name,
 			BaseUrl: realModel.ModelAgent.BaseUrl,
@@ -569,34 +569,34 @@ func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 	}
 
 	if key != nil {
-		chat.Key = key.Key
+		audio.Key = key.Key
 	}
 
 	if completionsRes.Error != nil {
-		chat.ErrMsg = completionsRes.Error.Error()
+		audio.ErrMsg = completionsRes.Error.Error()
 		if common.IsAborted(completionsRes.Error) {
-			chat.Status = 2
+			audio.Status = 2
 		} else {
-			chat.Status = -1
+			audio.Status = -1
 		}
 	}
 
 	if retryInfo != nil {
 
-		chat.IsRetry = retryInfo.IsRetry
-		chat.Retry = &mcommon.Retry{
+		audio.IsRetry = retryInfo.IsRetry
+		audio.Retry = &mcommon.Retry{
 			IsRetry:    retryInfo.IsRetry,
 			RetryCount: retryInfo.RetryCount,
 			ErrMsg:     retryInfo.ErrMsg,
 		}
 
-		if chat.IsRetry && completionsRes.Error == nil {
-			chat.Status = 3
-			chat.ErrMsg = retryInfo.ErrMsg
+		if audio.IsRetry && completionsRes.Error == nil {
+			audio.Status = 3
+			audio.ErrMsg = retryInfo.ErrMsg
 		}
 	}
 
-	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
+	if _, err := dao.Chat.Insert(ctx, audio); err != nil {
 		logger.Error(ctx, err)
 	}
 }

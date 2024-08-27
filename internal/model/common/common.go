@@ -22,6 +22,13 @@ type ImageQuota struct {
 	IsDefault  bool   `bson:"is_default,omitempty"  json:"is_default,omitempty"`  // 是否默认选项
 }
 
+type AudioQuota struct {
+	BillingMethod   int     `bson:"billing_method,omitempty"   json:"billing_method,omitempty"`         // 计费方式[1:倍率, 2:固定额度]
+	PromptRatio     float64 `bson:"prompt_ratio,omitempty"     json:"prompt_ratio,omitempty"     d:"1"` // 提示倍率(提问倍率)
+	CompletionRatio float64 `bson:"completion_ratio,omitempty" json:"completion_ratio,omitempty" d:"1"` // 补全倍率(回答倍率)
+	FixedQuota      int     `bson:"fixed_quota,omitempty"      json:"fixed_quota,omitempty"`            // 固定额度
+}
+
 type MultimodalQuota struct {
 	TextQuota   TextQuota    `bson:"text_quota,omitempty"   json:"text_quota,omitempty"`   // 文本额度
 	ImageQuotas []ImageQuota `bson:"image_quotas,omitempty" json:"image_quotas,omitempty"` // 图像额度
