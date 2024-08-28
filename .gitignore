@@ -19,3 +19,4 @@ logs/
 bin/fastapi*
 bin/*.zip
 **/config/config.yaml
+**/resource/audio/*.mp3

@@ -11,6 +11,7 @@ require (
 	github.com/gogf/gf/v2 v2.7.2
 	github.com/iimeta/fastapi-sdk v0.4.0
 	github.com/redis/go-redis/v9 v9.6.1
+	github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300
 	github.com/tjfoc/gmsm v1.4.1
 	go.mongodb.org/mongo-driver v1.16.1
 	google.golang.org/api v0.194.0
