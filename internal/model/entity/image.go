@@ -36,10 +36,7 @@ type Image struct {
 	ResponseFormat       string                 `bson:"response_format,omitempty"`         // 图像格式[url, b64_json]
 	ImageData            []common.ImageData     `bson:"image_data,omitempty"`              // 生成图像数据
 	ImageQuotas          []common.ImageQuota    `bson:"image_quotas,omitempty"`            // 图像额度
-	MultimodalQuota      common.MultimodalQuota `bson:"multimodal_quota,omitempty"`        // 多模态额度
 	TotalTokens          int                    `bson:"total_tokens,omitempty"`            // 总令牌数
-	ConnTime             int64                  `bson:"conn_time,omitempty"`               // 连接时间
-	Duration             int64                  `bson:"duration,omitempty"`                // 持续时间
 	TotalTime            int64                  `bson:"total_time,omitempty"`              // 总时间
 	InternalTime         int64                  `bson:"internal_time,omitempty"`           // 内耗时间
 	ReqTime              int64                  `bson:"req_time,omitempty"`                // 请求时间

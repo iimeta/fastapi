@@ -41,5 +41,6 @@ type FastAPI struct {
 	Path            string                 `json:"path,omitempty"`             // 模型路径
 	TextQuota       common.TextQuota       `json:"text_quota,omitempty"`       // 文本额度
 	ImageQuotas     []common.ImageQuota    `json:"image_quotas,omitempty"`     // 图像额度
+	AudioQuota      common.AudioQuota      `json:"audio_quota,omitempty"`      // 音频额度
 	MultimodalQuota common.MultimodalQuota `json:"multimodal_quota,omitempty"` // 多模态额度
 }

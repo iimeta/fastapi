@@ -34,12 +34,12 @@ type Audio struct {
 	RealModelId          string                 `bson:"real_model_id,omitempty"`           // 真实模型ID
 	RealModelName        string                 `bson:"real_model_name,omitempty"`         // 真实模型名称
 	RealModel            string                 `bson:"real_model,omitempty"`              // 真实模型
-	Prompt               string                 `bson:"prompt,omitempty"`                  // 提示(提问)
-	Minute               int                    `bson:"minute,omitempty"`                  // 分钟数
+	Input                string                 `bson:"input,omitempty"`                   // 输入文本
+	Text                 string                 `bson:"text,omitempty"`                    // 输出文本
+	Characters           int                    `bson:"characters,omitempty"`              // 字符数
+	Minute               float64                `bson:"minute,omitempty"`                  // 分钟数
 	AudioQuota           common.AudioQuota      `bson:"audio_quota,omitempty"`             // 音频额度
 	TotalTokens          int                    `bson:"total_tokens,omitempty"`            // 总令牌数
-	ConnTime             int64                  `bson:"conn_time,omitempty"`               // 连接时间
-	Duration             int64                  `bson:"duration,omitempty"`                // 持续时间
 	TotalTime            int64                  `bson:"total_time,omitempty"`              // 总时间
 	InternalTime         int64                  `bson:"internal_time,omitempty"`           // 内耗时间
 	ReqTime              int64                  `bson:"req_time,omitempty"`                // 请求时间

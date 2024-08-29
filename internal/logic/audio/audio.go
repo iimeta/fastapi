@@ -9,7 +9,7 @@ import (
 	"github.com/gogf/gf/v2/util/gconv"
 	sdk "github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi/internal/config"
+	v1 "github.com/iimeta/fastapi/api/audio/v1"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
@@ -19,7 +19,7 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
-	"slices"
+	"math"
 )
 
 type sAudio struct{}
@@ -57,53 +57,53 @@ func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallback
 
 	defer func() {
 
-		//enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		//internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
+		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
+		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
-		//if reqModel != nil && response.Usage != nil {
-		//	// 实际花费额度
-		//	if reqModel.TextQuota.BillingMethod == 1 {
-		//		totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
-		//	} else {
-		//		totalTokens = reqModel.TextQuota.FixedQuota
-		//	}
-		//}
+		if reqModel != nil {
+			if reqModel.AudioQuota.BillingMethod == 1 {
+				totalTokens = int(math.Ceil(float64(len(params.Input)) * reqModel.AudioQuota.CompletionRatio))
+			} else {
+				totalTokens = reqModel.AudioQuota.FixedQuota
+			}
+		}
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 				if err := service.Common().RecordUsage(ctx, totalTokens, k.Key); err != nil {
 					logger.Error(ctx, err)
+					panic(err)
 				}
-			}, nil); err != nil {
+			}); err != nil {
 				logger.Error(ctx, err)
 			}
 		}
 
-		//if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-		//
-		//	realModel.ModelAgent = modelAgent
-		//
-		//	completionsRes := &model.CompletionsRes{
-		//		Error:        err,
-		//		TotalTime:    response.TotalTime,
-		//		InternalTime: internalTime,
-		//		EnterTime:    enterTime,
-		//	}
-		//
-		//	if retryInfo == nil && response.Usage != nil {
-		//		completionsRes.Usage = *response.Usage
-		//		completionsRes.Usage.TotalTokens = totalTokens
-		//	}
-		//
-		//	if retryInfo == nil && len(response.Data) > 0 && len(response.Data[0].Audio) > 0 {
-		//		completionsRes.Completion = gconv.String(response.Data[0].Audio)
-		//	}
-		//
-		//	s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, completionsRes, retryInfo)
-		//
-		//}, nil); err != nil {
-		//	logger.Error(ctx, err)
-		//}
+		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+			realModel.ModelAgent = modelAgent
+
+			audioReq := &model.AudioReq{
+				Input: params.Input,
+			}
+
+			audioRes := &model.AudioRes{
+				Characters:   len(audioReq.Input),
+				Error:        err,
+				TotalTime:    response.TotalTime,
+				InternalTime: internalTime,
+				EnterTime:    enterTime,
+			}
+
+			if retryInfo == nil {
+				audioRes.TotalTokens = totalTokens
+			}
+
+			s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, audioReq, audioRes, retryInfo)
+
+		}); err != nil {
+			logger.Error(ctx, err)
+		}
 	}()
 
 	if reqModel, err = service.Model().GetModelBySecretKey(ctx, gconv.String(params.Model), service.Session().GetSecretKey(ctx)); err != nil {
@@ -261,7 +261,7 @@ func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallback
 }
 
 // Transcriptions
-func (s *sAudio) Transcriptions(ctx context.Context, params sdkm.AudioRequest, fallbackModel *model.Model, retry ...int) (response sdkm.AudioResponse, err error) {
+func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsReq, fallbackModel *model.Model, retry ...int) (response sdkm.AudioResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -280,58 +280,64 @@ func (s *sAudio) Transcriptions(ctx context.Context, params sdkm.AudioRequest, f
 		agentTotal  int
 		keyTotal    int
 		retryInfo   *mcommon.Retry
+		minute      float64
 		totalTokens int
 	)
 
 	defer func() {
 
-		//enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		//internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
+		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
+		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
-		//if reqModel != nil && response.Usage != nil {
-		//	// 实际花费额度
-		//	if reqModel.TextQuota.BillingMethod == 1 {
-		//		totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
-		//	} else {
-		//		totalTokens = reqModel.TextQuota.FixedQuota
-		//	}
-		//}
+		if response.Duration != 0 {
+			minute = util.Round(response.Duration/60, 2)
+		} else {
+			minute = util.Round(params.Duration/60, 2)
+		}
+
+		if reqModel != nil {
+			if reqModel.AudioQuota.BillingMethod == 1 {
+				totalTokens = int(math.Ceil(minute * 1000 * reqModel.AudioQuota.CompletionRatio))
+			} else {
+				totalTokens = reqModel.AudioQuota.FixedQuota
+			}
+		}
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 				if err := service.Common().RecordUsage(ctx, totalTokens, k.Key); err != nil {
 					logger.Error(ctx, err)
+					panic(err)
 				}
-			}, nil); err != nil {
+			}); err != nil {
 				logger.Error(ctx, err)
 			}
 		}
 
-		//if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-		//
-		//	realModel.ModelAgent = modelAgent
-		//
-		//	completionsRes := &model.CompletionsRes{
-		//		Error:        err,
-		//		TotalTime:    response.TotalTime,
-		//		InternalTime: internalTime,
-		//		EnterTime:    enterTime,
-		//	}
-		//
-		//	if retryInfo == nil && response.Usage != nil {
-		//		completionsRes.Usage = *response.Usage
-		//		completionsRes.Usage.TotalTokens = totalTokens
-		//	}
-		//
-		//	if retryInfo == nil && len(response.Data) > 0 && len(response.Data[0].Audio) > 0 {
-		//		completionsRes.Completion = gconv.String(response.Data[0].Audio)
-		//	}
-		//
-		//	s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, completionsRes, retryInfo)
-		//
-		//}, nil); err != nil {
-		//	logger.Error(ctx, err)
-		//}
+		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+			realModel.ModelAgent = modelAgent
+
+			audioReq := &model.AudioReq{}
+
+			audioRes := &model.AudioRes{
+				Text:         response.Text,
+				Minute:       minute,
+				Error:        err,
+				TotalTime:    response.TotalTime,
+				InternalTime: internalTime,
+				EnterTime:    enterTime,
+			}
+
+			if retryInfo == nil {
+				audioRes.TotalTokens = totalTokens
+			}
+
+			s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, audioReq, audioRes, retryInfo)
+
+		}); err != nil {
+			logger.Error(ctx, err)
+		}
 	}()
 
 	if reqModel, err = service.Model().GetModelBySecretKey(ctx, gconv.String(params.Model), service.Session().GetSecretKey(ctx)); err != nil {
@@ -436,7 +442,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params sdkm.AudioRequest, f
 		return response, err
 	}
 
-	response, err = client.Transcription(ctx, request)
+	response, err = client.Transcription(ctx, request.AudioRequest)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -489,7 +495,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params sdkm.AudioRequest, f
 }
 
 // 保存日志
-func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.AudioRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, isSmartMatch ...bool) {
+func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, audioReq *model.AudioReq, audioRes *model.AudioRes, retryInfo *mcommon.Retry) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -497,7 +503,7 @@ func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 	}()
 
 	// 不记录此错误日志
-	if completionsRes.Error != nil && errors.Is(completionsRes.Error, errors.ERR_MODEL_NOT_FOUND) {
+	if audioRes.Error != nil && errors.Is(audioRes.Error, errors.ERR_MODEL_NOT_FOUND) {
 		return
 	}
 
@@ -505,47 +511,55 @@ func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 		TraceId:      gctx.CtxId(ctx),
 		UserId:       service.Session().GetUserId(ctx),
 		AppId:        service.Session().GetAppId(ctx),
-		IsSmartMatch: len(isSmartMatch) > 0 && isSmartMatch[0],
-		ConnTime:     completionsRes.ConnTime,
-		Duration:     completionsRes.Duration,
-		TotalTime:    completionsRes.TotalTime,
-		InternalTime: completionsRes.InternalTime,
-		ReqTime:      completionsRes.EnterTime,
-		ReqDate:      gtime.NewFromTimeStamp(completionsRes.EnterTime).Format("Y-m-d"),
+		Input:        audioReq.Input,
+		Text:         audioRes.Text,
+		Characters:   audioRes.Characters,
+		Minute:       audioRes.Minute,
+		TotalTokens:  audioRes.TotalTokens,
+		TotalTime:    audioRes.TotalTime,
+		InternalTime: audioRes.InternalTime,
+		ReqTime:      audioRes.EnterTime,
+		ReqDate:      gtime.NewFromTimeStamp(audioRes.EnterTime).Format("Y-m-d"),
 		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
 		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
 		LocalIp:      util.GetLocalIp(),
 		Status:       1,
 	}
 
-	if slices.Contains(config.Cfg.RecordLogs, "prompt") {
-		//audio.Prompt = gconv.String(completionsReq.Input)
+	if reqModel != nil {
+		audio.Corp = reqModel.Corp
+		audio.ModelId = reqModel.Id
+		audio.Name = reqModel.Name
+		audio.Model = reqModel.Model
+		audio.Type = reqModel.Type
+		audio.AudioQuota = reqModel.AudioQuota
 	}
 
-	if slices.Contains(config.Cfg.RecordLogs, "completion") {
-		//audio.Completion = completionsRes.Completion
+	if realModel != nil {
+
+		audio.IsEnablePresetConfig = realModel.IsEnablePresetConfig
+		audio.PresetConfig = realModel.PresetConfig
+		audio.IsEnableForward = realModel.IsEnableForward
+		audio.ForwardConfig = realModel.ForwardConfig
+		audio.IsEnableModelAgent = realModel.IsEnableModelAgent
+		audio.RealModelId = realModel.Id
+		audio.RealModelName = realModel.Name
+		audio.RealModel = realModel.Model
+
+		if audio.IsEnableModelAgent && realModel.ModelAgent != nil {
+			audio.ModelAgentId = realModel.ModelAgent.Id
+			audio.ModelAgent = &do.ModelAgent{
+				Corp:    realModel.ModelAgent.Corp,
+				Name:    realModel.ModelAgent.Name,
+				BaseUrl: realModel.ModelAgent.BaseUrl,
+				Path:    realModel.ModelAgent.Path,
+				Weight:  realModel.ModelAgent.Weight,
+				Remark:  realModel.ModelAgent.Remark,
+				Status:  realModel.ModelAgent.Status,
+			}
+		}
+
 	}
-
-	audio.Corp = reqModel.Corp
-	audio.ModelId = reqModel.Id
-	audio.Name = reqModel.Name
-	audio.Model = reqModel.Model
-	audio.Type = reqModel.Type
-	//audio.TextQuota = reqModel.TextQuota
-	//audio.MultimodalQuota = reqModel.MultimodalQuota
-
-	audio.IsEnablePresetConfig = realModel.IsEnablePresetConfig
-	audio.PresetConfig = realModel.PresetConfig
-	audio.IsEnableForward = realModel.IsEnableForward
-	audio.ForwardConfig = realModel.ForwardConfig
-	audio.IsEnableModelAgent = realModel.IsEnableModelAgent
-	audio.RealModelId = realModel.Id
-	audio.RealModelName = realModel.Name
-	audio.RealModel = realModel.Model
-
-	//audio.PromptTokens = completionsRes.Usage.PromptTokens
-	//audio.CompletionTokens = completionsRes.Usage.CompletionTokens
-	audio.TotalTokens = completionsRes.Usage.TotalTokens
 
 	if fallbackModel != nil {
 		audio.IsEnableFallback = true
@@ -555,26 +569,13 @@ func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 		}
 	}
 
-	if audio.IsEnableModelAgent && realModel.ModelAgent != nil {
-		audio.ModelAgentId = realModel.ModelAgent.Id
-		audio.ModelAgent = &do.ModelAgent{
-			Corp:    realModel.ModelAgent.Corp,
-			Name:    realModel.ModelAgent.Name,
-			BaseUrl: realModel.ModelAgent.BaseUrl,
-			Path:    realModel.ModelAgent.Path,
-			Weight:  realModel.ModelAgent.Weight,
-			Remark:  realModel.ModelAgent.Remark,
-			Status:  realModel.ModelAgent.Status,
-		}
-	}
-
 	if key != nil {
 		audio.Key = key.Key
 	}
 
-	if completionsRes.Error != nil {
-		audio.ErrMsg = completionsRes.Error.Error()
-		if common.IsAborted(completionsRes.Error) {
+	if audioRes.Error != nil {
+		audio.ErrMsg = audioRes.Error.Error()
+		if common.IsAborted(audioRes.Error) {
 			audio.Status = 2
 		} else {
 			audio.Status = -1
@@ -590,13 +591,14 @@ func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 			ErrMsg:     retryInfo.ErrMsg,
 		}
 
-		if audio.IsRetry && completionsRes.Error == nil {
+		if audio.IsRetry && audioRes.Error == nil {
 			audio.Status = 3
 			audio.ErrMsg = retryInfo.ErrMsg
 		}
 	}
 
-	if _, err := dao.Chat.Insert(ctx, audio); err != nil {
+	if _, err := dao.Audio.Insert(ctx, audio); err != nil {
 		logger.Error(ctx, err)
+		panic(err)
 	}
 }

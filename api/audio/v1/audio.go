@@ -21,7 +21,8 @@ type SpeechRes struct {
 type TranscriptionsReq struct {
 	g.Meta `path:"/transcriptions" tags:"audio" method:"post" summary:"transcriptions接口"`
 	sdkm.AudioRequest
-	File *ghttp.UploadFile `json:"file" type:"file" v:"required"`
+	File     *ghttp.UploadFile `json:"file" type:"file" v:"required"`
+	Duration float64           `json:"duration"`
 }
 
 // Transcriptions接口响应参数

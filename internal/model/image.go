@@ -20,8 +20,6 @@ type ImageRes struct {
 	Data         []sdkm.ImageResponseDataInner `json:"data,omitempty"`
 	Usage        sdkm.Usage                    `json:"usage"`
 	Error        error                         `json:"err"`
-	ConnTime     int64                         `json:"-"`
-	Duration     int64                         `json:"-"`
 	TotalTime    int64                         `json:"-"`
 	InternalTime int64                         `json:"-"`
 	EnterTime    int64                         `json:"-"`

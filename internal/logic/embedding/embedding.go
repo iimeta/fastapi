@@ -62,7 +62,6 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if reqModel != nil && response.Usage != nil {
-			// 实际花费额度
 			if reqModel.TextQuota.BillingMethod == 1 {
 				totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
 			} else {
@@ -71,16 +70,17 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 		}
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 				if err := service.Common().RecordUsage(ctx, totalTokens, k.Key); err != nil {
 					logger.Error(ctx, err)
+					panic(err)
 				}
-			}, nil); err != nil {
+			}); err != nil {
 				logger.Error(ctx, err)
 			}
 		}
 
-		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 			realModel.ModelAgent = modelAgent
 
@@ -102,7 +102,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 
 			s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, completionsRes, retryInfo)
 
-		}, nil); err != nil {
+		}); err != nil {
 			logger.Error(ctx, err)
 		}
 	}()
@@ -299,22 +299,40 @@ func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel, fallbackM
 		chat.Completion = completionsRes.Completion
 	}
 
-	chat.Corp = reqModel.Corp
-	chat.ModelId = reqModel.Id
-	chat.Name = reqModel.Name
-	chat.Model = reqModel.Model
-	chat.Type = reqModel.Type
-	chat.TextQuota = reqModel.TextQuota
-	chat.MultimodalQuota = reqModel.MultimodalQuota
+	if reqModel != nil {
+		chat.Corp = reqModel.Corp
+		chat.ModelId = reqModel.Id
+		chat.Name = reqModel.Name
+		chat.Model = reqModel.Model
+		chat.Type = reqModel.Type
+		chat.TextQuota = reqModel.TextQuota
+		chat.MultimodalQuota = reqModel.MultimodalQuota
+	}
 
-	chat.IsEnablePresetConfig = realModel.IsEnablePresetConfig
-	chat.PresetConfig = realModel.PresetConfig
-	chat.IsEnableForward = realModel.IsEnableForward
-	chat.ForwardConfig = realModel.ForwardConfig
-	chat.IsEnableModelAgent = realModel.IsEnableModelAgent
-	chat.RealModelId = realModel.Id
-	chat.RealModelName = realModel.Name
-	chat.RealModel = realModel.Model
+	if realModel != nil {
+
+		chat.IsEnablePresetConfig = realModel.IsEnablePresetConfig
+		chat.PresetConfig = realModel.PresetConfig
+		chat.IsEnableForward = realModel.IsEnableForward
+		chat.ForwardConfig = realModel.ForwardConfig
+		chat.IsEnableModelAgent = realModel.IsEnableModelAgent
+		chat.RealModelId = realModel.Id
+		chat.RealModelName = realModel.Name
+		chat.RealModel = realModel.Model
+
+		if chat.IsEnableModelAgent && realModel.ModelAgent != nil {
+			chat.ModelAgentId = realModel.ModelAgent.Id
+			chat.ModelAgent = &do.ModelAgent{
+				Corp:    realModel.ModelAgent.Corp,
+				Name:    realModel.ModelAgent.Name,
+				BaseUrl: realModel.ModelAgent.BaseUrl,
+				Path:    realModel.ModelAgent.Path,
+				Weight:  realModel.ModelAgent.Weight,
+				Remark:  realModel.ModelAgent.Remark,
+				Status:  realModel.ModelAgent.Status,
+			}
+		}
+	}
 
 	chat.PromptTokens = completionsRes.Usage.PromptTokens
 	chat.CompletionTokens = completionsRes.Usage.CompletionTokens
@@ -325,19 +343,6 @@ func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel, fallbackM
 		chat.FallbackConfig = &mcommon.FallbackConfig{
 			FallbackModel:     fallbackModel.Model,
 			FallbackModelName: fallbackModel.Name,
-		}
-	}
-
-	if chat.IsEnableModelAgent && realModel.ModelAgent != nil {
-		chat.ModelAgentId = realModel.ModelAgent.Id
-		chat.ModelAgent = &do.ModelAgent{
-			Corp:    realModel.ModelAgent.Corp,
-			Name:    realModel.ModelAgent.Name,
-			BaseUrl: realModel.ModelAgent.BaseUrl,
-			Path:    realModel.ModelAgent.Path,
-			Weight:  realModel.ModelAgent.Weight,
-			Remark:  realModel.ModelAgent.Remark,
-			Status:  realModel.ModelAgent.Status,
 		}
 	}
 
@@ -371,5 +376,6 @@ func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel, fallbackM
 
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
 		logger.Error(ctx, err)
+		panic(err)
 	}
 }

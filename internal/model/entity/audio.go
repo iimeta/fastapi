@@ -1,16 +1,10 @@
-package do
+package entity
 
 import (
-	"github.com/gogf/gf/v2/util/gmeta"
 	"github.com/iimeta/fastapi/internal/model/common"
 )
 
-const (
-	CHAT_COLLECTION = "chat"
-)
-
-type Chat struct {
-	gmeta.Meta           `collection:"chat" bson:"-"`
+type Audio struct {
 	Id                   string                 `bson:"_id,omitempty"`                     // ID
 	TraceId              string                 `bson:"trace_id,omitempty"`                // 日志ID
 	UserId               int                    `bson:"user_id,omitempty"`                 // 用户ID
@@ -34,17 +28,12 @@ type Chat struct {
 	RealModelId          string                 `bson:"real_model_id,omitempty"`           // 真实模型ID
 	RealModelName        string                 `bson:"real_model_name,omitempty"`         // 真实模型名称
 	RealModel            string                 `bson:"real_model,omitempty"`              // 真实模型
-	Stream               bool                   `bson:"stream,omitempty"`                  // 流式
-	Messages             []common.Message       `bson:"messages,omitempty"`                // 完整提示(提问)
-	Prompt               string                 `bson:"prompt,omitempty"`                  // 提示(提问)
-	Completion           string                 `bson:"completion,omitempty"`              // 补全(回答)
-	TextQuota            common.TextQuota       `bson:"text_quota,omitempty"`              // 文本额度
-	MultimodalQuota      common.MultimodalQuota `bson:"multimodal_quota,omitempty"`        // 多模态额度
-	PromptTokens         int                    `bson:"prompt_tokens,omitempty"`           // 提示令牌数(提问令牌数)
-	CompletionTokens     int                    `bson:"completion_tokens,omitempty"`       // 补全令牌数(回答令牌数)
+	Input                string                 `bson:"input,omitempty"`                   // 输入文本
+	Text                 string                 `bson:"text,omitempty"`                    // 输出文本
+	Characters           int                    `bson:"characters,omitempty"`              // 字符数
+	Minute               float64                `bson:"minute,omitempty"`                  // 分钟数
+	AudioQuota           common.AudioQuota      `bson:"audio_quota,omitempty"`             // 音频额度
 	TotalTokens          int                    `bson:"total_tokens,omitempty"`            // 总令牌数
-	ConnTime             int64                  `bson:"conn_time,omitempty"`               // 连接时间
-	Duration             int64                  `bson:"duration,omitempty"`                // 持续时间
 	TotalTime            int64                  `bson:"total_time,omitempty"`              // 总时间
 	InternalTime         int64                  `bson:"internal_time,omitempty"`           // 内耗时间
 	ReqTime              int64                  `bson:"req_time,omitempty"`                // 请求时间

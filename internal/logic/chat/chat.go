@@ -174,7 +174,6 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 		}); err != nil {
 			logger.Error(ctx, err)
-			panic(err)
 		}
 	}()
 

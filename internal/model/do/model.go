@@ -21,6 +21,7 @@ type Model struct {
 	PresetConfig         common.PresetConfig      `bson:"preset_config,omitempty"`           // 预设配置
 	TextQuota            common.TextQuota         `bson:"text_quota,omitempty"`              // 文本额度
 	ImageQuotas          []common.ImageQuota      `bson:"image_quotas,omitempty"`            // 图像额度
+	AudioQuota           common.AudioQuota        `bson:"audio_quota,omitempty"`             // 音频额度
 	MultimodalQuota      common.MultimodalQuota   `bson:"multimodal_quota,omitempty"`        // 多模态额度
 	MidjourneyQuotas     []common.MidjourneyQuota `bson:"midjourney_quotas,omitempty"`       // Midjourney额度
 	DataFormat           int                      `bson:"data_format,omitempty"`             // 数据格式[1:统一格式, 2:官方格式]

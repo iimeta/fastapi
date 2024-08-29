@@ -286,8 +286,6 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 		Quality:        imageReq.Quality,
 		Style:          imageReq.Style,
 		ResponseFormat: imageReq.ResponseFormat,
-		ConnTime:       imageRes.ConnTime,
-		Duration:       imageRes.Duration,
 		TotalTime:      imageRes.TotalTime,
 		InternalTime:   imageRes.InternalTime,
 		ReqTime:        imageRes.EnterTime,

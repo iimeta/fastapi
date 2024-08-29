@@ -9,6 +9,7 @@ import (
 	"context"
 
 	sdkm "github.com/iimeta/fastapi-sdk/model"
+	v1 "github.com/iimeta/fastapi/api/audio/v1"
 	"github.com/iimeta/fastapi/internal/model"
 	mcommon "github.com/iimeta/fastapi/internal/model/common"
 )
@@ -18,9 +19,9 @@ type (
 		// Speech
 		Speech(ctx context.Context, params sdkm.SpeechRequest, fallbackModel *model.Model, retry ...int) (response sdkm.SpeechResponse, err error)
 		// Transcriptions
-		Transcriptions(ctx context.Context, params sdkm.AudioRequest, fallbackModel *model.Model, retry ...int) (response sdkm.AudioResponse, err error)
+		Transcriptions(ctx context.Context, params *v1.TranscriptionsReq, fallbackModel *model.Model, retry ...int) (response sdkm.AudioResponse, err error)
 		// 保存日志
-		SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.AudioRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, isSmartMatch ...bool)
+		SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, audioReq *model.AudioReq, audioRes *model.AudioRes, retryInfo *mcommon.Retry)
 	}
 )
 

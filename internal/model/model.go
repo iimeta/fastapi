@@ -14,6 +14,7 @@ type Model struct {
 	PresetConfig         common.PresetConfig      `json:"preset_config,omitempty"`           // 预设配置
 	TextQuota            common.TextQuota         `json:"text_quota,omitempty"`              // 文本额度
 	ImageQuotas          []common.ImageQuota      `json:"image_quotas,omitempty"`            // 图像额度
+	AudioQuota           common.AudioQuota        `json:"audio_quota,omitempty"`             // 音频额度
 	MultimodalQuota      common.MultimodalQuota   `json:"multimodal_quota,omitempty"`        // 多模态额度
 	MidjourneyQuotas     []common.MidjourneyQuota `json:"midjourney_quotas,omitempty"`       // Midjourney额度
 	DataFormat           int                      `json:"data_format,omitempty"`             // 数据格式[1:统一格式, 2:官方格式]
