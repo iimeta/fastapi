@@ -21,6 +21,7 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"net"
+	"slices"
 	"strings"
 )
 
@@ -83,33 +84,8 @@ func IsNeedRetry(err error) (isRetry bool, isDisabled bool) {
 		return false, false
 	}
 
-	// openai
-	if gstr.Contains(err.Error(), "The OpenAI account associated with this API key has been deactivated.") {
-		return true, true
-	}
-
-	// gcp-claude
-	if gstr.Contains(err.Error(), "PERMISSION_DENIED") {
-		return true, true
-	}
-
-	// gcp-claude
-	if gstr.Contains(err.Error(), "BILLING_DISABLED") {
-		return true, true
-	}
-
-	// gcp-claude
-	if gstr.Contains(err.Error(), "ACCESS_TOKEN_EXPIRED") {
-		return true, true
-	}
-
-	// gcp-claude
-	if gstr.Contains(err.Error(), "is not allowed to use Publisher Model") {
-		return true, true
-	}
-
-	// gemini
-	if gstr.Contains(err.Error(), "Resource has been exhausted") {
+	// 自动禁用配置
+	if slices.Contains(config.Cfg.Error.AutoDisabled, err.Error()) {
 		return true, true
 	}
 

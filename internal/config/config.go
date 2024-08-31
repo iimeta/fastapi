@@ -44,11 +44,12 @@ type Config struct {
 	Core             Core       `json:"core"`
 	ApiServerAddress string     `json:"api_server_address"`
 	Http             Http       `json:"http"`
+	Local            Local      `json:"local"`
 	Api              Api        `json:"api"`
 	Midjourney       Midjourney `json:"midjourney"`
 	Gcp              Gcp        `json:"gcp"`
-	Local            Local      `json:"local"`
 	RecordLogs       []string   `json:"record_logs"`
+	Error            Error      `json:"error"`
 	Debug            bool       `json:"debug"`
 }
 
@@ -68,6 +69,10 @@ type Http struct {
 	ProxyUrl string        `json:"proxy_url"`
 }
 
+type Local struct {
+	PublicIp []string `json:"public_ip"`
+}
+
 type Midjourney struct {
 	CdnUrl          string          `json:"cdn_url"`
 	MidjourneyProxy MidjourneyProxy `json:"midjourney_proxy"`
@@ -84,8 +89,8 @@ type Gcp struct {
 	GetTokenUrl string `json:"get_token_url" d:"https://www.googleapis.com/oauth2/v4/token"`
 }
 
-type Local struct {
-	PublicIp []string `json:"public_ip"`
+type Error struct {
+	AutoDisabled []string `json:"auto_disabled"`
 }
 
 func Get(ctx context.Context, pattern string, def ...interface{}) (*gvar.Var, error) {

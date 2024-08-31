@@ -21,6 +21,7 @@ import (
 	"github.com/iimeta/fastapi/utility/redis"
 	"github.com/iimeta/fastapi/utility/util"
 	"google.golang.org/api/option"
+	"slices"
 	"time"
 )
 
@@ -152,9 +153,7 @@ func getGcpTokenNew(ctx context.Context, key *model.Key, proxyURL string) (strin
 	response, err := client.GenerateAccessToken(ctx, request)
 	if err != nil {
 		logger.Errorf(ctx, "getGcpTokenNew GenerateAccessToken key: %s, error: %v", key.Key, err)
-		if gstr.Contains(err.Error(), "IAM_PERMISSION_DENIED") ||
-			gstr.Contains(err.Error(), "SERVICE_DISABLED") ||
-			gstr.Contains(err.Error(), "ACCOUNT_STATE_INVALID") {
+		if slices.Contains(config.Cfg.Error.AutoDisabled, err.Error()) {
 			if err = grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 				service.Key().DisabledModelKey(ctx, key)
 			}); err != nil {

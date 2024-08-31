@@ -63,6 +63,12 @@ http:
   timeout: 60  # 单位秒
 #  proxy_url: http://localhost:7890
 
+# 本地配置
+local:
+  public_ip: # 获取公网IP的API接口地址, 如若配置, 调用日志中记录的本机IP将使用以下接口获取到的公网IP
+#    - https://api.ip.sb/ip
+#    - https://api64.ipify.org
+
 # Midjourney
 midjourney:
   cdn_url: http://cdn.xxx.com
@@ -82,7 +88,15 @@ record_logs:
   - completion
   - messages
 
-local:
-  public_ip: # 获取公网IP的API接口地址, 如若配置, 调用日志中记录的本机IP将使用以下接口获取到的公网IP
-#    - https://api.ip.sb/ip
-#    - https://api64.ipify.org
+# 错误配置
+error:
+  auto_disabled:  # 自动禁用错误(区分大小写)
+    - "The OpenAI account associated with this API key has been deactivated."
+    - "PERMISSION_DENIED"
+    - "BILLING_DISABLED"
+    - "ACCESS_TOKEN_EXPIRED"
+    - "is not allowed to use Publisher Model"
+    - "Resource has been exhausted"
+    - "IAM_PERMISSION_DENIED"
+    - "SERVICE_DISABLED"
+    - "ACCOUNT_STATE_INVALID"
