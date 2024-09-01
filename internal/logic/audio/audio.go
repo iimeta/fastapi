@@ -62,7 +62,7 @@ func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallback
 
 		if reqModel != nil {
 			if reqModel.AudioQuota.BillingMethod == 1 {
-				totalTokens = int(math.Ceil(float64(len(params.Input)) * reqModel.AudioQuota.CompletionRatio))
+				totalTokens = int(math.Ceil(float64(len(params.Input)) * reqModel.AudioQuota.PromptRatio))
 			} else {
 				totalTokens = reqModel.AudioQuota.FixedQuota
 			}

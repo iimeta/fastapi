@@ -2,9 +2,11 @@ package audio
 
 import (
 	"context"
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/api/audio/v1"
+	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/tcolgate/mp3"
@@ -31,6 +33,7 @@ func (c *ControllerV1) Transcriptions(ctx context.Context, req *v1.Transcription
 		// 打开 MP3 文件
 		file, err := os.Open(req.AudioRequest.FilePath)
 		if err != nil {
+			logger.Error(ctx, err)
 			return res, err
 		}
 
@@ -57,6 +60,11 @@ func (c *ControllerV1) Transcriptions(ctx context.Context, req *v1.Transcription
 		}
 
 		req.Duration = totalDuration.Seconds()
+
+		if req.Duration == 0 {
+			logger.Errorf(ctx, "req: %s, err: %v", gjson.MustEncodeString(req), errors.ERR_UNSUPPORTED_FILE_FORMAT)
+			return nil, errors.ERR_UNSUPPORTED_FILE_FORMAT
+		}
 	}
 
 	response, err := service.Audio().Transcriptions(ctx, req, nil)
