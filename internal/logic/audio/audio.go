@@ -60,15 +60,16 @@ func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallback
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
-		if reqModel != nil {
-			if reqModel.AudioQuota.BillingMethod == 1 {
-				totalTokens = int(math.Ceil(float64(len(params.Input)) * reqModel.AudioQuota.PromptRatio))
-			} else {
-				totalTokens = reqModel.AudioQuota.FixedQuota
-			}
-		}
-
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+
+			if reqModel != nil {
+				if reqModel.AudioQuota.BillingMethod == 1 {
+					totalTokens = int(math.Ceil(float64(len(params.Input)) * reqModel.AudioQuota.PromptRatio))
+				} else {
+					totalTokens = reqModel.AudioQuota.FixedQuota
+				}
+			}
+
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 				if err := service.Common().RecordUsage(ctx, totalTokens, k.Key); err != nil {
 					logger.Error(ctx, err)
@@ -289,21 +290,22 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
-		if response.Duration != 0 {
-			minute = util.Round(response.Duration/60, 2)
-		} else {
-			minute = util.Round(params.Duration/60, 2)
-		}
-
-		if reqModel != nil {
-			if reqModel.AudioQuota.BillingMethod == 1 {
-				totalTokens = int(math.Ceil(minute * 1000 * reqModel.AudioQuota.CompletionRatio))
-			} else {
-				totalTokens = reqModel.AudioQuota.FixedQuota
-			}
-		}
-
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+
+			if response.Duration != 0 {
+				minute = util.Round(response.Duration/60, 2)
+			} else {
+				minute = util.Round(params.Duration/60, 2)
+			}
+
+			if reqModel != nil {
+				if reqModel.AudioQuota.BillingMethod == 1 {
+					totalTokens = int(math.Ceil(minute * 1000 * reqModel.AudioQuota.CompletionRatio))
+				} else {
+					totalTokens = reqModel.AudioQuota.FixedQuota
+				}
+			}
+
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 				if err := service.Common().RecordUsage(ctx, totalTokens, k.Key); err != nil {
 					logger.Error(ctx, err)
