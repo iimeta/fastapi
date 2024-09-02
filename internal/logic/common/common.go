@@ -21,7 +21,6 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"net"
-	"slices"
 	"strings"
 )
 
@@ -85,8 +84,10 @@ func IsNeedRetry(err error) (isRetry bool, isDisabled bool) {
 	}
 
 	// 自动禁用配置
-	if slices.Contains(config.Cfg.Error.AutoDisabled, err.Error()) {
-		return true, true
+	for _, autoDisabledError := range config.Cfg.Error.AutoDisabled {
+		if gstr.Contains(err.Error(), autoDisabledError) {
+			return true, true
+		}
 	}
 
 	apiError := &sdkerr.ApiError{}
