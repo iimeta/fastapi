@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var localIp = gipv4.MustGetIntranetIp()
+var localIp = "127.0.0.1"
 
 func init() {
 
@@ -20,10 +20,7 @@ func init() {
 
 		for _, url := range config.Cfg.Local.PublicIp {
 
-			client := g.Client().Timeout(config.Cfg.Http.Timeout * time.Second)
-
-			response, _ := client.Get(ctx, url)
-
+			response, _ := g.Client().Timeout(config.Cfg.Http.Timeout*time.Second).Get(ctx, url)
 			if response != nil {
 
 				result := gstr.Trim(response.ReadAllString())
@@ -36,10 +33,16 @@ func init() {
 				_ = response.Close()
 			}
 		}
+
+	} else {
+		if ip, err := gipv4.GetIntranetIp(); err != nil {
+			logger.Error(ctx, err)
+		} else {
+			localIp = ip
+		}
 	}
 
 	logger.Infof(ctx, "LOCAL_IP: %s", localIp)
-
 }
 
 func GetLocalIp() string {
