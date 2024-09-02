@@ -9,6 +9,7 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
+	"time"
 )
 
 // 记录使用额度
@@ -25,7 +26,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string) 
 
 	usageKey := s.GetUserUsageKey(ctx)
 
-	currentQuota, err := redis.HIncrBy(ctx, usageKey, consts.USER_QUOTA_FIELD, int64(-totalTokens))
+	currentQuota, err := redisSpendQuota(ctx, usageKey, consts.USER_QUOTA_FIELD, totalTokens)
 	if err != nil {
 		logger.Error(ctx, err)
 		panic(err)
@@ -39,7 +40,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string) 
 
 	if service.Session().GetAppIsLimitQuota(ctx) {
 
-		currentQuota, err = redis.HIncrBy(ctx, usageKey, s.GetAppTotalTokensField(ctx), int64(-totalTokens))
+		currentQuota, err = redisSpendQuota(ctx, usageKey, s.GetAppTotalTokensField(ctx), totalTokens)
 		if err != nil {
 			logger.Error(ctx, err)
 			panic(err)
@@ -61,7 +62,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string) 
 
 	if service.Session().GetKeyIsLimitQuota(ctx) {
 
-		currentQuota, err = redis.HIncrBy(ctx, usageKey, s.GetKeyTotalTokensField(ctx), int64(-totalTokens))
+		currentQuota, err = redisSpendQuota(ctx, usageKey, s.GetKeyTotalTokensField(ctx), totalTokens)
 		if err != nil {
 			logger.Error(ctx, err)
 			panic(err)
@@ -112,4 +113,24 @@ func (s *sCommon) GetAppTotalTokensField(ctx context.Context) string {
 
 func (s *sCommon) GetKeyTotalTokensField(ctx context.Context) string {
 	return fmt.Sprintf(consts.KEY_QUOTA_FIELD, service.Session().GetAppId(ctx), service.Session().GetSecretKey(ctx))
+}
+
+func redisSpendQuota(ctx context.Context, usageKey, field string, totalTokens int, retry ...int) (int64, error) {
+
+	currentQuota, err := redis.HIncrBy(ctx, usageKey, field, int64(-totalTokens))
+	if err != nil {
+		logger.Error(ctx, err)
+
+		if len(retry) == 3 {
+			return 0, err
+		}
+
+		retry = append(retry, 1)
+
+		time.Sleep(time.Duration(len(retry)) * time.Second * 3)
+
+		return redisSpendQuota(ctx, usageKey, field, totalTokens, retry...)
+	}
+
+	return currentQuota, nil
 }
