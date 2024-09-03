@@ -19,6 +19,7 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
+	"time"
 )
 
 type sImage struct{}
@@ -264,7 +265,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 }
 
 // 保存日志
-func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *mcommon.Retry) {
+func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *mcommon.Retry, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -370,7 +371,7 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 			ErrMsg:     retryInfo.ErrMsg,
 		}
 
-		if image.IsRetry && imageRes.Error == nil {
+		if image.IsRetry {
 			image.Status = 3
 			image.ErrMsg = retryInfo.ErrMsg
 		}
@@ -378,5 +379,17 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 
 	if _, err := dao.Image.Insert(ctx, image); err != nil {
 		logger.Error(ctx, err)
+
+		if len(retry) == 5 {
+			panic(err)
+		}
+
+		retry = append(retry, 1)
+
+		time.Sleep(time.Duration(len(retry)*5) * time.Second)
+
+		logger.Errorf(ctx, "sImage SaveLog retry: %d", len(retry))
+
+		s.SaveLog(ctx, reqModel, realModel, fallbackModel, key, imageReq, imageRes, retryInfo, retry...)
 	}
 }

@@ -20,6 +20,7 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
 	"math"
+	"time"
 )
 
 type sAudio struct{}
@@ -497,7 +498,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 }
 
 // 保存日志
-func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, audioReq *model.AudioReq, audioRes *model.AudioRes, retryInfo *mcommon.Retry) {
+func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, audioReq *model.AudioReq, audioRes *model.AudioRes, retryInfo *mcommon.Retry, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -593,7 +594,7 @@ func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 			ErrMsg:     retryInfo.ErrMsg,
 		}
 
-		if audio.IsRetry && audioRes.Error == nil {
+		if audio.IsRetry {
 			audio.Status = 3
 			audio.ErrMsg = retryInfo.ErrMsg
 		}
@@ -601,6 +602,17 @@ func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 
 	if _, err := dao.Audio.Insert(ctx, audio); err != nil {
 		logger.Error(ctx, err)
-		panic(err)
+
+		if len(retry) == 5 {
+			panic(err)
+		}
+
+		retry = append(retry, 1)
+
+		time.Sleep(time.Duration(len(retry)*5) * time.Second)
+
+		logger.Errorf(ctx, "sAudio SaveLog retry: %d", len(retry))
+
+		s.SaveLog(ctx, reqModel, realModel, fallbackModel, key, audioReq, audioRes, retryInfo, retry...)
 	}
 }

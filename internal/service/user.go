@@ -19,7 +19,7 @@ type (
 		// 用户列表
 		List(ctx context.Context) ([]*model.User, error)
 		// 用户消费额度
-		SpendQuota(ctx context.Context, userId, quota, currentQuota int)
+		SpendQuota(ctx context.Context, userId, quota, currentQuota int) error
 		// 保存用户信息到缓存
 		SaveCacheUser(ctx context.Context, user *model.User) error
 		// 获取缓存中的用户信息

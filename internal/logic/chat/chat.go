@@ -26,6 +26,7 @@ import (
 	"io"
 	"math"
 	"slices"
+	"time"
 )
 
 type sChat struct{}
@@ -170,7 +171,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
 			}
 
-			s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, completionsRes, retryInfo)
+			s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, completionsRes, retryInfo, false)
 
 		}); err != nil {
 			logger.Error(ctx, err)
@@ -554,7 +555,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					completionsRes.Usage.TotalTokens = totalTokens
 				}
 
-				s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, completionsRes, retryInfo)
+				s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, completionsRes, retryInfo, false)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -941,7 +942,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 }
 
 // 保存日志
-func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, isSmartMatch ...bool) {
+func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, isSmartMatch bool, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -957,7 +958,7 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel 
 		TraceId:      gctx.CtxId(ctx),
 		UserId:       service.Session().GetUserId(ctx),
 		AppId:        service.Session().GetAppId(ctx),
-		IsSmartMatch: len(isSmartMatch) > 0 && isSmartMatch[0],
+		IsSmartMatch: isSmartMatch,
 		Stream:       completionsReq.Stream,
 		ConnTime:     completionsRes.ConnTime,
 		Duration:     completionsRes.Duration,
@@ -1057,7 +1058,7 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel 
 			ErrMsg:     retryInfo.ErrMsg,
 		}
 
-		if chat.IsRetry && completionsRes.Error == nil {
+		if chat.IsRetry {
 			chat.Status = 3
 			chat.ErrMsg = retryInfo.ErrMsg
 		}
@@ -1065,6 +1066,17 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel 
 
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
 		logger.Error(ctx, err)
-		panic(err)
+
+		if len(retry) == 5 {
+			panic(err)
+		}
+
+		retry = append(retry, 1)
+
+		time.Sleep(time.Duration(len(retry)*5) * time.Second)
+
+		logger.Errorf(ctx, "sChat SaveLog retry: %d", len(retry))
+
+		s.SaveLog(ctx, reqModel, realModel, fallbackModel, key, completionsReq, completionsRes, retryInfo, isSmartMatch, retry...)
 	}
 }

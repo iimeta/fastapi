@@ -105,7 +105,7 @@ func (s *sApp) List(ctx context.Context) ([]*model.App, error) {
 }
 
 // 应用消费额度
-func (s *sApp) SpendQuota(ctx context.Context, appId, quota, currentQuota int) {
+func (s *sApp) SpendQuota(ctx context.Context, appId, quota, currentQuota int) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -119,12 +119,13 @@ func (s *sApp) SpendQuota(ctx context.Context, appId, quota, currentQuota int) {
 		},
 	}); err != nil {
 		logger.Error(ctx, err)
-		panic(err)
+		return err
 	}
 
 	app, err := s.GetCacheApp(ctx, appId)
 	if err != nil {
 		logger.Error(ctx, err)
+		return nil
 	}
 
 	if app.Quota > 0 {
@@ -146,19 +147,31 @@ func (s *sApp) SpendQuota(ctx context.Context, appId, quota, currentQuota int) {
 			logger.Error(ctx, err)
 		}
 	}
+
+	return nil
 }
 
 // 应用已用额度
-func (s *sApp) UsedQuota(ctx context.Context, appId, quota int) {
+func (s *sApp) UsedQuota(ctx context.Context, appId, quota int) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "sApp UsedQuota time: %d", gtime.TimestampMilli()-now)
 	}()
 
+	if err := dao.App.UpdateOne(ctx, bson.M{"app_id": appId}, bson.M{
+		"$inc": bson.M{
+			"used_quota": quota,
+		},
+	}); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
 	app, err := s.GetCacheApp(ctx, appId)
 	if err != nil {
 		logger.Error(ctx, err)
+		return nil
 	}
 
 	app.UsedQuota += quota
@@ -167,14 +180,7 @@ func (s *sApp) UsedQuota(ctx context.Context, appId, quota int) {
 		logger.Error(ctx, err)
 	}
 
-	if err = dao.App.UpdateOne(ctx, bson.M{"app_id": appId}, bson.M{
-		"$inc": bson.M{
-			"used_quota": quota,
-		},
-	}); err != nil {
-		logger.Error(ctx, err)
-		panic(err)
-	}
+	return nil
 }
 
 // 保存应用信息到缓存
@@ -408,7 +414,7 @@ func (s *sApp) RemoveCacheAppKey(ctx context.Context, secretKey string) {
 }
 
 // 密钥消费额度
-func (s *sApp) AppKeySpendQuota(ctx context.Context, secretKey string, quota, currentQuota int) {
+func (s *sApp) AppKeySpendQuota(ctx context.Context, secretKey string, quota, currentQuota int) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -422,12 +428,13 @@ func (s *sApp) AppKeySpendQuota(ctx context.Context, secretKey string, quota, cu
 		},
 	}); err != nil {
 		logger.Error(ctx, err)
-		panic(err)
+		return err
 	}
 
 	key, err := s.GetCacheAppKey(ctx, secretKey)
 	if err != nil {
 		logger.Error(ctx, err)
+		return nil
 	}
 
 	if key.Quota > 0 {
@@ -449,19 +456,31 @@ func (s *sApp) AppKeySpendQuota(ctx context.Context, secretKey string, quota, cu
 			logger.Error(ctx, err)
 		}
 	}
+
+	return nil
 }
 
 // 密钥已用额度
-func (s *sApp) AppKeyUsedQuota(ctx context.Context, secretKey string, quota int) {
+func (s *sApp) AppKeyUsedQuota(ctx context.Context, secretKey string, quota int) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "sApp AppKeyUsedQuota time: %d", gtime.TimestampMilli()-now)
 	}()
 
+	if err := dao.Key.UpdateOne(ctx, bson.M{"key": secretKey}, bson.M{
+		"$inc": bson.M{
+			"used_quota": quota,
+		},
+	}); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
 	key, err := s.GetCacheAppKey(ctx, secretKey)
 	if err != nil {
 		logger.Error(ctx, err)
+		return nil
 	}
 
 	key.UsedQuota += quota
@@ -470,14 +489,7 @@ func (s *sApp) AppKeyUsedQuota(ctx context.Context, secretKey string, quota int)
 		logger.Error(ctx, err)
 	}
 
-	if err = dao.Key.UpdateOne(ctx, bson.M{"key": secretKey}, bson.M{
-		"$inc": bson.M{
-			"used_quota": quota,
-		},
-	}); err != nil {
-		logger.Error(ctx, err)
-		panic(err)
-	}
+	return nil
 }
 
 // 变更订阅

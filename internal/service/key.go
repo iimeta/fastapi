@@ -39,7 +39,7 @@ type (
 		// 移除缓存中的模型密钥
 		RemoveCacheModelKey(ctx context.Context, key *entity.Key)
 		// 密钥已用额度
-		UsedQuota(ctx context.Context, key string, quota int)
+		UsedQuota(ctx context.Context, key string, quota int) error
 		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
 	}

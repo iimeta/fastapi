@@ -21,6 +21,7 @@ import (
 	"github.com/iimeta/fastapi/utility/util"
 	"math"
 	"slices"
+	"time"
 )
 
 type sEmbedding struct{}
@@ -262,7 +263,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 }
 
 // 保存日志
-func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.EmbeddingRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, isSmartMatch ...bool) {
+func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.EmbeddingRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -278,7 +279,6 @@ func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel, fallbackM
 		TraceId:      gctx.CtxId(ctx),
 		UserId:       service.Session().GetUserId(ctx),
 		AppId:        service.Session().GetAppId(ctx),
-		IsSmartMatch: len(isSmartMatch) > 0 && isSmartMatch[0],
 		ConnTime:     completionsRes.ConnTime,
 		Duration:     completionsRes.Duration,
 		TotalTime:    completionsRes.TotalTime,
@@ -368,7 +368,7 @@ func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel, fallbackM
 			ErrMsg:     retryInfo.ErrMsg,
 		}
 
-		if chat.IsRetry && completionsRes.Error == nil {
+		if chat.IsRetry {
 			chat.Status = 3
 			chat.ErrMsg = retryInfo.ErrMsg
 		}
@@ -376,6 +376,17 @@ func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel, fallbackM
 
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
 		logger.Error(ctx, err)
-		panic(err)
+
+		if len(retry) == 5 {
+			panic(err)
+		}
+
+		retry = append(retry, 1)
+
+		time.Sleep(time.Duration(len(retry)*5) * time.Second)
+
+		logger.Errorf(ctx, "sEmbedding SaveLog retry: %d", len(retry))
+
+		s.SaveLog(ctx, reqModel, realModel, fallbackModel, key, completionsReq, completionsRes, retryInfo, retry...)
 	}
 }

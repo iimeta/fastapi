@@ -23,6 +23,7 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
 	"net/http"
+	"time"
 )
 
 type sMidjourney struct{}
@@ -501,7 +502,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 }
 
 // 保存日志
-func (s *sMidjourney) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, response model.MidjourneyResponse, retryInfo *mcommon.Retry) {
+func (s *sMidjourney) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, response model.MidjourneyResponse, retryInfo *mcommon.Retry, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -604,7 +605,7 @@ func (s *sMidjourney) SaveLog(ctx context.Context, reqModel, realModel, fallback
 			ErrMsg:     retryInfo.ErrMsg,
 		}
 
-		if midjourney.IsRetry && response.Error == nil {
+		if midjourney.IsRetry {
 			midjourney.Status = 3
 			midjourney.ErrMsg = retryInfo.ErrMsg
 		}
@@ -612,5 +613,17 @@ func (s *sMidjourney) SaveLog(ctx context.Context, reqModel, realModel, fallback
 
 	if _, err := dao.Midjourney.Insert(ctx, midjourney); err != nil {
 		logger.Error(ctx, err)
+
+		if len(retry) == 5 {
+			panic(err)
+		}
+
+		retry = append(retry, 1)
+
+		time.Sleep(time.Duration(len(retry)*5) * time.Second)
+
+		logger.Errorf(ctx, "sMidjourney SaveLog retry: %d", len(retry))
+
+		s.SaveLog(ctx, reqModel, realModel, fallbackModel, key, response, retryInfo, retry...)
 	}
 }

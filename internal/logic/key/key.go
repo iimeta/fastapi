@@ -597,7 +597,7 @@ func (s *sKey) RemoveCacheModelKey(ctx context.Context, key *entity.Key) {
 }
 
 // 密钥已用额度
-func (s *sKey) UsedQuota(ctx context.Context, key string, quota int) {
+func (s *sKey) UsedQuota(ctx context.Context, key string, quota int) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -610,8 +610,10 @@ func (s *sKey) UsedQuota(ctx context.Context, key string, quota int) {
 		},
 	}); err != nil {
 		logger.Error(ctx, err)
-		panic(err)
+		return err
 	}
+
+	return nil
 }
 
 // 变更订阅

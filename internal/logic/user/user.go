@@ -97,7 +97,7 @@ func (s *sUser) List(ctx context.Context) ([]*model.User, error) {
 }
 
 // 用户消费额度
-func (s *sUser) SpendQuota(ctx context.Context, userId, quota, currentQuota int) {
+func (s *sUser) SpendQuota(ctx context.Context, userId, quota, currentQuota int) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -111,12 +111,13 @@ func (s *sUser) SpendQuota(ctx context.Context, userId, quota, currentQuota int)
 		},
 	}); err != nil {
 		logger.Error(ctx, err)
-		panic(err)
+		return err
 	}
 
 	user, err := s.GetCacheUser(ctx, userId)
 	if err != nil {
 		logger.Error(ctx, err)
+		return nil
 	}
 
 	if user.Quota > 0 {
@@ -138,6 +139,8 @@ func (s *sUser) SpendQuota(ctx context.Context, userId, quota, currentQuota int)
 			logger.Error(ctx, err)
 		}
 	}
+
+	return nil
 }
 
 // 保存用户信息到缓存
