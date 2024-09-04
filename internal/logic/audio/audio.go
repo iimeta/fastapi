@@ -297,6 +297,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 				minute = util.Round(response.Duration/60, 2)
 			} else {
 				minute = util.Round(params.Duration/60, 2)
+				response.Duration = params.Duration
 			}
 
 			if reqModel != nil {

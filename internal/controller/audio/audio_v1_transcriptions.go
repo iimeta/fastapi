@@ -9,9 +9,7 @@ import (
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
-	"github.com/tcolgate/mp3"
-	"os"
-	"time"
+	"github.com/iimeta/fastapi/utility/util"
 )
 
 func (c *ControllerV1) Transcriptions(ctx context.Context, req *v1.TranscriptionsReq) (res *v1.TranscriptionsRes, err error) {
@@ -30,40 +28,18 @@ func (c *ControllerV1) Transcriptions(ctx context.Context, req *v1.Transcription
 
 	if req.AudioRequest.Format != "verbose_json" {
 
-		// 打开 MP3 文件
-		file, err := os.Open(req.AudioRequest.FilePath)
+		duration, err := util.GetAudioDuration(req.AudioRequest.FilePath)
 		if err != nil {
 			logger.Error(ctx, err)
-			return res, err
+			return nil, err
 		}
 
-		// 创建解码器
-		d := mp3.NewDecoder(file)
-
-		// 计算时长
-		var totalDuration time.Duration
-		skipped := 0
-		for {
-			// 解码一帧
-			frame := mp3.Frame{}
-			if err := d.Decode(&frame, &skipped); err != nil {
-				// 到达文件结尾
-				break
-			}
-
-			// 累加帧时长
-			totalDuration += frame.Duration()
-		}
-
-		if err = file.Close(); err != nil {
-			logger.Error(ctx, err)
-		}
-
-		req.Duration = totalDuration.Seconds()
-
+		req.Duration = duration.Seconds()
 		if req.Duration == 0 {
 			logger.Errorf(ctx, "req: %s, err: %v", gjson.MustEncodeString(req), errors.ERR_UNSUPPORTED_FILE_FORMAT)
 			return nil, errors.ERR_UNSUPPORTED_FILE_FORMAT
+		} else if req.Duration < 1 {
+			req.Duration = 1
 		}
 	}
 

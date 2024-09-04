@@ -103,7 +103,7 @@ func Error(ctx context.Context, err error) IFastApiError {
 	}
 
 	apiError := &sdkerr.ApiError{}
-	if As(err, &apiError) && apiError.HttpStatusCode != 500 {
+	if As(err, &apiError) && apiError.HttpStatusCode != 500 && !Is(apiError, sdkerr.ERR_INSUFFICIENT_QUOTA) {
 		return NewError(apiError.HttpStatusCode, apiError.Code, apiError.Message, apiError.Type).(IFastApiError)
 	}
 
