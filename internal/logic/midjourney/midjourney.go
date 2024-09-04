@@ -75,44 +75,39 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 			TotalTokens: midjourneyQuota.FixedQuota,
 		}
 
-		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-			if err == nil {
-				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, usage.TotalTokens, k.Key); err != nil {
-						logger.Error(ctx, err)
-					}
-				}, nil); err != nil {
+		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+				if err := service.Common().RecordUsage(ctx, usage.TotalTokens, k.Key); err != nil {
 					logger.Error(ctx, err)
+					panic(err)
 				}
-			}
-
-			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-
-				realModel.ModelAgent = modelAgent
-
-				midjourneyResponse := model.MidjourneyResponse{
-					ReqUrl:             reqUrl,
-					TaskId:             taskId,
-					Prompt:             prompt,
-					MidjourneyResponse: response,
-					TotalTime:          response.TotalTime,
-					Error:              err,
-					InternalTime:       internalTime,
-					EnterTime:          enterTime,
-				}
-
-				if err == nil {
-					midjourneyResponse.Usage = *usage
-				}
-
-				s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, midjourneyResponse, retryInfo)
-
-			}, nil); err != nil {
+			}); err != nil {
 				logger.Error(ctx, err)
 			}
+		}
 
-		}, nil); err != nil {
+		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+			realModel.ModelAgent = modelAgent
+
+			midjourneyResponse := model.MidjourneyResponse{
+				ReqUrl:             reqUrl,
+				TaskId:             taskId,
+				Prompt:             prompt,
+				MidjourneyResponse: response,
+				TotalTime:          response.TotalTime,
+				Error:              err,
+				InternalTime:       internalTime,
+				EnterTime:          enterTime,
+			}
+
+			if err == nil {
+				midjourneyResponse.Usage = *usage
+			}
+
+			s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, midjourneyResponse, retryInfo)
+
+		}); err != nil {
 			logger.Error(ctx, err)
 		}
 	}()
@@ -301,43 +296,38 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 			TotalTokens: midjourneyQuota.FixedQuota,
 		}
 
-		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-			if err == nil {
-				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, usage.TotalTokens, k.Key); err != nil {
-						logger.Error(ctx, err)
-					}
-				}, nil); err != nil {
+		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+				if err := service.Common().RecordUsage(ctx, usage.TotalTokens, k.Key); err != nil {
 					logger.Error(ctx, err)
+					panic(err)
 				}
-			}
-
-			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-
-				realModel.ModelAgent = modelAgent
-
-				midjourneyResponse := model.MidjourneyResponse{
-					MidjourneyResponse: sdkm.MidjourneyResponse{
-						Response: []byte(fmt.Sprintf("taskId: %s\nimageUrl: %s", taskId, imageUrl)),
-					},
-					TotalTime:    response.TotalTime,
-					Error:        err,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
-				}
-
-				if err == nil {
-					midjourneyResponse.Usage = *usage
-				}
-
-				s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, midjourneyResponse, retryInfo)
-
-			}, nil); err != nil {
+			}); err != nil {
 				logger.Error(ctx, err)
 			}
+		}
 
-		}, nil); err != nil {
+		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+			realModel.ModelAgent = modelAgent
+
+			midjourneyResponse := model.MidjourneyResponse{
+				MidjourneyResponse: sdkm.MidjourneyResponse{
+					Response: []byte(fmt.Sprintf("taskId: %s\nimageUrl: %s", taskId, imageUrl)),
+				},
+				TotalTime:    response.TotalTime,
+				Error:        err,
+				InternalTime: internalTime,
+				EnterTime:    enterTime,
+			}
+
+			if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+				midjourneyResponse.Usage = *usage
+			}
+
+			s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, midjourneyResponse, retryInfo)
+
+		}); err != nil {
 			logger.Error(ctx, err)
 		}
 	}()
@@ -593,7 +583,11 @@ func (s *sMidjourney) SaveLog(ctx context.Context, reqModel, realModel, fallback
 
 	if response.Error != nil {
 		midjourney.ErrMsg = response.Error.Error()
-		midjourney.Status = -1
+		if common.IsAborted(response.Error) {
+			midjourney.Status = 2
+		} else {
+			midjourney.Status = -1
+		}
 	}
 
 	if retryInfo != nil {

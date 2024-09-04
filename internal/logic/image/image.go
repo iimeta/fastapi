@@ -63,42 +63,37 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 			TotalTokens: imageQuota.FixedQuota * len(response.Data),
 		}
 
-		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-			if retryInfo == nil && err == nil {
-				if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, usage.TotalTokens, k.Key); err != nil {
-						logger.Error(ctx, err)
-					}
-				}, nil); err != nil {
+		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+				if err := service.Common().RecordUsage(ctx, usage.TotalTokens, k.Key); err != nil {
 					logger.Error(ctx, err)
+					panic(err)
 				}
-			}
-
-			if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
-
-				realModel.ModelAgent = modelAgent
-
-				imageRes := &model.ImageRes{
-					Created:      response.Created,
-					Data:         response.Data,
-					TotalTime:    response.TotalTime,
-					Error:        err,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
-				}
-
-				if retryInfo == nil && err == nil {
-					imageRes.Usage = *usage
-				}
-
-				s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, imageRes, retryInfo)
-
-			}, nil); err != nil {
+			}); err != nil {
 				logger.Error(ctx, err)
 			}
+		}
 
-		}, nil); err != nil {
+		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+			realModel.ModelAgent = modelAgent
+
+			imageRes := &model.ImageRes{
+				Created:      response.Created,
+				Data:         response.Data,
+				TotalTime:    response.TotalTime,
+				Error:        err,
+				InternalTime: internalTime,
+				EnterTime:    enterTime,
+			}
+
+			if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+				imageRes.Usage = *usage
+			}
+
+			s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, imageRes, retryInfo)
+
+		}); err != nil {
 			logger.Error(ctx, err)
 		}
 	}()

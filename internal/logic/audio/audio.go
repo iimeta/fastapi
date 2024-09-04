@@ -97,7 +97,7 @@ func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallback
 				EnterTime:    enterTime,
 			}
 
-			if retryInfo == nil {
+			if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 				audioRes.TotalTokens = totalTokens
 			}
 

@@ -111,7 +111,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 			}
 		}
 
-		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 			realModel.ModelAgent = modelAgent
 
@@ -135,7 +135,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 			s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, completionsRes, retryInfo, true)
 
-		}, nil); err != nil {
+		}); err != nil {
 			logger.Error(ctx, err)
 		}
 	}()

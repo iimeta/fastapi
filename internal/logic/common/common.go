@@ -58,14 +58,12 @@ func (s *sCommon) ParseSecretKey(ctx context.Context, secretKey string) (int, in
 func (s *sCommon) RecordError(ctx context.Context, model *model.Model, key *model.Key, modelAgent *model.ModelAgent) {
 
 	if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
 		if model.IsEnableModelAgent {
 			service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
 			service.ModelAgent().RecordErrorModelAgent(ctx, model, modelAgent)
 		} else {
 			service.Key().RecordErrorModelKey(ctx, model, key)
 		}
-
 	}, nil); err != nil {
 		logger.Error(ctx, err)
 	}
