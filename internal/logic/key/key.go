@@ -276,12 +276,12 @@ func (s *sKey) RecordErrorModelKey(ctx context.Context, m *model.Model, key *mod
 	}
 
 	if reply >= config.Cfg.Api.ModelKeyErrDisable {
-		s.DisabledModelKey(ctx, key)
+		s.DisabledModelKey(ctx, key, "Reached the maximum number of errors")
 	}
 }
 
 // 禁用模型密钥
-func (s *sKey) DisabledModelKey(ctx context.Context, key *model.Key) {
+func (s *sKey) DisabledModelKey(ctx context.Context, key *model.Key, disabledReason string) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -289,26 +289,32 @@ func (s *sKey) DisabledModelKey(ctx context.Context, key *model.Key) {
 	}()
 
 	s.UpdateCacheModelKey(ctx, nil, &entity.Key{
-		Id:             key.Id,
-		UserId:         key.UserId,
-		AppId:          key.AppId,
-		Corp:           key.Corp,
-		Key:            key.Key,
-		Type:           key.Type,
-		Models:         key.Models,
-		ModelAgents:    key.ModelAgents,
-		IsLimitQuota:   key.IsLimitQuota,
-		Quota:          key.Quota,
-		UsedQuota:      key.UsedQuota,
-		QuotaExpiresAt: key.QuotaExpiresAt,
-		RPM:            key.RPM,
-		RPD:            key.RPD,
-		IpWhitelist:    key.IpWhitelist,
-		IpBlacklist:    key.IpBlacklist,
-		Status:         2,
+		Id:                 key.Id,
+		UserId:             key.UserId,
+		AppId:              key.AppId,
+		Corp:               key.Corp,
+		Key:                key.Key,
+		Type:               key.Type,
+		Models:             key.Models,
+		ModelAgents:        key.ModelAgents,
+		IsLimitQuota:       key.IsLimitQuota,
+		Quota:              key.Quota,
+		UsedQuota:          key.UsedQuota,
+		QuotaExpiresAt:     key.QuotaExpiresAt,
+		RPM:                key.RPM,
+		RPD:                key.RPD,
+		IpWhitelist:        key.IpWhitelist,
+		IpBlacklist:        key.IpBlacklist,
+		Status:             2,
+		IsAutoDisabled:     true,
+		AutoDisabledReason: disabledReason,
 	})
 
-	if err := dao.Key.UpdateById(ctx, key.Id, bson.M{"status": 2}); err != nil {
+	if err := dao.Key.UpdateById(ctx, key.Id, bson.M{
+		"status":               2,
+		"is_auto_disabled":     true,
+		"auto_disabled_reason": disabledReason,
+	}); err != nil {
 		logger.Error(ctx, err)
 	}
 }
@@ -449,23 +455,25 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 	}()
 
 	key := &model.Key{
-		Id:             newData.Id,
-		UserId:         newData.UserId,
-		AppId:          newData.AppId,
-		Corp:           newData.Corp,
-		Key:            newData.Key,
-		Type:           newData.Type,
-		Models:         newData.Models,
-		ModelAgents:    newData.ModelAgents,
-		IsLimitQuota:   newData.IsLimitQuota,
-		Quota:          newData.Quota,
-		UsedQuota:      newData.UsedQuota,
-		QuotaExpiresAt: newData.QuotaExpiresAt,
-		RPM:            newData.RPM,
-		RPD:            newData.RPD,
-		IpWhitelist:    newData.IpWhitelist,
-		IpBlacklist:    newData.IpBlacklist,
-		Status:         newData.Status,
+		Id:                 newData.Id,
+		UserId:             newData.UserId,
+		AppId:              newData.AppId,
+		Corp:               newData.Corp,
+		Key:                newData.Key,
+		Type:               newData.Type,
+		Models:             newData.Models,
+		ModelAgents:        newData.ModelAgents,
+		IsLimitQuota:       newData.IsLimitQuota,
+		Quota:              newData.Quota,
+		UsedQuota:          newData.UsedQuota,
+		QuotaExpiresAt:     newData.QuotaExpiresAt,
+		RPM:                newData.RPM,
+		RPD:                newData.RPD,
+		IpWhitelist:        newData.IpWhitelist,
+		IpBlacklist:        newData.IpBlacklist,
+		Status:             newData.Status,
+		IsAutoDisabled:     newData.IsAutoDisabled,
+		AutoDisabledReason: newData.AutoDisabledReason,
 	}
 
 	// 用于处理oldData时判断作用

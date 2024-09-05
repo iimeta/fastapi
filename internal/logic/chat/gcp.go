@@ -69,7 +69,7 @@ func getGcpToken(ctx context.Context, key *model.Key, proxyURL string) string {
 	if getGcpTokenRes.Error != "" {
 		logger.Errorf(ctx, "getGcpToken key: %s, getGcpTokenRes.Error: %s", key.Key, getGcpTokenRes.Error)
 		if err = grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-			service.Key().DisabledModelKey(ctx, key)
+			service.Key().DisabledModelKey(ctx, key, getGcpTokenRes.Error)
 		}); err != nil {
 			logger.Error(ctx, err)
 		}
@@ -154,8 +154,8 @@ func getGcpTokenNew(ctx context.Context, key *model.Key, proxyURL string) (strin
 		logger.Errorf(ctx, "getGcpTokenNew GenerateAccessToken key: %s, error: %v", key.Key, err)
 		for _, autoDisabledError := range config.Cfg.Error.AutoDisabled {
 			if gstr.Contains(err.Error(), autoDisabledError) {
-				if err = grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-					service.Key().DisabledModelKey(ctx, key)
+				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+					service.Key().DisabledModelKey(ctx, key, err.Error())
 				}); err != nil {
 					logger.Error(ctx, err)
 				}

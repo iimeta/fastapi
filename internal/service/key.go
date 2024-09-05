@@ -27,7 +27,7 @@ type (
 		// 记录错误模型密钥
 		RecordErrorModelKey(ctx context.Context, m *model.Model, key *model.Key)
 		// 禁用模型密钥
-		DisabledModelKey(ctx context.Context, key *model.Key)
+		DisabledModelKey(ctx context.Context, key *model.Key, disabledReason string)
 		// 保存模型密钥列表到缓存
 		SaveCacheModelKeys(ctx context.Context, id string, keys []*model.Key) error
 		// 获取缓存中的模型密钥列表

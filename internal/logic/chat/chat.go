@@ -228,7 +228,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				service.ModelAgent().RecordErrorModelAgent(ctx, realModel, modelAgent)
 
 				if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY) {
-					service.ModelAgent().DisabledModelAgent(ctx, modelAgent)
+					service.ModelAgent().DisabledModelAgent(ctx, modelAgent, "No available model agent key")
 				}
 
 				if realModel.IsEnableFallback {
@@ -286,9 +286,9 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			if isDisabled {
 				if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 					if realModel.IsEnableModelAgent {
-						service.ModelAgent().DisabledModelAgentKey(ctx, k)
+						service.ModelAgent().DisabledModelAgentKey(ctx, k, err.Error())
 					} else {
-						service.Key().DisabledModelKey(ctx, k)
+						service.Key().DisabledModelKey(ctx, k, err.Error())
 					}
 				}, nil); err != nil {
 					logger.Error(ctx, err)
@@ -386,9 +386,9 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		if isDisabled {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 				if realModel.IsEnableModelAgent {
-					service.ModelAgent().DisabledModelAgentKey(ctx, k)
+					service.ModelAgent().DisabledModelAgentKey(ctx, k, err.Error())
 				} else {
-					service.Key().DisabledModelKey(ctx, k)
+					service.Key().DisabledModelKey(ctx, k, err.Error())
 				}
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -617,7 +617,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				service.ModelAgent().RecordErrorModelAgent(ctx, realModel, modelAgent)
 
 				if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY) {
-					service.ModelAgent().DisabledModelAgent(ctx, modelAgent)
+					service.ModelAgent().DisabledModelAgent(ctx, modelAgent, "No available model agent key")
 				}
 
 				if realModel.IsEnableFallback {
@@ -675,9 +675,9 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			if isDisabled {
 				if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 					if realModel.IsEnableModelAgent {
-						service.ModelAgent().DisabledModelAgentKey(ctx, k)
+						service.ModelAgent().DisabledModelAgentKey(ctx, k, err.Error())
 					} else {
-						service.Key().DisabledModelKey(ctx, k)
+						service.Key().DisabledModelKey(ctx, k, err.Error())
 					}
 				}, nil); err != nil {
 					logger.Error(ctx, err)
@@ -762,9 +762,9 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		if isDisabled {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 				if realModel.IsEnableModelAgent {
-					service.ModelAgent().DisabledModelAgentKey(ctx, k)
+					service.ModelAgent().DisabledModelAgentKey(ctx, k, err.Error())
 				} else {
-					service.Key().DisabledModelKey(ctx, k)
+					service.Key().DisabledModelKey(ctx, k, err.Error())
 				}
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -848,9 +848,9 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			if isDisabled {
 				if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 					if realModel.IsEnableModelAgent {
-						service.ModelAgent().DisabledModelAgentKey(ctx, k)
+						service.ModelAgent().DisabledModelAgentKey(ctx, k, err.Error())
 					} else {
-						service.Key().DisabledModelKey(ctx, k)
+						service.Key().DisabledModelKey(ctx, k, err.Error())
 					}
 				}, nil); err != nil {
 					logger.Error(ctx, err)

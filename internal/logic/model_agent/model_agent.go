@@ -349,12 +349,12 @@ func (s *sModelAgent) RecordErrorModelAgent(ctx context.Context, m *model.Model,
 	}
 
 	if reply >= config.Cfg.Api.ModelAgentErrDisable {
-		s.DisabledModelAgent(ctx, modelAgent)
+		s.DisabledModelAgent(ctx, modelAgent, "Reached the maximum number of errors")
 	}
 }
 
 // 禁用模型代理
-func (s *sModelAgent) DisabledModelAgent(ctx context.Context, modelAgent *model.ModelAgent) {
+func (s *sModelAgent) DisabledModelAgent(ctx context.Context, modelAgent *model.ModelAgent, disabledReason string) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -362,9 +362,16 @@ func (s *sModelAgent) DisabledModelAgent(ctx context.Context, modelAgent *model.
 	}()
 
 	modelAgent.Status = 2
+	modelAgent.IsAutoDisabled = true
+	modelAgent.AutoDisabledReason = disabledReason
+
 	s.UpdateCacheModelAgent(ctx, nil, modelAgent)
 
-	if err := dao.ModelAgent.UpdateById(ctx, modelAgent.Id, bson.M{"status": 2}); err != nil {
+	if err := dao.ModelAgent.UpdateById(ctx, modelAgent.Id, bson.M{
+		"status":               2,
+		"is_auto_disabled":     true,
+		"auto_disabled_reason": disabledReason,
+	}); err != nil {
 		logger.Error(ctx, err)
 	}
 }
@@ -484,12 +491,12 @@ func (s *sModelAgent) RecordErrorModelAgentKey(ctx context.Context, modelAgent *
 	}
 
 	if reply >= config.Cfg.Api.ModelAgentKeyErrDisable {
-		s.DisabledModelAgentKey(ctx, key)
+		s.DisabledModelAgentKey(ctx, key, "Reached the maximum number of errors")
 	}
 }
 
 // 禁用模型代理密钥
-func (s *sModelAgent) DisabledModelAgentKey(ctx context.Context, key *model.Key) {
+func (s *sModelAgent) DisabledModelAgentKey(ctx context.Context, key *model.Key, disabledReason string) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -497,23 +504,25 @@ func (s *sModelAgent) DisabledModelAgentKey(ctx context.Context, key *model.Key)
 	}()
 
 	s.UpdateCacheModelAgentKey(ctx, nil, &entity.Key{
-		Id:             key.Id,
-		UserId:         key.UserId,
-		AppId:          key.AppId,
-		Corp:           key.Corp,
-		Key:            key.Key,
-		Type:           key.Type,
-		Models:         key.Models,
-		ModelAgents:    key.ModelAgents,
-		IsLimitQuota:   key.IsLimitQuota,
-		Quota:          key.Quota,
-		UsedQuota:      key.UsedQuota,
-		QuotaExpiresAt: key.QuotaExpiresAt,
-		RPM:            key.RPM,
-		RPD:            key.RPD,
-		IpWhitelist:    key.IpWhitelist,
-		IpBlacklist:    key.IpBlacklist,
-		Status:         2,
+		Id:                 key.Id,
+		UserId:             key.UserId,
+		AppId:              key.AppId,
+		Corp:               key.Corp,
+		Key:                key.Key,
+		Type:               key.Type,
+		Models:             key.Models,
+		ModelAgents:        key.ModelAgents,
+		IsLimitQuota:       key.IsLimitQuota,
+		Quota:              key.Quota,
+		UsedQuota:          key.UsedQuota,
+		QuotaExpiresAt:     key.QuotaExpiresAt,
+		RPM:                key.RPM,
+		RPD:                key.RPD,
+		IpWhitelist:        key.IpWhitelist,
+		IpBlacklist:        key.IpBlacklist,
+		Status:             2,
+		IsAutoDisabled:     true,
+		AutoDisabledReason: disabledReason,
 	})
 
 	if err := dao.Key.UpdateById(ctx, key.Id, bson.M{"status": 2}); err != nil {
@@ -653,14 +662,16 @@ func (s *sModelAgent) UpdateCacheModelAgent(ctx context.Context, oldData *model.
 	}()
 
 	if err := s.SaveCacheList(ctx, []*model.ModelAgent{{
-		Id:      newData.Id,
-		Corp:    newData.Corp,
-		Name:    newData.Name,
-		BaseUrl: newData.BaseUrl,
-		Path:    newData.Path,
-		Weight:  newData.Weight,
-		Models:  newData.Models,
-		Status:  newData.Status,
+		Id:                 newData.Id,
+		Corp:               newData.Corp,
+		Name:               newData.Name,
+		BaseUrl:            newData.BaseUrl,
+		Path:               newData.Path,
+		Weight:             newData.Weight,
+		Models:             newData.Models,
+		Status:             newData.Status,
+		IsAutoDisabled:     newData.IsAutoDisabled,
+		AutoDisabledReason: newData.AutoDisabledReason,
 	}}); err != nil {
 		logger.Error(ctx, err)
 	}

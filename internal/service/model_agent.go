@@ -29,7 +29,7 @@ type (
 		// 记录错误模型代理
 		RecordErrorModelAgent(ctx context.Context, m *model.Model, modelAgent *model.ModelAgent)
 		// 禁用模型代理
-		DisabledModelAgent(ctx context.Context, modelAgent *model.ModelAgent)
+		DisabledModelAgent(ctx context.Context, modelAgent *model.ModelAgent, disabledReason string)
 		// 挑选模型代理密钥
 		PickModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent) (int, *model.Key, error)
 		// 移除模型代理密钥
@@ -37,7 +37,7 @@ type (
 		// 记录错误模型代理密钥
 		RecordErrorModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent, key *model.Key)
 		// 禁用模型代理密钥
-		DisabledModelAgentKey(ctx context.Context, key *model.Key)
+		DisabledModelAgentKey(ctx context.Context, key *model.Key, disabledReason string)
 		// 保存模型代理列表到缓存
 		SaveCacheList(ctx context.Context, modelAgents []*model.ModelAgent) error
 		// 获取缓存中的模型代理列表
