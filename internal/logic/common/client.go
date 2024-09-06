@@ -2,7 +2,7 @@ package common
 
 import (
 	"context"
-	sdk "github.com/iimeta/fastapi-sdk"
+	"github.com/iimeta/fastapi-sdk"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
