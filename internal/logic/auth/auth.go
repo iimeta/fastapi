@@ -24,7 +24,7 @@ func (s *sAuth) Authenticator(ctx context.Context, secretKey string) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sAuth Authenticator time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(g.RequestFromCtx(ctx).GetCtx(), "sAuth Authenticator time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if err := service.Session().Save(ctx, secretKey); err != nil {
@@ -74,7 +74,7 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 		return err
 	}
 
-	if key.IsLimitQuota && (key.Quota <= 0 || (key.QuotaExpiresAt != 0 && key.QuotaExpiresAt < gtime.TimestampMilli())) {
+	if key.IsLimitQuota && (service.App().GetCacheAppKeyQuota(ctx, key.Key) <= 0 || (key.QuotaExpiresAt != 0 && key.QuotaExpiresAt < gtime.TimestampMilli())) {
 		err = errors.ERR_INSUFFICIENT_QUOTA
 		logger.Error(ctx, err)
 		return err
@@ -106,7 +106,7 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 		return err
 	}
 
-	if user.Quota <= 0 || (user.QuotaExpiresAt != 0 && user.QuotaExpiresAt < gtime.TimestampMilli()) {
+	if service.User().GetCacheUserQuota(ctx, user.UserId) <= 0 || (user.QuotaExpiresAt != 0 && user.QuotaExpiresAt < gtime.TimestampMilli()) {
 		err = errors.ERR_INSUFFICIENT_QUOTA
 		logger.Error(ctx, err)
 		return err
@@ -138,7 +138,7 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 		return err
 	}
 
-	if app.IsLimitQuota && (app.Quota <= 0 || (app.QuotaExpiresAt != 0 && app.QuotaExpiresAt < gtime.TimestampMilli())) {
+	if app.IsLimitQuota && (service.App().GetCacheAppQuota(ctx, app.AppId) <= 0 || (app.QuotaExpiresAt != 0 && app.QuotaExpiresAt < gtime.TimestampMilli())) {
 		err = errors.ERR_INSUFFICIENT_QUOTA
 		logger.Error(ctx, err)
 		return err

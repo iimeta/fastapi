@@ -23,6 +23,12 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string) 
 		return nil
 	}
 
+	userId := service.Session().GetUserId(ctx)
+	appId := service.Session().GetAppId(ctx)
+	appKey := service.Session().GetSecretKey(ctx)
+
+	logger.Infof(ctx, "sCommon RecordUsage userId: %d, appId: %d, appKey: %s, spendQuota: %d, key: %s", userId, appId, appKey, totalTokens, key)
+
 	usageKey := s.GetUserUsageKey(ctx)
 
 	currentQuota, err := redisSpendQuota(ctx, usageKey, consts.USER_QUOTA_FIELD, totalTokens)
@@ -32,7 +38,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string) 
 	}
 
 	if err = mongoSpendQuota(ctx, func() error {
-		return service.User().SpendQuota(ctx, service.Session().GetUserId(ctx), totalTokens, currentQuota)
+		return service.User().SpendQuota(ctx, userId, totalTokens, currentQuota)
 	}); err != nil {
 		logger.Error(ctx, err)
 		panic(err)
@@ -47,7 +53,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string) 
 		}
 
 		if err = mongoSpendQuota(ctx, func() error {
-			return service.App().SpendQuota(ctx, service.Session().GetAppId(ctx), totalTokens, currentQuota)
+			return service.App().SpendQuota(ctx, appId, totalTokens, currentQuota)
 		}); err != nil {
 			logger.Error(ctx, err)
 			panic(err)
@@ -55,7 +61,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string) 
 
 	} else {
 		if err = mongoUsedQuota(ctx, func() error {
-			return service.App().UsedQuota(ctx, service.Session().GetAppId(ctx), totalTokens)
+			return service.App().UsedQuota(ctx, appId, totalTokens)
 		}); err != nil {
 			logger.Error(ctx, err)
 			panic(err)
@@ -71,7 +77,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string) 
 		}
 
 		if err = mongoSpendQuota(ctx, func() error {
-			return service.App().AppKeySpendQuota(ctx, service.Session().GetSecretKey(ctx), totalTokens, currentQuota)
+			return service.App().AppKeySpendQuota(ctx, appKey, totalTokens, currentQuota)
 		}); err != nil {
 			logger.Error(ctx, err)
 			panic(err)
@@ -79,7 +85,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string) 
 
 	} else {
 		if err = mongoUsedQuota(ctx, func() error {
-			return service.App().AppKeyUsedQuota(ctx, service.Session().GetSecretKey(ctx), totalTokens)
+			return service.App().AppKeyUsedQuota(ctx, appKey, totalTokens)
 		}); err != nil {
 			logger.Error(ctx, err)
 			panic(err)

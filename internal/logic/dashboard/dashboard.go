@@ -28,7 +28,7 @@ func (s *sDashboard) Subscription(ctx context.Context) (*model.DashboardSubscrip
 		logger.Debugf(ctx, "sDashboard Subscription time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	quota := service.Session().GetUser(ctx).Quota
+	quota := 0
 
 	if service.Session().GetAppIsLimitQuota(ctx) {
 
@@ -52,6 +52,17 @@ func (s *sDashboard) Subscription(ctx context.Context) (*model.DashboardSubscrip
 		quota = key.Quota
 	}
 
+	if quota == 0 {
+
+		user, err := service.User().GetUser(ctx, service.Session().GetUserId(ctx))
+		if err != nil {
+			logger.Errorf(ctx, "sDashboard Subscription GetUser error: %v", err)
+			return nil, err
+		}
+
+		quota = user.Quota
+	}
+
 	return &model.DashboardSubscriptionRes{
 		Object:             "billing_subscription",
 		HasPaymentMethod:   true,
@@ -70,7 +81,7 @@ func (s *sDashboard) Usage(ctx context.Context) (*model.DashboardUsageRes, error
 		logger.Debugf(ctx, "sDashboard Usage time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	usedQuota := service.Session().GetUser(ctx).UsedQuota
+	usedQuota := 0
 
 	if service.Session().GetAppIsLimitQuota(ctx) {
 
@@ -92,6 +103,17 @@ func (s *sDashboard) Usage(ctx context.Context) (*model.DashboardUsageRes, error
 		}
 
 		usedQuota = key.UsedQuota
+	}
+
+	if usedQuota == 0 {
+
+		user, err := service.User().GetUser(ctx, service.Session().GetUserId(ctx))
+		if err != nil {
+			logger.Errorf(ctx, "sDashboard Usage GetUser error: %v", err)
+			return nil, err
+		}
+
+		usedQuota = user.UsedQuota
 	}
 
 	return &model.DashboardUsageRes{

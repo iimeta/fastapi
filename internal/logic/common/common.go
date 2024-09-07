@@ -37,6 +37,10 @@ func New() service.ICommon {
 // 解析密钥
 func (s *sCommon) ParseSecretKey(ctx context.Context, secretKey string) (int, int, error) {
 
+	if !gstr.HasPrefix(secretKey, "sk-FastAPI") {
+		return 0, 0, errors.ERR_INVALID_API_KEY
+	}
+
 	secretKey = strings.TrimPrefix(secretKey, "sk-FastAPI")
 
 	userId, err := gregex.ReplaceString("[a-zA-Z-]*", "", secretKey[:len(secretKey)/2])

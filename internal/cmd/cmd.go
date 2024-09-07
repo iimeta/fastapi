@@ -108,7 +108,7 @@ var (
 )
 
 func beforeServeHook(r *ghttp.Request) {
-	logger.Debugf(r.GetCtx(), "beforeServeHook ClientIp: %s, RemoteIp: %s, IsFile: %t, URI: %s", r.GetClientIp(), r.GetRemoteIp(), r.IsFileRequest(), r.RequestURI)
+	logger.Infof(r.GetCtx(), "beforeServeHook ClientIp: %s, RemoteIp: %s, IsFile: %t, URI: %s", r.GetClientIp(), r.GetRemoteIp(), r.IsFileRequest(), r.RequestURI)
 	r.Response.CORSDefault()
 }
 
@@ -126,6 +126,8 @@ func middleware(r *ghttp.Request) {
 		r.Exit()
 		return
 	}
+
+	logger.Infof(r.GetCtx(), "middleware secretKey: %s", secretKey)
 
 	if err := service.Auth().Authenticator(r.GetCtx(), secretKey); err != nil {
 		err := errors.Error(r.GetCtx(), err)

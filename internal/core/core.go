@@ -19,13 +19,13 @@ import (
 
 func init() {
 
-	var (
-		ctx = gctx.New()
-	)
+	ctx := gctx.New()
+
+	logger.Info(ctx, "core init ing...")
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "core init time: %d", gtime.TimestampMilli()-now)
+		logger.Infof(ctx, "core init time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	users, err := service.User().List(ctx)
@@ -40,17 +40,17 @@ func init() {
 			panic(err)
 		}
 
+		err = service.User().SaveCacheUserQuota(ctx, user.UserId, user.Quota)
+		if err != nil {
+			panic(err)
+		}
+
 		if _, err = redis.HSetStrAny(ctx, fmt.Sprintf(consts.API_USAGE_KEY, user.UserId), consts.USER_QUOTA_FIELD, user.Quota); err != nil {
 			panic(err)
 		}
 
 		return user.UserId
 	})
-
-	apps, err := service.App().List(ctx)
-	if err != nil {
-		panic(err)
-	}
 
 	keys, err := service.Key().List(ctx, 1)
 	if err != nil {
@@ -65,12 +65,27 @@ func init() {
 			panic(err)
 		}
 
+		err = service.App().SaveCacheAppKeyQuota(ctx, key.Key, key.Quota)
+		if err != nil {
+			panic(err)
+		}
+
 		keyMap[key.AppId] = append(keyMap[key.AppId], key)
+	}
+
+	apps, err := service.App().List(ctx)
+	if err != nil {
+		panic(err)
 	}
 
 	for _, app := range apps {
 
 		err = service.App().SaveCacheApp(ctx, app)
+		if err != nil {
+			panic(err)
+		}
+
+		err = service.App().SaveCacheAppQuota(ctx, app.AppId, app.Quota)
 		if err != nil {
 			panic(err)
 		}
@@ -90,7 +105,6 @@ func init() {
 				panic(err)
 			}
 		}
-
 	}
 
 	// 获取所有公司

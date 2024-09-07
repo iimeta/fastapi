@@ -122,7 +122,6 @@ func (s *sSession) GetUser(ctx context.Context) *model.User {
 
 	user := ctx.Value(consts.SESSION_USER)
 	if user == nil {
-		logger.Debug(ctx, "user is nil")
 		return nil
 	}
 
@@ -141,7 +140,6 @@ func (s *sSession) GetApp(ctx context.Context) *model.App {
 
 	app := ctx.Value(consts.SESSION_APP)
 	if app == nil {
-		logger.Debug(ctx, "app is nil")
 		return nil
 	}
 
@@ -160,7 +158,6 @@ func (s *sSession) GetKey(ctx context.Context) *model.Key {
 
 	key := ctx.Value(consts.SESSION_KEY)
 	if key == nil {
-		logger.Debug(ctx, "key is nil")
 		return nil
 	}
 
