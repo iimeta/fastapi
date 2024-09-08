@@ -55,7 +55,6 @@ func (s *sApp) GetApp(ctx context.Context, appId int) (*model.App, error) {
 		Id:             app.Id,
 		AppId:          app.AppId,
 		Name:           app.Name,
-		Type:           app.Type,
 		Models:         app.Models,
 		IsLimitQuota:   app.IsLimitQuota,
 		Quota:          app.Quota,
@@ -91,7 +90,6 @@ func (s *sApp) List(ctx context.Context) ([]*model.App, error) {
 			Id:             result.Id,
 			AppId:          result.AppId,
 			Name:           result.Name,
-			Type:           result.Type,
 			Models:         result.Models,
 			IsLimitQuota:   result.IsLimitQuota,
 			Quota:          result.Quota,
@@ -234,7 +232,6 @@ func (s *sApp) UpdateCacheApp(ctx context.Context, app *entity.App) {
 		Id:             app.Id,
 		AppId:          app.AppId,
 		Name:           app.Name,
-		Type:           app.Type,
 		Models:         app.Models,
 		IsLimitQuota:   app.IsLimitQuota,
 		Quota:          app.Quota,
@@ -336,8 +333,8 @@ func (s *sApp) GetCacheAppKey(ctx context.Context, secretKey string) (*model.Key
 		return key, nil
 	}
 
-	if keyCacheValue := s.appKeyCache.GetVal(ctx, secretKey); keyCacheValue != nil {
-		return keyCacheValue.(*model.Key), nil
+	if appKeyCacheValue := s.appKeyCache.GetVal(ctx, secretKey); appKeyCacheValue != nil {
+		return appKeyCacheValue.(*model.Key), nil
 	}
 
 	reply, err := redis.Get(ctx, fmt.Sprintf(consts.API_APP_KEY_KEY, secretKey))
@@ -546,7 +543,7 @@ func (s *sApp) SubscribeKey(ctx context.Context, msg string) error {
 
 	var key *entity.Key
 	switch message.Action {
-	case consts.ACTION_CREATE, consts.ACTION_UPDATE, consts.ACTION_STATUS:
+	case consts.ACTION_CREATE, consts.ACTION_UPDATE, consts.ACTION_STATUS, consts.ACTION_MODELS:
 
 		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &key); err != nil {
 			logger.Error(ctx, err)

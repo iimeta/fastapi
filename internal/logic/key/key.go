@@ -693,7 +693,6 @@ func (s *sKey) Subscribe(ctx context.Context, msg string) error {
 		if key.Type == 1 {
 			service.App().UpdateCacheAppKey(ctx, key)
 		} else {
-
 			if key.IsAgentsOnly {
 				service.ModelAgent().UpdateCacheModelAgentKey(ctx, nil, key)
 			} else {

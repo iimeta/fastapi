@@ -4,7 +4,6 @@ type App struct {
 	Id             string   `json:"id,omitempty"`               // ID
 	AppId          int      `json:"app_id,omitempty"`           // 应用ID
 	Name           string   `json:"name,omitempty"`             // 应用名称
-	Type           int      `json:"type,omitempty"`             // 应用类型
 	Models         []string `json:"models,omitempty"`           // 模型权限
 	IsLimitQuota   bool     `json:"is_limit_quota,omitempty"`   // 是否限制额度
 	Quota          int      `json:"quota,omitempty"`            // 剩余额度

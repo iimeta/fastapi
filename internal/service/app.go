@@ -43,7 +43,7 @@ type (
 		// 移除缓存中的应用密钥信息
 		RemoveCacheAppKey(ctx context.Context, secretKey string)
 		// 应用密钥花费额度
-		AppKeySpendQuota(ctx context.Context, secretKey string, quota, currentQuota int) error
+		AppKeySpendQuota(ctx context.Context, secretKey string, spendQuota, currentQuota int) error
 		// 应用密钥已用额度
 		AppKeyUsedQuota(ctx context.Context, secretKey string, quota int) error
 		// 保存应用密钥额度到缓存
