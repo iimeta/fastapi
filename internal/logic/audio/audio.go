@@ -322,7 +322,9 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 
 			realModel.ModelAgent = modelAgent
 
-			audioReq := &model.AudioReq{}
+			audioReq := &model.AudioReq{
+				FilePath: params.FilePath,
+			}
 
 			audioRes := &model.AudioRes{
 				Text:         response.Text,
@@ -519,6 +521,7 @@ func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 		Text:         audioRes.Text,
 		Characters:   audioRes.Characters,
 		Minute:       audioRes.Minute,
+		FilePath:     audioReq.FilePath,
 		TotalTokens:  audioRes.TotalTokens,
 		TotalTime:    audioRes.TotalTime,
 		InternalTime: audioRes.InternalTime,

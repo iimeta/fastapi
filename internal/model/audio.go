@@ -1,7 +1,8 @@
 package model
 
 type AudioReq struct {
-	Input string `bson:"input,omitempty"` // 输入文本
+	Input    string `json:"input,omitempty"`     // 输入文本
+	FilePath string `json:"file_path,omitempty"` // 文件路径
 }
 
 type AudioRes struct {
