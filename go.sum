@@ -42,8 +42,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f h1:lO4WD4F/rVNCu3HqELle0jiPLLBs70cWOduZpkS1E78=
 github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f/go.mod h1:cuUVRXasLTGF7a8hSLbxyZXjz+1KgoB3wDUb6vlszIc=
-github.com/dlclark/regexp2 v1.11.2 h1:/u628IuisSTwri5/UKloiIsH8+qF2Pu7xEQX+yIKg68=
-github.com/dlclark/regexp2 v1.11.2/go.mod h1:DHkYz0B9wPfa6wondMfaivmHpzrQ3v9q8cnmRbL6yW8=
+github.com/dlclark/regexp2 v1.11.4 h1:rPYF9/LECdNymJufQKmri9gV604RvvABwgOA8un7yAo=
+github.com/dlclark/regexp2 v1.11.4/go.mod h1:DHkYz0B9wPfa6wondMfaivmHpzrQ3v9q8cnmRbL6yW8=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
 github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
@@ -108,10 +108,10 @@ github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aN
 github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/grokify/html-strip-tags-go v0.1.0 h1:03UrQLjAny8xci+R+qjCce/MYnpNXCtgzltlQbOBae4=
 github.com/grokify/html-strip-tags-go v0.1.0/go.mod h1:ZdzgfHEzAfz9X6Xe5eBLVblWIxXfYSQ40S/VKrAOGpc=
-github.com/iimeta/go-openai v0.0.0-20240902022429-1f264949b4d8 h1:DfBSOI2YnGbZfOCmRnVto5VzDGkhkJ30sNwgRzv8Pn4=
-github.com/iimeta/go-openai v0.0.0-20240902022429-1f264949b4d8/go.mod h1:7vOUOtganSn9UG2rfFHKKgFDFCIxZBJlVa0kqncrFRY=
-github.com/iimeta/tiktoken-go v0.0.0-20240727093849-292e86033509 h1:U1048KUz/aNrjlLbycSM0vF8u+Cg/daJpDsTorApEBs=
-github.com/iimeta/tiktoken-go v0.0.0-20240727093849-292e86033509/go.mod h1:3RjX+Jrckkk+CtEaH24PQMOLqGVRMVtUsjJ3Zo30pag=
+github.com/iimeta/go-openai v0.0.0-20240909154541-82987cc99a3c h1:llvW/u4Z964gq+2UmdeJfnWkJMGDQsENo39tGsC6enQ=
+github.com/iimeta/go-openai v0.0.0-20240909154541-82987cc99a3c/go.mod h1:Mi2qipotrbEJUVbJ+ka9R6UWWDUq+VygUKrSVOXW3bE=
+github.com/iimeta/tiktoken-go v0.0.0-20240909154636-d62f581d22a2 h1:9zfRIFNo1Mw67mtbM/wj4gTP8hlvTnmcVJ+/JvAhb08=
+github.com/iimeta/tiktoken-go v0.0.0-20240909154636-d62f581d22a2/go.mod h1:4ToJU7Da2vvhl0frT8gGor7kVS3siPjY9jR3BALKPg0=
 github.com/klauspost/compress v1.13.6 h1:P76CopJELS0TiO2mebmnzgWaajssP/EszplttgQxcgc=
 github.com/klauspost/compress v1.13.6/go.mod h1:/3/Vjq9QcHkK5uEr5lBEmyoZ1iFhe47etQ6QUkpK6sk=
 github.com/magiconair/properties v1.8.7 h1:IeQXZAiQcpL9mgcAe1Nu6cX9LLw6ExEHKjN0VQdvPDY=
