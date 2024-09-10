@@ -232,6 +232,10 @@ func (s *sUser) RemoveCacheUser(ctx context.Context, userId int) {
 		logger.Error(ctx, err)
 	}
 
+	if _, err := s.userQuotaCache.Remove(ctx, userId); err != nil {
+		logger.Error(ctx, err)
+	}
+
 	if _, err := redis.Del(ctx, fmt.Sprintf(consts.API_USER_KEY, userId)); err != nil {
 		logger.Error(ctx, err)
 	}

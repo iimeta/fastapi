@@ -263,6 +263,10 @@ func (s *sApp) RemoveCacheApp(ctx context.Context, appId int) {
 		logger.Error(ctx, err)
 	}
 
+	if _, err := s.appQuotaCache.Remove(ctx, appId); err != nil {
+		logger.Error(ctx, err)
+	}
+
 	if _, err := redis.Del(ctx, fmt.Sprintf(consts.API_APP_KEY, appId)); err != nil {
 		logger.Error(ctx, err)
 	}
@@ -413,6 +417,10 @@ func (s *sApp) RemoveCacheAppKey(ctx context.Context, secretKey string) {
 	}()
 
 	if _, err := s.appKeyCache.Remove(ctx, secretKey); err != nil {
+		logger.Error(ctx, err)
+	}
+
+	if _, err := s.appKeyQuotaCache.Remove(ctx, secretKey); err != nil {
 		logger.Error(ctx, err)
 	}
 
