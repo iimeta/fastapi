@@ -28,6 +28,7 @@ var (
 	ERR_INTERNAL_ERROR               = NewError(500, 500, "Internal Error", "fastapi_error")
 	ERR_INVALID_PARAMETER            = NewError(400, "fastapi_error", "Invalid Parameter.", "fastapi_error")
 	ERR_UNSUPPORTED_FILE_FORMAT      = NewError(400, "fastapi_error", "Unsupported file format.", "fastapi_error")
+	ERR_FORBIDDEN                    = NewError(403, "fastapi_error", "Forbidden", "fastapi_error")
 	ERR_NOT_FOUND                    = NewError(404, "unknown_url", "Unknown request URL", "invalid_request_error")
 	ERR_NO_AVAILABLE_KEY             = NewError(500, "fastapi_error", "No available key", "fastapi_error")
 	ERR_NO_AVAILABLE_MODEL_AGENT     = NewError(500, "fastapi_error", "No available model agent", "fastapi_error")

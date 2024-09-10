@@ -2,9 +2,12 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/net/gipv4"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/errors"
+	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 )
@@ -74,6 +77,18 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 		return err
 	}
 
+	if !gipv4.IsIntranet(g.RequestFromCtx(ctx).GetClientIp()) {
+		if (len(key.IpWhitelist) > 0 && key.IpWhitelist[0] != "") || len(key.IpWhitelist) > 1 {
+			if !common.CheckIp(ctx, key.IpWhitelist) {
+				return errors.NewError(403, "fastapi_error", fmt.Sprintf("IP: %s Forbidden.", g.RequestFromCtx(ctx).GetClientIp()), "fastapi_error")
+			}
+		} else if (len(key.IpBlacklist) > 0 && key.IpBlacklist[0] != "") || len(key.IpBlacklist) > 1 {
+			if common.CheckIp(ctx, key.IpBlacklist) {
+				return errors.ERR_FORBIDDEN
+			}
+		}
+	}
+
 	if key.IsLimitQuota && (service.App().GetCacheAppKeyQuota(ctx, key.Key) <= 0 || (key.QuotaExpiresAt != 0 && key.QuotaExpiresAt < gtime.TimestampMilli())) {
 		err = errors.ERR_INSUFFICIENT_QUOTA
 		logger.Error(ctx, err)
@@ -136,6 +151,18 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 		err = errors.ERR_APP_DISABLED
 		logger.Error(ctx, err)
 		return err
+	}
+
+	if !gipv4.IsIntranet(g.RequestFromCtx(ctx).GetClientIp()) {
+		if (len(app.IpWhitelist) > 0 && app.IpWhitelist[0] != "") || len(app.IpWhitelist) > 1 {
+			if !common.CheckIp(ctx, app.IpWhitelist) {
+				return errors.NewError(403, "fastapi_error", fmt.Sprintf("IP: %s Forbidden.", g.RequestFromCtx(ctx).GetClientIp()), "fastapi_error")
+			}
+		} else if (len(app.IpBlacklist) > 0 && app.IpBlacklist[0] != "") || len(app.IpBlacklist) > 1 {
+			if common.CheckIp(ctx, app.IpBlacklist) {
+				return errors.ERR_FORBIDDEN
+			}
+		}
 	}
 
 	if app.IsLimitQuota && (service.App().GetCacheAppQuota(ctx, app.AppId) <= 0 || (app.QuotaExpiresAt != 0 && app.QuotaExpiresAt < gtime.TimestampMilli())) {
