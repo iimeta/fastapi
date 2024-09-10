@@ -175,6 +175,11 @@ func (s *sApp) SaveCacheApp(ctx context.Context, app *model.App) error {
 		return err
 	}
 
+	if err := s.appQuotaCache.Set(ctx, app.AppId, app.Quota, 0); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
 	return nil
 }
 
@@ -314,6 +319,11 @@ func (s *sApp) SaveCacheAppKey(ctx context.Context, key *model.Key) error {
 	service.Session().SaveKey(ctx, key)
 
 	if err := s.appKeyCache.Set(ctx, key.Key, key, 0); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	if err := s.appKeyQuotaCache.Set(ctx, key.Key, key.Quota, 0); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
