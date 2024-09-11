@@ -1,7 +1,9 @@
 package common
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
@@ -16,7 +18,6 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"net"
-	"slices"
 	"strings"
 )
 
@@ -153,6 +154,104 @@ func HandleMessages(messages []sdkm.ChatCompletionMessage) []sdkm.ChatCompletion
 	return newMessages
 }
 
-func CheckIp(ctx context.Context, ips []string) bool {
-	return slices.Contains(ips, g.RequestFromCtx(ctx).GetClientIp())
+func CheckIp(ctx context.Context, ipWhitelist, ipBlacklist []string) error {
+
+	clientIp := g.RequestFromCtx(ctx).GetClientIp()
+
+	if clientIp == "127.0.0.1" || clientIp == "::1" {
+		return nil
+	}
+
+	//if addrs, err := net.InterfaceAddrs(); err == nil {
+	//	for _, addr := range addrs {
+	//		// 检查是否为IP地址, 而不是其他类型的地址(例如MAC地址)
+	//		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+	//			if ipnet.IP.To4() != nil && clientIp == ipnet.IP.String() {
+	//				return nil
+	//			}
+	//		}
+	//	}
+	//}
+
+	if (len(ipBlacklist) > 0 && ipBlacklist[0] != "") || len(ipBlacklist) > 1 {
+
+		for _, blacklist := range ipBlacklist {
+
+			if blacklist == "" {
+				continue
+			}
+
+			if blacklist == clientIp {
+				return errors.ERR_FORBIDDEN
+			}
+
+			if gstr.Contains(blacklist, "/") {
+
+				_, ipNet, err := net.ParseCIDR(blacklist)
+				if err != nil {
+					return err
+				}
+
+				if ipNet.Contains(net.ParseIP(clientIp)) {
+					return errors.ERR_FORBIDDEN
+				}
+			}
+
+			if gstr.Contains(blacklist, "-") {
+
+				ipRange := gstr.Split(blacklist, "-")
+
+				ipStart := net.ParseIP(ipRange[0])
+				ipEnd := net.ParseIP(ipRange[1])
+				ip := net.ParseIP(clientIp)
+
+				if bytes.Compare(ip, ipStart) >= 0 && bytes.Compare(ip, ipEnd) <= 0 {
+					return errors.ERR_FORBIDDEN
+				}
+			}
+		}
+	}
+
+	if (len(ipWhitelist) > 0 && ipWhitelist[0] != "") || len(ipWhitelist) > 1 {
+
+		for _, whitelist := range ipWhitelist {
+
+			if whitelist == "" {
+				continue
+			}
+
+			if whitelist == clientIp {
+				return nil
+			}
+
+			if gstr.Contains(whitelist, "/") {
+
+				_, ipNet, err := net.ParseCIDR(whitelist)
+				if err != nil {
+					return err
+				}
+
+				if ipNet.Contains(net.ParseIP(clientIp)) {
+					return nil
+				}
+			}
+
+			if gstr.Contains(whitelist, "-") {
+
+				ipRange := gstr.Split(whitelist, "-")
+
+				ipStart := net.ParseIP(ipRange[0])
+				ipEnd := net.ParseIP(ipRange[1])
+				ip := net.ParseIP(clientIp)
+
+				if bytes.Compare(ip, ipStart) >= 0 && bytes.Compare(ip, ipEnd) <= 0 {
+					return nil
+				}
+			}
+		}
+
+		return errors.NewError(403, "fastapi_error", fmt.Sprintf("IP: %s Forbidden.", g.RequestFromCtx(ctx).GetClientIp()), "fastapi_error")
+	}
+
+	return nil
 }
