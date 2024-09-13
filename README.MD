@@ -14,19 +14,18 @@
 
 ## 支持模型
 
-| 公司            | 模型                                    | Completion | Image |
-|---------------|-----------------------------------------|------------|-------| 
-| OpenAI / Azure | gpt3.5、4.0系列                         | ✔️         |       |
-| OpenAI / Azure | DALL-E-2、DALL-E-3                      |            | ✔️    |
-| 百度            | 文心一言                                | ✔️         |       |
-| 科大讯飞          | 星火                                    | ✔️         | ✔️    |
-| 阿里云           | 通义千问                                | ✔️         |       |
-| 智谱AI          | GLM系列                                 | ✔️         |       |
-| Google        | Gemini                                  | ✔️         |       |
-| DeepSeek      | deepseek-chat、deepseek-coder           | ✔️         |       |
-| 360智脑         | 360gpt系列                              | ✔️         |       |
-| Midjourney    | Midjourney-Proxy、Midjourney-Proxy-Plus |            | ✔️    |
-| Anthropic / GCP-Claude          | claude-3-5-sonnet-20240620、claude-3-opus-20240229、claude-3-haiku-20240307 |   ✔️         |     |
+| 公司                                    | 模型                                                                                                                                                                                     | Completion | Image | Audio | Embedding | Multimodal |
+|-----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|-------|-------|-----------|------------|
+| OpenAI<br/>Azure                        | gpt3.5、4.0系列、chatgpt-4o-latest、o1-mini、o1-preview<br/>DALL-E-2、DALL-E-3<br/>tts-1、tts-1-hd、whisper-1<br/>text-embedding-3-small、text-embedding-3-large、text-embedding-ada-002 | ✔️         | ✔️    | ✔️    | ✔️        | ✔️         |
+| 百度                                    | 文心一言                                                                                                                                                                                 | ✔️         |       |       |           |            |
+| 科大讯飞                                | 星火                                                                                                                                                                                     | ✔️         | ✔️    |       |           |            |
+| 阿里云                                  | 通义千问                                                                                                                                                                                 | ✔️         |       |       |           |            |
+| 智谱AI                                  | GLM系列                                                                                                                                                                                  | ✔️         |       |       |           |            |
+| Google                                  | Gemini                                                                                                                                                                                   | ✔️         |       |       |           | ✔️         |
+| DeepSeek                                | deepseek-chat、deepseek-coder                                                                                                                                                            | ✔️         |       |       |           |            |
+| 360智脑                                 | 360gpt系列                                                                                                                                                                               | ✔️         |       |       |           |            |
+| Midjourney                              | Midjourney-Proxy、Midjourney-Proxy-Plus                                                                                                                                                  |            | ✔️    |       |           |            |
+| Anthropic<br/>GCP-Claude<br/>AWS-Claude | claude-3-5-sonnet-20240620、claude-3-opus-20240229、claude-3-haiku-20240307                                                                                                              | ✔️         |       |       |           |            |
 
 ## 项目预览
 
