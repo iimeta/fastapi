@@ -162,16 +162,16 @@ func CheckIp(ctx context.Context, ipWhitelist, ipBlacklist []string) error {
 		return nil
 	}
 
-	//if addrs, err := net.InterfaceAddrs(); err == nil {
-	//	for _, addr := range addrs {
-	//		// 检查是否为IP地址, 而不是其他类型的地址(例如MAC地址)
-	//		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-	//			if ipnet.IP.To4() != nil && clientIp == ipnet.IP.String() {
-	//				return nil
-	//			}
-	//		}
-	//	}
-	//}
+	if addrs, err := net.InterfaceAddrs(); err == nil {
+		for _, addr := range addrs {
+			// 检查是否为IP地址, 而不是其他类型的地址(例如MAC地址)
+			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+				if ipnet.IP.To4() != nil && clientIp == ipnet.IP.String() {
+					return nil
+				}
+			}
+		}
+	}
 
 	if (len(ipBlacklist) > 0 && ipBlacklist[0] != "") || len(ipBlacklist) > 1 {
 

@@ -818,6 +818,9 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 						if response.Usage.CompletionTokens != 0 {
 							usage.CompletionTokens = response.Usage.CompletionTokens
 						}
+						if response.Usage.CompletionTokensDetails.ReasoningTokens != 0 {
+							usage.CompletionTokensDetails.ReasoningTokens = response.Usage.CompletionTokensDetails.ReasoningTokens
+						}
 						if response.Usage.TotalTokens != 0 {
 							usage.TotalTokens = response.Usage.TotalTokens
 						} else {

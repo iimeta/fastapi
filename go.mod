@@ -49,7 +49,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.13.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/grokify/html-strip-tags-go v0.1.0 // indirect
-	github.com/iimeta/go-openai v0.0.0-20240913040533-63cf491470e8 // indirect
+	github.com/iimeta/go-openai v0.0.0-20240913090309-bf69ee45e9b1 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
