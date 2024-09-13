@@ -10,6 +10,7 @@ require (
 	github.com/gogf/gf/contrib/nosql/redis/v2 v2.7.3
 	github.com/gogf/gf/v2 v2.7.3
 	github.com/iimeta/fastapi-sdk v0.4.0
+	github.com/iimeta/tiktoken-go v0.0.0-20240913023457-97a6b8dfb0c7
 	github.com/redis/go-redis/v9 v9.6.1
 	github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300
 	github.com/tjfoc/gmsm v1.4.1
@@ -48,8 +49,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.13.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/grokify/html-strip-tags-go v0.1.0 // indirect
-	github.com/iimeta/go-openai v0.0.0-20240909154541-82987cc99a3c // indirect
-	github.com/iimeta/tiktoken-go v0.0.0-20240913023457-97a6b8dfb0c7 // indirect
+	github.com/iimeta/go-openai v0.0.0-20240913040533-63cf491470e8 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
