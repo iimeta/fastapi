@@ -25,7 +25,7 @@
 | DeepSeek                                | deepseek-chat、deepseek-coder                                                                                                                                                            | ✔️         |       |       |           |            |
 | 360智脑                                 | 360gpt系列                                                                                                                                                                               | ✔️         |       |       |           |            |
 | Midjourney                              | Midjourney-Proxy、Midjourney-Proxy-Plus                                                                                                                                                  |            | ✔️    |       |           |            |
-| Anthropic<br/>GCPClaude<br/>AWSClaude | claude-3-5-sonnet-20240620<br/>claude-3-opus-20240229<br/>claude-3-haiku-20240307                                                                                                              | ✔️         |       |       |           |            |
+| Anthropic<br/>GCPClaude<br/>AWSClaude   | claude-3-5-sonnet-20240620<br/>claude-3-opus-20240229<br/>claude-3-haiku-20240307                                                                                                        | ✔️         |       |       |           |            |
 
 ## 项目预览
 
