@@ -509,7 +509,7 @@ func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 	}()
 
 	// 不记录此错误日志
-	if audioRes.Error != nil && errors.Is(audioRes.Error, errors.ERR_MODEL_NOT_FOUND) {
+	if audioRes.Error != nil && (errors.Is(audioRes.Error, errors.ERR_MODEL_NOT_FOUND) || errors.Is(audioRes.Error, errors.ERR_MODEL_DISABLED)) {
 		return
 	}
 

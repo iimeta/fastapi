@@ -18,7 +18,7 @@ type (
 		// Generations
 		Generations(ctx context.Context, params sdkm.ImageRequest, fallbackModel *model.Model, retry ...int) (response sdkm.ImageResponse, err error)
 		// 保存日志
-		SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *mcommon.Retry, retry ...int)
+		SaveLog(ctx context.Context, reqModel *model.Model, realModel *model.Model, fallbackModel *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *mcommon.Retry, retry ...int)
 	}
 )
 

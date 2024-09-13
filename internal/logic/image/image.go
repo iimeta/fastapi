@@ -268,7 +268,7 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 	}()
 
 	// 不记录此错误日志
-	if imageRes.Error != nil && errors.Is(imageRes.Error, errors.ERR_MODEL_NOT_FOUND) {
+	if imageRes.Error != nil && (errors.Is(imageRes.Error, errors.ERR_MODEL_NOT_FOUND) || errors.Is(imageRes.Error, errors.ERR_MODEL_DISABLED)) {
 		return
 	}
 

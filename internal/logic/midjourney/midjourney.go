@@ -500,7 +500,7 @@ func (s *sMidjourney) SaveLog(ctx context.Context, reqModel, realModel, fallback
 	}()
 
 	// 不记录此错误日志
-	if response.Error != nil && errors.Is(response.Error, errors.ERR_MODEL_NOT_FOUND) {
+	if response.Error != nil && (errors.Is(response.Error, errors.ERR_MODEL_NOT_FOUND) || errors.Is(response.Error, errors.ERR_MODEL_DISABLED)) {
 		return
 	}
 

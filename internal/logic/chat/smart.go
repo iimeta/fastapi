@@ -7,7 +7,6 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
-	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
@@ -19,6 +18,7 @@ import (
 	mcommon "github.com/iimeta/fastapi/internal/model/common"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
+	"github.com/iimeta/tiktoken-go"
 	"math"
 )
 
@@ -55,10 +55,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 
 			model := realModel.Model
-
-			if common.GetCorpCode(ctx, realModel.Corp) != consts.CORP_OPENAI && common.GetCorpCode(ctx, realModel.Corp) != consts.CORP_AZURE {
-				model = consts.DEFAULT_MODEL
-			} else if !gstr.HasPrefix(model, consts.GPT_PREFIX) {
+			if !tiktoken.IsEncodingForModel(model) {
 				model = consts.DEFAULT_MODEL
 			}
 

@@ -271,7 +271,7 @@ func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel, fallbackM
 	}()
 
 	// 不记录此错误日志
-	if completionsRes.Error != nil && errors.Is(completionsRes.Error, errors.ERR_MODEL_NOT_FOUND) {
+	if completionsRes.Error != nil && (errors.Is(completionsRes.Error, errors.ERR_MODEL_NOT_FOUND) || errors.Is(completionsRes.Error, errors.ERR_MODEL_DISABLED)) {
 		return
 	}
 
