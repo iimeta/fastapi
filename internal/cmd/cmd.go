@@ -108,7 +108,7 @@ var (
 )
 
 func beforeServeHook(r *ghttp.Request) {
-	logger.Infof(r.GetCtx(), "beforeServeHook ClientIp: %s, RemoteIp: %s, IsFile: %t, URI: %s", r.GetClientIp(), r.GetRemoteIp(), r.IsFileRequest(), r.RequestURI)
+	logger.Infof(r.GetCtx(), "beforeServeHook Host: %s, ClientIp: %s, RemoteIp: %s, IsFile: %t, URI: %s", r.GetHost(), r.GetClientIp(), r.GetRemoteIp(), r.IsFileRequest(), r.RequestURI)
 	r.Response.CORSDefault()
 }
 
