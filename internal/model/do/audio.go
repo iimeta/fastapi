@@ -52,6 +52,7 @@ type Audio struct {
 	IsRetry              bool                   `bson:"is_retry,omitempty"`                // 是否重试
 	Retry                *common.Retry          `bson:"retry,omitempty"`                   // 重试
 	Status               int                    `bson:"status,omitempty"`                  // 状态[1:成功, -1:失败, 2:中止, 3:重试]
+	Host                 string                 `bson:"host,omitempty"`                    // Host
 	Creator              string                 `bson:"creator,omitempty"`                 // 创建人
 	Updater              string                 `bson:"updater,omitempty"`                 // 更新人
 	CreatedAt            int64                  `bson:"created_at,omitempty"`              // 创建时间

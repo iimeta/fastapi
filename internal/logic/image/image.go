@@ -290,6 +290,7 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 		RemoteIp:       g.RequestFromCtx(ctx).GetRemoteIp(),
 		LocalIp:        util.GetLocalIp(),
 		Status:         1,
+		Host:           g.RequestFromCtx(ctx).GetHost(),
 	}
 
 	for _, data := range imageRes.Data {

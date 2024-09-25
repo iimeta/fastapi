@@ -21,7 +21,7 @@ type (
 		// Transcriptions
 		Transcriptions(ctx context.Context, params *v1.TranscriptionsReq, fallbackModel *model.Model, retry ...int) (response sdkm.AudioResponse, err error)
 		// 保存日志
-		SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, audioReq *model.AudioReq, audioRes *model.AudioRes, retryInfo *mcommon.Retry, retry ...int)
+		SaveLog(ctx context.Context, reqModel *model.Model, realModel *model.Model, fallbackModel *model.Model, key *model.Key, audioReq *model.AudioReq, audioRes *model.AudioRes, retryInfo *mcommon.Retry, retry ...int)
 	}
 )
 

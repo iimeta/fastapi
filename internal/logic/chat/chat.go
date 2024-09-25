@@ -969,6 +969,7 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel 
 		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
 		LocalIp:      util.GetLocalIp(),
 		Status:       1,
+		Host:         g.RequestFromCtx(ctx).GetHost(),
 	}
 
 	if slices.Contains(config.Cfg.RecordLogs, "prompt") {

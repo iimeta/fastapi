@@ -35,21 +35,21 @@ mongodb:
 
 # 日志配置
 logger:
-  path: "./log/"                          # 日志文件路径。默认为空，表示关闭，仅输出到终端
-  file: "{Ymd_H}.log"                     # 日志文件格式。默认为"{Y-m-d}.log"
-  prefix: ""                              # 日志内容输出前缀。默认为空
-  level: "debug"                          # 日志输出级别, debug, info, error, all
-  ctxKeys: [ "user_id", "app_id", "sk" ]  # 自定义Context上下文变量名称，自动打印Context的变量到日志中。默认为空
-  header: true                            # 是否打印日志的头信息。默认true
-  stdout: true                            # 日志是否同时输出到终端。默认true
-  rotateSize: 0                           # 按照日志文件大小对文件进行滚动切分。默认为0，表示关闭滚动切分特性
-  rotateExpire: 0                         # 按照日志文件时间间隔对文件滚动切分。默认为0，表示关闭滚动切分特性
-  rotateBackupLimit: 0                    # 按照切分的文件数量清理切分文件，当滚动切分特性开启时有效。默认为0，表示不备份，切分则删除
-  rotateBackupExpire: 0                   # 按照切分的文件有效期清理切分文件，当滚动切分特性开启时有效。默认为0，表示不备份，切分则删除
-  rotateBackupCompress: 0                 # 滚动切分文件的压缩比（0-9）。默认为0，表示不压缩
-  rotateCheckInterval: "1h"               # 滚动切分的时间检测间隔，一般不需要设置。默认为1小时
-  stdoutColorDisabled: false              # 关闭终端的颜色打印。默认开启
-  writerColorEnable: false                # 日志文件是否带上颜色。默认false，表示不带颜色
+  path: "./log/"                                  # 日志文件路径。默认为空，表示关闭，仅输出到终端
+  file: "{Ymd_H}.log"                             # 日志文件格式。默认为"{Y-m-d}.log"
+  prefix: ""                                      # 日志内容输出前缀。默认为空
+  level: "debug"                                  # 日志输出级别, debug, info, error, all
+  ctxKeys: [ "host", "user_id", "app_id", "sk" ]  # 自定义Context上下文变量名称，自动打印Context的变量到日志中。默认为空
+  header: true                                    # 是否打印日志的头信息。默认true
+  stdout: true                                    # 日志是否同时输出到终端。默认true
+  rotateSize: 0                                   # 按照日志文件大小对文件进行滚动切分。默认为0，表示关闭滚动切分特性
+  rotateExpire: 0                                 # 按照日志文件时间间隔对文件滚动切分。默认为0，表示关闭滚动切分特性
+  rotateBackupLimit: 0                            # 按照切分的文件数量清理切分文件，当滚动切分特性开启时有效。默认为0，表示不备份，切分则删除
+  rotateBackupExpire: 0                           # 按照切分的文件有效期清理切分文件，当滚动切分特性开启时有效。默认为0，表示不备份，切分则删除
+  rotateBackupCompress: 0                         # 滚动切分文件的压缩比（0-9）。默认为0，表示不压缩
+  rotateCheckInterval: "1h"                       # 滚动切分的时间检测间隔，一般不需要设置。默认为1小时
+  stdoutColorDisabled: false                      # 关闭终端的颜色打印。默认开启
+  writerColorEnable: false                        # 日志文件是否带上颜色。默认false，表示不带颜色
 
 # 本地配置
 local:
