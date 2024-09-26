@@ -525,6 +525,7 @@ func (s *sMidjourney) SaveLog(ctx context.Context, reqModel, realModel, fallback
 		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
 		LocalIp:      util.GetLocalIp(),
 		Status:       1,
+		Host:         g.RequestFromCtx(ctx).GetHost(),
 	}
 
 	if reqModel != nil {
