@@ -525,7 +525,11 @@ func (s *sModelAgent) DisabledModelAgentKey(ctx context.Context, key *model.Key,
 		AutoDisabledReason: disabledReason,
 	})
 
-	if err := dao.Key.UpdateById(ctx, key.Id, bson.M{"status": 2}); err != nil {
+	if err := dao.Key.UpdateById(ctx, key.Id, bson.M{
+		"status":               2,
+		"is_auto_disabled":     true,
+		"auto_disabled_reason": disabledReason,
+	}); err != nil {
 		logger.Error(ctx, err)
 	}
 }
@@ -913,23 +917,25 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 	}()
 
 	key := &model.Key{
-		Id:             newData.Id,
-		UserId:         newData.UserId,
-		AppId:          newData.AppId,
-		Corp:           newData.Corp,
-		Key:            newData.Key,
-		Type:           newData.Type,
-		Models:         newData.Models,
-		ModelAgents:    newData.ModelAgents,
-		IsLimitQuota:   newData.IsLimitQuota,
-		Quota:          newData.Quota,
-		UsedQuota:      newData.UsedQuota,
-		QuotaExpiresAt: newData.QuotaExpiresAt,
-		RPM:            newData.RPM,
-		RPD:            newData.RPD,
-		IpWhitelist:    newData.IpWhitelist,
-		IpBlacklist:    newData.IpBlacklist,
-		Status:         newData.Status,
+		Id:                 newData.Id,
+		UserId:             newData.UserId,
+		AppId:              newData.AppId,
+		Corp:               newData.Corp,
+		Key:                newData.Key,
+		Type:               newData.Type,
+		Models:             newData.Models,
+		ModelAgents:        newData.ModelAgents,
+		IsLimitQuota:       newData.IsLimitQuota,
+		Quota:              newData.Quota,
+		UsedQuota:          newData.UsedQuota,
+		QuotaExpiresAt:     newData.QuotaExpiresAt,
+		RPM:                newData.RPM,
+		RPD:                newData.RPD,
+		IpWhitelist:        newData.IpWhitelist,
+		IpBlacklist:        newData.IpBlacklist,
+		Status:             newData.Status,
+		IsAutoDisabled:     newData.IsAutoDisabled,
+		AutoDisabledReason: newData.AutoDisabledReason,
 	}
 
 	// 用于处理oldData时判断作用
