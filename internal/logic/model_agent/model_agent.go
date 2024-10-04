@@ -156,7 +156,7 @@ func (s *sModelAgent) ListAll(ctx context.Context) ([]*model.ModelAgent, error) 
 		return nil, err
 	}
 
-	modelList, err := dao.Model.Find(ctx, bson.M{"status": 1})
+	modelList, err := dao.Model.Find(ctx, bson.M{})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -198,7 +198,7 @@ func (s *sModelAgent) GetModelAgentKeys(ctx context.Context, id string) ([]*mode
 		logger.Debugf(ctx, "sModelAgent GetModelAgentKeys time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	results, err := dao.Key.Find(ctx, bson.M{"type": 2, "status": 1, "model_agents": bson.M{"$in": []string{id}}})
+	results, err := dao.Key.Find(ctx, bson.M{"type": 2, "model_agents": bson.M{"$in": []string{id}}})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
