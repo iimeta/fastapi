@@ -53,6 +53,16 @@ var (
 				)
 			})
 
+			s.BindHandler("/v1/realtime", func(r *ghttp.Request) {
+				middleware(r)
+				if err := service.Realtime().Realtime(r); err != nil {
+					err := errors.Error(r.GetCtx(), err)
+					r.Response.Header().Set("Content-Type", "application/json")
+					r.Response.WriteStatus(err.Status(), gjson.MustEncodeString(err))
+					r.Exit()
+				}
+			})
+
 			s.Group("/v1", func(v1 *ghttp.RouterGroup) {
 
 				v1.Middleware(middlewareHandlerResponse)

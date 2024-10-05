@@ -18,6 +18,7 @@ import (
 	_ "github.com/iimeta/fastapi/internal/logic/midjourney"
 	_ "github.com/iimeta/fastapi/internal/logic/model"
 	_ "github.com/iimeta/fastapi/internal/logic/model_agent"
+	_ "github.com/iimeta/fastapi/internal/logic/realtime"
 	_ "github.com/iimeta/fastapi/internal/logic/session"
 	_ "github.com/iimeta/fastapi/internal/logic/user"
 )
