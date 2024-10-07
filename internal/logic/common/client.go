@@ -22,6 +22,10 @@ func NewEmbeddingClient(ctx context.Context, model *model.Model, key, baseURL, p
 	return sdk.NewEmbeddingClient(ctx, model.Model, key, baseURL, path, config.Cfg.Http.ProxyUrl), nil
 }
 
+func NewRealtimeClient(ctx context.Context, model *model.Model, key, baseURL, path string) (*sdk.RealtimeClient, error) {
+	return sdk.NewRealtimeClient(ctx, model.Model, key, baseURL, path, config.Cfg.Http.ProxyUrl), nil
+}
+
 func GetCorpCode(ctx context.Context, corpId string) string {
 
 	corp, err := service.Corp().GetCacheCorp(ctx, corpId)

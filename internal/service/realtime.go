@@ -6,13 +6,16 @@
 package service
 
 import (
+	"context"
+
 	"github.com/gogf/gf/v2/net/ghttp"
+	"github.com/iimeta/fastapi/internal/model"
 )
 
 type (
 	IRealtime interface {
 		// Realtime
-		Realtime(r *ghttp.Request) error
+		Realtime(ctx context.Context, r *ghttp.Request, params model.RealtimeRequest, fallbackModel *model.Model, retry ...int) (err error)
 	}
 )
 
