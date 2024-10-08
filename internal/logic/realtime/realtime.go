@@ -18,7 +18,6 @@ import (
 	mcommon "github.com/iimeta/fastapi/internal/model/common"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
-	"github.com/iimeta/fastapi/utility/util"
 	"github.com/iimeta/tiktoken-go"
 	"io"
 	"math"
@@ -308,19 +307,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 		return err
 	}
 
-	var (
-		requestChan = make(chan *sdkm.RealtimeRequest)
-		messageType = websocket.TextMessage
-		message     []byte
-	)
-
-	defer close(requestChan)
-
-	_ = grpool.Add(ctx, func(ctx context.Context) {
-		requestChan <- &sdkm.RealtimeRequest{
-			MessageType: messageType,
-		}
-	})
+	requestChan := make(chan *sdkm.RealtimeRequest)
 
 	response, err := client.Realtime(ctx, requestChan)
 	if err != nil {
@@ -329,7 +316,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 		// 记录错误次数和禁用
 		service.Common().RecordError(ctx, realModel, k, modelAgent)
 
-		_, isDisabled := common.IsNeedRetry(err)
+		isRetry, isDisabled := common.IsNeedRetry(err)
 
 		if isDisabled {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -343,37 +330,34 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 			}
 		}
 
-		// todo
-		logger.Debug(ctx, agentTotal, keyTotal)
+		if isRetry {
+			if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
+				if realModel.IsEnableFallback {
+					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+						retryInfo = &mcommon.Retry{
+							IsRetry:    true,
+							RetryCount: len(retry),
+							ErrMsg:     err.Error(),
+						}
+						return s.Realtime(ctx, r, params, fallbackModel)
+					}
+				}
+				return err
+			}
 
-		//if isRetry {
-		//	if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
-		//		if realModel.IsEnableFallback {
-		//			if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-		//				retryInfo = &mcommon.Retry{
-		//					IsRetry:    true,
-		//					RetryCount: len(retry),
-		//					ErrMsg:     err.Error(),
-		//				}
-		//				return s.Realtime(ctx, r, params, fallbackModel)
-		//			}
-		//		}
-		//		return err
-		//	}
-		//
-		//	retryInfo = &mcommon.Retry{
-		//		IsRetry:    true,
-		//		RetryCount: len(retry),
-		//		ErrMsg:     err.Error(),
-		//	}
-		//
-		//	return s.Realtime(ctx, r, params, fallbackModel, append(retry, 1)...)
-		//}
+			retryInfo = &mcommon.Retry{
+				IsRetry:    true,
+				RetryCount: len(retry),
+				ErrMsg:     err.Error(),
+			}
+
+			return s.Realtime(ctx, r, params, fallbackModel, append(retry, 1)...)
+		}
 
 		return err
 	}
 
-	if err := grpool.Add(ctx, func(ctx context.Context) {
+	if err := grpool.AddWithRecover(ctx, func(ctx context.Context) {
 
 		defer close(response)
 
@@ -414,11 +398,6 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 						}
 					}
 
-					if err = util.SSEServer(ctx, "[DONE]"); err != nil {
-						logger.Error(ctx, err)
-						return
-					}
-
 					return
 				}
 
@@ -426,44 +405,6 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 
 				// 记录错误次数和禁用
 				service.Common().RecordError(ctx, realModel, k, modelAgent)
-
-				_, isDisabled := common.IsNeedRetry(err)
-
-				if isDisabled {
-					if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-						if realModel.IsEnableModelAgent {
-							service.ModelAgent().DisabledModelAgentKey(ctx, k, err.Error())
-						} else {
-							service.Key().DisabledModelKey(ctx, k, err.Error())
-						}
-					}, nil); err != nil {
-						logger.Error(ctx, err)
-					}
-				}
-
-				//if isRetry {
-				//	if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
-				//		if realModel.IsEnableFallback {
-				//			if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-				//				retryInfo = &mcommon.Retry{
-				//					IsRetry:    true,
-				//					RetryCount: len(retry),
-				//					ErrMsg:     err.Error(),
-				//				}
-				//				return s.Realtime(ctx, r, params, fallbackModel)
-				//			}
-				//		}
-				//		return
-				//	}
-				//
-				//	retryInfo = &mcommon.Retry{
-				//		IsRetry:    true,
-				//		RetryCount: len(retry),
-				//		ErrMsg:     err.Error(),
-				//	}
-				//
-				//	return s.Realtime(ctx, r, params, fallbackModel, append(retry, 1)...)
-				//}
 
 				return
 			}
@@ -494,27 +435,25 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 				}
 			}
 
-			// 替换成调用的模型
-			//response.Model = reqModel.Model
-
 			// OpenAI官方格式
 			if len(response.Message) > 0 {
-				//if err = conn.WriteJSON(response.Message); err != nil {
-				if err = conn.WriteMessage(messageType, response.Message); err != nil {
+				if err = conn.WriteMessage(response.MessageType, response.Message); err != nil {
 					logger.Error(ctx, err)
 					return
 				}
 			}
 		}
 
-	}); err != nil {
+	}, nil); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
 
+	defer close(requestChan)
+
 	for {
 
-		messageType, message, err = conn.ReadMessage()
+		messageType, message, err := conn.ReadMessage()
 		if err != nil {
 
 			requestChan <- nil
