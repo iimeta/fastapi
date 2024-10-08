@@ -314,9 +314,10 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 		message     []byte
 	)
 
+	defer close(requestChan)
+
 	_ = grpool.Add(ctx, func(ctx context.Context) {
 		requestChan <- &sdkm.RealtimeRequest{
-			Model:       params.Model,
 			MessageType: messageType,
 		}
 	})
@@ -372,13 +373,17 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 		return err
 	}
 
-	defer close(response)
-
 	if err := grpool.Add(ctx, func(ctx context.Context) {
+
+		defer close(response)
 
 		for {
 
 			response := <-response
+
+			if response == nil {
+				return
+			}
 
 			connTime = response.ConnTime
 			duration = response.Duration
@@ -511,12 +516,18 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 
 		messageType, message, err = conn.ReadMessage()
 		if err != nil {
+
+			requestChan <- nil
+
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+				return nil
+			}
+
 			logger.Error(ctx, err)
 			return err
 		}
 
 		requestChan <- &sdkm.RealtimeRequest{
-			Model:       params.Model,
 			MessageType: messageType,
 			Message:     message,
 		}
