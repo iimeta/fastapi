@@ -11,7 +11,7 @@ type Chat struct {
 	ModelId              string                 `bson:"model_id,omitempty"`                // 模型ID
 	Name                 string                 `bson:"name,omitempty"`                    // 模型名称
 	Model                string                 `bson:"model,omitempty"`                   // 模型
-	Type                 int                    `bson:"type,omitempty"`                    // 模型类型[1:文生文, 2:文生图, 3:图生文, 4:图生图, 5:文生语音, 6:语音生文, 100:多模态]
+	Type                 int                    `bson:"type,omitempty"`                    // 模型类型[1:文生文, 2:文生图, 3:图生文, 4:图生图, 5:文生语音, 6:语音生文, 100:多模态, 101:多模态实时]
 	Key                  string                 `bson:"key,omitempty"`                     // 密钥
 	IsEnablePresetConfig bool                   `bson:"is_enable_preset_config,omitempty"` // 是否启用预设配置
 	PresetConfig         common.PresetConfig    `bson:"preset_config,omitempty"`           // 预设配置
@@ -32,6 +32,7 @@ type Chat struct {
 	Completion           string                 `bson:"completion,omitempty"`              // 补全(回答)
 	TextQuota            common.TextQuota       `bson:"text_quota,omitempty"`              // 文本额度
 	MultimodalQuota      common.MultimodalQuota `bson:"multimodal_quota,omitempty"`        // 多模态额度
+	RealtimeQuota        common.RealtimeQuota   `bson:"realtime_quota,omitempty"`          // 多模态实时额度
 	PromptTokens         int                    `bson:"prompt_tokens,omitempty"`           // 提示令牌数(提问令牌数)
 	CompletionTokens     int                    `bson:"completion_tokens,omitempty"`       // 补全令牌数(回答令牌数)
 	TotalTokens          int                    `bson:"total_tokens,omitempty"`            // 总令牌数

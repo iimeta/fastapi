@@ -34,6 +34,12 @@ type MultimodalQuota struct {
 	ImageQuotas []ImageQuota `bson:"image_quotas,omitempty" json:"image_quotas,omitempty"` // 图像额度
 }
 
+type RealtimeQuota struct {
+	TextQuota  TextQuota  `bson:"text_quota,omitempty"  json:"text_quota,omitempty"`  // 文本额度
+	AudioQuota AudioQuota `bson:"audio_quota,omitempty" json:"audio_quota,omitempty"` // 音频额度
+	FixedQuota int        `bson:"fixed_quota,omitempty" json:"fixed_quota,omitempty"` // 固定额度
+}
+
 type MidjourneyQuota struct {
 	Name       string `bson:"name,omitempty"        json:"name,omitempty"`        // 名称
 	Action     string `bson:"action,omitempty"      json:"action,omitempty"`      // 动作[IMAGINE, UPSCALE, VARIATION, ZOOM, PAN, DESCRIBE, BLEND, SHORTEN, SWAP_FACE]

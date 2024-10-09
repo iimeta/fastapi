@@ -20,7 +20,7 @@ type (
 		// 根据模型ID获取模型信息
 		GetModelById(ctx context.Context, id string) (*model.Model, error)
 		// 根据model和secretKey获取模型信息
-		GetModelBySecretKey(ctx context.Context, m, secretKey string) (*model.Model, error)
+		GetModelBySecretKey(ctx context.Context, m string, secretKey string) (*model.Model, error)
 		// 模型列表
 		List(ctx context.Context, ids []string) ([]*model.Model, error)
 		// 全部模型列表
