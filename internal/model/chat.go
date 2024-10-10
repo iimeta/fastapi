@@ -13,6 +13,7 @@ type CompletionsReq struct {
 }
 
 type CompletionsRes struct {
+	Type         string     `json:"type"`
 	Completion   string     `json:"completion"`
 	Usage        sdkm.Usage `json:"usage"`
 	Error        error      `json:"err"`

@@ -972,7 +972,7 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel 
 		Host:         g.RequestFromCtx(ctx).GetHost(),
 	}
 
-	if slices.Contains(config.Cfg.RecordLogs, "prompt") {
+	if len(completionsReq.Messages) > 0 && slices.Contains(config.Cfg.RecordLogs, "prompt") {
 		chat.Prompt = gconv.String(completionsReq.Messages[len(completionsReq.Messages)-1].Content)
 	}
 

@@ -14,6 +14,7 @@ type RealtimeResponse struct {
 	EventId      string `json:"event_id"`
 	ItemId       string `json:"item_id"`
 	ContentIndex int    `json:"content_index"`
+	Text         string `json:"text"`
 	Transcript   string `json:"transcript"`
 	ResponseId   string `json:"response_id"`
 	OutputIndex  int    `json:"output_index"`
@@ -28,12 +29,14 @@ type RealtimeResponse struct {
 		Role    string `json:"role"`
 		Content []struct {
 			Type       string `json:"type"`
+			Text       string `json:"text"`
 			Transcript string `json:"transcript"`
 		} `json:"content"`
 	} `json:"item"`
 
 	Part struct {
 		Type       string `json:"type"`
+		Text       string `json:"text"`
 		Transcript string `json:"transcript"`
 	} `json:"part"`
 
@@ -56,7 +59,7 @@ type RealtimeResponse struct {
 		InputAudioTranscription interface{}   `json:"input_audio_transcription"`
 		ToolChoice              string        `json:"tool_choice"`
 		Temperature             float64       `json:"temperature"`
-		MaxResponseOutputTokens string        `json:"max_response_output_tokens"`
+		MaxResponseOutputTokens any           `json:"max_response_output_tokens"`
 		Tools                   []interface{} `json:"tools"`
 	} `json:"session"`
 
@@ -72,8 +75,9 @@ type RealtimeResponse struct {
 			Status  string `json:"status"`
 			Role    string `json:"role"`
 			Content []struct {
-				Type string `json:"type"`
-				Text string `json:"text"`
+				Type       string `json:"type"`
+				Text       string `json:"text"`
+				Transcript string `json:"transcript"`
 			} `json:"content"`
 		} `json:"output"`
 		Usage struct {
