@@ -282,18 +282,44 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 			if response.Error != nil {
 
 				if errors.Is(response.Error, io.EOF) {
+					if err := conn.Close(); err != nil {
+						logger.Error(ctx, err)
+					}
 					return
 				}
-
-				err = response.Error
 
 				// 记录错误次数和禁用
 				service.Common().RecordError(ctx, realModel, k, modelAgent)
 
+				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+					realModel.ModelAgent = modelAgent
+					enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
+					internalTime := gtime.TimestampMilli() - enterTime - totalTime
+
+					completionsRes := &model.CompletionsRes{
+						Error:        response.Error,
+						ConnTime:     connTime,
+						Duration:     duration,
+						TotalTime:    totalTime,
+						InternalTime: internalTime,
+						EnterTime:    enterTime,
+					}
+
+					s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &sdkm.ChatCompletionRequest{Stream: true}, completionsRes, retryInfo, false)
+
+				}); err != nil {
+					logger.Error(ctx, err)
+				}
+
+				if err := conn.Close(); err != nil {
+					logger.Error(ctx, err)
+				}
+
 				return
 			}
 
-			logger.Info(ctx, string(response.Message))
+			logger.Debugf(ctx, "Response messageType: %d, message: %s", response.MessageType, response.Message)
 
 			realtimeResponse := new(model.RealtimeResponse)
 			if err = gjson.Unmarshal(response.Message, &realtimeResponse); err != nil {
@@ -395,6 +421,16 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 					return
 				}
 			}
+
+			if realtimeResponse.Error.Code != "" {
+				if realtimeResponse.Error.Code == "session_expired" {
+					if err := conn.Close(); err != nil {
+						logger.Error(ctx, err)
+					}
+					return
+				}
+				logger.Error(ctx, realtimeResponse.Error)
+			}
 		}
 
 	}, nil); err != nil {
@@ -418,6 +454,8 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 			logger.Error(ctx, err)
 			return err
 		}
+
+		logger.Debugf(ctx, "Request messageType: %d, message: %s", messageType, message)
 
 		requestChan <- &sdkm.RealtimeRequest{
 			MessageType: messageType,
