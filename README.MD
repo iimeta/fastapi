@@ -14,18 +14,18 @@
 
 ## 支持模型
 
-| 公司                                    | 模型                                                                                                                                                                                     | Completion | Image | Audio | Embedding | Multimodal |
-|-----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|-------|-------|-----------|------------|
-| OpenAI<br/>Azure                        | gpt3.5、4.0系列、chatgpt-4o-latest、o1-mini、o1-preview<br/>DALL-E-2、DALL-E-3<br/>tts-1、tts-1-hd、whisper-1<br/>text-embedding-3-small、text-embedding-3-large、text-embedding-ada-002 | ✔️         | ✔️    | ✔️    | ✔️        | ✔️         |
-| 百度                                    | 文心一言                                                                                                                                                                                 | ✔️         |       |       |           |            |
-| 科大讯飞                                | 星火                                                                                                                                                                                     | ✔️         | ✔️    |       |           |            |
-| 阿里云                                  | 通义千问                                                                                                                                                                                 | ✔️         |       |       |           |            |
-| 智谱AI                                  | GLM系列                                                                                                                                                                                  | ✔️         |       |       |           |            |
-| Google                                  | Gemini                                                                                                                                                                                   | ✔️         |       |       |           | ✔️         |
-| DeepSeek                                | deepseek-chat、deepseek-coder                                                                                                                                                            | ✔️         |       |       |           |            |
-| 360智脑                                 | 360gpt系列                                                                                                                                                                               | ✔️         |       |       |           |            |
-| Midjourney                              | Midjourney-Proxy、Midjourney-Proxy-Plus                                                                                                                                                  |            | ✔️    |       |           |            |
-| Anthropic<br/>GCPClaude<br/>AWSClaude   | claude-3-5-sonnet-20240620<br/>claude-3-opus-20240229<br/>claude-3-haiku-20240307                                                                                                        | ✔️         |       |       |           |            |
+| 公司                                    | 模型                                                                                                                                    | Completion | Image | Audio | Embedding | Multimodal | Realtime |
+|-----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|------------|-------|-------|-----------|------------|----------|
+| OpenAI<br/>Azure                        | gpt3.5、4.0系列、chatgpt-4o-latest、o1-mini、o1-preview<br/>DALL-E-3、tts-1、whisper-1、text-embedding-3-small、gpt-4o-realtime-preview | ✔️         | ✔️    | ✔️    | ✔️        | ✔️         | ✔️       |
+| 百度                                    | 文心一言                                                                                                                                | ✔️         |       |       |           |            |          |
+| 科大讯飞                                | 星火                                                                                                                                    | ✔️         | ✔️    |       |           |            |          |
+| 阿里云                                  | 通义千问                                                                                                                                | ✔️         |       |       |           |            |          |
+| 智谱AI                                  | GLM系列                                                                                                                                 | ✔️         |       |       |           |            |          |
+| Google                                  | Gemini                                                                                                                                  | ✔️         |       |       |           | ✔️         |  ️        |
+| DeepSeek                                | deepseek-chat、deepseek-coder                                                                                                           | ✔️         |       |       |           |            |          |
+| 360智脑                                 | 360gpt系列                                                                                                                              | ✔️         |       |       |           |            |          |
+| Midjourney                              | Midjourney-Proxy、Midjourney-Proxy-Plus                                                                                                 |            | ✔️    |       |           |            |          |
+| Anthropic<br/>GCPClaude<br/>AWSClaude   | claude-3-5-sonnet-20240620<br/>claude-3-opus-20240229<br/>claude-3-haiku-20240307                                                       | ✔️         |       |       |           |            |          |
 
 ## 项目预览
 
@@ -95,7 +95,7 @@ curl --location 'https://api.fastapi.ai/v1/chat/completions' \
 <img src="https://iim.ai/public/images/Author.png?t=20231207" width="320" alt="作者"/>
 
 ## 交流群
-<img src="https://iim.ai/public/images/WeChatGroup.jpg?t=20241001" width="320" alt="交流群"/>
+<img src="https://iim.ai/public/images/WeChatGroup.jpg?t=20241011" width="320" alt="交流群"/>
 
 
 ![Star History Chart](https://api.star-history.com/svg?repos=iimeta/fastapi&type=Date)
