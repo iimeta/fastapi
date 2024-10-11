@@ -967,7 +967,7 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 
 			if k.Id != newData.Id {
 				newModelAgentKeys = append(newModelAgentKeys, k)
-				modelAgentKeyMap[key.Id] = k
+				modelAgentKeyMap[k.Id] = k
 			} else {
 				newModelAgentKeys = append(newModelAgentKeys, key)
 				modelAgentKeyMap[newData.Id] = key

@@ -504,7 +504,7 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 
 			if k.Id != newData.Id {
 				newKeys = append(newKeys, k)
-				keyMap[key.Id] = k
+				keyMap[k.Id] = k
 			} else {
 				newKeys = append(newKeys, key)
 				keyMap[newData.Id] = key
