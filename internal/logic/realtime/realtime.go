@@ -457,6 +457,12 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 
 		logger.Debugf(ctx, "Request messageType: %d, message: %s", messageType, message)
 
+		if err := service.Auth().VerifySecretKey(ctx, service.Session().GetSecretKey(ctx)); err != nil {
+			logger.Error(ctx, err)
+			requestChan <- nil
+			return err
+		}
+
 		requestChan <- &sdkm.RealtimeRequest{
 			MessageType: messageType,
 			Message:     message,

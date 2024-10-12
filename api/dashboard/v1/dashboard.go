@@ -29,7 +29,8 @@ type UsageRes struct {
 
 // models接口请求参数
 type ModelsReq struct {
-	g.Meta `path:"/models" tags:"dashboard" method:"get,post" summary:"models接口"`
+	g.Meta    `path:"/models" tags:"dashboard" method:"get,post" summary:"models接口"`
+	IsFastAPI bool `json:"is_fastapi"`
 }
 
 // models接口响应参数

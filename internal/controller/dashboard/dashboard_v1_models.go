@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/gogf/gf/v2/container/gset"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
@@ -32,12 +33,26 @@ func (c *ControllerV1) Models(ctx context.Context, req *v1.ModelsReq) (res *v1.M
 				return nil, err
 			}
 
-			modelsRes.Data = append(modelsRes.Data, model.DashboardModelsData{
+			modelsData := model.DashboardModelsData{
 				Id:      m.Model,
 				Object:  "model",
-				OwnedBy: corp.Name,
+				OwnedBy: gstr.ToLower(corp.Code),
 				Created: gconv.Int(m.CreatedAt / 1000),
-				FastAPI: &model.FastAPI{
+				Root:    m.Model,
+				Permission: []model.Permission{{
+					Id:                "modelperm-" + m.Model,
+					Object:            "model_permission",
+					Created:           gconv.Int(m.CreatedAt / 1000),
+					AllowCreateEngine: true,
+					AllowSampling:     true,
+					AllowLogprobs:     true,
+					AllowView:         true,
+					Organization:      "*",
+				}},
+			}
+
+			if req.IsFastAPI {
+				modelsData.FastAPI = &model.FastAPI{
 					Corp:             corp.Name,
 					Code:             corp.Code,
 					Model:            m.Model,
@@ -50,8 +65,10 @@ func (c *ControllerV1) Models(ctx context.Context, req *v1.ModelsReq) (res *v1.M
 					MultimodalQuota:  m.MultimodalQuota,
 					RealtimeQuota:    m.RealtimeQuota,
 					MidjourneyQuotas: m.MidjourneyQuotas,
-				},
-			})
+				}
+			}
+
+			modelsRes.Data = append(modelsRes.Data, modelsData)
 		}
 	}
 
