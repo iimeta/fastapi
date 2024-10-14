@@ -129,9 +129,32 @@ func beforeServeHook(r *ghttp.Request) {
 
 func middleware(r *ghttp.Request) {
 
+	logger.Debugf(r.GetCtx(), "r.Header: %v", r.Header)
+
 	secretKey := strings.TrimPrefix(r.GetHeader("Authorization"), "Bearer ")
 	if secretKey == "" {
 		secretKey = r.GetHeader(config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
+	}
+
+	if secretKey == "" {
+		secretKey = r.Get("token").String()
+	}
+
+	if secretKey == "" {
+		swp := r.Header.Values("Sec-Websocket-Protocol")
+		if len(swp) > 0 {
+			values := gstr.Split(swp[0], ", ")
+			for _, value := range values {
+				if gstr.HasPrefix(value, "openai-insecure-api-key") {
+					split := gstr.Split(value, ".")
+					if len(split) == 2 {
+						secretKey = split[1]
+					} else {
+						secretKey = value
+					}
+				}
+			}
+		}
 	}
 
 	if secretKey == "" {

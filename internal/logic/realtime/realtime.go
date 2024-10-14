@@ -8,6 +8,7 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/gorilla/websocket"
 	sdk "github.com/iimeta/fastapi-sdk"
@@ -24,6 +25,7 @@ import (
 	"github.com/iimeta/fastapi/utility/util"
 	"io"
 	"math"
+	"net/http"
 	"slices"
 	"time"
 )
@@ -37,7 +39,15 @@ func init() {
 }
 
 func New() service.IRealtime {
-	return &sRealtime{}
+	return &sRealtime{
+		upgrader: websocket.Upgrader{
+			HandshakeTimeout: 60 * time.Second,
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
+			EnableCompression: true,
+		},
+	}
 }
 
 // Realtime
@@ -48,7 +58,15 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 		logger.Debugf(ctx, "sRealtime Realtime time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	conn, err := s.upgrader.Upgrade(r.Response.Writer, r.Request, nil)
+	header := http.Header{
+		"Trace-Id": {gctx.CtxId(ctx)},
+	}
+
+	if swp := r.Header.Values("Sec-Websocket-Protocol"); len(swp) > 0 && gstr.Contains(swp[0], "realtime") {
+		header["Sec-Websocket-Protocol"] = []string{"realtime"}
+	}
+
+	conn, err := s.upgrader.Upgrade(r.Response.Writer, r.Request, header)
 	if conn != nil {
 		defer func() {
 			if err := conn.Close(); err != nil {
