@@ -14,18 +14,18 @@
 
 ## 支持模型
 
-| 公司                                    | 模型                                                                                                                                    | Completion | Image | Audio | Embedding | Multimodal | Realtime |
-|-----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|------------|-------|-------|-----------|------------|----------|
-| OpenAI<br/>Azure                        | gpt3.5、4.0系列、chatgpt-4o-latest、o1-mini、o1-preview<br/>DALL-E-3、tts-1、whisper-1、text-embedding-3-small、gpt-4o-realtime-preview | ✔️         | ✔️    | ✔️    | ✔️        | ✔️         | ✔️       |
-| 百度                                    | 文心一言                                                                                                                                | ✔️         |       |       |           |            |          |
-| 科大讯飞                                | 星火                                                                                                                                    | ✔️         | ✔️    |       |           |            |          |
-| 阿里云                                  | 通义千问                                                                                                                                | ✔️         |       |       |           |            |          |
-| 智谱AI                                  | GLM系列                                                                                                                                 | ✔️         |       |       |           |            |          |
-| Google                                  | Gemini                                                                                                                                  | ✔️         |       |       |           | ✔️         |  ️        |
-| DeepSeek                                | deepseek-chat、deepseek-coder                                                                                                           | ✔️         |       |       |           |            |          |
-| 360智脑                                 | 360gpt系列                                                                                                                              | ✔️         |       |       |           |            |          |
-| Midjourney                              | Midjourney-Proxy、Midjourney-Proxy-Plus                                                                                                 |            | ✔️    |       |           |            |          |
-| Anthropic<br/>GCPClaude<br/>AWSClaude   | claude-3-5-sonnet-20240620<br/>claude-3-opus-20240229<br/>claude-3-haiku-20240307                                                       | ✔️         |       |       |           |            |          |
+| 公司                                  | Completion | Image | Audio | Multimodal | Realtime | Embedding | Moderation |
+|---------------------------------------|------------|-------|-------|------------|----------|-----------|------------|
+| OpenAI<br/>Azure                      | ✔️         | ✔️    | ✔️    | ✔️         | ✔️       | ✔️       | ✔️         |
+| 百度                                  | ✔️         |       |       |            |          |           |            |
+| 科大讯飞                              | ✔️         | ✔️    |       |            |          |           |            |
+| 阿里云                                | ✔️         |       |       |            |          |           |            |
+| 智谱AI                                | ✔️         |       |       |            |          |           |            |
+| Google                                | ✔️         |       |       | ✔️         |          |  ️         |  ️          |
+| DeepSeek                              | ✔️         |       |       |            |          |           |            |
+| 360智脑                               | ✔️         |       |       |            |          |           |            |
+| Midjourney                            |            | ✔️    |       |            |          |           |            |
+| Anthropic<br/>GCPClaude<br/>AWSClaude | ✔️         |       |       |            |          |           |            |
 
 ## 项目预览
 
