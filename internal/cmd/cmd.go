@@ -16,6 +16,7 @@ import (
 	"github.com/iimeta/fastapi/internal/controller/health"
 	"github.com/iimeta/fastapi/internal/controller/image"
 	"github.com/iimeta/fastapi/internal/controller/midjourney"
+	"github.com/iimeta/fastapi/internal/controller/moderation"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
@@ -75,6 +76,7 @@ var (
 					g.Bind(
 						dashboard.NewV1(),
 						embedding.NewV1(),
+						moderation.NewV1(),
 					)
 				})
 

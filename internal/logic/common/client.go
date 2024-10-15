@@ -22,6 +22,10 @@ func NewEmbeddingClient(ctx context.Context, model *model.Model, key, baseURL, p
 	return sdk.NewEmbeddingClient(ctx, model.Model, key, baseURL, path, config.Cfg.Http.ProxyUrl), nil
 }
 
+func NewModerationClient(ctx context.Context, model *model.Model, key, baseURL, path string) (*sdk.ModerationClient, error) {
+	return sdk.NewModerationClient(ctx, model.Model, key, baseURL, path, config.Cfg.Http.ProxyUrl), nil
+}
+
 func NewRealtimeClient(ctx context.Context, model *model.Model, key, baseURL, path string) (*sdk.RealtimeClient, error) {
 	return sdk.NewRealtimeClient(ctx, model.Model, key, baseURL, path, config.Cfg.Http.ProxyUrl), nil
 }
