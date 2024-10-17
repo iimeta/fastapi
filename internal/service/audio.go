@@ -17,11 +17,11 @@ import (
 type (
 	IAudio interface {
 		// Speech
-		Speech(ctx context.Context, params sdkm.SpeechRequest, fallbackModel *model.Model, retry ...int) (response sdkm.SpeechResponse, err error)
+		Speech(ctx context.Context, params sdkm.SpeechRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.SpeechResponse, err error)
 		// Transcriptions
-		Transcriptions(ctx context.Context, params *v1.TranscriptionsReq, fallbackModel *model.Model, retry ...int) (response sdkm.AudioResponse, err error)
+		Transcriptions(ctx context.Context, params *v1.TranscriptionsReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.AudioResponse, err error)
 		// 保存日志
-		SaveLog(ctx context.Context, reqModel *model.Model, realModel *model.Model, fallbackModel *model.Model, key *model.Key, audioReq *model.AudioReq, audioRes *model.AudioRes, retryInfo *mcommon.Retry, retry ...int)
+		SaveLog(ctx context.Context, reqModel *model.Model, realModel *model.Model, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, audioReq *model.AudioReq, audioRes *model.AudioRes, retryInfo *mcommon.Retry, retry ...int)
 	}
 )
 

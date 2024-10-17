@@ -59,7 +59,7 @@ var (
 				middleware(r)
 				if err := service.Realtime().Realtime(r.GetCtx(), r, model.RealtimeRequest{
 					Model: r.FormValue("model"),
-				}, nil); err != nil {
+				}, nil, nil); err != nil {
 					err := errors.Error(r.GetCtx(), err)
 					r.Response.Header().Set("Content-Type", "application/json")
 					r.Response.WriteStatus(err.Status(), gjson.MustEncodeString(err))

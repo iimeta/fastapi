@@ -17,7 +17,7 @@ func (c *ControllerV1) ModelSubmit(ctx context.Context, req *v1.ModelSubmitReq) 
 		logger.Debugf(ctx, "Controller Midjourney ModelSubmit time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	response, err := service.Midjourney().Submit(ctx, g.RequestFromCtx(ctx), nil)
+	response, err := service.Midjourney().Submit(ctx, g.RequestFromCtx(ctx), nil, nil)
 	if err != nil {
 		return nil, err
 	}

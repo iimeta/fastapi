@@ -35,7 +35,7 @@ func New() service.IEmbedding {
 }
 
 // Embeddings
-func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingRequest, fallbackModel *model.Model, retry ...int) (response sdkm.EmbeddingResponse, err error) {
+func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.EmbeddingResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -101,7 +101,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 				completionsRes.Completion = gconv.String(response.Data[0].Embedding)
 			}
 
-			s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, completionsRes, retryInfo)
+			s.SaveLog(ctx, reqModel, realModel, fallbackModelAgent, fallbackModel, k, &params, completionsRes, retryInfo)
 
 		}); err != nil {
 			logger.Error(ctx, err)
@@ -122,23 +122,42 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 	baseUrl = realModel.BaseUrl
 	path = realModel.Path
 
-	if realModel.IsEnableModelAgent {
+	if fallbackModelAgent != nil || realModel.IsEnableModelAgent {
 
-		if agentTotal, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, realModel); err != nil {
-			logger.Error(ctx, err)
+		if fallbackModelAgent != nil {
+			modelAgent = fallbackModelAgent
+		} else {
 
-			if realModel.IsEnableFallback {
-				if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-					retryInfo = &mcommon.Retry{
-						IsRetry:    true,
-						RetryCount: len(retry),
-						ErrMsg:     err.Error(),
+			if agentTotal, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, realModel); err != nil {
+				logger.Error(ctx, err)
+
+				if realModel.IsEnableFallback {
+
+					if realModel.FallbackConfig.ModelAgent != "" {
+						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
+							retryInfo = &mcommon.Retry{
+								IsRetry:    true,
+								RetryCount: len(retry),
+								ErrMsg:     err.Error(),
+							}
+							return s.Embeddings(ctx, params, fallbackModelAgent, fallbackModel)
+						}
 					}
-					return s.Embeddings(ctx, params, fallbackModel)
-				}
-			}
 
-			return response, err
+					if realModel.FallbackConfig.Model != "" {
+						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+							retryInfo = &mcommon.Retry{
+								IsRetry:    true,
+								RetryCount: len(retry),
+								ErrMsg:     err.Error(),
+							}
+							return s.Embeddings(ctx, params, nil, fallbackModel)
+						}
+					}
+				}
+
+				return response, err
+			}
 		}
 
 		if modelAgent != nil {
@@ -156,13 +175,27 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 				}
 
 				if realModel.IsEnableFallback {
-					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-						retryInfo = &mcommon.Retry{
-							IsRetry:    true,
-							RetryCount: len(retry),
-							ErrMsg:     err.Error(),
+
+					if realModel.FallbackConfig.ModelAgent != "" && realModel.FallbackConfig.ModelAgent != modelAgent.Id {
+						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
+							retryInfo = &mcommon.Retry{
+								IsRetry:    true,
+								RetryCount: len(retry),
+								ErrMsg:     err.Error(),
+							}
+							return s.Embeddings(ctx, params, fallbackModelAgent, fallbackModel)
 						}
-						return s.Embeddings(ctx, params, fallbackModel)
+					}
+
+					if realModel.FallbackConfig.Model != "" {
+						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+							retryInfo = &mcommon.Retry{
+								IsRetry:    true,
+								RetryCount: len(retry),
+								ErrMsg:     err.Error(),
+							}
+							return s.Embeddings(ctx, params, nil, fallbackModel)
+						}
 					}
 				}
 
@@ -175,13 +208,27 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 			logger.Error(ctx, err)
 
 			if realModel.IsEnableFallback {
-				if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-					retryInfo = &mcommon.Retry{
-						IsRetry:    true,
-						RetryCount: len(retry),
-						ErrMsg:     err.Error(),
+
+				if realModel.FallbackConfig.ModelAgent != "" {
+					if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
+						retryInfo = &mcommon.Retry{
+							IsRetry:    true,
+							RetryCount: len(retry),
+							ErrMsg:     err.Error(),
+						}
+						return s.Embeddings(ctx, params, fallbackModelAgent, fallbackModel)
 					}
-					return s.Embeddings(ctx, params, fallbackModel)
+				}
+
+				if realModel.FallbackConfig.Model != "" {
+					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+						retryInfo = &mcommon.Retry{
+							IsRetry:    true,
+							RetryCount: len(retry),
+							ErrMsg:     err.Error(),
+						}
+						return s.Embeddings(ctx, params, nil, fallbackModel)
+					}
 				}
 			}
 
@@ -192,21 +239,8 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 	request := params
 	key = k.Key
 
-	client, err = common.NewEmbeddingClient(ctx, realModel, key, baseUrl, path)
-	if err != nil {
+	if client, err = common.NewEmbeddingClient(ctx, realModel, key, baseUrl, path); err != nil {
 		logger.Error(ctx, err)
-
-		if realModel.IsEnableFallback {
-			if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-				retryInfo = &mcommon.Retry{
-					IsRetry:    true,
-					RetryCount: len(retry),
-					ErrMsg:     err.Error(),
-				}
-				return s.Embeddings(ctx, params, fallbackModel)
-			}
-		}
-
 		return response, err
 	}
 
@@ -241,7 +275,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 							RetryCount: len(retry),
 							ErrMsg:     err.Error(),
 						}
-						return s.Embeddings(ctx, params, fallbackModel)
+						return s.Embeddings(ctx, params, fallbackModelAgent, fallbackModel)
 					}
 				}
 				return response, err
@@ -253,7 +287,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 				ErrMsg:     err.Error(),
 			}
 
-			return s.Embeddings(ctx, params, fallbackModel, append(retry, 1)...)
+			return s.Embeddings(ctx, params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
 		return response, err
@@ -263,7 +297,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 }
 
 // 保存日志
-func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.EmbeddingRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, retry ...int) {
+func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel *model.Model, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.EmbeddingRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -339,12 +373,21 @@ func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel, fallbackM
 	chat.CompletionTokens = completionsRes.Usage.CompletionTokens
 	chat.TotalTokens = completionsRes.Usage.TotalTokens
 
-	if fallbackModel != nil {
+	if fallbackModelAgent != nil {
 		chat.IsEnableFallback = true
 		chat.FallbackConfig = &mcommon.FallbackConfig{
-			FallbackModel:     fallbackModel.Model,
-			FallbackModelName: fallbackModel.Name,
+			ModelAgent:     fallbackModelAgent.Id,
+			ModelAgentName: fallbackModelAgent.Name,
 		}
+	}
+
+	if fallbackModel != nil {
+		chat.IsEnableFallback = true
+		if chat.FallbackConfig == nil {
+			chat.FallbackConfig = new(mcommon.FallbackConfig)
+		}
+		chat.FallbackConfig.Model = fallbackModel.Model
+		chat.FallbackConfig.ModelName = fallbackModel.Name
 	}
 
 	if key != nil {
@@ -378,7 +421,7 @@ func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel, fallbackM
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
 		logger.Error(ctx, err)
 
-		if len(retry) == 5 {
+		if len(retry) == 10 {
 			panic(err)
 		}
 
@@ -388,6 +431,6 @@ func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel, fallbackM
 
 		logger.Errorf(ctx, "sEmbedding SaveLog retry: %d", len(retry))
 
-		s.SaveLog(ctx, reqModel, realModel, fallbackModel, key, completionsReq, completionsRes, retryInfo, retry...)
+		s.SaveLog(ctx, reqModel, realModel, fallbackModelAgent, fallbackModel, key, completionsReq, completionsRes, retryInfo, retry...)
 	}
 }

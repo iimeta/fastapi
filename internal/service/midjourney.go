@@ -17,11 +17,11 @@ import (
 type (
 	IMidjourney interface {
 		// 任务提交
-		Submit(ctx context.Context, request *ghttp.Request, fallbackModel *model.Model, retry ...int) (response sdkm.MidjourneyResponse, err error)
+		Submit(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.MidjourneyResponse, err error)
 		// 任务查询
-		Task(ctx context.Context, request *ghttp.Request, fallbackModel *model.Model, retry ...int) (response sdkm.MidjourneyResponse, err error)
+		Task(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.MidjourneyResponse, err error)
 		// 保存日志
-		SaveLog(ctx context.Context, reqModel *model.Model, realModel *model.Model, fallbackModel *model.Model, key *model.Key, response model.MidjourneyResponse, retryInfo *mcommon.Retry, retry ...int)
+		SaveLog(ctx context.Context, reqModel *model.Model, realModel *model.Model, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, response model.MidjourneyResponse, retryInfo *mcommon.Retry, retry ...int)
 	}
 )
 

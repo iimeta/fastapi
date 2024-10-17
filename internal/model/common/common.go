@@ -58,8 +58,10 @@ type ForwardConfig struct {
 }
 
 type FallbackConfig struct {
-	FallbackModel     string `bson:"fallback_model,omitempty"      json:"fallback_model,omitempty"`      // 后备模型
-	FallbackModelName string `bson:"fallback_model_name,omitempty" json:"fallback_model_name,omitempty"` // 后备模型名称
+	ModelAgent     string `bson:"model_agent,omitempty"      json:"model_agent,omitempty"`      // 后备模型代理
+	ModelAgentName string `bson:"model_agent_name,omitempty" json:"model_agent_name,omitempty"` // 后备模型代理名称
+	Model          string `bson:"model,omitempty"            json:"model,omitempty"`            // 后备模型
+	ModelName      string `bson:"model_name,omitempty"       json:"model_name,omitempty"`       // 后备模型名称
 }
 
 type Message struct {

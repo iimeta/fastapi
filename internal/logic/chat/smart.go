@@ -23,7 +23,7 @@ import (
 )
 
 // SmartCompletions
-func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletionRequest, reqModel *model.Model, fallbackModel *model.Model, retry ...int) (response sdkm.ChatCompletionResponse, err error) {
+func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletionRequest, reqModel *model.Model, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.ChatCompletionResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -130,7 +130,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 				completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
 			}
 
-			s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, completionsRes, retryInfo, true)
+			s.SaveLog(ctx, reqModel, realModel, fallbackModelAgent, fallbackModel, k, &params, completionsRes, retryInfo, true)
 
 		}); err != nil {
 			logger.Error(ctx, err)
@@ -153,22 +153,42 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 	baseUrl = realModel.BaseUrl
 	path = realModel.Path
 
-	if realModel.IsEnableModelAgent {
-		if agentTotal, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, realModel); err != nil {
-			logger.Error(ctx, err)
+	if fallbackModelAgent != nil || realModel.IsEnableModelAgent {
 
-			if realModel.IsEnableFallback {
-				if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-					retryInfo = &mcommon.Retry{
-						IsRetry:    true,
-						RetryCount: len(retry),
-						ErrMsg:     err.Error(),
+		if fallbackModelAgent != nil {
+			modelAgent = fallbackModelAgent
+		} else {
+
+			if agentTotal, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, realModel); err != nil {
+				logger.Error(ctx, err)
+
+				if realModel.IsEnableFallback {
+
+					if realModel.FallbackConfig.ModelAgent != "" {
+						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
+							retryInfo = &mcommon.Retry{
+								IsRetry:    true,
+								RetryCount: len(retry),
+								ErrMsg:     err.Error(),
+							}
+							return s.SmartCompletions(ctx, params, reqModel, fallbackModelAgent, fallbackModel)
+						}
 					}
-					return s.SmartCompletions(ctx, params, reqModel, fallbackModel)
-				}
-			}
 
-			return response, err
+					if realModel.FallbackConfig.Model != "" {
+						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+							retryInfo = &mcommon.Retry{
+								IsRetry:    true,
+								RetryCount: len(retry),
+								ErrMsg:     err.Error(),
+							}
+							return s.SmartCompletions(ctx, params, reqModel, nil, fallbackModel)
+						}
+					}
+				}
+
+				return response, err
+			}
 		}
 
 		if modelAgent != nil {
@@ -186,13 +206,27 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 				}
 
 				if realModel.IsEnableFallback {
-					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-						retryInfo = &mcommon.Retry{
-							IsRetry:    true,
-							RetryCount: len(retry),
-							ErrMsg:     err.Error(),
+
+					if realModel.FallbackConfig.ModelAgent != "" && realModel.FallbackConfig.ModelAgent != modelAgent.Id {
+						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
+							retryInfo = &mcommon.Retry{
+								IsRetry:    true,
+								RetryCount: len(retry),
+								ErrMsg:     err.Error(),
+							}
+							return s.SmartCompletions(ctx, params, reqModel, fallbackModelAgent, fallbackModel)
 						}
-						return s.SmartCompletions(ctx, params, reqModel, fallbackModel)
+					}
+
+					if realModel.FallbackConfig.Model != "" {
+						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+							retryInfo = &mcommon.Retry{
+								IsRetry:    true,
+								RetryCount: len(retry),
+								ErrMsg:     err.Error(),
+							}
+							return s.SmartCompletions(ctx, params, reqModel, nil, fallbackModel)
+						}
 					}
 				}
 
@@ -205,22 +239,32 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 			logger.Error(ctx, err)
 
 			if realModel.IsEnableFallback {
-				if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-					retryInfo = &mcommon.Retry{
-						IsRetry:    true,
-						RetryCount: len(retry),
-						ErrMsg:     err.Error(),
+
+				if realModel.FallbackConfig.ModelAgent != "" {
+					if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
+						retryInfo = &mcommon.Retry{
+							IsRetry:    true,
+							RetryCount: len(retry),
+							ErrMsg:     err.Error(),
+						}
+						return s.SmartCompletions(ctx, params, reqModel, fallbackModelAgent, fallbackModel)
 					}
-					return s.SmartCompletions(ctx, params, reqModel, fallbackModel)
+				}
+
+				if realModel.FallbackConfig.Model != "" {
+					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+						retryInfo = &mcommon.Retry{
+							IsRetry:    true,
+							RetryCount: len(retry),
+							ErrMsg:     err.Error(),
+						}
+						return s.SmartCompletions(ctx, params, reqModel, nil, fallbackModel)
+					}
 				}
 			}
 
 			return response, err
 		}
-	}
-
-	if k == nil {
-		return response, errors.ERR_NO_AVAILABLE_KEY
 	}
 
 	params.Model = realModel.Model
@@ -258,7 +302,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Completions(ctx, params, fallbackModel)
+							return s.SmartCompletions(ctx, params, reqModel, fallbackModelAgent, fallbackModel)
 						}
 					}
 					return response, err
@@ -270,7 +314,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 					ErrMsg:     err.Error(),
 				}
 
-				return s.Completions(ctx, params, fallbackModel, append(retry, 1)...)
+				return s.SmartCompletions(ctx, params, reqModel, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 			}
 
 			return response, err
@@ -310,21 +354,8 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		}
 	}
 
-	client, err = common.NewClient(ctx, realModel, key, baseUrl, path)
-	if err != nil {
+	if client, err = common.NewClient(ctx, realModel, key, baseUrl, path); err != nil {
 		logger.Error(ctx, err)
-
-		if realModel.IsEnableFallback {
-			if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-				retryInfo = &mcommon.Retry{
-					IsRetry:    true,
-					RetryCount: len(retry),
-					ErrMsg:     err.Error(),
-				}
-				return s.SmartCompletions(ctx, params, reqModel, fallbackModel)
-			}
-		}
-
 		return response, err
 	}
 
@@ -355,7 +386,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 							RetryCount: len(retry),
 							ErrMsg:     err.Error(),
 						}
-						return s.SmartCompletions(ctx, params, reqModel, fallbackModel)
+						return s.SmartCompletions(ctx, params, reqModel, fallbackModelAgent, fallbackModel)
 					}
 				}
 				return response, err
@@ -367,7 +398,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 				ErrMsg:     err.Error(),
 			}
 
-			return s.SmartCompletions(ctx, params, reqModel, fallbackModel, append(retry, 1)...)
+			return s.SmartCompletions(ctx, params, reqModel, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
 		return response, err

@@ -23,8 +23,8 @@ type Audio struct {
 	IsEnableForward      bool                   `bson:"is_enable_forward,omitempty"`       // 是否启用模型转发
 	ForwardConfig        *common.ForwardConfig  `bson:"forward_config,omitempty"`          // 模型转发配置
 	IsSmartMatch         bool                   `bson:"is_smart_match,omitempty"`          // 是否智能匹配
-	IsEnableFallback     bool                   `bson:"is_enable_fallback,omitempty"`      // 是否启用后备模型
-	FallbackConfig       *common.FallbackConfig `bson:"fallback_config,omitempty"`         // 后备模型配置
+	IsEnableFallback     bool                   `bson:"is_enable_fallback,omitempty"`      // 是否启用后备
+	FallbackConfig       *common.FallbackConfig `bson:"fallback_config,omitempty"`         // 后备配置
 	RealModelId          string                 `bson:"real_model_id,omitempty"`           // 真实模型ID
 	RealModelName        string                 `bson:"real_model_name,omitempty"`         // 真实模型名称
 	RealModel            string                 `bson:"real_model,omitempty"`              // 真实模型

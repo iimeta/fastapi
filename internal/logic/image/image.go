@@ -33,7 +33,7 @@ func New() service.IImage {
 }
 
 // Generations
-func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fallbackModel *model.Model, retry ...int) (response sdkm.ImageResponse, err error) {
+func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.ImageResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -91,7 +91,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 				imageRes.Usage = *usage
 			}
 
-			s.SaveLog(ctx, reqModel, realModel, fallbackModel, k, &params, imageRes, retryInfo)
+			s.SaveLog(ctx, reqModel, realModel, fallbackModelAgent, fallbackModel, k, &params, imageRes, retryInfo)
 
 		}); err != nil {
 			logger.Error(ctx, err)
@@ -112,23 +112,42 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 	baseUrl = realModel.BaseUrl
 	path = realModel.Path
 
-	if realModel.IsEnableModelAgent {
+	if fallbackModelAgent != nil || realModel.IsEnableModelAgent {
 
-		if agentTotal, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, realModel); err != nil {
-			logger.Error(ctx, err)
+		if fallbackModelAgent != nil {
+			modelAgent = fallbackModelAgent
+		} else {
 
-			if realModel.IsEnableFallback {
-				if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-					retryInfo = &mcommon.Retry{
-						IsRetry:    true,
-						RetryCount: len(retry),
-						ErrMsg:     err.Error(),
+			if agentTotal, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, realModel); err != nil {
+				logger.Error(ctx, err)
+
+				if realModel.IsEnableFallback {
+
+					if realModel.FallbackConfig.ModelAgent != "" {
+						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
+							retryInfo = &mcommon.Retry{
+								IsRetry:    true,
+								RetryCount: len(retry),
+								ErrMsg:     err.Error(),
+							}
+							return s.Generations(ctx, params, fallbackModelAgent, fallbackModel)
+						}
 					}
-					return s.Generations(ctx, params, fallbackModel)
-				}
-			}
 
-			return response, err
+					if realModel.FallbackConfig.Model != "" {
+						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+							retryInfo = &mcommon.Retry{
+								IsRetry:    true,
+								RetryCount: len(retry),
+								ErrMsg:     err.Error(),
+							}
+							return s.Generations(ctx, params, nil, fallbackModel)
+						}
+					}
+				}
+
+				return response, err
+			}
 		}
 
 		if modelAgent != nil {
@@ -145,14 +164,25 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 					service.ModelAgent().DisabledModelAgent(ctx, modelAgent, "No available model agent key")
 				}
 
-				if realModel.IsEnableFallback {
+				if realModel.FallbackConfig.ModelAgent != "" && realModel.FallbackConfig.ModelAgent != modelAgent.Id {
+					if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
+						retryInfo = &mcommon.Retry{
+							IsRetry:    true,
+							RetryCount: len(retry),
+							ErrMsg:     err.Error(),
+						}
+						return s.Generations(ctx, params, fallbackModelAgent, fallbackModel)
+					}
+				}
+
+				if realModel.FallbackConfig.Model != "" {
 					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
 						retryInfo = &mcommon.Retry{
 							IsRetry:    true,
 							RetryCount: len(retry),
 							ErrMsg:     err.Error(),
 						}
-						return s.Generations(ctx, params, fallbackModel)
+						return s.Generations(ctx, params, nil, fallbackModel)
 					}
 				}
 
@@ -164,14 +194,25 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 		if keyTotal, k, err = service.Key().PickModelKey(ctx, realModel); err != nil {
 			logger.Error(ctx, err)
 
-			if realModel.IsEnableFallback {
+			if realModel.FallbackConfig.ModelAgent != "" {
+				if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
+					retryInfo = &mcommon.Retry{
+						IsRetry:    true,
+						RetryCount: len(retry),
+						ErrMsg:     err.Error(),
+					}
+					return s.Generations(ctx, params, fallbackModelAgent, fallbackModel)
+				}
+			}
+
+			if realModel.FallbackConfig.Model != "" {
 				if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
 					retryInfo = &mcommon.Retry{
 						IsRetry:    true,
 						RetryCount: len(retry),
 						ErrMsg:     err.Error(),
 					}
-					return s.Generations(ctx, params, fallbackModel)
+					return s.Generations(ctx, params, nil, fallbackModel)
 				}
 			}
 
@@ -189,21 +230,8 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 		request.Model = realModel.Model
 	}
 
-	client, err = common.NewClient(ctx, realModel, key, baseUrl, path)
-	if err != nil {
+	if client, err = common.NewClient(ctx, realModel, key, baseUrl, path); err != nil {
 		logger.Error(ctx, err)
-
-		if realModel.IsEnableFallback {
-			if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-				retryInfo = &mcommon.Retry{
-					IsRetry:    true,
-					RetryCount: len(retry),
-					ErrMsg:     err.Error(),
-				}
-				return s.Generations(ctx, params, fallbackModel)
-			}
-		}
-
 		return response, err
 	}
 
@@ -238,7 +266,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 							RetryCount: len(retry),
 							ErrMsg:     err.Error(),
 						}
-						return s.Generations(ctx, params, fallbackModel)
+						return s.Generations(ctx, params, fallbackModelAgent, fallbackModel)
 					}
 				}
 				return response, err
@@ -250,7 +278,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 				ErrMsg:     err.Error(),
 			}
 
-			return s.Generations(ctx, params, fallbackModel, append(retry, 1)...)
+			return s.Generations(ctx, params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
 		return response, err
@@ -260,7 +288,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 }
 
 // 保存日志
-func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *mcommon.Retry, retry ...int) {
+func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel *model.Model, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *mcommon.Retry, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -337,12 +365,21 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 
 	image.TotalTokens = imageRes.Usage.TotalTokens
 
-	if fallbackModel != nil {
+	if fallbackModelAgent != nil {
 		image.IsEnableFallback = true
 		image.FallbackConfig = &mcommon.FallbackConfig{
-			FallbackModel:     fallbackModel.Model,
-			FallbackModelName: fallbackModel.Name,
+			ModelAgent:     fallbackModelAgent.Id,
+			ModelAgentName: fallbackModelAgent.Name,
 		}
+	}
+
+	if fallbackModel != nil {
+		image.IsEnableFallback = true
+		if image.FallbackConfig == nil {
+			image.FallbackConfig = new(mcommon.FallbackConfig)
+		}
+		image.FallbackConfig.Model = fallbackModel.Model
+		image.FallbackConfig.ModelName = fallbackModel.Name
 	}
 
 	if key != nil {
@@ -376,7 +413,7 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 	if _, err := dao.Image.Insert(ctx, image); err != nil {
 		logger.Error(ctx, err)
 
-		if len(retry) == 5 {
+		if len(retry) == 10 {
 			panic(err)
 		}
 
@@ -386,6 +423,6 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel, fallbackModel
 
 		logger.Errorf(ctx, "sImage SaveLog retry: %d", len(retry))
 
-		s.SaveLog(ctx, reqModel, realModel, fallbackModel, key, imageReq, imageRes, retryInfo, retry...)
+		s.SaveLog(ctx, reqModel, realModel, fallbackModelAgent, fallbackModel, key, imageReq, imageRes, retryInfo, retry...)
 	}
 }

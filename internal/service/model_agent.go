@@ -15,7 +15,7 @@ import (
 type (
 	IModelAgent interface {
 		// 根据模型代理ID获取模型代理信息
-		GetModelAgent(ctx context.Context, id string) (*model.ModelAgent, error)
+		GetModelAgentById(ctx context.Context, id string) (*model.ModelAgent, error)
 		// 模型代理列表
 		List(ctx context.Context, ids []string) ([]*model.ModelAgent, error)
 		// 全部模型代理列表
@@ -58,6 +58,14 @@ type (
 		UpdateCacheModelAgentKey(ctx context.Context, oldData *entity.Key, newData *entity.Key)
 		// 移除缓存中的模型代理密钥
 		RemoveCacheModelAgentKey(ctx context.Context, key *entity.Key)
+		// 获取缓存中的模型代理信息
+		GetCacheModelAgent(ctx context.Context, id string) (*model.ModelAgent, error)
+		// 根据模型代理ID获取模型代理信息并保存到缓存
+		GetModelAgentAndSaveCache(ctx context.Context, id string) (*model.ModelAgent, error)
+		// 保存模型代理到缓存
+		SaveCache(ctx context.Context, modelAgent *model.ModelAgent) error
+		// 获取后备模型代理
+		GetFallbackModelAgent(ctx context.Context, model *model.Model) (fallbackModelAgent *model.ModelAgent, err error)
 		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
 	}

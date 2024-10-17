@@ -26,8 +26,8 @@ type Model struct {
 	ModelAgent           *ModelAgent              `json:"model_agent,omitempty"`             // 模型代理信息
 	IsEnableForward      bool                     `json:"is_enable_forward,omitempty"`       // 是否启用模型转发
 	ForwardConfig        *common.ForwardConfig    `json:"forward_config,omitempty"`          // 模型转发配置
-	IsEnableFallback     bool                     `json:"is_enable_fallback,omitempty"`      // 是否启用后备模型
-	FallbackConfig       *common.FallbackConfig   `json:"fallback_config,omitempty"`         // 后备模型配置
+	IsEnableFallback     bool                     `json:"is_enable_fallback,omitempty"`      // 是否启用后备
+	FallbackConfig       *common.FallbackConfig   `json:"fallback_config,omitempty"`         // 后备配置
 	Remark               string                   `json:"remark,omitempty"`                  // 备注
 	Status               int                      `json:"status,omitempty"`                  // 状态[1:正常, 2:禁用, -1:删除]
 	Creator              string                   `json:"creator,omitempty"`                 // 创建人

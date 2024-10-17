@@ -17,7 +17,7 @@ func (c *ControllerV1) ModelTask(ctx context.Context, req *v1.ModelTaskReq) (res
 		logger.Debugf(ctx, "Controller Midjourney ModelTask time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	response, err := service.Midjourney().Task(ctx, g.RequestFromCtx(ctx), nil)
+	response, err := service.Midjourney().Task(ctx, g.RequestFromCtx(ctx), nil, nil)
 	if err != nil {
 		return nil, err
 	}

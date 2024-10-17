@@ -31,8 +31,8 @@ type Model struct {
 	ModelAgents          []string                 `bson:"model_agents,omitempty"`            // 模型代理
 	IsEnableForward      bool                     `bson:"is_enable_forward,omitempty"`       // 是否启用模型转发
 	ForwardConfig        *common.ForwardConfig    `bson:"forward_config,omitempty"`          // 模型转发配置
-	IsEnableFallback     bool                     `bson:"is_enable_fallback,omitempty"`      // 是否启用后备模型
-	FallbackConfig       *common.FallbackConfig   `bson:"fallback_config,omitempty"`         // 后备模型配置
+	IsEnableFallback     bool                     `bson:"is_enable_fallback,omitempty"`      // 是否启用后备
+	FallbackConfig       *common.FallbackConfig   `bson:"fallback_config,omitempty"`         // 后备配置
 	Remark               string                   `bson:"remark,omitempty"`                  // 备注
 	Status               int                      `bson:"status,omitempty"`                  // 状态[1:正常, 2:禁用, -1:删除]
 	Creator              string                   `bson:"creator,omitempty"`                 // 创建人

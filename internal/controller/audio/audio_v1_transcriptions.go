@@ -43,7 +43,7 @@ func (c *ControllerV1) Transcriptions(ctx context.Context, req *v1.Transcription
 		}
 	}
 
-	response, err := service.Audio().Transcriptions(ctx, req, nil)
+	response, err := service.Audio().Transcriptions(ctx, req, nil, nil)
 	if err != nil {
 		return nil, err
 	}

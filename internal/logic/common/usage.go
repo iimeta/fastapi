@@ -108,7 +108,7 @@ func redisSpendQuota(ctx context.Context, usageKey, field string, totalTokens in
 	if err != nil {
 		logger.Errorf(ctx, "redisSpendQuota usageKey: %s, field: %s, totalTokens: %d, err: %v", usageKey, field, totalTokens, err)
 
-		if len(retry) == 5 {
+		if len(retry) == 10 {
 			return -1, err
 		}
 
@@ -129,7 +129,7 @@ func mongoSpendQuota(ctx context.Context, f func() error, retry ...int) error {
 	if err := f(); err != nil {
 		logger.Errorf(ctx, "mongoSpendQuota err: %v", err)
 
-		if len(retry) == 5 {
+		if len(retry) == 10 {
 			return err
 		}
 
@@ -150,7 +150,7 @@ func mongoUsedQuota(ctx context.Context, f func() error, retry ...int) error {
 	if err := f(); err != nil {
 		logger.Errorf(ctx, "mongoUsedQuota err: %v", err)
 
-		if len(retry) == 5 {
+		if len(retry) == 10 {
 			return err
 		}
 

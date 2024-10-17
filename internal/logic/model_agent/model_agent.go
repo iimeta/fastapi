@@ -45,11 +45,11 @@ func New() service.IModelAgent {
 }
 
 // 根据模型代理ID获取模型代理信息
-func (s *sModelAgent) GetModelAgent(ctx context.Context, id string) (*model.ModelAgent, error) {
+func (s *sModelAgent) GetModelAgentById(ctx context.Context, id string) (*model.ModelAgent, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent GetModelAgent time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent GetModelAgentById time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	modelAgent, err := dao.ModelAgent.FindById(ctx, id)
@@ -58,30 +58,14 @@ func (s *sModelAgent) GetModelAgent(ctx context.Context, id string) (*model.Mode
 		return nil, err
 	}
 
-	modelList, err := dao.Model.Find(ctx, bson.M{"model_agents": bson.M{"$in": []string{id}}})
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	models := make([]string, 0)
-	modelNames := make([]string, 0)
-
-	for _, model := range modelList {
-		models = append(models, model.Id)
-		modelNames = append(modelNames, model.Name)
-	}
-
 	return &model.ModelAgent{
-		Id:         modelAgent.Id,
-		Corp:       modelAgent.Corp,
-		Name:       modelAgent.Name,
-		BaseUrl:    modelAgent.BaseUrl,
-		Path:       modelAgent.Path,
-		Weight:     modelAgent.Weight,
-		Models:     models,
-		ModelNames: modelNames,
-		Status:     modelAgent.Status,
+		Id:      modelAgent.Id,
+		Corp:    modelAgent.Corp,
+		Name:    modelAgent.Name,
+		BaseUrl: modelAgent.BaseUrl,
+		Path:    modelAgent.Path,
+		Weight:  modelAgent.Weight,
+		Status:  modelAgent.Status,
 	}, nil
 }
 
@@ -1066,6 +1050,80 @@ func (s *sModelAgent) RemoveCacheModelAgentKey(ctx context.Context, key *entity.
 			}
 		}
 	}
+}
+
+// 获取缓存中的模型代理信息
+func (s *sModelAgent) GetCacheModelAgent(ctx context.Context, id string) (*model.ModelAgent, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModelAgent GetCacheModelAgent time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	modelAgents, err := s.GetCacheList(ctx, id)
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	if len(modelAgents) == 0 {
+		return nil, errors.New("modelAgent is nil")
+	}
+
+	return modelAgents[0], nil
+}
+
+// 根据模型代理ID获取模型代理信息并保存到缓存
+func (s *sModelAgent) GetModelAgentAndSaveCache(ctx context.Context, id string) (*model.ModelAgent, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModelAgent GetModelAgentAndSaveCache time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	modelAgent, err := s.GetModelAgentById(ctx, id)
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	if modelAgent != nil {
+		if err = s.SaveCache(ctx, modelAgent); err != nil {
+			logger.Error(ctx, err)
+			return nil, err
+		}
+	}
+
+	return modelAgent, nil
+}
+
+// 保存模型代理到缓存
+func (s *sModelAgent) SaveCache(ctx context.Context, modelAgent *model.ModelAgent) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModelAgent SaveCache time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	return s.SaveCacheList(ctx, []*model.ModelAgent{modelAgent})
+}
+
+// 获取后备模型代理
+func (s *sModelAgent) GetFallbackModelAgent(ctx context.Context, model *model.Model) (fallbackModelAgent *model.ModelAgent, err error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModelAgent GetFallbackModelAgent time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	if fallbackModelAgent, err = s.GetCacheModelAgent(ctx, model.FallbackConfig.ModelAgent); err != nil || fallbackModelAgent == nil {
+		if fallbackModelAgent, err = s.GetModelAgentAndSaveCache(ctx, model.FallbackConfig.ModelAgent); err != nil {
+			logger.Error(ctx, err)
+			return nil, err
+		}
+	}
+
+	return fallbackModelAgent, nil
 }
 
 // 变更订阅

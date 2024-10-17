@@ -918,7 +918,7 @@ func (s *sModel) GetTargetModel(ctx context.Context, model *model.Model, message
 			response, err := service.Chat().SmartCompletions(ctx, sdkm.ChatCompletionRequest{
 				Model:    decisionModel.Model,
 				Messages: messages,
-			}, decisionModel, nil)
+			}, decisionModel, nil, nil)
 
 			if err != nil {
 				logger.Error(ctx, err)
@@ -962,8 +962,8 @@ func (s *sModel) GetFallbackModel(ctx context.Context, model *model.Model) (fall
 		logger.Debugf(ctx, "sModel GetFallbackModel time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	if fallbackModel, err = s.GetCacheModel(ctx, model.FallbackConfig.FallbackModel); err != nil || fallbackModel == nil {
-		if fallbackModel, err = s.GetModelAndSaveCache(ctx, model.FallbackConfig.FallbackModel); err != nil {
+	if fallbackModel, err = s.GetCacheModel(ctx, model.FallbackConfig.Model); err != nil || fallbackModel == nil {
+		if fallbackModel, err = s.GetModelAndSaveCache(ctx, model.FallbackConfig.Model); err != nil {
 			logger.Error(ctx, err)
 			return nil, err
 		}

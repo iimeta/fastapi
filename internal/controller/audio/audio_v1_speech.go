@@ -20,7 +20,7 @@ func (c *ControllerV1) Speech(ctx context.Context, req *v1.SpeechReq) (res *v1.S
 		logger.Debugf(ctx, "Controller Speech time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	response, err := service.Audio().Speech(ctx, req.SpeechRequest, nil)
+	response, err := service.Audio().Speech(ctx, req.SpeechRequest, nil, nil)
 	if err != nil {
 		return nil, err
 	}

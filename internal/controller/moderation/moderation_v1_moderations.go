@@ -17,7 +17,7 @@ func (c *ControllerV1) Moderations(ctx context.Context, req *v1.ModerationsReq) 
 		logger.Debugf(ctx, "Controller Moderations time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	response, err := service.Moderation().Moderations(ctx, req.ModerationRequest, nil)
+	response, err := service.Moderation().Moderations(ctx, req.ModerationRequest, nil, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -17,7 +17,7 @@ func (c *ControllerV1) Embeddings(ctx context.Context, req *v1.EmbeddingsReq) (r
 		logger.Debugf(ctx, "Controller Embeddings time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	response, err := service.Embedding().Embeddings(ctx, req.EmbeddingRequest, nil)
+	response, err := service.Embedding().Embeddings(ctx, req.EmbeddingRequest, nil, nil)
 	if err != nil {
 		return nil, err
 	}
