@@ -204,6 +204,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 		}
 
 	} else {
+
 		if keyTotal, k, err = service.Key().PickModelKey(ctx, realModel); err != nil {
 			logger.Error(ctx, err)
 
@@ -268,16 +269,32 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 		if isRetry {
 
 			if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
+
 				if realModel.IsEnableFallback {
-					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-						retryInfo = &mcommon.Retry{
-							IsRetry:    true,
-							RetryCount: len(retry),
-							ErrMsg:     err.Error(),
+
+					if realModel.FallbackConfig.ModelAgent != "" && realModel.FallbackConfig.ModelAgent != modelAgent.Id {
+						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
+							retryInfo = &mcommon.Retry{
+								IsRetry:    true,
+								RetryCount: len(retry),
+								ErrMsg:     err.Error(),
+							}
+							return s.Embeddings(ctx, params, fallbackModelAgent, fallbackModel)
 						}
-						return s.Embeddings(ctx, params, fallbackModelAgent, fallbackModel)
+					}
+
+					if realModel.FallbackConfig.Model != "" {
+						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+							retryInfo = &mcommon.Retry{
+								IsRetry:    true,
+								RetryCount: len(retry),
+								ErrMsg:     err.Error(),
+							}
+							return s.Embeddings(ctx, params, nil, fallbackModel)
+						}
 					}
 				}
+
 				return response, err
 			}
 

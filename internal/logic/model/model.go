@@ -969,6 +969,12 @@ func (s *sModel) GetFallbackModel(ctx context.Context, model *model.Model) (fall
 		}
 	}
 
+	if fallbackModel.Status != 1 {
+		err = errors.ERR_MODEL_HAS_BEEN_DISABLED
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
 	return fallbackModel, nil
 }
 

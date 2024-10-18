@@ -715,6 +715,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		}
 
 	} else {
+
 		if keyTotal, k, err = service.Key().PickModelKey(ctx, realModel); err != nil {
 			logger.Error(ctx, err)
 

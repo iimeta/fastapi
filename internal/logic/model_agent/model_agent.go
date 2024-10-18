@@ -1123,6 +1123,12 @@ func (s *sModelAgent) GetFallbackModelAgent(ctx context.Context, model *model.Mo
 		}
 	}
 
+	if fallbackModelAgent.Status != 1 {
+		err = errors.ERR_MODEL_AGENT_HAS_BEEN_DISABLED
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
 	return fallbackModelAgent, nil
 }
 

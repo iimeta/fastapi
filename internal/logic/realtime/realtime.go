@@ -226,6 +226,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 		}
 
 	} else {
+
 		if keyTotal, k, err = service.Key().PickModelKey(ctx, realModel); err != nil {
 			logger.Error(ctx, err)
 
@@ -287,17 +288,34 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 		}
 
 		if isRetry {
+
 			if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
+
 				if realModel.IsEnableFallback {
-					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-						retryInfo = &mcommon.Retry{
-							IsRetry:    true,
-							RetryCount: len(retry),
-							ErrMsg:     err.Error(),
+
+					if realModel.FallbackConfig.ModelAgent != "" && realModel.FallbackConfig.ModelAgent != modelAgent.Id {
+						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
+							retryInfo = &mcommon.Retry{
+								IsRetry:    true,
+								RetryCount: len(retry),
+								ErrMsg:     err.Error(),
+							}
+							return s.Realtime(ctx, r, params, fallbackModelAgent, fallbackModel)
 						}
-						return s.Realtime(ctx, r, params, fallbackModelAgent, fallbackModel)
+					}
+
+					if realModel.FallbackConfig.Model != "" {
+						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+							retryInfo = &mcommon.Retry{
+								IsRetry:    true,
+								RetryCount: len(retry),
+								ErrMsg:     err.Error(),
+							}
+							return s.Realtime(ctx, r, params, nil, fallbackModel)
+						}
 					}
 				}
+
 				return err
 			}
 
