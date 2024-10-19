@@ -84,9 +84,10 @@ gcp:
 
 # 调用日志记录内容
 record_logs:
-  - prompt
-  - completion
-  - messages
+  - prompt      # 提问
+  - completion  # 回答
+  - messages    # 上下文
+  - image       # 多模态识图的BASE64图像数据, 需记录提问时生效
 
 # 错误配置
 error:
