@@ -1084,10 +1084,13 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 	}
 
 	if len(completionsReq.Messages) > 0 && slices.Contains(config.Cfg.RecordLogs, "prompt") {
+
+		prompt := completionsReq.Messages[len(completionsReq.Messages)-1].Content
+
 		if slices.Contains(config.Cfg.RecordLogs, "image") {
-			chat.Prompt = gconv.String(completionsReq.Messages[len(completionsReq.Messages)-1].Content)
+			chat.Prompt = gconv.String(prompt)
 		} else {
-			if multiContent, ok := completionsReq.Messages[len(completionsReq.Messages)-1].Content.([]interface{}); ok {
+			if multiContent, ok := prompt.([]interface{}); ok {
 				for _, value := range multiContent {
 					content := value.(map[string]interface{})
 					if content["type"] == "image_url" {
@@ -1098,6 +1101,8 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 					}
 				}
 				chat.Prompt = gconv.String(multiContent)
+			} else {
+				chat.Prompt = gconv.String(prompt)
 			}
 		}
 	}
