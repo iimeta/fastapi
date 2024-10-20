@@ -86,3 +86,37 @@ func GetMultimodalTokens(ctx context.Context, model string, multiContent []inter
 
 	return textTokens, imageTokens
 }
+
+func GetMultimodalAudioTokens(ctx context.Context, model string, messages []sdkm.ChatCompletionMessage, reqModel *model.Model) (textTokens, audioTokens int) {
+
+	var text string
+
+	for _, message := range messages {
+		if multiContent, ok := message.Content.([]interface{}); ok {
+			for _, value := range multiContent {
+				content := value.(map[string]interface{})
+				if content["type"] == "text" {
+					text += gconv.String(content["text"])
+				}
+			}
+		} else {
+			text += gconv.String(message.Content)
+		}
+	}
+
+	contentTime := gtime.TimestampMilli()
+
+	tokens, err := tiktoken.NumTokensFromString(model, text)
+	if err != nil {
+		logger.Errorf(ctx, "GetMultimodalAudioTokens NumTokensFromString model: %s, content: %s, error: %v", model, text, err)
+		if tokens, err = tiktoken.NumTokensFromString(consts.DEFAULT_MODEL, text); err != nil {
+			logger.Errorf(ctx, "GetMultimodalAudioTokens NumTokensFromString model: %s, content: %s, error: %v", consts.DEFAULT_MODEL, text, err)
+		}
+	}
+
+	textTokens += tokens
+
+	logger.Debugf(ctx, "GetMultimodalAudioTokens NumTokensFromString model: %s, len(content): %d, tokens: %d, time: %d", model, len(text), tokens, gtime.TimestampMilli()-contentTime)
+
+	return textTokens, 288
+}

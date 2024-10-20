@@ -53,18 +53,19 @@ func (c *ControllerV1) Models(ctx context.Context, req *v1.ModelsReq) (res *v1.M
 
 			if req.IsFastAPI {
 				modelsData.FastAPI = &model.FastAPI{
-					Corp:             corp.Name,
-					Code:             corp.Code,
-					Model:            m.Model,
-					Type:             m.Type,
-					BaseUrl:          m.BaseUrl,
-					Path:             m.Path,
-					TextQuota:        m.TextQuota,
-					ImageQuotas:      m.ImageQuotas,
-					AudioQuota:       m.AudioQuota,
-					MultimodalQuota:  m.MultimodalQuota,
-					RealtimeQuota:    m.RealtimeQuota,
-					MidjourneyQuotas: m.MidjourneyQuotas,
+					Corp:                 corp.Name,
+					Code:                 corp.Code,
+					Model:                m.Model,
+					Type:                 m.Type,
+					BaseUrl:              m.BaseUrl,
+					Path:                 m.Path,
+					TextQuota:            m.TextQuota,
+					ImageQuotas:          m.ImageQuotas,
+					AudioQuota:           m.AudioQuota,
+					MultimodalQuota:      m.MultimodalQuota,
+					RealtimeQuota:        m.RealtimeQuota,
+					MultimodalAudioQuota: m.MultimodalAudioQuota,
+					MidjourneyQuotas:     m.MidjourneyQuotas,
 				}
 			}
 

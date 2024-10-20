@@ -69,6 +69,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		retryInfo   *mcommon.Retry
 		textTokens  int
 		imageTokens int
+		audioTokens int
 		totalTokens int
 		projectId   string
 	)
@@ -89,6 +90,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			}
 
 			if reqModel.Type == 100 { // 多模态
+
 				if response.Usage == nil {
 
 					response.Usage = new(sdkm.Usage)
@@ -113,6 +115,23 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 					totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*reqModel.MultimodalQuota.TextQuota.CompletionRatio))
 				}
 
+			} else if reqModel.Type == 102 { // 多模态语音
+
+				if response.Usage == nil {
+
+					response.Usage = new(sdkm.Usage)
+
+					textTokens, audioTokens = common.GetMultimodalAudioTokens(ctx, model, params.Messages, reqModel)
+					response.Usage.PromptTokens = textTokens + audioTokens
+
+					if len(response.Choices) > 0 && response.Choices[0].Message != nil && response.Choices[0].Message.Audio != nil {
+						response.Usage.CompletionTokens = common.GetCompletionTokens(ctx, model, response.Choices[0].Message.Audio.Transcript) + 388
+					}
+				}
+
+				response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
+				totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*reqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
+
 			} else if response.Usage == nil || response.Usage.TotalTokens == 0 {
 
 				response.Usage = new(sdkm.Usage)
@@ -128,7 +147,25 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		}
 
 		if reqModel != nil && response.Usage != nil {
-			if reqModel.Type != 100 {
+			if reqModel.Type == 102 {
+
+				if response.Usage.PromptTokensDetails != nil {
+					textTokens = int(math.Ceil(float64(response.Usage.PromptTokensDetails.TextTokens) * reqModel.MultimodalAudioQuota.TextQuota.PromptRatio))
+					audioTokens = int(math.Ceil(float64(response.Usage.PromptTokensDetails.AudioTokens) * reqModel.MultimodalAudioQuota.AudioQuota.PromptRatio))
+				} else {
+					audioTokens = int(math.Ceil(float64(response.Usage.PromptTokens) * reqModel.MultimodalAudioQuota.AudioQuota.PromptRatio))
+				}
+
+				if response.Usage.CompletionTokensDetails != nil {
+					textTokens += int(math.Ceil(float64(response.Usage.CompletionTokensDetails.TextTokens) * reqModel.MultimodalAudioQuota.TextQuota.CompletionRatio))
+					audioTokens += int(math.Ceil(float64(response.Usage.CompletionTokensDetails.AudioTokens) * reqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
+				} else {
+					audioTokens += int(math.Ceil(float64(response.Usage.CompletionTokens) * reqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
+				}
+
+				totalTokens = textTokens + audioTokens
+
+			} else if reqModel.Type != 100 {
 				if reqModel.TextQuota.BillingMethod == 1 {
 					totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
 				} else {
@@ -167,7 +204,11 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			}
 
 			if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
-				completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
+				if realModel.Type == 102 && response.Choices[0].Message.Audio != nil {
+					completionsRes.Completion = response.Choices[0].Message.Audio.Transcript
+				} else {
+					completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
+				}
 			}
 
 			s.SaveLog(ctx, reqModel, realModel, fallbackModelAgent, fallbackModel, k, &params, completionsRes, retryInfo, false)
@@ -503,6 +544,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		totalTime   int64
 		textTokens  int
 		imageTokens int
+		audioTokens int
 		totalTokens int
 		usage       *sdkm.Usage
 		retryInfo   *mcommon.Retry
@@ -526,22 +568,32 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					model = consts.DEFAULT_MODEL
 				}
 
-				if content, ok := params.Messages[len(params.Messages)-1].Content.([]interface{}); ok {
-					textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, reqModel)
-					usage.PromptTokens = textTokens + imageTokens
+				if reqModel.Type == 102 { // 多模态语音
+					textTokens, audioTokens = common.GetMultimodalAudioTokens(ctx, model, params.Messages, reqModel)
+					usage.PromptTokens = textTokens + audioTokens
 				} else {
-					if usage.PromptTokens == 0 {
-						usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
+					if content, ok := params.Messages[len(params.Messages)-1].Content.([]interface{}); ok {
+						textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, reqModel)
+						usage.PromptTokens = textTokens + imageTokens
+					} else {
+						if usage.PromptTokens == 0 {
+							usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
+						}
 					}
 				}
 
 				if usage.CompletionTokens == 0 {
 					usage.CompletionTokens = common.GetCompletionTokens(ctx, model, completion)
+					if reqModel.Type == 102 { // 多模态语音
+						usage.CompletionTokens += 388
+					}
 				}
 
 				if reqModel.Type == 100 { // 多模态
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 					totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*reqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*reqModel.MultimodalQuota.TextQuota.CompletionRatio))
+				} else if reqModel.Type == 102 { // 多模态语音
+					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*reqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*reqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
 				} else {
 					if reqModel.TextQuota.BillingMethod == 1 {
 						usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
@@ -557,6 +609,9 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				if reqModel.Type == 100 { // 多模态
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*reqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*reqModel.MultimodalQuota.TextQuota.CompletionRatio))
+				} else if reqModel.Type == 102 { // 多模态语音
+					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*reqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*reqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
 				} else {
 					if reqModel.TextQuota.BillingMethod == 1 {
 						usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
@@ -995,7 +1050,11 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		}
 
 		if len(response.Choices) > 0 && response.Choices[0].Delta != nil {
-			completion += response.Choices[0].Delta.Content
+			if realModel.Type == 102 && response.Choices[0].Delta.Audio != nil {
+				completion += response.Choices[0].Delta.Audio.Transcript
+			} else {
+				completion += response.Choices[0].Delta.Content
+			}
 		}
 
 		if len(response.Choices) > 0 && response.Choices[0].Delta != nil && len(response.Choices[0].Delta.ToolCalls) > 0 {
@@ -1087,22 +1146,38 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 
 		prompt := completionsReq.Messages[len(completionsReq.Messages)-1].Content
 
-		if slices.Contains(config.Cfg.RecordLogs, "image") {
-			chat.Prompt = gconv.String(prompt)
-		} else {
+		if reqModel.Type == 102 {
+
 			if multiContent, ok := prompt.([]interface{}); ok {
 				for _, value := range multiContent {
 					content := value.(map[string]interface{})
-					if content["type"] == "image_url" {
-						imageUrl := content["image_url"].(map[string]interface{})
-						if gstr.HasPrefix(gconv.String(imageUrl["url"]), "data:image") {
-							imageUrl["url"] = "[BASE64图像数据]"
-						}
+					if content["type"] == "text" {
+						chat.Prompt = gconv.String(content["text"])
 					}
 				}
-				chat.Prompt = gconv.String(multiContent)
 			} else {
 				chat.Prompt = gconv.String(prompt)
+			}
+
+		} else {
+
+			if slices.Contains(config.Cfg.RecordLogs, "image") {
+				chat.Prompt = gconv.String(prompt)
+			} else {
+				if multiContent, ok := prompt.([]interface{}); ok {
+					for _, value := range multiContent {
+						content := value.(map[string]interface{})
+						if content["type"] == "image_url" {
+							imageUrl := content["image_url"].(map[string]interface{})
+							if gstr.HasPrefix(gconv.String(imageUrl["url"]), "data:image") {
+								imageUrl["url"] = "[BASE64图像数据]"
+							}
+						}
+					}
+					chat.Prompt = gconv.String(multiContent)
+				} else {
+					chat.Prompt = gconv.String(prompt)
+				}
 			}
 		}
 	}
@@ -1119,6 +1194,13 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 		chat.Type = reqModel.Type
 		chat.TextQuota = reqModel.TextQuota
 		chat.MultimodalQuota = reqModel.MultimodalQuota
+
+		if reqModel.Type == 102 {
+			chat.TextQuota.BillingMethod = reqModel.MultimodalAudioQuota.AudioQuota.BillingMethod
+			chat.TextQuota.PromptRatio = reqModel.MultimodalAudioQuota.AudioQuota.PromptRatio
+			chat.TextQuota.CompletionRatio = reqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio
+			chat.TextQuota.FixedQuota = reqModel.MultimodalAudioQuota.AudioQuota.FixedQuota
+		}
 	}
 
 	if realModel != nil {
