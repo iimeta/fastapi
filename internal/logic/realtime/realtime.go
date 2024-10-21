@@ -421,11 +421,15 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 					responseCompletion = realtimeResponse.Part.Transcript
 				}
 			case "response.output_item.done":
-				if realtimeResponse.Item.Content[0].Text != "" {
-					responseCompletion = realtimeResponse.Item.Content[0].Text
-				}
-				if realtimeResponse.Item.Content[0].Transcript != "" {
-					responseCompletion = realtimeResponse.Item.Content[0].Transcript
+				if len(realtimeResponse.Item.Content) > 0 {
+					if realtimeResponse.Item.Content[0].Text != "" {
+						responseCompletion = realtimeResponse.Item.Content[0].Text
+					}
+					if realtimeResponse.Item.Content[0].Transcript != "" {
+						responseCompletion = realtimeResponse.Item.Content[0].Transcript
+					}
+				} else if realtimeResponse.Item.Arguments != nil {
+					responseCompletion = gconv.String(realtimeResponse.Item.Arguments)
 				}
 			}
 
@@ -441,7 +445,16 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 				completion := responseCompletion
 				totalTokens := 0
 
-				if realtimeResponse.Response.Output[0].Content[0].Type == "text" {
+				typ := ""
+				if len(realtimeResponse.Response.Output) > 0 {
+					if len(realtimeResponse.Response.Output[0].Content) > 0 {
+						typ = realtimeResponse.Response.Output[0].Content[0].Type
+					} else {
+						typ = realtimeResponse.Response.Output[0].Type
+					}
+				}
+
+				if typ == "text" || typ == "function_call" {
 					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*reqModel.RealtimeQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*reqModel.RealtimeQuota.TextQuota.CompletionRatio))
 				} else {
 					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*reqModel.RealtimeQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*reqModel.RealtimeQuota.AudioQuota.CompletionRatio))
@@ -463,7 +476,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 					internalTime := gtime.TimestampMilli() - enterTime - totalTime
 
 					completionsRes := &model.CompletionsRes{
-						Type:         realtimeResponse.Response.Output[0].Content[0].Type,
+						Type:         typ,
 						Completion:   completion,
 						Error:        err,
 						ConnTime:     response.ConnTime,

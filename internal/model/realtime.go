@@ -32,6 +32,9 @@ type RealtimeResponse struct {
 			Text       string `json:"text"`
 			Transcript string `json:"transcript"`
 		} `json:"content"`
+		Name      string `json:"name"`
+		CallId    string `json:"call_id"`
+		Arguments any    `json:"arguments"`
 	} `json:"item"`
 
 	Part struct {
@@ -79,6 +82,9 @@ type RealtimeResponse struct {
 				Text       string `json:"text"`
 				Transcript string `json:"transcript"`
 			} `json:"content"`
+			Name      string `json:"name"`
+			CallId    string `json:"call_id"`
+			Arguments any    `json:"arguments"`
 		} `json:"output"`
 		Usage struct {
 			TotalTokens       int `json:"total_tokens"`
