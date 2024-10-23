@@ -1169,7 +1169,7 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 						content := value.(map[string]interface{})
 						if content["type"] == "image_url" {
 							imageUrl := content["image_url"].(map[string]interface{})
-							if gstr.HasPrefix(gconv.String(imageUrl["url"]), "data:image") {
+							if !gstr.HasPrefix(gconv.String(imageUrl["url"]), "http") {
 								imageUrl["url"] = "[BASE64图像数据]"
 							}
 						}
