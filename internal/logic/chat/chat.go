@@ -1264,9 +1264,27 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 
 	if slices.Contains(config.Cfg.RecordLogs, "messages") {
 		for _, message := range completionsReq.Messages {
+
+			content := message.Content
+
+			if !slices.Contains(config.Cfg.RecordLogs, "image") {
+				if multiContent, ok := content.([]interface{}); ok {
+					for _, value := range multiContent {
+						content := value.(map[string]interface{})
+						if content["type"] == "image_url" {
+							imageUrl := content["image_url"].(map[string]interface{})
+							if !gstr.HasPrefix(gconv.String(imageUrl["url"]), "http") {
+								imageUrl["url"] = "[BASE64图像数据]"
+							}
+						}
+					}
+					content = gconv.String(multiContent)
+				}
+			}
+
 			chat.Messages = append(chat.Messages, mcommon.Message{
 				Role:    message.Role,
-				Content: gconv.String(message.Content),
+				Content: gconv.String(content),
 			})
 		}
 	}
