@@ -87,7 +87,7 @@ record_logs:
   - prompt      # 提问
   - completion  # 回答
   - messages    # 上下文
-  - image       # 多模态识图的BASE64图像数据, 需记录提问时生效
+  - image       # 多模态识图的BASE64图像数据
 
 # 错误配置
 error:
