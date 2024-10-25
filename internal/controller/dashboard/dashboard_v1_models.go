@@ -66,6 +66,7 @@ func (c *ControllerV1) Models(ctx context.Context, req *v1.ModelsReq) (res *v1.M
 					RealtimeQuota:        m.RealtimeQuota,
 					MultimodalAudioQuota: m.MultimodalAudioQuota,
 					MidjourneyQuotas:     m.MidjourneyQuotas,
+					Remark:               m.Remark,
 				}
 			}
 

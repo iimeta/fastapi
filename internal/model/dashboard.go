@@ -64,4 +64,5 @@ type FastAPI struct {
 	RealtimeQuota        common.RealtimeQuota        `json:"realtime_quota,omitempty"`         // 多模态实时额度
 	MultimodalAudioQuota common.MultimodalAudioQuota `json:"multimodal_audio_quota,omitempty"` // 多模态语音额度
 	MidjourneyQuotas     []common.MidjourneyQuota    `json:"midjourney_quotas,omitempty"`      // Midjourney额度
+	Remark               string                      `json:"remark,omitempty"`                 // 备注
 }
