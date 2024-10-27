@@ -2,7 +2,6 @@ package chat
 
 import (
 	"context"
-	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
@@ -56,22 +55,18 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 	}
 
 	var (
+		mak = &common.MAK{
+			Model:              params.Model,
+			Messages:           params.Messages,
+			FallbackModelAgent: fallbackModelAgent,
+			FallbackModel:      fallbackModel,
+		}
 		client      sdk.Client
-		reqModel    *model.Model
-		realModel   = new(model.Model)
-		k           *model.Key
-		modelAgent  *model.ModelAgent
-		key         string
-		baseUrl     string
-		path        string
-		agentTotal  int
-		keyTotal    int
 		retryInfo   *mcommon.Retry
 		textTokens  int
 		imageTokens int
 		audioTokens int
 		totalTokens int
-		projectId   string
 	)
 
 	defer func() {
@@ -82,21 +77,21 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 
 			// 替换成调用的模型
-			response.Model = reqModel.Model
-			model := reqModel.Model
+			response.Model = mak.ReqModel.Model
+			model := mak.ReqModel.Model
 
 			if !tiktoken.IsEncodingForModel(model) {
 				model = consts.DEFAULT_MODEL
 			}
 
-			if reqModel.Type == 100 { // 多模态
+			if mak.ReqModel.Type == 100 { // 多模态
 
 				if response.Usage == nil {
 
 					response.Usage = new(sdkm.Usage)
 
 					if content, ok := params.Messages[len(params.Messages)-1].Content.([]interface{}); ok {
-						textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, reqModel)
+						textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, mak.ReqModel)
 						response.Usage.PromptTokens = textTokens + imageTokens
 					} else {
 						if response.Usage.PromptTokens == 0 {
@@ -109,19 +104,19 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 					}
 
 					response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
-					totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*reqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*reqModel.MultimodalQuota.TextQuota.CompletionRatio))
+					totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
 
 				} else {
-					totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*reqModel.MultimodalQuota.TextQuota.CompletionRatio))
+					totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
 				}
 
-			} else if reqModel.Type == 102 { // 多模态语音
+			} else if mak.ReqModel.Type == 102 { // 多模态语音
 
 				if response.Usage == nil {
 
 					response.Usage = new(sdkm.Usage)
 
-					textTokens, audioTokens = common.GetMultimodalAudioTokens(ctx, model, params.Messages, reqModel)
+					textTokens, audioTokens = common.GetMultimodalAudioTokens(ctx, model, params.Messages, mak.ReqModel)
 					response.Usage.PromptTokens = textTokens + audioTokens
 
 					if len(response.Choices) > 0 && response.Choices[0].Message != nil && response.Choices[0].Message.Audio != nil {
@@ -130,7 +125,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				}
 
 				response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
-				totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*reqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
+				totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
 
 			} else if response.Usage == nil || response.Usage.TotalTokens == 0 {
 
@@ -146,37 +141,37 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			}
 		}
 
-		if reqModel != nil && response.Usage != nil {
-			if reqModel.Type == 102 {
+		if mak.ReqModel != nil && response.Usage != nil {
+			if mak.ReqModel.Type == 102 {
 
 				if response.Usage.PromptTokensDetails != nil {
-					textTokens = int(math.Ceil(float64(response.Usage.PromptTokensDetails.TextTokens) * reqModel.MultimodalAudioQuota.TextQuota.PromptRatio))
-					audioTokens = int(math.Ceil(float64(response.Usage.PromptTokensDetails.AudioTokens) * reqModel.MultimodalAudioQuota.AudioQuota.PromptRatio))
+					textTokens = int(math.Ceil(float64(response.Usage.PromptTokensDetails.TextTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.PromptRatio))
+					audioTokens = int(math.Ceil(float64(response.Usage.PromptTokensDetails.AudioTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio))
 				} else {
-					audioTokens = int(math.Ceil(float64(response.Usage.PromptTokens) * reqModel.MultimodalAudioQuota.AudioQuota.PromptRatio))
+					audioTokens = int(math.Ceil(float64(response.Usage.PromptTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio))
 				}
 
 				if response.Usage.CompletionTokensDetails != nil {
-					textTokens += int(math.Ceil(float64(response.Usage.CompletionTokensDetails.TextTokens) * reqModel.MultimodalAudioQuota.TextQuota.CompletionRatio))
-					audioTokens += int(math.Ceil(float64(response.Usage.CompletionTokensDetails.AudioTokens) * reqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
+					textTokens += int(math.Ceil(float64(response.Usage.CompletionTokensDetails.TextTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.CompletionRatio))
+					audioTokens += int(math.Ceil(float64(response.Usage.CompletionTokensDetails.AudioTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
 				} else {
-					audioTokens += int(math.Ceil(float64(response.Usage.CompletionTokens) * reqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
+					audioTokens += int(math.Ceil(float64(response.Usage.CompletionTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
 				}
 
 				totalTokens = textTokens + audioTokens
 
-			} else if reqModel.Type != 100 {
-				if reqModel.TextQuota.BillingMethod == 1 {
-					totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
+			} else if mak.ReqModel.Type != 100 {
+				if mak.ReqModel.TextQuota.BillingMethod == 1 {
+					totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*mak.ReqModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*mak.ReqModel.TextQuota.CompletionRatio))
 				} else {
-					totalTokens = reqModel.TextQuota.FixedQuota
+					totalTokens = mak.ReqModel.TextQuota.FixedQuota
 				}
 			}
 		}
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, totalTokens, k.Key); err != nil {
+				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -187,7 +182,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-			realModel.ModelAgent = modelAgent
+			mak.RealModel.ModelAgent = mak.ModelAgent
 
 			completionsRes := &model.CompletionsRes{
 				Error:        err,
@@ -204,242 +199,60 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			}
 
 			if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
-				if realModel.Type == 102 && response.Choices[0].Message.Audio != nil {
+				if mak.RealModel.Type == 102 && response.Choices[0].Message.Audio != nil {
 					completionsRes.Completion = response.Choices[0].Message.Audio.Transcript
 				} else {
 					completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
 				}
 			}
 
-			s.SaveLog(ctx, reqModel, realModel, fallbackModelAgent, fallbackModel, k, &params, completionsRes, retryInfo, false)
+			s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, false)
 
 		}); err != nil {
 			logger.Error(ctx, err)
 		}
 	}()
 
-	if reqModel, err = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx)); err != nil {
+	if err = mak.InitMAK(ctx); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
-	if fallbackModel != nil {
-		*realModel = *fallbackModel
-	} else {
-		*realModel = *reqModel
-	}
-
-	if realModel.IsEnableForward {
-		if realModel, err = service.Model().GetTargetModel(ctx, realModel, params.Messages); err != nil {
-			logger.Error(ctx, err)
-			return response, err
-		}
-	}
-
-	baseUrl = realModel.BaseUrl
-	path = realModel.Path
-
-	if fallbackModelAgent != nil || realModel.IsEnableModelAgent {
-
-		if fallbackModelAgent != nil {
-			modelAgent = fallbackModelAgent
-			agentTotal = 1
-			realModel.IsEnableModelAgent = true
-		} else {
-
-			if agentTotal, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, realModel); err != nil {
-				logger.Error(ctx, err)
-
-				if realModel.IsEnableFallback {
-
-					if realModel.FallbackConfig.ModelAgent != "" {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.Completions(ctx, params, fallbackModelAgent, fallbackModel)
-						}
-					}
-
-					if realModel.FallbackConfig.Model != "" {
-						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.Completions(ctx, params, nil, fallbackModel)
-						}
-					}
-				}
-
-				return response, err
-			}
-		}
-
-		if modelAgent != nil {
-
-			baseUrl = modelAgent.BaseUrl
-			path = modelAgent.Path
-
-			if keyTotal, k, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
-				logger.Error(ctx, err)
-
-				service.ModelAgent().RecordErrorModelAgent(ctx, realModel, modelAgent)
-
-				if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY) {
-					service.ModelAgent().DisabledModelAgent(ctx, modelAgent, "No available model agent key")
-				}
-
-				if realModel.IsEnableFallback {
-
-					if realModel.FallbackConfig.ModelAgent != "" && realModel.FallbackConfig.ModelAgent != modelAgent.Id {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.Completions(ctx, params, fallbackModelAgent, fallbackModel)
-						}
-					}
-
-					if realModel.FallbackConfig.Model != "" {
-						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.Completions(ctx, params, nil, fallbackModel)
-						}
-					}
-				}
-
-				return response, err
-			}
-		}
-
-	} else {
-
-		if keyTotal, k, err = service.Key().PickModelKey(ctx, realModel); err != nil {
-			logger.Error(ctx, err)
-
-			if realModel.IsEnableFallback {
-
-				if realModel.FallbackConfig.ModelAgent != "" {
-					if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
-						retryInfo = &mcommon.Retry{
-							IsRetry:    true,
-							RetryCount: len(retry),
-							ErrMsg:     err.Error(),
-						}
-						return s.Completions(ctx, params, fallbackModelAgent, fallbackModel)
-					}
-				}
-
-				if realModel.FallbackConfig.Model != "" {
-					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-						retryInfo = &mcommon.Retry{
-							IsRetry:    true,
-							RetryCount: len(retry),
-							ErrMsg:     err.Error(),
-						}
-						return s.Completions(ctx, params, nil, fallbackModel)
-					}
-				}
-			}
-
-			return response, err
-		}
-	}
-
 	request := params
-	key = k.Key
 
-	if !gstr.Contains(realModel.Model, "*") {
-		request.Model = realModel.Model
-	}
-
-	// todo
-	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_GCP_CLAUDE {
-
-		projectId, key, err = getGcpTokenNew(ctx, k, config.Cfg.Http.ProxyUrl)
-		if err != nil {
-			logger.Error(ctx, err)
-
-			// 记录错误次数和禁用
-			service.Common().RecordError(ctx, realModel, k, modelAgent)
-
-			isRetry, isDisabled := common.IsNeedRetry(err)
-
-			if isDisabled {
-				if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-					if realModel.IsEnableModelAgent {
-						service.ModelAgent().DisabledModelAgentKey(ctx, k, err.Error())
-					} else {
-						service.Key().DisabledModelKey(ctx, k, err.Error())
-					}
-				}, nil); err != nil {
-					logger.Error(ctx, err)
-				}
-			}
-
-			if isRetry {
-
-				if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
-					return response, err
-				}
-
-				retryInfo = &mcommon.Retry{
-					IsRetry:    true,
-					RetryCount: len(retry),
-					ErrMsg:     err.Error(),
-				}
-
-				return s.Completions(ctx, params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
-			}
-
-			return response, err
-		}
-
-		path = fmt.Sprintf(path, projectId, realModel.Model)
-
-	} else if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
-		key = getBaiduToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
+	if !gstr.Contains(mak.RealModel.Model, "*") {
+		request.Model = mak.RealModel.Model
 	}
 
 	// 预设配置
-	if realModel.IsEnablePresetConfig {
+	if mak.RealModel.IsEnablePresetConfig {
 
 		// 替换预设提示词
-		if realModel.PresetConfig.IsSupportSystemRole && realModel.PresetConfig.SystemRolePrompt != "" {
+		if mak.RealModel.PresetConfig.IsSupportSystemRole && mak.RealModel.PresetConfig.SystemRolePrompt != "" {
 			if request.Messages[0].Role == consts.ROLE_SYSTEM {
 				request.Messages = append([]sdkm.ChatCompletionMessage{{
 					Role:    consts.ROLE_SYSTEM,
-					Content: realModel.PresetConfig.SystemRolePrompt,
+					Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 				}}, request.Messages[1:]...)
 			} else {
 				request.Messages = append([]sdkm.ChatCompletionMessage{{
 					Role:    consts.ROLE_SYSTEM,
-					Content: realModel.PresetConfig.SystemRolePrompt,
+					Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 				}}, request.Messages...)
 			}
 		}
 
 		// 检查MaxTokens取值范围
 		if request.MaxTokens != 0 {
-			if realModel.PresetConfig.MinTokens != 0 && request.MaxTokens < realModel.PresetConfig.MinTokens {
-				request.MaxTokens = realModel.PresetConfig.MinTokens
-			} else if realModel.PresetConfig.MaxTokens != 0 && request.MaxTokens > realModel.PresetConfig.MaxTokens {
-				request.MaxTokens = realModel.PresetConfig.MaxTokens
+			if mak.RealModel.PresetConfig.MinTokens != 0 && request.MaxTokens < mak.RealModel.PresetConfig.MinTokens {
+				request.MaxTokens = mak.RealModel.PresetConfig.MinTokens
+			} else if mak.RealModel.PresetConfig.MaxTokens != 0 && request.MaxTokens > mak.RealModel.PresetConfig.MaxTokens {
+				request.MaxTokens = mak.RealModel.PresetConfig.MaxTokens
 			}
 		}
 	}
 
-	if client, err = common.NewClient(ctx, realModel, key, baseUrl, path); err != nil {
+	if client, err = common.NewClient(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
@@ -449,16 +262,16 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		logger.Error(ctx, err)
 
 		// 记录错误次数和禁用
-		service.Common().RecordError(ctx, realModel, k, modelAgent)
+		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
 
 		isRetry, isDisabled := common.IsNeedRetry(err)
 
 		if isDisabled {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if realModel.IsEnableModelAgent {
-					service.ModelAgent().DisabledModelAgentKey(ctx, k, err.Error())
+				if mak.RealModel.IsEnableModelAgent {
+					service.ModelAgent().DisabledModelAgentKey(ctx, mak.Key, err.Error())
 				} else {
-					service.Key().DisabledModelKey(ctx, k, err.Error())
+					service.Key().DisabledModelKey(ctx, mak.Key, err.Error())
 				}
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -467,12 +280,12 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 		if isRetry {
 
-			if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
+			if common.IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
 
-				if realModel.IsEnableFallback {
+				if mak.RealModel.IsEnableFallback {
 
-					if realModel.FallbackConfig.ModelAgent != "" && realModel.FallbackConfig.ModelAgent != modelAgent.Id {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
+					if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
+						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, mak.RealModel); fallbackModelAgent != nil {
 							retryInfo = &mcommon.Retry{
 								IsRetry:    true,
 								RetryCount: len(retry),
@@ -482,8 +295,8 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 						}
 					}
 
-					if realModel.FallbackConfig.Model != "" {
-						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+					if mak.RealModel.FallbackConfig.Model != "" {
+						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
 							retryInfo = &mcommon.Retry{
 								IsRetry:    true,
 								RetryCount: len(retry),
@@ -528,17 +341,14 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 	}
 
 	var (
+		mak = &common.MAK{
+			Model:              params.Model,
+			Messages:           params.Messages,
+			FallbackModelAgent: fallbackModelAgent,
+			FallbackModel:      fallbackModel,
+		}
 		client      sdk.Client
-		reqModel    *model.Model
-		realModel   = new(model.Model)
-		k           *model.Key
-		modelAgent  *model.ModelAgent
-		key         string
-		baseUrl     string
-		path        string
 		completion  string
-		agentTotal  int
-		keyTotal    int
 		connTime    int64
 		duration    int64
 		totalTime   int64
@@ -548,7 +358,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		totalTokens int
 		usage       *sdkm.Usage
 		retryInfo   *mcommon.Retry
-		projectId   string
 	)
 
 	defer func() {
@@ -563,17 +372,17 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					usage = new(sdkm.Usage)
 				}
 
-				model := reqModel.Model
+				model := mak.ReqModel.Model
 				if !tiktoken.IsEncodingForModel(model) {
 					model = consts.DEFAULT_MODEL
 				}
 
-				if reqModel.Type == 102 { // 多模态语音
-					textTokens, audioTokens = common.GetMultimodalAudioTokens(ctx, model, params.Messages, reqModel)
+				if mak.ReqModel.Type == 102 { // 多模态语音
+					textTokens, audioTokens = common.GetMultimodalAudioTokens(ctx, model, params.Messages, mak.ReqModel)
 					usage.PromptTokens = textTokens + audioTokens
 				} else {
 					if content, ok := params.Messages[len(params.Messages)-1].Content.([]interface{}); ok {
-						textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, reqModel)
+						textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, mak.ReqModel)
 						usage.PromptTokens = textTokens + imageTokens
 					} else {
 						if usage.PromptTokens == 0 {
@@ -584,48 +393,48 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 				if usage.CompletionTokens == 0 {
 					usage.CompletionTokens = common.GetCompletionTokens(ctx, model, completion)
-					if reqModel.Type == 102 { // 多模态语音
+					if mak.ReqModel.Type == 102 { // 多模态语音
 						usage.CompletionTokens += 388
 					}
 				}
 
-				if reqModel.Type == 100 { // 多模态
+				if mak.ReqModel.Type == 100 { // 多模态
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-					totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*reqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*reqModel.MultimodalQuota.TextQuota.CompletionRatio))
-				} else if reqModel.Type == 102 { // 多模态语音
-					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*reqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*reqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
+					totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
+				} else if mak.ReqModel.Type == 102 { // 多模态语音
+					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
 				} else {
-					if reqModel.TextQuota.BillingMethod == 1 {
+					if mak.ReqModel.TextQuota.BillingMethod == 1 {
 						usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-						totalTokens = int(math.Ceil(float64(usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
+						totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.TextQuota.PromptRatio + float64(usage.CompletionTokens)*mak.ReqModel.TextQuota.CompletionRatio))
 					} else {
-						usage.TotalTokens = reqModel.TextQuota.FixedQuota
-						totalTokens = reqModel.TextQuota.FixedQuota
+						usage.TotalTokens = mak.ReqModel.TextQuota.FixedQuota
+						totalTokens = mak.ReqModel.TextQuota.FixedQuota
 					}
 				}
 
 			} else if retryInfo == nil && usage != nil {
 
-				if reqModel.Type == 100 { // 多模态
+				if mak.ReqModel.Type == 100 { // 多模态
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*reqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*reqModel.MultimodalQuota.TextQuota.CompletionRatio))
-				} else if reqModel.Type == 102 { // 多模态语音
+					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
+				} else if mak.ReqModel.Type == 102 { // 多模态语音
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*reqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*reqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
+					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
 				} else {
-					if reqModel.TextQuota.BillingMethod == 1 {
+					if mak.ReqModel.TextQuota.BillingMethod == 1 {
 						usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-						totalTokens = int(math.Ceil(float64(usage.PromptTokens)*reqModel.TextQuota.PromptRatio + float64(usage.CompletionTokens)*reqModel.TextQuota.CompletionRatio))
+						totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.TextQuota.PromptRatio + float64(usage.CompletionTokens)*mak.ReqModel.TextQuota.CompletionRatio))
 					} else {
-						usage.TotalTokens = reqModel.TextQuota.FixedQuota
-						totalTokens = reqModel.TextQuota.FixedQuota
+						usage.TotalTokens = mak.ReqModel.TextQuota.FixedQuota
+						totalTokens = mak.ReqModel.TextQuota.FixedQuota
 					}
 				}
 			}
 
 			if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 				if err := grpool.Add(ctx, func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, totalTokens, k.Key); err != nil {
+					if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key); err != nil {
 						logger.Error(ctx, err)
 						panic(err)
 					}
@@ -636,7 +445,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 			if err := grpool.Add(ctx, func(ctx context.Context) {
 
-				realModel.ModelAgent = modelAgent
+				mak.RealModel.ModelAgent = mak.ModelAgent
 
 				completionsRes := &model.CompletionsRes{
 					Completion:   completion,
@@ -653,7 +462,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					completionsRes.Usage.TotalTokens = totalTokens
 				}
 
-				s.SaveLog(ctx, reqModel, realModel, fallbackModelAgent, fallbackModel, k, &params, completionsRes, retryInfo, false)
+				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, false)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -665,215 +474,46 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		}
 	}()
 
-	if reqModel, err = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx)); err != nil {
+	if err = mak.InitMAK(ctx); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
 
-	if fallbackModel != nil {
-		*realModel = *fallbackModel
-	} else {
-		*realModel = *reqModel
-	}
-
-	if realModel.IsEnableForward {
-		if realModel, err = service.Model().GetTargetModel(ctx, realModel, params.Messages); err != nil {
-			logger.Error(ctx, err)
-			return err
-		}
-	}
-
-	baseUrl = realModel.BaseUrl
-	path = realModel.Path
-
-	if fallbackModelAgent != nil || realModel.IsEnableModelAgent {
-
-		if fallbackModelAgent != nil {
-			modelAgent = fallbackModelAgent
-			agentTotal = 1
-			realModel.IsEnableModelAgent = true
-		} else {
-
-			if agentTotal, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, realModel); err != nil {
-				logger.Error(ctx, err)
-
-				if realModel.IsEnableFallback {
-
-					if realModel.FallbackConfig.ModelAgent != "" {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.CompletionsStream(ctx, params, fallbackModelAgent, fallbackModel)
-						}
-					}
-
-					if realModel.FallbackConfig.Model != "" {
-						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.CompletionsStream(ctx, params, nil, fallbackModel)
-						}
-					}
-				}
-
-				return err
-			}
-		}
-
-		if modelAgent != nil {
-
-			baseUrl = modelAgent.BaseUrl
-			path = modelAgent.Path
-
-			if keyTotal, k, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
-				logger.Error(ctx, err)
-
-				service.ModelAgent().RecordErrorModelAgent(ctx, realModel, modelAgent)
-
-				if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY) {
-					service.ModelAgent().DisabledModelAgent(ctx, modelAgent, "No available model agent key")
-				}
-
-				if realModel.IsEnableFallback {
-
-					if realModel.FallbackConfig.ModelAgent != "" && realModel.FallbackConfig.ModelAgent != modelAgent.Id {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.CompletionsStream(ctx, params, fallbackModelAgent, fallbackModel)
-						}
-					}
-
-					if realModel.FallbackConfig.Model != "" {
-						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.CompletionsStream(ctx, params, nil, fallbackModel)
-						}
-					}
-				}
-
-				return err
-			}
-		}
-
-	} else {
-
-		if keyTotal, k, err = service.Key().PickModelKey(ctx, realModel); err != nil {
-			logger.Error(ctx, err)
-
-			if realModel.IsEnableFallback {
-
-				if realModel.FallbackConfig.ModelAgent != "" {
-					if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
-						retryInfo = &mcommon.Retry{
-							IsRetry:    true,
-							RetryCount: len(retry),
-							ErrMsg:     err.Error(),
-						}
-						return s.CompletionsStream(ctx, params, fallbackModelAgent, fallbackModel)
-					}
-				}
-
-				if realModel.FallbackConfig.Model != "" {
-					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-						retryInfo = &mcommon.Retry{
-							IsRetry:    true,
-							RetryCount: len(retry),
-							ErrMsg:     err.Error(),
-						}
-						return s.CompletionsStream(ctx, params, nil, fallbackModel)
-					}
-				}
-			}
-
-			return err
-		}
-	}
-
 	request := params
-	key = k.Key
 
-	if !gstr.Contains(realModel.Model, "*") {
-		request.Model = realModel.Model
+	if !gstr.Contains(mak.RealModel.Model, "*") {
+		request.Model = mak.RealModel.Model
 	}
 
-	// todo
-	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_GCP_CLAUDE {
+	// 预设配置
+	if mak.RealModel.IsEnablePresetConfig {
 
-		projectId, key, err = getGcpTokenNew(ctx, k, config.Cfg.Http.ProxyUrl)
-		if err != nil {
-			logger.Error(ctx, err)
-
-			// 记录错误次数和禁用
-			service.Common().RecordError(ctx, realModel, k, modelAgent)
-
-			isRetry, isDisabled := common.IsNeedRetry(err)
-
-			if isDisabled {
-				if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-					if realModel.IsEnableModelAgent {
-						service.ModelAgent().DisabledModelAgentKey(ctx, k, err.Error())
-					} else {
-						service.Key().DisabledModelKey(ctx, k, err.Error())
-					}
-				}, nil); err != nil {
-					logger.Error(ctx, err)
-				}
+		// 替换预设提示词
+		if mak.RealModel.PresetConfig.IsSupportSystemRole && mak.RealModel.PresetConfig.SystemRolePrompt != "" {
+			if request.Messages[0].Role == consts.ROLE_SYSTEM {
+				request.Messages = append([]sdkm.ChatCompletionMessage{{
+					Role:    consts.ROLE_SYSTEM,
+					Content: mak.RealModel.PresetConfig.SystemRolePrompt,
+				}}, request.Messages[1:]...)
+			} else {
+				request.Messages = append([]sdkm.ChatCompletionMessage{{
+					Role:    consts.ROLE_SYSTEM,
+					Content: mak.RealModel.PresetConfig.SystemRolePrompt,
+				}}, request.Messages...)
 			}
-
-			if isRetry {
-
-				if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
-					return err
-				}
-
-				retryInfo = &mcommon.Retry{
-					IsRetry:    true,
-					RetryCount: len(retry),
-					ErrMsg:     err.Error(),
-				}
-
-				return s.CompletionsStream(ctx, params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
-			}
-
-			return err
 		}
 
-		path = fmt.Sprintf(path, projectId, realModel.Model)
-
-	} else if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
-		key = getBaiduToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
-	}
-
-	// 替换预设提示词
-	if reqModel.IsEnablePresetConfig && reqModel.PresetConfig.IsSupportSystemRole && reqModel.PresetConfig.SystemRolePrompt != "" {
-		if request.Messages[0].Role == consts.ROLE_SYSTEM {
-			request.Messages = append([]sdkm.ChatCompletionMessage{{
-				Role:    consts.ROLE_SYSTEM,
-				Content: reqModel.PresetConfig.SystemRolePrompt,
-			}}, request.Messages[1:]...)
-		} else {
-			request.Messages = append([]sdkm.ChatCompletionMessage{{
-				Role:    consts.ROLE_SYSTEM,
-				Content: reqModel.PresetConfig.SystemRolePrompt,
-			}}, request.Messages...)
+		// 检查MaxTokens取值范围
+		if request.MaxTokens != 0 {
+			if mak.RealModel.PresetConfig.MinTokens != 0 && request.MaxTokens < mak.RealModel.PresetConfig.MinTokens {
+				request.MaxTokens = mak.RealModel.PresetConfig.MinTokens
+			} else if mak.RealModel.PresetConfig.MaxTokens != 0 && request.MaxTokens > mak.RealModel.PresetConfig.MaxTokens {
+				request.MaxTokens = mak.RealModel.PresetConfig.MaxTokens
+			}
 		}
 	}
 
-	if client, err = common.NewClient(ctx, realModel, key, baseUrl, path); err != nil {
+	if client, err = common.NewClient(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
@@ -883,16 +523,16 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		logger.Error(ctx, err)
 
 		// 记录错误次数和禁用
-		service.Common().RecordError(ctx, realModel, k, modelAgent)
+		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
 
 		isRetry, isDisabled := common.IsNeedRetry(err)
 
 		if isDisabled {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if realModel.IsEnableModelAgent {
-					service.ModelAgent().DisabledModelAgentKey(ctx, k, err.Error())
+				if mak.RealModel.IsEnableModelAgent {
+					service.ModelAgent().DisabledModelAgentKey(ctx, mak.Key, err.Error())
 				} else {
-					service.Key().DisabledModelKey(ctx, k, err.Error())
+					service.Key().DisabledModelKey(ctx, mak.Key, err.Error())
 				}
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -901,12 +541,12 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 		if isRetry {
 
-			if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
+			if common.IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
 
-				if realModel.IsEnableFallback {
+				if mak.RealModel.IsEnableFallback {
 
-					if realModel.FallbackConfig.ModelAgent != "" && realModel.FallbackConfig.ModelAgent != modelAgent.Id {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
+					if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
+						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, mak.RealModel); fallbackModelAgent != nil {
 							retryInfo = &mcommon.Retry{
 								IsRetry:    true,
 								RetryCount: len(retry),
@@ -916,8 +556,8 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 						}
 					}
 
-					if realModel.FallbackConfig.Model != "" {
-						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+					if mak.RealModel.FallbackConfig.Model != "" {
+						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
 							retryInfo = &mcommon.Retry{
 								IsRetry:    true,
 								RetryCount: len(retry),
@@ -989,16 +629,16 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			err = response.Error
 
 			// 记录错误次数和禁用
-			service.Common().RecordError(ctx, realModel, k, modelAgent)
+			service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
 
 			isRetry, isDisabled := common.IsNeedRetry(err)
 
 			if isDisabled {
 				if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-					if realModel.IsEnableModelAgent {
-						service.ModelAgent().DisabledModelAgentKey(ctx, k, err.Error())
+					if mak.RealModel.IsEnableModelAgent {
+						service.ModelAgent().DisabledModelAgentKey(ctx, mak.Key, err.Error())
 					} else {
-						service.Key().DisabledModelKey(ctx, k, err.Error())
+						service.Key().DisabledModelKey(ctx, mak.Key, err.Error())
 					}
 				}, nil); err != nil {
 					logger.Error(ctx, err)
@@ -1007,12 +647,12 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 			if isRetry {
 
-				if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
+				if common.IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
 
-					if realModel.IsEnableFallback {
+					if mak.RealModel.IsEnableFallback {
 
-						if realModel.FallbackConfig.ModelAgent != "" && realModel.FallbackConfig.ModelAgent != modelAgent.Id {
-							if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
+						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
+							if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, mak.RealModel); fallbackModelAgent != nil {
 								retryInfo = &mcommon.Retry{
 									IsRetry:    true,
 									RetryCount: len(retry),
@@ -1022,8 +662,8 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 							}
 						}
 
-						if realModel.FallbackConfig.Model != "" {
-							if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+						if mak.RealModel.FallbackConfig.Model != "" {
+							if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
 								retryInfo = &mcommon.Retry{
 									IsRetry:    true,
 									RetryCount: len(retry),
@@ -1050,7 +690,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		}
 
 		if len(response.Choices) > 0 && response.Choices[0].Delta != nil {
-			if realModel.Type == 102 && response.Choices[0].Delta.Audio != nil {
+			if mak.RealModel.Type == 102 && response.Choices[0].Delta.Audio != nil {
 				completion += response.Choices[0].Delta.Audio.Transcript
 			} else {
 				completion += response.Choices[0].Delta.Content
@@ -1080,7 +720,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		}
 
 		// 替换成调用的模型
-		response.Model = reqModel.Model
+		response.Model = mak.ReqModel.Model
 
 		// OpenAI官方格式
 		if len(response.ResponseBytes) > 0 {
@@ -1093,7 +733,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 			// 替换成调用的模型
 			if _, ok := data["model"]; ok {
-				data["model"] = reqModel.Model
+				data["model"] = mak.ReqModel.Model
 			}
 
 			if err = util.SSEServer(ctx, gjson.MustEncodeString(data)); err != nil {

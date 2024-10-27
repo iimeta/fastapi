@@ -2,7 +2,6 @@ package chat
 
 import (
 	"context"
-	"fmt"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
@@ -10,9 +9,7 @@ import (
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
-	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
 	mcommon "github.com/iimeta/fastapi/internal/model/common"
@@ -31,20 +28,18 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 	}()
 
 	var (
+		mak = &common.MAK{
+			Model:              reqModel.Model,
+			Messages:           params.Messages,
+			ReqModel:           reqModel,
+			FallbackModelAgent: fallbackModelAgent,
+			FallbackModel:      fallbackModel,
+		}
 		client      sdk.Client
-		realModel   = new(model.Model)
-		k           *model.Key
-		modelAgent  *model.ModelAgent
-		key         string
-		baseUrl     string
-		path        string
-		agentTotal  int
-		keyTotal    int
 		retryInfo   *mcommon.Retry
 		textTokens  int
 		imageTokens int
 		totalTokens int
-		projectId   string
 	)
 
 	defer func() {
@@ -54,18 +49,18 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 
-			model := realModel.Model
+			model := mak.RealModel.Model
 			if !tiktoken.IsEncodingForModel(model) {
 				model = consts.DEFAULT_MODEL
 			}
 
-			if realModel.Type == 100 { // 多模态
+			if mak.RealModel.Type == 100 { // 多模态
 				if response.Usage == nil {
 
 					response.Usage = new(sdkm.Usage)
 
 					if content, ok := params.Messages[len(params.Messages)-1].Content.([]interface{}); ok {
-						textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, realModel)
+						textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, mak.RealModel)
 						response.Usage.PromptTokens = textTokens + imageTokens
 					} else {
 						if response.Usage.PromptTokens == 0 {
@@ -78,10 +73,10 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 					}
 
 					response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
-					totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*realModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*realModel.MultimodalQuota.TextQuota.CompletionRatio))
+					totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*mak.RealModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*mak.RealModel.MultimodalQuota.TextQuota.CompletionRatio))
 
 				} else {
-					totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*realModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*realModel.MultimodalQuota.TextQuota.CompletionRatio))
+					totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*mak.RealModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*mak.RealModel.MultimodalQuota.TextQuota.CompletionRatio))
 				}
 
 			} else if response.Usage == nil || response.Usage.TotalTokens == 0 {
@@ -98,19 +93,19 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 			}
 		}
 
-		if realModel != nil && response.Usage != nil {
-			if realModel.Type != 100 {
-				if realModel.TextQuota.BillingMethod == 1 {
-					totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*realModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*realModel.TextQuota.CompletionRatio))
+		if mak.RealModel != nil && response.Usage != nil {
+			if mak.RealModel.Type != 100 {
+				if mak.RealModel.TextQuota.BillingMethod == 1 {
+					totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*mak.RealModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*mak.RealModel.TextQuota.CompletionRatio))
 				} else {
-					totalTokens = realModel.TextQuota.FixedQuota
+					totalTokens = mak.RealModel.TextQuota.FixedQuota
 				}
 			}
 		}
 
 		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-			realModel.ModelAgent = modelAgent
+			mak.RealModel.ModelAgent = mak.ModelAgent
 
 			completionsRes := &model.CompletionsRes{
 				Error:        err,
@@ -130,223 +125,49 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 				completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
 			}
 
-			s.SaveLog(ctx, reqModel, realModel, fallbackModelAgent, fallbackModel, k, &params, completionsRes, retryInfo, true)
+			s.SaveLog(ctx, reqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, true)
 
 		}); err != nil {
 			logger.Error(ctx, err)
 		}
 	}()
 
-	if fallbackModel != nil {
-		*realModel = *fallbackModel
-	} else {
-		*realModel = *reqModel
+	if err = mak.InitMAK(ctx); err != nil {
+		logger.Error(ctx, err)
+		return response, err
 	}
 
-	if realModel.IsEnableForward {
-		if realModel, err = service.Model().GetTargetModel(ctx, realModel, params.Messages); err != nil {
-			logger.Error(ctx, err)
-			return response, err
-		}
-	}
-
-	baseUrl = realModel.BaseUrl
-	path = realModel.Path
-
-	if fallbackModelAgent != nil || realModel.IsEnableModelAgent {
-
-		if fallbackModelAgent != nil {
-			modelAgent = fallbackModelAgent
-		} else {
-
-			if agentTotal, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, realModel); err != nil {
-				logger.Error(ctx, err)
-
-				if realModel.IsEnableFallback {
-
-					if realModel.FallbackConfig.ModelAgent != "" {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.SmartCompletions(ctx, params, reqModel, fallbackModelAgent, fallbackModel)
-						}
-					}
-
-					if realModel.FallbackConfig.Model != "" {
-						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.SmartCompletions(ctx, params, reqModel, nil, fallbackModel)
-						}
-					}
-				}
-
-				return response, err
-			}
-		}
-
-		if modelAgent != nil {
-
-			baseUrl = modelAgent.BaseUrl
-			path = modelAgent.Path
-
-			if keyTotal, k, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
-				logger.Error(ctx, err)
-
-				service.ModelAgent().RecordErrorModelAgent(ctx, realModel, modelAgent)
-
-				if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY) {
-					service.ModelAgent().DisabledModelAgent(ctx, modelAgent, "No available model agent key")
-				}
-
-				if realModel.IsEnableFallback {
-
-					if realModel.FallbackConfig.ModelAgent != "" && realModel.FallbackConfig.ModelAgent != modelAgent.Id {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.SmartCompletions(ctx, params, reqModel, fallbackModelAgent, fallbackModel)
-						}
-					}
-
-					if realModel.FallbackConfig.Model != "" {
-						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.SmartCompletions(ctx, params, reqModel, nil, fallbackModel)
-						}
-					}
-				}
-
-				return response, err
-			}
-		}
-
-	} else {
-		if keyTotal, k, err = service.Key().PickModelKey(ctx, realModel); err != nil {
-			logger.Error(ctx, err)
-
-			if realModel.IsEnableFallback {
-
-				if realModel.FallbackConfig.ModelAgent != "" {
-					if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
-						retryInfo = &mcommon.Retry{
-							IsRetry:    true,
-							RetryCount: len(retry),
-							ErrMsg:     err.Error(),
-						}
-						return s.SmartCompletions(ctx, params, reqModel, fallbackModelAgent, fallbackModel)
-					}
-				}
-
-				if realModel.FallbackConfig.Model != "" {
-					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-						retryInfo = &mcommon.Retry{
-							IsRetry:    true,
-							RetryCount: len(retry),
-							ErrMsg:     err.Error(),
-						}
-						return s.SmartCompletions(ctx, params, reqModel, nil, fallbackModel)
-					}
-				}
-			}
-
-			return response, err
-		}
-	}
-
-	params.Model = realModel.Model
-	key = k.Key
-
-	// todo
-	if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_GCP_CLAUDE {
-
-		projectId, key, err = getGcpTokenNew(ctx, k, config.Cfg.Http.ProxyUrl)
-		if err != nil {
-			logger.Error(ctx, err)
-
-			// 记录错误次数和禁用
-			service.Common().RecordError(ctx, realModel, k, modelAgent)
-
-			isRetry, isDisabled := common.IsNeedRetry(err)
-
-			if isDisabled {
-				if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-					if realModel.IsEnableModelAgent {
-						service.ModelAgent().DisabledModelAgentKey(ctx, k, err.Error())
-					} else {
-						service.Key().DisabledModelKey(ctx, k, err.Error())
-					}
-				}, nil); err != nil {
-					logger.Error(ctx, err)
-				}
-			}
-
-			if isRetry {
-
-				if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
-					return response, err
-				}
-
-				retryInfo = &mcommon.Retry{
-					IsRetry:    true,
-					RetryCount: len(retry),
-					ErrMsg:     err.Error(),
-				}
-
-				return s.SmartCompletions(ctx, params, reqModel, fallbackModelAgent, fallbackModel, append(retry, 1)...)
-			}
-
-			return response, err
-		}
-
-		path = fmt.Sprintf(path, projectId, realModel.Model)
-
-	} else if common.GetCorpCode(ctx, realModel.Corp) == consts.CORP_BAIDU {
-		key = getBaiduToken(ctx, k.Key, baseUrl, config.Cfg.Http.ProxyUrl)
-	}
+	params.Model = mak.RealModel.Model
 
 	// 预设配置
-	if realModel.IsEnablePresetConfig {
+	if mak.RealModel.IsEnablePresetConfig {
 
 		// 替换预设提示词
-		if realModel.PresetConfig.IsSupportSystemRole && realModel.PresetConfig.SystemRolePrompt != "" {
+		if mak.RealModel.PresetConfig.IsSupportSystemRole && mak.RealModel.PresetConfig.SystemRolePrompt != "" {
 			if params.Messages[0].Role == consts.ROLE_SYSTEM {
 				params.Messages = append([]sdkm.ChatCompletionMessage{{
 					Role:    consts.ROLE_SYSTEM,
-					Content: realModel.PresetConfig.SystemRolePrompt,
+					Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 				}}, params.Messages[1:]...)
 			} else {
 				params.Messages = append([]sdkm.ChatCompletionMessage{{
 					Role:    consts.ROLE_SYSTEM,
-					Content: realModel.PresetConfig.SystemRolePrompt,
+					Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 				}}, params.Messages...)
 			}
 		}
 
 		// 检查MaxTokens取值范围
 		if params.MaxTokens != 0 {
-			if realModel.PresetConfig.MinTokens != 0 && params.MaxTokens < realModel.PresetConfig.MinTokens {
-				params.MaxTokens = realModel.PresetConfig.MinTokens
-			} else if realModel.PresetConfig.MaxTokens != 0 && params.MaxTokens > realModel.PresetConfig.MaxTokens {
-				params.MaxTokens = realModel.PresetConfig.MaxTokens
+			if mak.RealModel.PresetConfig.MinTokens != 0 && params.MaxTokens < mak.RealModel.PresetConfig.MinTokens {
+				params.MaxTokens = mak.RealModel.PresetConfig.MinTokens
+			} else if mak.RealModel.PresetConfig.MaxTokens != 0 && params.MaxTokens > mak.RealModel.PresetConfig.MaxTokens {
+				params.MaxTokens = mak.RealModel.PresetConfig.MaxTokens
 			}
 		}
 	}
 
-	if client, err = common.NewClient(ctx, realModel, key, baseUrl, path); err != nil {
+	if client, err = common.NewClient(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
@@ -359,10 +180,10 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 		if isDisabled {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if realModel.IsEnableModelAgent {
-					service.ModelAgent().DisabledModelAgentKey(ctx, k, err.Error())
+				if mak.RealModel.IsEnableModelAgent {
+					service.ModelAgent().DisabledModelAgentKey(ctx, mak.Key, err.Error())
 				} else {
-					service.Key().DisabledModelKey(ctx, k, err.Error())
+					service.Key().DisabledModelKey(ctx, mak.Key, err.Error())
 				}
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -371,12 +192,12 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 		if isRetry {
 
-			if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
+			if common.IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
 
-				if realModel.IsEnableFallback {
+				if mak.RealModel.IsEnableFallback {
 
-					if realModel.FallbackConfig.ModelAgent != "" && realModel.FallbackConfig.ModelAgent != modelAgent.Id {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
+					if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
+						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, mak.RealModel); fallbackModelAgent != nil {
 							retryInfo = &mcommon.Retry{
 								IsRetry:    true,
 								RetryCount: len(retry),
@@ -386,8 +207,8 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 						}
 					}
 
-					if realModel.FallbackConfig.Model != "" {
-						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+					if mak.RealModel.FallbackConfig.Model != "" {
+						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
 							retryInfo = &mcommon.Retry{
 								IsRetry:    true,
 								RetryCount: len(retry),

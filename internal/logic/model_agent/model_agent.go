@@ -381,7 +381,6 @@ func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.M
 	if len(keys) == 0 {
 
 		if keys, err = s.GetCacheModelAgentKeys(ctx, modelAgent.Id); err != nil {
-
 			if keys, err = s.GetModelAgentKeys(ctx, modelAgent.Id); err != nil {
 				logger.Error(ctx, err)
 				return 0, nil, err

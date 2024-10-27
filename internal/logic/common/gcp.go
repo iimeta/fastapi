@@ -1,4 +1,4 @@
-package chat
+package common
 
 import (
 	credentials "cloud.google.com/go/iam/credentials/apiv1"
