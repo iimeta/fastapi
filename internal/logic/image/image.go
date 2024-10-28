@@ -41,17 +41,13 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 	}()
 
 	var (
+		mak = &common.MAK{
+			Model:              params.Model,
+			FallbackModelAgent: fallbackModelAgent,
+			FallbackModel:      fallbackModel,
+		}
 		client     sdk.Client
-		reqModel   *model.Model
-		realModel  = new(model.Model)
-		k          *model.Key
-		modelAgent *model.ModelAgent
 		imageQuota mcommon.ImageQuota
-		key        string
-		baseUrl    string
-		path       string
-		agentTotal int
-		keyTotal   int
 		retryInfo  *mcommon.Retry
 	)
 
@@ -65,7 +61,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, usage.TotalTokens, k.Key); err != nil {
+				if err := service.Common().RecordUsage(ctx, usage.TotalTokens, mak.Key.Key); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -76,7 +72,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 
 		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-			realModel.ModelAgent = modelAgent
+			mak.RealModel.ModelAgent = mak.ModelAgent
 
 			imageRes := &model.ImageRes{
 				Created:      response.Created,
@@ -91,147 +87,28 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 				imageRes.Usage = *usage
 			}
 
-			s.SaveLog(ctx, reqModel, realModel, fallbackModelAgent, fallbackModel, k, &params, imageRes, retryInfo)
+			s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, imageRes, retryInfo)
 
 		}); err != nil {
 			logger.Error(ctx, err)
 		}
 	}()
 
-	if reqModel, err = service.Model().GetModelBySecretKey(ctx, params.Model, service.Session().GetSecretKey(ctx)); err != nil {
+	if err = mak.InitMAK(ctx); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
-	if fallbackModel != nil {
-		*realModel = *fallbackModel
-	} else {
-		*realModel = *reqModel
-	}
-
-	baseUrl = realModel.BaseUrl
-	path = realModel.Path
-
-	if fallbackModelAgent != nil || realModel.IsEnableModelAgent {
-
-		if fallbackModelAgent != nil {
-			modelAgent = fallbackModelAgent
-		} else {
-
-			if agentTotal, modelAgent, err = service.ModelAgent().PickModelAgent(ctx, realModel); err != nil {
-				logger.Error(ctx, err)
-
-				if realModel.IsEnableFallback {
-
-					if realModel.FallbackConfig.ModelAgent != "" {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.Generations(ctx, params, fallbackModelAgent, fallbackModel)
-						}
-					}
-
-					if realModel.FallbackConfig.Model != "" {
-						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.Generations(ctx, params, nil, fallbackModel)
-						}
-					}
-				}
-
-				return response, err
-			}
-		}
-
-		if modelAgent != nil {
-
-			baseUrl = modelAgent.BaseUrl
-			path = modelAgent.Path
-
-			if keyTotal, k, err = service.ModelAgent().PickModelAgentKey(ctx, modelAgent); err != nil {
-				logger.Error(ctx, err)
-
-				service.ModelAgent().RecordErrorModelAgent(ctx, realModel, modelAgent)
-
-				if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY) {
-					service.ModelAgent().DisabledModelAgent(ctx, modelAgent, "No available model agent key")
-				}
-
-				if realModel.FallbackConfig.ModelAgent != "" && realModel.FallbackConfig.ModelAgent != modelAgent.Id {
-					if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
-						retryInfo = &mcommon.Retry{
-							IsRetry:    true,
-							RetryCount: len(retry),
-							ErrMsg:     err.Error(),
-						}
-						return s.Generations(ctx, params, fallbackModelAgent, fallbackModel)
-					}
-				}
-
-				if realModel.FallbackConfig.Model != "" {
-					if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-						retryInfo = &mcommon.Retry{
-							IsRetry:    true,
-							RetryCount: len(retry),
-							ErrMsg:     err.Error(),
-						}
-						return s.Generations(ctx, params, nil, fallbackModel)
-					}
-				}
-
-				return response, err
-			}
-		}
-
-	} else {
-
-		if keyTotal, k, err = service.Key().PickModelKey(ctx, realModel); err != nil {
-			logger.Error(ctx, err)
-
-			if realModel.FallbackConfig.ModelAgent != "" {
-				if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
-					retryInfo = &mcommon.Retry{
-						IsRetry:    true,
-						RetryCount: len(retry),
-						ErrMsg:     err.Error(),
-					}
-					return s.Generations(ctx, params, fallbackModelAgent, fallbackModel)
-				}
-			}
-
-			if realModel.FallbackConfig.Model != "" {
-				if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
-					retryInfo = &mcommon.Retry{
-						IsRetry:    true,
-						RetryCount: len(retry),
-						ErrMsg:     err.Error(),
-					}
-					return s.Generations(ctx, params, nil, fallbackModel)
-				}
-			}
-
-			return response, err
-		}
-	}
-
 	request := params
-	key = k.Key
 
-	imageQuota = common.GetImageQuota(realModel, request.Size)
+	imageQuota = common.GetImageQuota(mak.RealModel, request.Size)
 	request.Size = fmt.Sprintf("%dx%d", imageQuota.Width, imageQuota.Height)
 
-	if !gstr.Contains(realModel.Model, "*") {
-		request.Model = realModel.Model
+	if !gstr.Contains(mak.RealModel.Model, "*") {
+		request.Model = mak.RealModel.Model
 	}
 
-	if client, err = common.NewClient(ctx, realModel, key, baseUrl, path); err != nil {
+	if client, err = common.NewClient(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
@@ -241,16 +118,16 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 		logger.Error(ctx, err)
 
 		// 记录错误次数和禁用
-		service.Common().RecordError(ctx, realModel, k, modelAgent)
+		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
 
 		isRetry, isDisabled := common.IsNeedRetry(err)
 
 		if isDisabled {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if realModel.IsEnableModelAgent {
-					service.ModelAgent().DisabledModelAgentKey(ctx, k, err.Error())
+				if mak.RealModel.IsEnableModelAgent {
+					service.ModelAgent().DisabledModelAgentKey(ctx, mak.Key, err.Error())
 				} else {
-					service.Key().DisabledModelKey(ctx, k, err.Error())
+					service.Key().DisabledModelKey(ctx, mak.Key, err.Error())
 				}
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -259,12 +136,12 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 
 		if isRetry {
 
-			if common.IsMaxRetry(realModel.IsEnableModelAgent, agentTotal, keyTotal, len(retry)) {
+			if common.IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
 
-				if realModel.IsEnableFallback {
+				if mak.RealModel.IsEnableFallback {
 
-					if realModel.FallbackConfig.ModelAgent != "" && realModel.FallbackConfig.ModelAgent != modelAgent.Id {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, realModel); fallbackModelAgent != nil {
+					if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
+						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, mak.RealModel); fallbackModelAgent != nil {
 							retryInfo = &mcommon.Retry{
 								IsRetry:    true,
 								RetryCount: len(retry),
@@ -274,8 +151,8 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 						}
 					}
 
-					if realModel.FallbackConfig.Model != "" {
-						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, realModel); fallbackModel != nil {
+					if mak.RealModel.FallbackConfig.Model != "" {
+						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
 							retryInfo = &mcommon.Retry{
 								IsRetry:    true,
 								RetryCount: len(retry),
