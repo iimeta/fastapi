@@ -62,6 +62,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 
 	if model := request.GetRouterMap()["model"]; model != "" {
 		defaultModel = model
+		mak.Model = model
 		path = gstr.Replace(path, "/"+defaultModel, "")
 	}
 
@@ -115,13 +116,13 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 		return response, err
 	}
 
-	midjourneyQuota, err = common.GetMidjourneyQuota(mak.RealModel, request, path)
-	if err != nil {
+	if midjourneyQuota, err = common.GetMidjourneyQuota(mak.RealModel, request, path); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
 	client := sdk.NewMidjourneyClient(ctx, baseUrl, midjourneyQuota.Path, mak.RealKey, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader, request.Method, config.Cfg.Http.ProxyUrl)
+
 	response, err = client.Request(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
@@ -276,13 +277,13 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 		return response, err
 	}
 
-	midjourneyQuota, err = common.GetMidjourneyQuota(mak.RealModel, request, path)
-	if err != nil {
+	if midjourneyQuota, err = common.GetMidjourneyQuota(mak.RealModel, request, path); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
 	client := sdk.NewMidjourneyClient(ctx, baseUrl, path, mak.RealKey, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader, http.MethodGet, config.Cfg.Http.ProxyUrl)
+
 	response, err = client.Request(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
