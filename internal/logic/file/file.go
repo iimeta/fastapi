@@ -73,6 +73,10 @@ func uploadFile(ctx context.Context, filename string, targetUrl string) ([]byte,
 		if err := file.Close(); err != nil {
 			logger.Error(ctx, err)
 		}
+		// 删除文件
+		if err := os.Remove(filename); err != nil {
+			logger.Error(ctx, err)
+		}
 	}()
 
 	// 创建一个缓冲区
