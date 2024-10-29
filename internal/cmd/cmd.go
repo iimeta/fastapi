@@ -13,6 +13,7 @@ import (
 	"github.com/iimeta/fastapi/internal/controller/chat"
 	"github.com/iimeta/fastapi/internal/controller/dashboard"
 	"github.com/iimeta/fastapi/internal/controller/embedding"
+	"github.com/iimeta/fastapi/internal/controller/file"
 	"github.com/iimeta/fastapi/internal/controller/health"
 	"github.com/iimeta/fastapi/internal/controller/image"
 	"github.com/iimeta/fastapi/internal/controller/midjourney"
@@ -76,6 +77,7 @@ var (
 						dashboard.NewV1(),
 						embedding.NewV1(),
 						moderation.NewV1(),
+						file.NewV1(),
 					)
 				})
 
