@@ -22,3 +22,11 @@ bin/*.zip
 **/resource/audio/*.mp3
 **/resource/audio/*.mpga
 **/resource/audio/*.wav
+**/resource/file/*.mp4
+**/resource/file/*.mpeg
+**/resource/file/*.mov
+**/resource/file/*.avi
+**/resource/file/*.mpg
+**/resource/file/*.webm
+**/resource/file/*.wmv
+**/resource/file/*.3gpp
