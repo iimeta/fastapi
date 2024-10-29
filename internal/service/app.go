@@ -19,9 +19,9 @@ type (
 		// 应用列表
 		List(ctx context.Context) ([]*model.App, error)
 		// 应用花费额度
-		SpendQuota(ctx context.Context, appId, spendQuota, currentQuota int) error
+		SpendQuota(ctx context.Context, appId int, spendQuota int, currentQuota int) error
 		// 应用已用额度
-		UsedQuota(ctx context.Context, appId, quota int) error
+		UsedQuota(ctx context.Context, appId int, quota int) error
 		// 保存应用信息到缓存
 		SaveCacheApp(ctx context.Context, app *model.App) error
 		// 获取缓存中的应用信息
@@ -31,7 +31,7 @@ type (
 		// 移除缓存中的应用信息
 		RemoveCacheApp(ctx context.Context, appId int)
 		// 保存应用额度到缓存
-		SaveCacheAppQuota(ctx context.Context, appId, quota int) error
+		SaveCacheAppQuota(ctx context.Context, appId int, quota int) error
 		// 获取缓存中的应用额度
 		GetCacheAppQuota(ctx context.Context, appId int) int
 		// 保存应用密钥信息到缓存
@@ -43,7 +43,7 @@ type (
 		// 移除缓存中的应用密钥信息
 		RemoveCacheAppKey(ctx context.Context, secretKey string)
 		// 应用密钥花费额度
-		AppKeySpendQuota(ctx context.Context, secretKey string, spendQuota, currentQuota int) error
+		AppKeySpendQuota(ctx context.Context, secretKey string, spendQuota int, currentQuota int) error
 		// 应用密钥已用额度
 		AppKeyUsedQuota(ctx context.Context, secretKey string, quota int) error
 		// 保存应用密钥额度到缓存

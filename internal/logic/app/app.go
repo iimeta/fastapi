@@ -196,7 +196,9 @@ func (s *sApp) GetCacheApp(ctx context.Context, appId int) (*model.App, error) {
 	}
 
 	if appCacheValue := s.appCache.GetVal(ctx, appId); appCacheValue != nil {
-		return appCacheValue.(*model.App), nil
+		app := appCacheValue.(*model.App)
+		service.Session().SaveApp(ctx, app)
+		return app, nil
 	}
 
 	reply, err := redis.Get(ctx, fmt.Sprintf(consts.API_APP_KEY, appId))
@@ -348,7 +350,9 @@ func (s *sApp) GetCacheAppKey(ctx context.Context, secretKey string) (*model.Key
 	}
 
 	if appKeyCacheValue := s.appKeyCache.GetVal(ctx, secretKey); appKeyCacheValue != nil {
-		return appKeyCacheValue.(*model.Key), nil
+		key := appKeyCacheValue.(*model.Key)
+		service.Session().SaveKey(ctx, key)
+		return key, nil
 	}
 
 	reply, err := redis.Get(ctx, fmt.Sprintf(consts.API_APP_KEY_KEY, secretKey))
