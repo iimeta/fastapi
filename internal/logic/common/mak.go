@@ -15,6 +15,7 @@ import (
 )
 
 type MAK struct {
+	Corp               string
 	Model              string
 	Messages           []sdkm.ChatCompletionMessage
 	ReqModel           *model.Model
@@ -56,6 +57,7 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 		}
 	}
 
+	mak.Corp = mak.RealModel.Corp
 	mak.BaseUrl = mak.RealModel.BaseUrl
 	mak.Path = mak.RealModel.Path
 
@@ -91,6 +93,7 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 
 		if mak.ModelAgent != nil {
 
+			mak.Corp = mak.ModelAgent.Corp
 			mak.BaseUrl = mak.ModelAgent.BaseUrl
 			mak.Path = mak.ModelAgent.Path
 
