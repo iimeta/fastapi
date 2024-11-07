@@ -15,9 +15,9 @@ import (
 	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/cache"
+	"github.com/iimeta/fastapi/utility/lb"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
-	"github.com/iimeta/fastapi/utility/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"slices"
 )
@@ -224,7 +224,7 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (int, 
 
 	var (
 		modelAgents []*model.ModelAgent
-		roundRobin  *util.RoundRobin
+		roundRobin  *lb.RoundRobin
 		err         error
 	)
 
@@ -271,11 +271,11 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (int, 
 	}
 
 	if roundRobinValue := s.modelAgentsRoundRobinCache.GetVal(ctx, m.Id); roundRobinValue != nil {
-		roundRobin = roundRobinValue.(*util.RoundRobin)
+		roundRobin = roundRobinValue.(*lb.RoundRobin)
 	}
 
 	if roundRobin == nil {
-		roundRobin = new(util.RoundRobin)
+		roundRobin = lb.NewRoundRobin()
 		if err = s.modelAgentsRoundRobinCache.Set(ctx, m.Id, roundRobin, 0); err != nil {
 			logger.Error(ctx, err)
 			return 0, nil, err
@@ -370,7 +370,7 @@ func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.M
 
 	var (
 		keys       []*model.Key
-		roundRobin *util.RoundRobin
+		roundRobin *lb.RoundRobin
 		err        error
 	)
 
@@ -410,11 +410,11 @@ func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.M
 	}
 
 	if roundRobinValue := s.modelAgentKeysRoundRobinCache.GetVal(ctx, modelAgent.Id); roundRobinValue != nil {
-		roundRobin = roundRobinValue.(*util.RoundRobin)
+		roundRobin = roundRobinValue.(*lb.RoundRobin)
 	}
 
 	if roundRobin == nil {
-		roundRobin = new(util.RoundRobin)
+		roundRobin = lb.NewRoundRobin()
 		if err = s.modelAgentKeysRoundRobinCache.Set(ctx, modelAgent.Id, roundRobin, 0); err != nil {
 			logger.Error(ctx, err)
 			return 0, nil, err

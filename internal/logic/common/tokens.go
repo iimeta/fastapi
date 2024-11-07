@@ -48,27 +48,27 @@ func GetMultimodalTokens(ctx context.Context, model string, multiContent []inter
 
 	for _, value := range multiContent {
 
-		content := value.(map[string]interface{})
+		if content, ok := value.(map[string]interface{}); ok && content["type"] == "image_url" {
 
-		if content["type"] == "image_url" {
+			if imageUrl, ok := content["image_url"].(map[string]interface{}); ok {
 
-			imageUrl := content["image_url"].(map[string]interface{})
-			detail := imageUrl["detail"]
+				detail := imageUrl["detail"]
 
-			var imageQuota mcommon.ImageQuota
-			for _, quota := range reqModel.MultimodalQuota.ImageQuotas {
+				var imageQuota mcommon.ImageQuota
+				for _, quota := range reqModel.MultimodalQuota.ImageQuotas {
 
-				if quota.Mode == detail {
-					imageQuota = quota
-					break
+					if quota.Mode == detail {
+						imageQuota = quota
+						break
+					}
+
+					if quota.IsDefault {
+						imageQuota = quota
+					}
 				}
 
-				if quota.IsDefault {
-					imageQuota = quota
-				}
+				imageTokens += imageQuota.FixedQuota
 			}
-
-			imageTokens += imageQuota.FixedQuota
 
 		} else {
 			contentTime := gtime.TimestampMilli()
@@ -94,9 +94,10 @@ func GetMultimodalAudioTokens(ctx context.Context, model string, messages []sdkm
 	for _, message := range messages {
 		if multiContent, ok := message.Content.([]interface{}); ok {
 			for _, value := range multiContent {
-				content := value.(map[string]interface{})
-				if content["type"] == "text" {
-					text += gconv.String(content["text"])
+				if content, ok := value.(map[string]interface{}); ok {
+					if content["type"] == "text" {
+						text += gconv.String(content["text"])
+					}
 				}
 			}
 		} else {

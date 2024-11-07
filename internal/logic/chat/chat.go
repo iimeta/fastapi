@@ -790,9 +790,10 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 
 			if multiContent, ok := prompt.([]interface{}); ok {
 				for _, value := range multiContent {
-					content := value.(map[string]interface{})
-					if content["type"] == "text" {
-						chat.Prompt = gconv.String(content["text"])
+					if content, ok := value.(map[string]interface{}); ok {
+						if content["type"] == "text" {
+							chat.Prompt = gconv.String(content["text"])
+						}
 					}
 				}
 			} else {
@@ -806,11 +807,13 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 			} else {
 				if multiContent, ok := prompt.([]interface{}); ok {
 					for _, value := range multiContent {
-						content := value.(map[string]interface{})
-						if content["type"] == "image_url" {
-							imageUrl := content["image_url"].(map[string]interface{})
-							if !gstr.HasPrefix(gconv.String(imageUrl["url"]), "http") {
-								imageUrl["url"] = "[BASE64图像数据]"
+						if content, ok := value.(map[string]interface{}); ok {
+							if content["type"] == "image_url" {
+								if imageUrl, ok := content["image_url"].(map[string]interface{}); ok {
+									if !gstr.HasPrefix(gconv.String(imageUrl["url"]), "http") {
+										imageUrl["url"] = "[BASE64图像数据]"
+									}
+								}
 							}
 						}
 					}
@@ -910,11 +913,13 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 			if !slices.Contains(config.Cfg.RecordLogs, "image") {
 				if multiContent, ok := content.([]interface{}); ok {
 					for _, value := range multiContent {
-						content := value.(map[string]interface{})
-						if content["type"] == "image_url" {
-							imageUrl := content["image_url"].(map[string]interface{})
-							if !gstr.HasPrefix(gconv.String(imageUrl["url"]), "http") {
-								imageUrl["url"] = "[BASE64图像数据]"
+						if content, ok := value.(map[string]interface{}); ok {
+							if content["type"] == "image_url" {
+								if imageUrl, ok := content["image_url"].(map[string]interface{}); ok {
+									if !gstr.HasPrefix(gconv.String(imageUrl["url"]), "http") {
+										imageUrl["url"] = "[BASE64图像数据]"
+									}
+								}
 							}
 						}
 					}

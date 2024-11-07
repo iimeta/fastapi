@@ -15,9 +15,9 @@ import (
 	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/cache"
+	"github.com/iimeta/fastapi/utility/lb"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
-	"github.com/iimeta/fastapi/utility/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"slices"
 )
@@ -167,7 +167,7 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (int, *model.Ke
 
 	var (
 		modelKeys  []*model.Key
-		roundRobin *util.RoundRobin
+		roundRobin *lb.RoundRobin
 		err        error
 	)
 
@@ -213,11 +213,11 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (int, *model.Ke
 	}
 
 	if roundRobinValue := s.modelKeysRoundRobinCache.GetVal(ctx, m.Id); roundRobinValue != nil {
-		roundRobin = roundRobinValue.(*util.RoundRobin)
+		roundRobin = roundRobinValue.(*lb.RoundRobin)
 	}
 
 	if roundRobin == nil {
-		roundRobin = new(util.RoundRobin)
+		roundRobin = lb.NewRoundRobin()
 		if err = s.modelKeysRoundRobinCache.Set(ctx, m.Id, roundRobin, 0); err != nil {
 			logger.Error(ctx, err)
 			return 0, nil, err
