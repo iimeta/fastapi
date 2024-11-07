@@ -26,10 +26,13 @@ import (
 	"io"
 	"math"
 	"slices"
+	"sync"
 	"time"
 )
 
-type sChat struct{}
+type sChat struct {
+	mutex sync.Mutex
+}
 
 func init() {
 	service.RegisterChat(New())
@@ -752,6 +755,8 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 // 保存日志
 func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, isSmartMatch bool, retry ...int) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
 	now := gtime.TimestampMilli()
 	defer func() {

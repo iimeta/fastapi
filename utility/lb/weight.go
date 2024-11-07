@@ -8,6 +8,7 @@ type Weight struct {
 	Servers []Server
 	mutex   sync.Mutex
 }
+
 type Server struct {
 	Name           string
 	OriginalWeight int
