@@ -806,8 +806,11 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 				chat.Prompt = gconv.String(prompt)
 			} else {
 				if multiContent, ok := prompt.([]interface{}); ok {
+
 					for _, value := range multiContent {
+
 						if content, ok := value.(map[string]interface{}); ok {
+
 							if content["type"] == "image_url" {
 								if imageUrl, ok := content["image_url"].(map[string]interface{}); ok {
 									if !gstr.HasPrefix(gconv.String(imageUrl["url"]), "http") {
@@ -815,9 +818,18 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 									}
 								}
 							}
+
+							if content["type"] == "image" {
+								if source, ok := content["source"].(sdkm.Source); ok {
+									source.Data = "[BASE64图像数据]"
+									content["source"] = source
+								}
+							}
 						}
 					}
+
 					chat.Prompt = gconv.String(multiContent)
+
 				} else {
 					chat.Prompt = gconv.String(prompt)
 				}
@@ -911,9 +923,13 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 			content := message.Content
 
 			if !slices.Contains(config.Cfg.RecordLogs, "image") {
+
 				if multiContent, ok := content.([]interface{}); ok {
+
 					for _, value := range multiContent {
+
 						if content, ok := value.(map[string]interface{}); ok {
+
 							if content["type"] == "image_url" {
 								if imageUrl, ok := content["image_url"].(map[string]interface{}); ok {
 									if !gstr.HasPrefix(gconv.String(imageUrl["url"]), "http") {
@@ -921,8 +937,16 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 									}
 								}
 							}
+
+							if content["type"] == "image" {
+								if source, ok := content["source"].(sdkm.Source); ok {
+									source.Data = "[BASE64图像数据]"
+									content["source"] = source
+								}
+							}
 						}
 					}
+
 					content = gconv.String(multiContent)
 				}
 			}
