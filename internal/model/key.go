@@ -7,6 +7,7 @@ type Key struct {
 	Corp               string   `json:"corp,omitempty"`                 // 公司
 	Key                string   `json:"key,omitempty"`                  // 密钥
 	Type               int      `json:"type,omitempty"`                 // 密钥类型[1:应用, 2:模型]
+	Weight             int      `json:"weight,omitempty"`               // 权重
 	Models             []string `json:"models,omitempty"`               // 模型
 	ModelAgents        []string `json:"model_agents,omitempty"`         // 模型代理
 	IsLimitQuota       bool     `json:"is_limit_quota"`                 // 是否限制额度

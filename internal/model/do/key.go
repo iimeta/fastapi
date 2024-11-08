@@ -13,6 +13,7 @@ type Key struct {
 	Corp               string   `bson:"corp,omitempty"`                 // 公司
 	Key                string   `bson:"key,omitempty"`                  // 密钥
 	Type               int      `bson:"type,omitempty"`                 // 密钥类型[1:应用, 2:模型]
+	Weight             int      `bson:"weight,omitempty"`               // 权重
 	Models             []string `bson:"models,omitempty"`               // 模型
 	ModelAgents        []string `bson:"model_agents,omitempty"`         // 模型代理
 	IsAgentsOnly       bool     `bson:"is_agents_only,omitempty"`       // 是否代理专用

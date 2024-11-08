@@ -22,6 +22,7 @@ type Model struct {
 	DataFormat           int                         `json:"data_format,omitempty"`             // 数据格式[1:统一格式, 2:官方格式]
 	IsPublic             bool                        `json:"is_public,omitempty"`               // 是否公开
 	IsEnableModelAgent   bool                        `json:"is_enable_model_agent,omitempty"`   // 是否启用模型代理
+	LbStrategy           int                         `json:"lb_strategy,omitempty"`             // 代理负载均衡策略[1:轮询, 2:权重]
 	ModelAgents          []string                    `json:"model_agents,omitempty"`            // 模型代理
 	ModelAgentNames      []string                    `json:"model_agent_names,omitempty"`       // 模型代理名称
 	ModelAgent           *ModelAgent                 `json:"model_agent,omitempty"`             // 模型代理信息

@@ -7,6 +7,7 @@ type ModelAgent struct {
 	BaseUrl            string   `json:"base_url,omitempty"`             // 模型代理地址
 	Path               string   `json:"path,omitempty"`                 // 模型代理地址路径
 	Weight             int      `json:"weight,omitempty"`               // 权重
+	LbStrategy         int      `json:"lb_strategy,omitempty"`          // 密钥负载均衡策略[1:轮询, 2:权重]
 	Models             []string `json:"models,omitempty"`               // 绑定模型
 	ModelNames         []string `json:"model_names,omitempty"`          // 模型名称
 	Key                string   `json:"key,omitempty"`                  // 密钥

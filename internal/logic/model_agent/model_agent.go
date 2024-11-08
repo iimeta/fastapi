@@ -59,13 +59,14 @@ func (s *sModelAgent) GetModelAgentById(ctx context.Context, id string) (*model.
 	}
 
 	return &model.ModelAgent{
-		Id:      modelAgent.Id,
-		Corp:    modelAgent.Corp,
-		Name:    modelAgent.Name,
-		BaseUrl: modelAgent.BaseUrl,
-		Path:    modelAgent.Path,
-		Weight:  modelAgent.Weight,
-		Status:  modelAgent.Status,
+		Id:         modelAgent.Id,
+		Corp:       modelAgent.Corp,
+		Name:       modelAgent.Name,
+		BaseUrl:    modelAgent.BaseUrl,
+		Path:       modelAgent.Path,
+		Weight:     modelAgent.Weight,
+		LbStrategy: modelAgent.LbStrategy,
+		Status:     modelAgent.Status,
 	}, nil
 }
 
@@ -115,6 +116,7 @@ func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAge
 			BaseUrl:    result.BaseUrl,
 			Path:       result.Path,
 			Weight:     result.Weight,
+			LbStrategy: result.LbStrategy,
 			Models:     modelMap[result.Id],
 			ModelNames: modelNameMap[result.Id],
 			Status:     result.Status,
@@ -165,6 +167,7 @@ func (s *sModelAgent) ListAll(ctx context.Context) ([]*model.ModelAgent, error) 
 			BaseUrl:    result.BaseUrl,
 			Path:       result.Path,
 			Weight:     result.Weight,
+			LbStrategy: result.LbStrategy,
 			Models:     modelMap[result.Id],
 			ModelNames: modelNameMap[result.Id],
 			Status:     result.Status,
@@ -197,6 +200,7 @@ func (s *sModelAgent) GetModelAgentKeys(ctx context.Context, id string) ([]*mode
 			Corp:           result.Corp,
 			Key:            result.Key,
 			Type:           result.Type,
+			Weight:         result.Weight,
 			Models:         result.Models,
 			ModelAgents:    result.ModelAgents,
 			IsLimitQuota:   result.IsLimitQuota,
@@ -493,6 +497,7 @@ func (s *sModelAgent) DisabledModelAgentKey(ctx context.Context, key *model.Key,
 		Corp:               key.Corp,
 		Key:                key.Key,
 		Type:               key.Type,
+		Weight:             key.Weight,
 		Models:             key.Models,
 		ModelAgents:        key.ModelAgents,
 		IsLimitQuota:       key.IsLimitQuota,
@@ -618,14 +623,15 @@ func (s *sModelAgent) CreateCacheModelAgent(ctx context.Context, newData *model.
 	}()
 
 	if err := s.SaveCacheList(ctx, []*model.ModelAgent{{
-		Id:      newData.Id,
-		Corp:    newData.Corp,
-		Name:    newData.Name,
-		BaseUrl: newData.BaseUrl,
-		Path:    newData.Path,
-		Weight:  newData.Weight,
-		Models:  newData.Models,
-		Status:  newData.Status,
+		Id:         newData.Id,
+		Corp:       newData.Corp,
+		Name:       newData.Name,
+		BaseUrl:    newData.BaseUrl,
+		Path:       newData.Path,
+		Weight:     newData.Weight,
+		LbStrategy: newData.LbStrategy,
+		Models:     newData.Models,
+		Status:     newData.Status,
 	}}); err != nil {
 		logger.Error(ctx, err)
 	}
@@ -655,6 +661,7 @@ func (s *sModelAgent) UpdateCacheModelAgent(ctx context.Context, oldData *model.
 		BaseUrl:            newData.BaseUrl,
 		Path:               newData.Path,
 		Weight:             newData.Weight,
+		LbStrategy:         newData.LbStrategy,
 		Models:             newData.Models,
 		Status:             newData.Status,
 		IsAutoDisabled:     newData.IsAutoDisabled,
@@ -864,6 +871,7 @@ func (s *sModelAgent) CreateCacheModelAgentKey(ctx context.Context, key *entity.
 		Corp:           key.Corp,
 		Key:            key.Key,
 		Type:           key.Type,
+		Weight:         key.Weight,
 		Models:         key.Models,
 		ModelAgents:    key.ModelAgents,
 		IsLimitQuota:   key.IsLimitQuota,
@@ -906,6 +914,7 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 		Corp:               newData.Corp,
 		Key:                newData.Key,
 		Type:               newData.Type,
+		Weight:             newData.Weight,
 		Models:             newData.Models,
 		ModelAgents:        newData.ModelAgents,
 		IsLimitQuota:       newData.IsLimitQuota,

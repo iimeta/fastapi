@@ -13,6 +13,7 @@ type ModelAgent struct {
 	BaseUrl            string `bson:"base_url,omitempty"`             // 模型代理地址
 	Path               string `bson:"path,omitempty"`                 // 模型代理地址路径
 	Weight             int    `bson:"weight,omitempty"`               // 权重
+	LbStrategy         int    `bson:"lb_strategy,omitempty"`          // 密钥负载均衡策略[1:轮询, 2:权重]
 	Remark             string `bson:"remark,omitempty"`               // 备注
 	Status             int    `bson:"status,omitempty"`               // 状态[1:正常, 2:禁用, -1:删除]
 	IsAutoDisabled     bool   `bson:"is_auto_disabled,omitempty"`     // 是否自动禁用
