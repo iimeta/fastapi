@@ -150,7 +150,7 @@ func (s *sModeration) Moderations(ctx context.Context, params sdkm.ModerationReq
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Moderations(ctx, params, fallbackModelAgent, fallbackModel)
+							return s.Moderations(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
 						}
 					}
 
@@ -161,7 +161,7 @@ func (s *sModeration) Moderations(ctx context.Context, params sdkm.ModerationReq
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Moderations(ctx, params, nil, fallbackModel)
+							return s.Moderations(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
 						}
 					}
 				}
@@ -175,7 +175,7 @@ func (s *sModeration) Moderations(ctx context.Context, params sdkm.ModerationReq
 				ErrMsg:     err.Error(),
 			}
 
-			return s.Moderations(ctx, params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+			return s.Moderations(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
 		return response, err

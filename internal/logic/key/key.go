@@ -215,6 +215,32 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (int, *model.Ke
 		return 0, nil, errors.ERR_NO_AVAILABLE_KEY
 	}
 
+	filterKeyList := make([]*model.Key, 0)
+	if len(keyList) > 1 {
+		errorKeys := service.Session().GetErrorKeys(ctx)
+		if len(errorKeys) > 0 {
+			for _, key := range keyList {
+				// 过滤错误的模型代理密钥
+				if !slices.Contains(errorKeys, key.Id) {
+					filterKeyList = append(filterKeyList, key)
+				}
+			}
+		} else {
+			filterKeyList = keyList
+		}
+	} else {
+		filterKeyList = keyList
+	}
+
+	if len(filterKeyList) == 0 {
+		return 0, nil, errors.ERR_ALL_KEY
+	}
+
+	// 负载策略-权重
+	if m.LbStrategy == 2 {
+		return len(filterKeyList), lb.NewKeyWeight(filterKeyList).PickKey(), nil
+	}
+
 	if roundRobinValue := s.modelKeysRoundRobinCache.GetVal(ctx, m.Id); roundRobinValue != nil {
 		roundRobin = roundRobinValue.(*lb.RoundRobin)
 	}

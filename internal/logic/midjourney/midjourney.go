@@ -157,7 +157,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Submit(ctx, request, fallbackModelAgent, fallbackModel)
+							return s.Submit(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
 						}
 					}
 
@@ -168,7 +168,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Submit(ctx, request, nil, fallbackModel)
+							return s.Submit(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
 						}
 					}
 				}
@@ -182,7 +182,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 				ErrMsg:     err.Error(),
 			}
 
-			return s.Submit(ctx, request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+			return s.Submit(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
 		return response, err
@@ -318,7 +318,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Task(ctx, request, fallbackModelAgent, fallbackModel)
+							return s.Task(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
 						}
 					}
 
@@ -329,7 +329,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Task(ctx, request, nil, fallbackModel)
+							return s.Task(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
 						}
 					}
 				}
@@ -343,7 +343,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 				ErrMsg:     err.Error(),
 			}
 
-			return s.Task(ctx, request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+			return s.Task(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
 		return response, err

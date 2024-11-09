@@ -166,7 +166,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Realtime(ctx, r, params, fallbackModelAgent, fallbackModel)
+							return s.Realtime(g.RequestFromCtx(ctx).GetCtx(), r, params, fallbackModelAgent, fallbackModel)
 						}
 					}
 
@@ -177,7 +177,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Realtime(ctx, r, params, nil, fallbackModel)
+							return s.Realtime(g.RequestFromCtx(ctx).GetCtx(), r, params, nil, fallbackModel)
 						}
 					}
 				}
@@ -191,7 +191,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 				ErrMsg:     err.Error(),
 			}
 
-			return s.Realtime(ctx, r, params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+			return s.Realtime(g.RequestFromCtx(ctx).GetCtx(), r, params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
 		return err

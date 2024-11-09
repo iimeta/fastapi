@@ -150,7 +150,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Embeddings(ctx, params, fallbackModelAgent, fallbackModel)
+							return s.Embeddings(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
 						}
 					}
 
@@ -161,7 +161,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Embeddings(ctx, params, nil, fallbackModel)
+							return s.Embeddings(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
 						}
 					}
 				}
@@ -175,7 +175,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 				ErrMsg:     err.Error(),
 			}
 
-			return s.Embeddings(ctx, params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+			return s.Embeddings(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
 		return response, err

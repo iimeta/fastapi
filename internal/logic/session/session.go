@@ -163,3 +163,39 @@ func (s *sSession) GetKey(ctx context.Context) *model.Key {
 
 	return key.(*model.Key)
 }
+
+// 记录错误模型代理ID到会话中
+func (s *sSession) RecordErrorModelAgent(ctx context.Context, id string) {
+	if r := g.RequestFromCtx(ctx); r != nil {
+		r.SetCtxVar(consts.SESSION_ERROR_MODEL_AGENTS, append(s.GetErrorModelAgents(ctx), id))
+	}
+}
+
+// 获取会话中的错误模型代理Ids
+func (s *sSession) GetErrorModelAgents(ctx context.Context) []string {
+
+	modelAgents := ctx.Value(consts.SESSION_ERROR_MODEL_AGENTS)
+	if modelAgents == nil {
+		return []string{}
+	}
+
+	return modelAgents.([]string)
+}
+
+// 记录错误密钥ID到会话中
+func (s *sSession) RecordErrorKey(ctx context.Context, id string) {
+	if r := g.RequestFromCtx(ctx); r != nil {
+		r.SetCtxVar(consts.SESSION_ERROR_KEYS, append(s.GetErrorModelAgents(ctx), id))
+	}
+}
+
+// 获取会话中的错误密钥Ids
+func (s *sSession) GetErrorKeys(ctx context.Context) []string {
+
+	keys := ctx.Value(consts.SESSION_ERROR_KEYS)
+	if keys == nil {
+		return []string{}
+	}
+
+	return keys.([]string)
+}

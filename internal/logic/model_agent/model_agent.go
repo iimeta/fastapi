@@ -274,6 +274,32 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (int, 
 		return 0, nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT
 	}
 
+	filterModelAgentList := make([]*model.ModelAgent, 0)
+	if len(modelAgentList) > 1 {
+		errorModelAgents := service.Session().GetErrorModelAgents(ctx)
+		if len(errorModelAgents) > 0 {
+			for _, modelAgent := range modelAgentList {
+				// 过滤错误的模型代理
+				if !slices.Contains(errorModelAgents, modelAgent.Id) {
+					filterModelAgentList = append(filterModelAgentList, modelAgent)
+				}
+			}
+		} else {
+			filterModelAgentList = modelAgentList
+		}
+	} else {
+		filterModelAgentList = modelAgentList
+	}
+
+	if len(filterModelAgentList) == 0 {
+		return 0, nil, errors.ERR_ALL_MODEL_AGENT
+	}
+
+	// 负载策略-权重
+	if m.LbStrategy == 2 {
+		return len(filterModelAgentList), lb.NewModelAgentWeight(filterModelAgentList).PickModelAgent(), nil
+	}
+
 	if roundRobinValue := s.modelAgentsRoundRobinCache.GetVal(ctx, m.Id); roundRobinValue != nil {
 		roundRobin = roundRobinValue.(*lb.RoundRobin)
 	}
@@ -286,7 +312,7 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (int, 
 		}
 	}
 
-	return len(modelAgentList), modelAgentList[roundRobin.Index(len(modelAgentList))], nil
+	return len(filterModelAgentList), filterModelAgentList[roundRobin.Index(len(filterModelAgentList))], nil
 }
 
 // 移除模型代理
@@ -413,6 +439,32 @@ func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.M
 		return 0, nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY
 	}
 
+	filterKeyList := make([]*model.Key, 0)
+	if len(keyList) > 1 {
+		errorKeys := service.Session().GetErrorKeys(ctx)
+		if len(errorKeys) > 0 {
+			for _, key := range keyList {
+				// 过滤错误的模型代理密钥
+				if !slices.Contains(errorKeys, key.Id) {
+					filterKeyList = append(filterKeyList, key)
+				}
+			}
+		} else {
+			filterKeyList = keyList
+		}
+	} else {
+		filterKeyList = keyList
+	}
+
+	if len(filterKeyList) == 0 {
+		return 0, nil, errors.ERR_ALL_MODEL_AGENT_KEY
+	}
+
+	// 负载策略-权重
+	if modelAgent.LbStrategy == 2 {
+		return len(filterKeyList), lb.NewKeyWeight(filterKeyList).PickKey(), nil
+	}
+
 	if roundRobinValue := s.modelAgentKeysRoundRobinCache.GetVal(ctx, modelAgent.Id); roundRobinValue != nil {
 		roundRobin = roundRobinValue.(*lb.RoundRobin)
 	}
@@ -425,7 +477,7 @@ func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.M
 		}
 	}
 
-	return len(keyList), keyList[roundRobin.Index(len(keyList))], nil
+	return len(filterKeyList), filterKeyList[roundRobin.Index(len(filterKeyList))], nil
 }
 
 // 移除模型代理密钥

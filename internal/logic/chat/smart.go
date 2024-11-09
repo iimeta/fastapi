@@ -203,7 +203,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.SmartCompletions(ctx, params, reqModel, fallbackModelAgent, fallbackModel)
+							return s.SmartCompletions(g.RequestFromCtx(ctx).GetCtx(), params, reqModel, fallbackModelAgent, fallbackModel)
 						}
 					}
 
@@ -214,7 +214,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.SmartCompletions(ctx, params, reqModel, nil, fallbackModel)
+							return s.SmartCompletions(g.RequestFromCtx(ctx).GetCtx(), params, reqModel, nil, fallbackModel)
 						}
 					}
 				}
@@ -228,7 +228,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 				ErrMsg:     err.Error(),
 			}
 
-			return s.SmartCompletions(ctx, params, reqModel, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+			return s.SmartCompletions(g.RequestFromCtx(ctx).GetCtx(), params, reqModel, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
 		return response, err

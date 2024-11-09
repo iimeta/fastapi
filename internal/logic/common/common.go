@@ -58,6 +58,14 @@ func (s *sCommon) ParseSecretKey(ctx context.Context, secretKey string) (int, in
 // 记录错误次数和禁用
 func (s *sCommon) RecordError(ctx context.Context, model *model.Model, key *model.Key, modelAgent *model.ModelAgent) {
 
+	if modelAgent != nil {
+		service.Session().RecordErrorModelAgent(ctx, modelAgent.Id)
+	}
+
+	if key != nil {
+		service.Session().RecordErrorKey(ctx, key.Id)
+	}
+
 	if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 		if model.IsEnableModelAgent {
 			service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)

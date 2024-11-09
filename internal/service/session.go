@@ -16,7 +16,7 @@ type (
 		// 保存会话
 		Save(ctx context.Context, secretKey string) error
 		// 保存应用和密钥是否限制额度
-		SaveIsLimitQuota(ctx context.Context, app, key bool)
+		SaveIsLimitQuota(ctx context.Context, app bool, key bool)
 		// 获取用户ID
 		GetUserId(ctx context.Context) int
 		// 获取应用ID
@@ -39,6 +39,14 @@ type (
 		SaveKey(ctx context.Context, key *model.Key)
 		// 获取会话中的密钥信息
 		GetKey(ctx context.Context) *model.Key
+		// 记录错误模型代理ID到会话中
+		RecordErrorModelAgent(ctx context.Context, id string)
+		// 获取会话中的错误模型代理Ids
+		GetErrorModelAgents(ctx context.Context) []string
+		// 记录错误密钥ID到会话中
+		RecordErrorKey(ctx context.Context, id string)
+		// 获取会话中的错误密钥Ids
+		GetErrorKeys(ctx context.Context) []string
 	}
 )
 
