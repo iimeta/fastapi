@@ -1,5 +1,6 @@
+api_server_address: ":8000"
+
 server:
-  address:     ":8000"
   clientMaxBodySize: 20m
 
 # Redis 配置
@@ -34,21 +35,32 @@ mongodb:
 
 # 日志配置
 logger:
-  path: "./log/"                          # 日志文件路径。默认为空，表示关闭，仅输出到终端
-  file: "{Ymd_H}.log"                     # 日志文件格式。默认为"{Y-m-d}.log"
-  prefix: ""                              # 日志内容输出前缀。默认为空
-  level: "debug"                          # 日志输出级别, debug, info, error, all
-  ctxKeys: [ "user_id", "app_id", "sk" ]  # 自定义Context上下文变量名称，自动打印Context的变量到日志中。默认为空
-  header: true                            # 是否打印日志的头信息。默认true
-  stdout: true                            # 日志是否同时输出到终端。默认true
-  rotateSize: 0                           # 按照日志文件大小对文件进行滚动切分。默认为0，表示关闭滚动切分特性
-  rotateExpire: 0                         # 按照日志文件时间间隔对文件滚动切分。默认为0，表示关闭滚动切分特性
-  rotateBackupLimit: 0                    # 按照切分的文件数量清理切分文件，当滚动切分特性开启时有效。默认为0，表示不备份，切分则删除
-  rotateBackupExpire: 0                   # 按照切分的文件有效期清理切分文件，当滚动切分特性开启时有效。默认为0，表示不备份，切分则删除
-  rotateBackupCompress: 0                 # 滚动切分文件的压缩比（0-9）。默认为0，表示不压缩
-  rotateCheckInterval: "1h"               # 滚动切分的时间检测间隔，一般不需要设置。默认为1小时
-  stdoutColorDisabled: false              # 关闭终端的颜色打印。默认开启
-  writerColorEnable: false                # 日志文件是否带上颜色。默认false，表示不带颜色
+  path: "./log/"                                  # 日志文件路径。默认为空，表示关闭，仅输出到终端
+  file: "{Ymd_H}.log"                             # 日志文件格式。默认为"{Y-m-d}.log"
+  prefix: ""                                      # 日志内容输出前缀。默认为空
+  level: "debug"                                  # 日志输出级别, debug, info, error, all
+  ctxKeys: [ "host", "user_id", "app_id", "sk" ]  # 自定义Context上下文变量名称，自动打印Context的变量到日志中。默认为空
+  header: true                                    # 是否打印日志的头信息。默认true
+  stdout: true                                    # 日志是否同时输出到终端。默认true
+  rotateSize: 0                                   # 按照日志文件大小对文件进行滚动切分。默认为0，表示关闭滚动切分特性
+  rotateExpire: 0                                 # 按照日志文件时间间隔对文件滚动切分。默认为0，表示关闭滚动切分特性
+  rotateBackupLimit: 0                            # 按照切分的文件数量清理切分文件，当滚动切分特性开启时有效。默认为0，表示不备份，切分则删除
+  rotateBackupExpire: 0                           # 按照切分的文件有效期清理切分文件，当滚动切分特性开启时有效。默认为0，表示不备份，切分则删除
+  rotateBackupCompress: 0                         # 滚动切分文件的压缩比（0-9）。默认为0，表示不压缩
+  rotateCheckInterval: "1h"                       # 滚动切分的时间检测间隔，一般不需要设置。默认为1小时
+  stdoutColorDisabled: false                      # 关闭终端的颜色打印。默认开启
+  writerColorEnable: false                        # 日志文件是否带上颜色。默认false，表示不带颜色
+
+# 本地配置
+local:
+  public_ip: # 获取公网IP的API接口地址, 如若配置, 调用日志中记录的本机IP将使用以下接口获取到的公网IP
+#    - https://api.ip.sb/ip
+#    - https://api64.ipify.org
+
+# http配置
+http:
+  timeout: 60  # 单位秒
+#  proxy_url: http://localhost:7890
 
 # API接口配置
 api:
@@ -56,11 +68,6 @@ api:
   model_key_err_disable: 10000        # 模型密钥错误禁用次数, 出现报错 N 次后禁用, 禁用后需手动启动, 错误次数每天0点自动重置
   model_agent_err_disable: 10000      # 模型代理错误禁用次数, 出现报错 N 次后禁用, 禁用后需手动启动, 错误次数每天0点自动重置, 注意: 模型代理密钥发生错误时, 也会记录模型代理错误次数
   model_agent_key_err_disable: 10000  # 模型代理密钥错误禁用次数, 出现报错 N 次后禁用, 禁用后需手动启动, 错误次数每天0点自动重置
-
-# http配置
-http:
-  timeout: 60  # 单位秒
-#  proxy_url: http://localhost:7890
 
 # Midjourney
 midjourney:
@@ -71,13 +78,26 @@ midjourney:
     api_secret_header: mj-api-secret
     cdn_original_url: https://cdn.discordapp.com
 
+# GCP
+gcp:
+  get_token_url: https://www.googleapis.com/oauth2/v4/token  # 获取Token接口
+
 # 调用日志记录内容
 record_logs:
-  - prompt
-  - completion
-  - messages
+  - prompt      # 提问
+  - completion  # 回答
+  - messages    # 上下文
+  - image       # 多模态识图的BASE64图像数据
 
-local:
-  public_ip: # 获取公网IP的API接口地址, 如若配置, 调用日志中记录的本机IP将使用以下接口获取到的公网IP
-#    - https://api.ip.sb/ip
-#    - https://api64.ipify.org
+# 错误配置
+error:
+  auto_disabled:  # 自动禁用错误(区分大小写)
+    - "The OpenAI account associated with this API key has been deactivated."
+    - "PERMISSION_DENIED"
+    - "BILLING_DISABLED"
+    - "ACCESS_TOKEN_EXPIRED"
+    - "is not allowed to use Publisher Model"
+    - "Resource has been exhausted"
+    - "IAM_PERMISSION_DENIED"
+    - "SERVICE_DISABLED"
+    - "ACCOUNT_STATE_INVALID"

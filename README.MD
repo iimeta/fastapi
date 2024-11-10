@@ -25,7 +25,7 @@ docker run --name fastapi -d -p 8000:8000 \
   --network host \
   --restart=always \
   -v /etc/localtime:/etc/localtime:ro \
-  -v /data/fastapi/manifest/config/config.yaml:/app/manifest/config/config.yaml \
+  -v /data/fastapi:/app \
   iimeta/fastapi:latest
 ```
 7. 访问: http://ip:8000/ 如: http://127.0.0.1:8000/
@@ -46,7 +46,7 @@ docker run --name fastapi -d -p 8000:8000 \
   --network host \
   --restart=always \
   -v /etc/localtime:/etc/localtime:ro \
-  -v /data/fastapi/manifest/config/config.yaml:/app/manifest/config/config.yaml \
+  -v /data/fastapi:/app \
   registry.cn-hangzhou.aliyuncs.com/iimeta/fastapi:latest
 ```
 
