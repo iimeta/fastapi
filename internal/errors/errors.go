@@ -23,22 +23,19 @@ type FastApiError struct {
 
 var (
 	ERR_NIL                           = NewError(500, -1, "", "fastapi_error")
-	ERR_UNKNOWN                       = NewError(500, -1, "Unknown Error", "fastapi_error")
+	ERR_UNKNOWN                       = NewError(500, -1, "Unknown Error.", "fastapi_error")
 	ERR_SYSTEM                        = NewError(500, -1, "System Error.", "fastapi_error")
-	ERR_INTERNAL_ERROR                = NewError(500, 500, "Internal Error", "fastapi_error")
+	ERR_INTERNAL_ERROR                = NewError(500, 500, "Internal Error.", "fastapi_error")
+	ERR_NO_AVAILABLE_KEY              = NewError(500, "fastapi_error", "No available key.", "fastapi_error")
+	ERR_ALL_KEY                       = NewError(500, "fastapi_error", "All key error.", "fastapi_error")
+	ERR_NO_AVAILABLE_MODEL_AGENT      = NewError(500, "fastapi_error", "No available model agent.", "fastapi_error")
+	ERR_ALL_MODEL_AGENT               = NewError(500, "fastapi_error", "All model agent error.", "fastapi_error")
+	ERR_MODEL_AGENT_HAS_BEEN_DISABLED = NewError(500, "fastapi_error", "Model agent has been disabled.", "fastapi_error")
+	ERR_NO_AVAILABLE_MODEL_AGENT_KEY  = NewError(500, "fastapi_error", "No available model agent key.", "fastapi_error")
+	ERR_ALL_MODEL_AGENT_KEY           = NewError(500, "fastapi_error", "All model agent key error.", "fastapi_error")
+	ERR_MODEL_HAS_BEEN_DISABLED       = NewError(500, "fastapi_error", "Model has been disabled.", "fastapi_error")
 	ERR_INVALID_PARAMETER             = NewError(400, "fastapi_error", "Invalid Parameter.", "fastapi_error")
 	ERR_UNSUPPORTED_FILE_FORMAT       = NewError(400, "fastapi_error", "Unsupported file format.", "fastapi_error")
-	ERR_FORBIDDEN                     = NewError(403, "fastapi_error", "Forbidden", "fastapi_error")
-	ERR_NOT_FOUND                     = NewError(404, "unknown_url", "Unknown request URL", "invalid_request_error")
-	ERR_NO_AVAILABLE_KEY              = NewError(500, "fastapi_error", "No available key", "fastapi_error")
-	ERR_ALL_KEY                       = NewError(500, "fastapi_error", "All key error", "fastapi_error")
-	ERR_NO_AVAILABLE_MODEL_AGENT      = NewError(500, "fastapi_error", "No available model agent", "fastapi_error")
-	ERR_ALL_MODEL_AGENT               = NewError(500, "fastapi_error", "All model agent error", "fastapi_error")
-	ERR_MODEL_AGENT_HAS_BEEN_DISABLED = NewError(500, "fastapi_error", "Model agent has been disabled", "fastapi_error")
-	ERR_NO_AVAILABLE_MODEL_AGENT_KEY  = NewError(500, "fastapi_error", "No available model agent key", "fastapi_error")
-	ERR_ALL_MODEL_AGENT_KEY           = NewError(500, "fastapi_error", "All model agent key error", "fastapi_error")
-	ERR_MODEL_HAS_BEEN_DISABLED       = NewError(500, "fastapi_error", "Model has been disabled", "fastapi_error")
-	ERR_NOT_AUTHORIZED                = NewError(403, "fastapi_error", "Not Authorized", "fastapi_error")
 	ERR_NOT_API_KEY                   = NewError(401, "invalid_request_error", "You didn't provide an API key.", "invalid_request_error")
 	ERR_INVALID_API_KEY               = NewError(401, "invalid_api_key", "Incorrect API key provided or has been disabled.", "fastapi_request_error")
 	ERR_API_KEY_DISABLED              = NewError(401, "api_key_disabled", "Key has been disabled.", "fastapi_request_error")
@@ -46,9 +43,12 @@ var (
 	ERR_USER_DISABLED                 = NewError(401, "user_disabled", "User has been disabled.", "fastapi_request_error")
 	ERR_INVALID_APP                   = NewError(401, "invalid_app", "App does not exist or has been disabled.", "fastapi_request_error")
 	ERR_APP_DISABLED                  = NewError(401, "app_disabled", "App has been disabled.", "fastapi_error")
+	ERR_MODEL_DISABLED                = NewError(401, "model_disabled", "Model has been disabled.", "fastapi_request_error")
+	ERR_FORBIDDEN                     = NewError(403, "forbidden", "Forbidden.", "fastapi_error")
+	ERR_NOT_AUTHORIZED                = NewError(403, "not_authorized", "Not Authorized.", "fastapi_error")
+	ERR_NOT_FOUND                     = NewError(404, "unknown_url", "Unknown request URL.", "invalid_request_error")
 	ERR_MODEL_NOT_FOUND               = NewError(404, "model_not_found", "The model does not exist or you do not have access to it.", "fastapi_request_error")
 	ERR_PATH_NOT_FOUND                = NewError(404, "path_not_found", "The path does not exist or you do not have access to it.", "fastapi_request_error")
-	ERR_MODEL_DISABLED                = NewError(401, "model_disabled", "Model has been disabled.", "fastapi_request_error")
 	ERR_INSUFFICIENT_QUOTA            = NewError(429, "insufficient_quota", "You exceeded your current quota.", "insufficient_quota")
 )
 
@@ -97,7 +97,9 @@ func Error(ctx context.Context, err error) IFastApiError {
 	}
 
 	// 屏蔽不想对外暴露的错误
-	if Is(err, ERR_NO_AVAILABLE_KEY) || Is(err, ERR_NO_AVAILABLE_MODEL_AGENT) || Is(err, ERR_NO_AVAILABLE_MODEL_AGENT_KEY) {
+	if Is(err, ERR_NO_AVAILABLE_KEY) || Is(err, ERR_NO_AVAILABLE_MODEL_AGENT) ||
+		Is(err, ERR_NO_AVAILABLE_MODEL_AGENT_KEY) || Is(err, ERR_ALL_KEY) ||
+		Is(err, ERR_ALL_MODEL_AGENT) || Is(err, ERR_ALL_MODEL_AGENT_KEY) {
 		err = ERR_SYSTEM
 	}
 
