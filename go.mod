@@ -2,6 +2,8 @@ module github.com/iimeta/fastapi
 
 go 1.23
 
+replace github.com/iimeta/fastapi-sdk => ../fastapi-sdk
+
 require (
 	cloud.google.com/go/iam v1.2.2
 	github.com/bwmarrin/snowflake v0.3.0
@@ -22,12 +24,12 @@ require (
 	cloud.google.com/go/auth/oauth2adapt v0.2.5 // indirect
 	cloud.google.com/go/compute/metadata v0.5.2 // indirect
 	github.com/BurntSushi/toml v1.3.2 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.32.3 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.32.4 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.6 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.42 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.22 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.22 // indirect
-	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.19.3 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.44 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.23 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.23 // indirect
+	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.20.0 // indirect
 	github.com/aws/smithy-go v1.22.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect
