@@ -91,6 +91,7 @@ type Gcp struct {
 
 type Error struct {
 	AutoDisabled []string `json:"auto_disabled"`
+	NotRetry     []string `json:"not_retry"`
 }
 
 func Get(ctx context.Context, pattern string, def ...interface{}) (*gvar.Var, error) {

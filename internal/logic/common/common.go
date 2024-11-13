@@ -11,7 +11,6 @@ import (
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi-sdk/sdkerr"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
@@ -90,41 +89,20 @@ func IsNeedRetry(err error) (isRetry bool, isDisabled bool) {
 		return false, false
 	}
 
-	// 自动禁用配置
+	// 自动禁用错误
 	for _, autoDisabledError := range config.Cfg.Error.AutoDisabled {
 		if gstr.Contains(err.Error(), autoDisabledError) {
 			return true, true
 		}
 	}
 
-	apiError := &sdkerr.ApiError{}
-	if errors.As(err, &apiError) {
-
-		switch apiError.HttpStatusCode {
-		case 400:
-			if errors.Is(err, sdkerr.ERR_CONTEXT_LENGTH_EXCEEDED) {
-				return false, false
-			}
-		case 401, 429:
-			if errors.Is(err, sdkerr.ERR_INVALID_API_KEY) || errors.Is(err, sdkerr.ERR_INSUFFICIENT_QUOTA) {
-				return true, true
-			}
+	// 不重试错误
+	for _, notRetryError := range config.Cfg.Error.NotRetry {
+		if gstr.Contains(err.Error(), notRetryError) {
+			return false, false
 		}
-
-		return true, false
 	}
 
-	reqError := &sdkerr.RequestError{}
-	if errors.As(err, &reqError) {
-		return true, false
-	}
-
-	opError := &net.OpError{}
-	if errors.As(err, &opError) {
-		return true, false
-	}
-
-	// todo
 	return true, false
 }
 
