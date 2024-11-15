@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
@@ -103,7 +104,9 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 					}
 
 					if response.Usage.CompletionTokens == 0 && len(response.Choices) > 0 && response.Choices[0].Message != nil {
-						response.Usage.CompletionTokens = common.GetCompletionTokens(ctx, model, gconv.String(response.Choices[0].Message.Content))
+						for _, choice := range response.Choices {
+							response.Usage.CompletionTokens += common.GetCompletionTokens(ctx, model, gconv.String(choice.Message.Content))
+						}
 					}
 
 					response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
@@ -123,7 +126,9 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 					response.Usage.PromptTokens = textTokens + audioTokens
 
 					if len(response.Choices) > 0 && response.Choices[0].Message != nil && response.Choices[0].Message.Audio != nil {
-						response.Usage.CompletionTokens = common.GetCompletionTokens(ctx, model, response.Choices[0].Message.Audio.Transcript) + 388
+						for _, choice := range response.Choices {
+							response.Usage.CompletionTokens += common.GetCompletionTokens(ctx, model, choice.Message.Audio.Transcript) + 388
+						}
 					}
 				}
 
@@ -137,7 +142,9 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				response.Usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
 
 				if len(response.Choices) > 0 && response.Choices[0].Message != nil {
-					response.Usage.CompletionTokens = common.GetCompletionTokens(ctx, model, gconv.String(response.Choices[0].Message.Content))
+					for _, choice := range response.Choices {
+						response.Usage.CompletionTokens += common.GetCompletionTokens(ctx, model, gconv.String(choice.Message.Content))
+					}
 				}
 
 				response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
@@ -205,7 +212,13 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				if mak.RealModel.Type == 102 && response.Choices[0].Message.Audio != nil {
 					completionsRes.Completion = response.Choices[0].Message.Audio.Transcript
 				} else {
-					completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
+					if len(response.Choices) > 1 {
+						for i, choice := range response.Choices {
+							completionsRes.Completion += fmt.Sprintf("index: %d\ncontent: %s\n\n", i, gconv.String(choice.Message.Content))
+						}
+					} else {
+						completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
+					}
 				}
 			}
 
@@ -696,7 +709,13 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			if mak.RealModel.Type == 102 && response.Choices[0].Delta.Audio != nil {
 				completion += response.Choices[0].Delta.Audio.Transcript
 			} else {
-				completion += response.Choices[0].Delta.Content
+				if len(response.Choices) > 1 {
+					for i, choice := range response.Choices {
+						completion += fmt.Sprintf("index: %d\ncontent: %s\n\n", i, choice.Delta.Content)
+					}
+				} else {
+					completion += response.Choices[0].Delta.Content
+				}
 			}
 		}
 
