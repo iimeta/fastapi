@@ -50,6 +50,8 @@ type (
 		SaveCacheAppKeyQuota(ctx context.Context, secretKey string, quota int) error
 		// 获取缓存中的应用密钥额度
 		GetCacheAppKeyQuota(ctx context.Context, secretKey string) int
+		// 更新应用密钥额度过期时间
+		UpdateAppKeyQuotaExpiresAt(ctx context.Context, key *model.Key) error
 		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
 		// 应用密钥变更订阅

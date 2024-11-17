@@ -158,5 +158,12 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 	service.Session().SaveUser(ctx, user)
 	service.Session().SaveIsLimitQuota(ctx, app.IsLimitQuota, key.IsLimitQuota)
 
+	if key.QuotaExpiresRule == 2 {
+		if err = service.App().UpdateAppKeyQuotaExpiresAt(ctx, key); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+	}
+
 	return nil
 }
