@@ -405,8 +405,6 @@ func (s *sApp) UpdateCacheAppKey(ctx context.Context, key *entity.Key) {
 		QuotaExpiresRule:    key.QuotaExpiresRule,
 		QuotaExpiresAt:      key.QuotaExpiresAt,
 		QuotaExpiresMinutes: key.QuotaExpiresMinutes,
-		RPM:                 key.RPM,
-		RPD:                 key.RPD,
 		IpWhitelist:         key.IpWhitelist,
 		IpBlacklist:         key.IpBlacklist,
 		Status:              key.Status,

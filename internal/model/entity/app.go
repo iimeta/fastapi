@@ -9,8 +9,6 @@ type App struct {
 	Quota          int      `bson:"quota,omitempty"`            // 剩余额度
 	UsedQuota      int      `bson:"used_quota,omitempty"`       // 已用额度
 	QuotaExpiresAt int64    `bson:"quota_expires_at,omitempty"` // 额度过期时间
-	RPM            int      `bson:"rpm,omitempty"`              // 每分钟请求数
-	RPD            int      `bson:"rpd,omitempty"`              // 每天的请求数
 	IpWhitelist    []string `bson:"ip_whitelist,omitempty"`     // IP白名单
 	IpBlacklist    []string `bson:"ip_blacklist,omitempty"`     // IP黑名单
 	Remark         string   `bson:"remark,omitempty"`           // 备注
