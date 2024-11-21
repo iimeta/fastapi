@@ -49,7 +49,7 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.3.4 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.0 // indirect
 	github.com/grokify/html-strip-tags-go v0.1.0 // indirect
-	github.com/iimeta/go-openai v0.0.0-20241119035215-d04907a58a2d // indirect
+	github.com/iimeta/go-openai v0.0.0-20241121133730-88b9d2390a30 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
