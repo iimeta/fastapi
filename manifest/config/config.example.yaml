@@ -105,3 +105,5 @@ error:
     - "ACCOUNT_STATE_INVALID"
   not_retry:  # 不重试错误
     - "Please reduce the length of the messages."
+  not_shield:  # 不屏蔽错误
+    - "Please reduce the length of the messages."
