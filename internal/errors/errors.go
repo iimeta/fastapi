@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi-sdk/sdkerr"
+	"github.com/iimeta/fastapi/internal/config"
 )
 
 type IFastApiError interface {
@@ -113,6 +115,14 @@ func Error(ctx context.Context, err error) IFastApiError {
 	apiError := &sdkerr.ApiError{}
 	if As(err, &apiError) && apiError.HttpStatusCode != 500 && !Is(apiError, sdkerr.ERR_INSUFFICIENT_QUOTA) {
 		return NewError(apiError.HttpStatusCode, apiError.Code, apiError.Message, apiError.Type).(IFastApiError)
+	}
+
+	// 不屏蔽错误
+	for _, notShieldError := range config.Cfg.Error.NotShield {
+		if gstr.Contains(err.Error(), notShieldError) {
+			e := ERR_UNKNOWN.(IFastApiError)
+			return NewErrorf(e.Status(), e.ErrCode(), err.Error()+" TraceId: %s", e.ErrType(), gctx.CtxId(ctx)).(IFastApiError)
+		}
 	}
 
 	// 未知的错误, 用统一描述处理
