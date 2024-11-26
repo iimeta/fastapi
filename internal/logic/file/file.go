@@ -1,4 +1,4 @@
-package embedding
+package file
 
 import (
 	"bytes"
@@ -55,7 +55,7 @@ func (s *sFile) Files(ctx context.Context, params model.FileFilesReq) ([]byte, e
 		return nil, err
 	}
 
-	logger.Infof(ctx, "Files response: %s", string(bytes))
+	logger.Infof(ctx, "sFile Files response: %s", string(bytes))
 
 	return bytes, nil
 }

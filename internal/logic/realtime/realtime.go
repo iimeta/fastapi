@@ -1,4 +1,4 @@
-package audio
+package realtime
 
 import (
 	"context"
@@ -256,11 +256,11 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 				return
 			}
 
-			logger.Debugf(ctx, "Response messageType: %d, message: %s", response.MessageType, response.Message)
+			logger.Debugf(ctx, "sRealtime Response messageType: %d, message: %s", response.MessageType, response.Message)
 
 			realtimeResponse := new(model.RealtimeResponse)
 			if err = gjson.Unmarshal(response.Message, &realtimeResponse); err != nil {
-				logger.Errorf(ctx, "response.Message: %s, error: %v", response.Message, err)
+				logger.Errorf(ctx, "sRealtime response.Message: %s, error: %v", response.Message, err)
 				return
 			}
 
@@ -405,7 +405,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 			return err
 		}
 
-		logger.Debugf(ctx, "Request messageType: %d, message: %s", messageType, message)
+		logger.Debugf(ctx, "sRealtime Request messageType: %d, message: %s", messageType, message)
 
 		if err := service.Auth().VerifySecretKey(ctx, service.Session().GetSecretKey(ctx)); err != nil {
 			logger.Error(ctx, err)
@@ -425,7 +425,7 @@ func (s *sRealtime) SaveLog(ctx context.Context, reqModel, realModel *model.Mode
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sChat SaveLog time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sRealtime SaveLog time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	// 不记录此错误日志
@@ -571,7 +571,7 @@ func (s *sRealtime) SaveLog(ctx context.Context, reqModel, realModel *model.Mode
 
 		time.Sleep(time.Duration(len(retry)*5) * time.Second)
 
-		logger.Errorf(ctx, "sChat SaveLog retry: %d", len(retry))
+		logger.Errorf(ctx, "sRealtime SaveLog retry: %d", len(retry))
 
 		s.SaveLog(ctx, reqModel, realModel, fallbackModelAgent, fallbackModel, key, completionsReq, completionsRes, retryInfo, isSmartMatch, retry...)
 	}
