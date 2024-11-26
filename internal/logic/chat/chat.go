@@ -78,7 +78,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
-		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
 			// 替换成调用的模型
 			response.Model = mak.ReqModel.Model
@@ -179,7 +179,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			}
 		}
 
-		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key); err != nil {
 					logger.Error(ctx, err)
@@ -190,42 +190,44 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			}
 		}
 
-		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+		if mak.ReqModel != nil && mak.RealModel != nil {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-			mak.RealModel.ModelAgent = mak.ModelAgent
+				mak.RealModel.ModelAgent = mak.ModelAgent
 
-			completionsRes := &model.CompletionsRes{
-				Error:        err,
-				ConnTime:     response.ConnTime,
-				Duration:     response.Duration,
-				TotalTime:    response.TotalTime,
-				InternalTime: internalTime,
-				EnterTime:    enterTime,
-			}
+				completionsRes := &model.CompletionsRes{
+					Error:        err,
+					ConnTime:     response.ConnTime,
+					Duration:     response.Duration,
+					TotalTime:    response.TotalTime,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
+				}
 
-			if retryInfo == nil && response.Usage != nil {
-				completionsRes.Usage = *response.Usage
-				completionsRes.Usage.TotalTokens = totalTokens
-			}
+				if retryInfo == nil && response.Usage != nil {
+					completionsRes.Usage = *response.Usage
+					completionsRes.Usage.TotalTokens = totalTokens
+				}
 
-			if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
-				if mak.RealModel.Type == 102 && response.Choices[0].Message.Audio != nil {
-					completionsRes.Completion = response.Choices[0].Message.Audio.Transcript
-				} else {
-					if len(response.Choices) > 1 {
-						for i, choice := range response.Choices {
-							completionsRes.Completion += fmt.Sprintf("index: %d\ncontent: %s\n\n", i, gconv.String(choice.Message.Content))
-						}
+				if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
+					if mak.RealModel.Type == 102 && response.Choices[0].Message.Audio != nil {
+						completionsRes.Completion = response.Choices[0].Message.Audio.Transcript
 					} else {
-						completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
+						if len(response.Choices) > 1 {
+							for i, choice := range response.Choices {
+								completionsRes.Completion += fmt.Sprintf("index: %d\ncontent: %s\n\n", i, gconv.String(choice.Message.Content))
+							}
+						} else {
+							completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
+						}
 					}
 				}
+
+				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, false)
+
+			}); err != nil {
+				logger.Error(ctx, err)
 			}
-
-			s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, false)
-
-		}); err != nil {
-			logger.Error(ctx, err)
 		}
 	}()
 
@@ -382,7 +384,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 
 		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-			if retryInfo == nil && completion != "" && (usage == nil || usage.PromptTokens == 0 || usage.CompletionTokens == 0) {
+			if retryInfo == nil && completion != "" && (usage == nil || usage.PromptTokens == 0 || usage.CompletionTokens == 0) && mak.ReqModel != nil {
 
 				if usage == nil {
 					usage = new(sdkm.Usage)
@@ -429,7 +431,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					}
 				}
 
-			} else if retryInfo == nil && usage != nil {
+			} else if retryInfo == nil && usage != nil && mak.ReqModel != nil {
 
 				if mak.ReqModel.Type == 100 { // 多模态
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
@@ -448,7 +450,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				}
 			}
 
-			if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+			if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 				if err := grpool.Add(ctx, func(ctx context.Context) {
 					if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key); err != nil {
 						logger.Error(ctx, err)
@@ -459,30 +461,32 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				}
 			}
 
-			if err := grpool.Add(ctx, func(ctx context.Context) {
+			if mak.ReqModel != nil && mak.RealModel != nil {
+				if err := grpool.Add(ctx, func(ctx context.Context) {
 
-				mak.RealModel.ModelAgent = mak.ModelAgent
+					mak.RealModel.ModelAgent = mak.ModelAgent
 
-				completionsRes := &model.CompletionsRes{
-					Completion:   completion,
-					Error:        err,
-					ConnTime:     connTime,
-					Duration:     duration,
-					TotalTime:    totalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
+					completionsRes := &model.CompletionsRes{
+						Completion:   completion,
+						Error:        err,
+						ConnTime:     connTime,
+						Duration:     duration,
+						TotalTime:    totalTime,
+						InternalTime: internalTime,
+						EnterTime:    enterTime,
+					}
+
+					if usage != nil {
+						completionsRes.Usage = *usage
+						completionsRes.Usage.TotalTokens = totalTokens
+					}
+
+					s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, false)
+
+				}); err != nil {
+					logger.Error(ctx, err)
+					panic(err)
 				}
-
-				if usage != nil {
-					completionsRes.Usage = *usage
-					completionsRes.Usage.TotalTokens = totalTokens
-				}
-
-				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, false)
-
-			}); err != nil {
-				logger.Error(ctx, err)
-				panic(err)
 			}
 
 		}); err != nil {

@@ -59,7 +59,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 			TotalTokens: imageQuota.FixedQuota * len(response.Data),
 		}
 
-		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 				if err := service.Common().RecordUsage(ctx, usage.TotalTokens, mak.Key.Key); err != nil {
 					logger.Error(ctx, err)
@@ -70,27 +70,29 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 			}
 		}
 
-		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+		if mak.ReqModel != nil && mak.RealModel != nil {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-			mak.RealModel.ModelAgent = mak.ModelAgent
+				mak.RealModel.ModelAgent = mak.ModelAgent
 
-			imageRes := &model.ImageRes{
-				Created:      response.Created,
-				Data:         response.Data,
-				TotalTime:    response.TotalTime,
-				Error:        err,
-				InternalTime: internalTime,
-				EnterTime:    enterTime,
+				imageRes := &model.ImageRes{
+					Created:      response.Created,
+					Data:         response.Data,
+					TotalTime:    response.TotalTime,
+					Error:        err,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
+				}
+
+				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+					imageRes.Usage = *usage
+				}
+
+				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, imageRes, retryInfo)
+
+			}); err != nil {
+				logger.Error(ctx, err)
 			}
-
-			if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-				imageRes.Usage = *usage
-			}
-
-			s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, imageRes, retryInfo)
-
-		}); err != nil {
-			logger.Error(ctx, err)
 		}
 	}()
 

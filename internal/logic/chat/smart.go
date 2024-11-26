@@ -47,7 +47,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
-		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.RealModel != nil {
 
 			model := mak.RealModel.Model
 			if !tiktoken.IsEncodingForModel(model) {
@@ -103,32 +103,33 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 			}
 		}
 
-		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+		if mak.RealModel != nil {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-			mak.RealModel.ModelAgent = mak.ModelAgent
+				mak.RealModel.ModelAgent = mak.ModelAgent
 
-			completionsRes := &model.CompletionsRes{
-				Error:        err,
-				ConnTime:     response.ConnTime,
-				Duration:     response.Duration,
-				TotalTime:    response.TotalTime,
-				InternalTime: internalTime,
-				EnterTime:    enterTime,
+				completionsRes := &model.CompletionsRes{
+					Error:        err,
+					ConnTime:     response.ConnTime,
+					Duration:     response.Duration,
+					TotalTime:    response.TotalTime,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
+				}
+
+				if retryInfo == nil && response.Usage != nil {
+					completionsRes.Usage = *response.Usage
+					completionsRes.Usage.TotalTokens = totalTokens
+				}
+
+				if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
+					completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
+				}
+
+				s.SaveLog(ctx, reqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, true)
+			}); err != nil {
+				logger.Error(ctx, err)
 			}
-
-			if retryInfo == nil && response.Usage != nil {
-				completionsRes.Usage = *response.Usage
-				completionsRes.Usage.TotalTokens = totalTokens
-			}
-
-			if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
-				completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
-			}
-
-			s.SaveLog(ctx, reqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, true)
-
-		}); err != nil {
-			logger.Error(ctx, err)
 		}
 	}()
 

@@ -57,14 +57,12 @@ func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallback
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
-		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
-			if mak.ReqModel != nil {
-				if mak.ReqModel.AudioQuota.BillingMethod == 1 {
-					totalTokens = int(math.Ceil(float64(len(params.Input)) * mak.ReqModel.AudioQuota.PromptRatio))
-				} else {
-					totalTokens = mak.ReqModel.AudioQuota.FixedQuota
-				}
+			if mak.ReqModel.AudioQuota.BillingMethod == 1 {
+				totalTokens = int(math.Ceil(float64(len(params.Input)) * mak.ReqModel.AudioQuota.PromptRatio))
+			} else {
+				totalTokens = mak.ReqModel.AudioQuota.FixedQuota
 			}
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -77,30 +75,32 @@ func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallback
 			}
 		}
 
-		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+		if mak.ReqModel != nil && mak.RealModel != nil {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-			mak.RealModel.ModelAgent = mak.ModelAgent
+				mak.RealModel.ModelAgent = mak.ModelAgent
 
-			audioReq := &model.AudioReq{
-				Input: params.Input,
+				audioReq := &model.AudioReq{
+					Input: params.Input,
+				}
+
+				audioRes := &model.AudioRes{
+					Characters:   len(audioReq.Input),
+					Error:        err,
+					TotalTime:    response.TotalTime,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
+				}
+
+				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+					audioRes.TotalTokens = totalTokens
+				}
+
+				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, audioReq, audioRes, retryInfo)
+
+			}); err != nil {
+				logger.Error(ctx, err)
 			}
-
-			audioRes := &model.AudioRes{
-				Characters:   len(audioReq.Input),
-				Error:        err,
-				TotalTime:    response.TotalTime,
-				InternalTime: internalTime,
-				EnterTime:    enterTime,
-			}
-
-			if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-				audioRes.TotalTokens = totalTokens
-			}
-
-			s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, audioReq, audioRes, retryInfo)
-
-		}); err != nil {
-			logger.Error(ctx, err)
 		}
 	}()
 
@@ -209,7 +209,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
-		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
 			if response.Duration != 0 {
 				minute = util.Round(response.Duration/60, 2)
@@ -218,12 +218,10 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 				response.Duration = params.Duration
 			}
 
-			if mak.ReqModel != nil {
-				if mak.ReqModel.AudioQuota.BillingMethod == 1 {
-					totalTokens = int(math.Ceil(minute * 1000 * mak.ReqModel.AudioQuota.CompletionRatio))
-				} else {
-					totalTokens = mak.ReqModel.AudioQuota.FixedQuota
-				}
+			if mak.ReqModel.AudioQuota.BillingMethod == 1 {
+				totalTokens = int(math.Ceil(minute * 1000 * mak.ReqModel.AudioQuota.CompletionRatio))
+			} else {
+				totalTokens = mak.ReqModel.AudioQuota.FixedQuota
 			}
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -236,31 +234,33 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 			}
 		}
 
-		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+		if mak.ReqModel != nil && mak.RealModel != nil {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-			mak.RealModel.ModelAgent = mak.ModelAgent
+				mak.RealModel.ModelAgent = mak.ModelAgent
 
-			audioReq := &model.AudioReq{
-				FilePath: params.FilePath,
+				audioReq := &model.AudioReq{
+					FilePath: params.FilePath,
+				}
+
+				audioRes := &model.AudioRes{
+					Text:         response.Text,
+					Minute:       minute,
+					Error:        err,
+					TotalTime:    response.TotalTime,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
+				}
+
+				if retryInfo == nil {
+					audioRes.TotalTokens = totalTokens
+				}
+
+				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, audioReq, audioRes, retryInfo)
+
+			}); err != nil {
+				logger.Error(ctx, err)
 			}
-
-			audioRes := &model.AudioRes{
-				Text:         response.Text,
-				Minute:       minute,
-				Error:        err,
-				TotalTime:    response.TotalTime,
-				InternalTime: internalTime,
-				EnterTime:    enterTime,
-			}
-
-			if retryInfo == nil {
-				audioRes.TotalTokens = totalTokens
-			}
-
-			s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, audioReq, audioRes, retryInfo)
-
-		}); err != nil {
-			logger.Error(ctx, err)
 		}
 	}()
 

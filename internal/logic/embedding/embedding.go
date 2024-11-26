@@ -66,7 +66,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 			}
 		}
 
-		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key); err != nil {
 					logger.Error(ctx, err)
@@ -77,30 +77,32 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 			}
 		}
 
-		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+		if mak.ReqModel != nil && mak.RealModel != nil {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-			mak.RealModel.ModelAgent = mak.ModelAgent
+				mak.RealModel.ModelAgent = mak.ModelAgent
 
-			completionsRes := &model.CompletionsRes{
-				Error:        err,
-				TotalTime:    response.TotalTime,
-				InternalTime: internalTime,
-				EnterTime:    enterTime,
+				completionsRes := &model.CompletionsRes{
+					Error:        err,
+					TotalTime:    response.TotalTime,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
+				}
+
+				if retryInfo == nil && response.Usage != nil {
+					completionsRes.Usage = *response.Usage
+					completionsRes.Usage.TotalTokens = totalTokens
+				}
+
+				if retryInfo == nil && len(response.Data) > 0 && len(response.Data[0].Embedding) > 0 {
+					completionsRes.Completion = gconv.String(response.Data[0].Embedding)
+				}
+
+				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo)
+
+			}); err != nil {
+				logger.Error(ctx, err)
 			}
-
-			if retryInfo == nil && response.Usage != nil {
-				completionsRes.Usage = *response.Usage
-				completionsRes.Usage.TotalTokens = totalTokens
-			}
-
-			if retryInfo == nil && len(response.Data) > 0 && len(response.Data[0].Embedding) > 0 {
-				completionsRes.Completion = gconv.String(response.Data[0].Embedding)
-			}
-
-			s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo)
-
-		}); err != nil {
-			logger.Error(ctx, err)
 		}
 	}()
 

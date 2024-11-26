@@ -98,7 +98,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 
-		if err != nil {
+		if err != nil && mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				mak.RealModel.ModelAgent = mak.ModelAgent

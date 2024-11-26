@@ -74,7 +74,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 			TotalTokens: midjourneyQuota.FixedQuota,
 		}
 
-		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 				if err := service.Common().RecordUsage(ctx, usage.TotalTokens, mak.Key.Key); err != nil {
 					logger.Error(ctx, err)
@@ -85,29 +85,31 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 			}
 		}
 
-		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+		if mak.ReqModel != nil && mak.RealModel != nil {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-			mak.RealModel.ModelAgent = mak.ModelAgent
+				mak.RealModel.ModelAgent = mak.ModelAgent
 
-			midjourneyResponse := model.MidjourneyResponse{
-				ReqUrl:             reqUrl,
-				TaskId:             taskId,
-				Prompt:             prompt,
-				MidjourneyResponse: response,
-				TotalTime:          response.TotalTime,
-				Error:              err,
-				InternalTime:       internalTime,
-				EnterTime:          enterTime,
+				midjourneyResponse := model.MidjourneyResponse{
+					ReqUrl:             reqUrl,
+					TaskId:             taskId,
+					Prompt:             prompt,
+					MidjourneyResponse: response,
+					TotalTime:          response.TotalTime,
+					Error:              err,
+					InternalTime:       internalTime,
+					EnterTime:          enterTime,
+				}
+
+				if err == nil {
+					midjourneyResponse.Usage = *usage
+				}
+
+				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, midjourneyResponse, retryInfo)
+
+			}); err != nil {
+				logger.Error(ctx, err)
 			}
-
-			if err == nil {
-				midjourneyResponse.Usage = *usage
-			}
-
-			s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, midjourneyResponse, retryInfo)
-
-		}); err != nil {
-			logger.Error(ctx, err)
 		}
 	}()
 
@@ -236,7 +238,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 			TotalTokens: midjourneyQuota.FixedQuota,
 		}
 
-		if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 				if err := service.Common().RecordUsage(ctx, usage.TotalTokens, mak.Key.Key); err != nil {
 					logger.Error(ctx, err)
@@ -247,28 +249,30 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 			}
 		}
 
-		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+		if mak.ReqModel != nil && mak.RealModel != nil {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-			mak.RealModel.ModelAgent = mak.ModelAgent
+				mak.RealModel.ModelAgent = mak.ModelAgent
 
-			midjourneyResponse := model.MidjourneyResponse{
-				MidjourneyResponse: sdkm.MidjourneyResponse{
-					Response: []byte(fmt.Sprintf("taskId: %s\nimageUrl: %s", taskId, imageUrl)),
-				},
-				TotalTime:    response.TotalTime,
-				Error:        err,
-				InternalTime: internalTime,
-				EnterTime:    enterTime,
+				midjourneyResponse := model.MidjourneyResponse{
+					MidjourneyResponse: sdkm.MidjourneyResponse{
+						Response: []byte(fmt.Sprintf("taskId: %s\nimageUrl: %s", taskId, imageUrl)),
+					},
+					TotalTime:    response.TotalTime,
+					Error:        err,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
+				}
+
+				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+					midjourneyResponse.Usage = *usage
+				}
+
+				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, midjourneyResponse, retryInfo)
+
+			}); err != nil {
+				logger.Error(ctx, err)
 			}
-
-			if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-				midjourneyResponse.Usage = *usage
-			}
-
-			s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, midjourneyResponse, retryInfo)
-
-		}); err != nil {
-			logger.Error(ctx, err)
 		}
 	}()
 
