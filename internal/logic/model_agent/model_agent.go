@@ -1017,12 +1017,6 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 		if err = s.SaveCacheModelAgentKeys(ctx, id, newModelAgentKeys); err != nil {
 			logger.Error(ctx, err)
 		}
-
-		if s.modelAgentKeysCache.ContainsKey(ctx, id) {
-			if err = s.modelAgentKeysCache.Set(ctx, id, newModelAgentKeys, 0); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
 	}
 
 	// 将变更后被移除模型的模型密钥移除
