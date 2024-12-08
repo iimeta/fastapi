@@ -64,7 +64,7 @@ https://files.fastapi.ai/public/video/install.mp4
 ## 公益站点
 
 - API地址: https://api.free.fastapi.ai
-- 注册后请联系作者领取1000万额度
+- 注册即送1000万额度, 使用上方API地址调用即可
 
 ## 项目截图
 ### 管理端
