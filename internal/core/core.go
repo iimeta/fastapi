@@ -35,13 +35,11 @@ func init() {
 
 	userMap := util.ToMap(users, func(user *model.User) int {
 
-		err = service.User().SaveCacheUser(ctx, user)
-		if err != nil {
+		if err = service.User().SaveCacheUser(ctx, user); err != nil {
 			panic(err)
 		}
 
-		err = service.User().SaveCacheUserQuota(ctx, user.UserId, user.Quota)
-		if err != nil {
+		if err = service.User().SaveCacheUserQuota(ctx, user.UserId, user.Quota); err != nil {
 			panic(err)
 		}
 
@@ -60,13 +58,11 @@ func init() {
 	keyMap := make(map[int][]*model.Key)
 	for _, key := range keys {
 
-		err = service.App().SaveCacheAppKey(ctx, key)
-		if err != nil {
+		if err = service.App().SaveCacheAppKey(ctx, key); err != nil {
 			panic(err)
 		}
 
-		err = service.App().SaveCacheAppKeyQuota(ctx, key.Key, key.Quota)
-		if err != nil {
+		if err = service.App().SaveCacheAppKeyQuota(ctx, key.Key, key.Quota); err != nil {
 			panic(err)
 		}
 
@@ -80,13 +76,11 @@ func init() {
 
 	for _, app := range apps {
 
-		err = service.App().SaveCacheApp(ctx, app)
-		if err != nil {
+		if err = service.App().SaveCacheApp(ctx, app); err != nil {
 			panic(err)
 		}
 
-		err = service.App().SaveCacheAppQuota(ctx, app.AppId, app.Quota)
-		if err != nil {
+		if err = service.App().SaveCacheAppQuota(ctx, app.AppId, app.Quota); err != nil {
 			panic(err)
 		}
 

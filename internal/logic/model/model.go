@@ -498,7 +498,6 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 		"_id": bson.M{
 			"$in": ids,
 		},
-		"status": 1,
 	}
 
 	results, err := dao.Model.Find(ctx, filter, "-updated_at")

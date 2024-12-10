@@ -82,7 +82,6 @@ func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAge
 		"_id": bson.M{
 			"$in": ids,
 		},
-		"status": 1,
 	}
 
 	results, err := dao.ModelAgent.Find(ctx, filter, "-weight")
