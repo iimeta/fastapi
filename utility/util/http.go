@@ -38,7 +38,7 @@ func HttpPost(ctx context.Context, url string, header map[string]string, data, r
 	}
 
 	if err != nil {
-		logger.Errorf(ctx, "HttpPost url: %s, header: %+v, data: %s, proxyURL: %s, err: %v", url, header, gjson.MustEncodeString(data), proxyURL, err)
+		logger.Errorf(ctx, "HttpPost url: %s, header: %+v, data: %s, proxyURL: %s, error: %v", url, header, gjson.MustEncodeString(data), proxyURL, err)
 		return err
 	}
 
@@ -47,8 +47,8 @@ func HttpPost(ctx context.Context, url string, header map[string]string, data, r
 
 	if bytes != nil && len(bytes) > 0 {
 		if err = gjson.Unmarshal(bytes, result); err != nil {
-			logger.Errorf(ctx, "HttpPost url: %s, statusCode: %d, header: %+v, data: %s, proxyURL: %s, response: %s, err: %v", url, response.StatusCode, header, gjson.MustEncodeString(data), proxyURL, string(bytes), err)
-			return errors.Newf("response: %s, err: %v", bytes, err)
+			logger.Errorf(ctx, "HttpPost url: %s, statusCode: %d, header: %+v, data: %s, proxyURL: %s, response: %s, error: %v", url, response.StatusCode, header, gjson.MustEncodeString(data), proxyURL, string(bytes), err)
+			return errors.Newf("response: %s, error: %v", bytes, err)
 		}
 	}
 
@@ -71,7 +71,7 @@ func SSEServer(ctx context.Context, data string) error {
 	r.Response.Header().Set("Connection", "keep-alive")
 
 	if _, err := fmt.Fprintf(rw, "data: %s\n\n", data); err != nil {
-		logger.Errorf(ctx, "SSEServer data: %s, err: %v", data, err)
+		logger.Errorf(ctx, "SSEServer data: %s, error: %v", data, err)
 		return err
 	}
 

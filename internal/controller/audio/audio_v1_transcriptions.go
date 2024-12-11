@@ -36,7 +36,7 @@ func (c *ControllerV1) Transcriptions(ctx context.Context, req *v1.Transcription
 
 		req.Duration = duration.Seconds()
 		if req.Duration == 0 {
-			logger.Errorf(ctx, "req: %s, err: %v", gjson.MustEncodeString(req), errors.ERR_UNSUPPORTED_FILE_FORMAT)
+			logger.Errorf(ctx, "req: %s, error: %v", gjson.MustEncodeString(req), errors.ERR_UNSUPPORTED_FILE_FORMAT)
 			return nil, errors.ERR_UNSUPPORTED_FILE_FORMAT
 		} else if req.Duration < 1 {
 			req.Duration = 1

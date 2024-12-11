@@ -127,7 +127,7 @@ func (s *sKey) List(ctx context.Context, typ int) ([]*model.Key, error) {
 		"type": typ,
 	}
 
-	results, err := dao.Key.Find(ctx, filter, "-updated_at")
+	results, err := dao.Key.Find(ctx, filter, "status", "-updated_at")
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err

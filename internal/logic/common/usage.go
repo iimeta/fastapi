@@ -106,7 +106,7 @@ func redisSpendQuota(ctx context.Context, usageKey, field string, totalTokens in
 
 	currentQuota, err := redis.HIncrBy(ctx, usageKey, field, int64(-totalTokens))
 	if err != nil {
-		logger.Errorf(ctx, "redisSpendQuota usageKey: %s, field: %s, totalTokens: %d, err: %v", usageKey, field, totalTokens, err)
+		logger.Errorf(ctx, "redisSpendQuota usageKey: %s, field: %s, totalTokens: %d, error: %v", usageKey, field, totalTokens, err)
 
 		if len(retry) == 10 {
 			return -1, err
@@ -127,7 +127,7 @@ func redisSpendQuota(ctx context.Context, usageKey, field string, totalTokens in
 func mongoSpendQuota(ctx context.Context, f func() error, retry ...int) error {
 
 	if err := f(); err != nil {
-		logger.Errorf(ctx, "mongoSpendQuota err: %v", err)
+		logger.Errorf(ctx, "mongoSpendQuota error: %v", err)
 
 		if len(retry) == 10 {
 			return err
@@ -148,7 +148,7 @@ func mongoSpendQuota(ctx context.Context, f func() error, retry ...int) error {
 func mongoUsedQuota(ctx context.Context, f func() error, retry ...int) error {
 
 	if err := f(); err != nil {
-		logger.Errorf(ctx, "mongoUsedQuota err: %v", err)
+		logger.Errorf(ctx, "mongoUsedQuota error: %v", err)
 
 		if len(retry) == 10 {
 			return err

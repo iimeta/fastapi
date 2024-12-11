@@ -21,11 +21,11 @@ func init() {
 
 	ctx := gctx.New()
 
-	logger.Info(ctx, "core init ing...")
+	logger.Info(ctx, "Core init ing...")
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Infof(ctx, "core init time: %d", gtime.TimestampMilli()-now)
+		logger.Infof(ctx, "Core init time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	users, err := service.User().List(ctx)
@@ -187,11 +187,12 @@ func init() {
 
 			msg, err := conn.ReceiveMessage(ctx)
 			if err != nil {
-				logger.Error(ctx, err)
+				logger.Errorf(ctx, "Core Subscribe error: %v", err)
 				time.Sleep(5 * time.Second)
-				conn, _, err = redis.Subscribe(ctx, channels[0], channels[1:]...)
-				if err != nil {
-					logger.Error(ctx, err)
+				if conn, _, err = redis.Subscribe(ctx, channels[0], channels[1:]...); err != nil {
+					logger.Errorf(ctx, "Core Subscribe Reconnect error: %v", err)
+				} else {
+					logger.Info(ctx, "Core Subscribe Reconnect success")
 				}
 				continue
 			}

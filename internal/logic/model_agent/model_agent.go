@@ -84,7 +84,7 @@ func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAge
 		},
 	}
 
-	results, err := dao.ModelAgent.Find(ctx, filter, "-weight")
+	results, err := dao.ModelAgent.Find(ctx, filter, "status", "-weight")
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -135,7 +135,7 @@ func (s *sModelAgent) ListAll(ctx context.Context) ([]*model.ModelAgent, error) 
 
 	filter := bson.M{}
 
-	results, err := dao.ModelAgent.Find(ctx, filter, "-weight")
+	results, err := dao.ModelAgent.Find(ctx, filter, "status", "-weight")
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err

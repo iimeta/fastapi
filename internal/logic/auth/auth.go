@@ -76,7 +76,7 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 	}
 
 	if err = common.CheckIp(ctx, key.IpWhitelist, key.IpBlacklist); err != nil {
-		logger.Errorf(ctx, "sAuth Key CheckIp ClientIp: %s, RemoteIp: %s, err: %v", g.RequestFromCtx(ctx).GetClientIp(), g.RequestFromCtx(ctx).GetRemoteIp(), err)
+		logger.Errorf(ctx, "sAuth Key CheckIp ClientIp: %s, RemoteIp: %s, error: %v", g.RequestFromCtx(ctx).GetClientIp(), g.RequestFromCtx(ctx).GetRemoteIp(), err)
 		return err
 	}
 
@@ -145,7 +145,7 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 	}
 
 	if err = common.CheckIp(ctx, app.IpWhitelist, app.IpBlacklist); err != nil {
-		logger.Errorf(ctx, "sAuth App CheckIp ClientIp: %s, RemoteIp: %s, err: %v", g.RequestFromCtx(ctx).GetClientIp(), g.RequestFromCtx(ctx).GetRemoteIp(), err)
+		logger.Errorf(ctx, "sAuth App CheckIp ClientIp: %s, RemoteIp: %s, error: %v", g.RequestFromCtx(ctx).GetClientIp(), g.RequestFromCtx(ctx).GetRemoteIp(), err)
 		return err
 	}
 
