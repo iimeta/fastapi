@@ -17,7 +17,7 @@ type Model struct {
 	AudioQuota           common.AudioQuota           `json:"audio_quota,omitempty"`             // 音频额度
 	MultimodalQuota      common.MultimodalQuota      `json:"multimodal_quota,omitempty"`        // 多模态额度
 	RealtimeQuota        common.RealtimeQuota        `json:"realtime_quota,omitempty"`          // 多模态实时额度
-	MultimodalAudioQuota common.MultimodalAudioQuota `bson:"multimodal_audio_quota,omitempty"`  // 多模态语音额度
+	MultimodalAudioQuota common.MultimodalAudioQuota `json:"multimodal_audio_quota,omitempty"`  // 多模态语音额度
 	MidjourneyQuotas     []common.MidjourneyQuota    `json:"midjourney_quotas,omitempty"`       // Midjourney额度
 	DataFormat           int                         `json:"data_format,omitempty"`             // 数据格式[1:统一格式, 2:官方格式]
 	IsPublic             bool                        `json:"is_public,omitempty"`               // 是否公开
