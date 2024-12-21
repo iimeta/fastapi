@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi-sdk/sdkerr"
 	"github.com/iimeta/fastapi/internal/config"
@@ -26,7 +27,6 @@ type FastApiError struct {
 var (
 	ERR_NIL                           = NewError(500, -1, "", "fastapi_error")
 	ERR_UNKNOWN                       = NewError(500, -1, "Unknown Error.", "fastapi_error")
-	ERR_SYSTEM                        = NewError(500, -1, "System Error.", "fastapi_error")
 	ERR_INTERNAL_ERROR                = NewError(500, 500, "Internal Error.", "fastapi_error")
 	ERR_NO_AVAILABLE_KEY              = NewError(500, "fastapi_error", "No available key.", "fastapi_error")
 	ERR_ALL_KEY                       = NewError(500, "fastapi_error", "All key error.", "fastapi_error")
@@ -52,6 +52,9 @@ var (
 	ERR_MODEL_NOT_FOUND               = NewError(404, "model_not_found", "The model does not exist or you do not have access to it.", "fastapi_request_error")
 	ERR_PATH_NOT_FOUND                = NewError(404, "path_not_found", "The path does not exist or you do not have access to it.", "fastapi_request_error")
 	ERR_INSUFFICIENT_QUOTA            = NewError(429, "insufficient_quota", "You exceeded your current quota.", "fastapi_request_error")
+	ERR_ACCOUNT_QUOTA_EXPIRED         = NewError(429, "account_quota_expired", "You account quota has expired.", "fastapi_request_error")
+	ERR_APP_QUOTA_EXPIRED             = NewError(429, "app_quota_expired", "You app quota has expired.", "fastapi_request_error")
+	ERR_KEY_QUOTA_EXPIRED             = NewError(429, "key_quota_expired", "You key quota has expired.", "fastapi_request_error")
 )
 
 func New(text string) error {
@@ -71,6 +74,14 @@ func As(err error, target any) bool {
 }
 
 func NewError(status int, code any, message, typ string) error {
+
+	if errorPrefix := config.GetString(gctx.New(), "core.error_prefix", "fastapi"); errorPrefix != "fastapi" {
+		if c, ok := code.(string); ok {
+			code = gstr.Replace(c, "fastapi", errorPrefix)
+		}
+		typ = gstr.Replace(typ, "fastapi", errorPrefix)
+	}
+
 	return &FastApiError{
 		Err: &sdkerr.ApiError{
 			HttpStatusCode: status,
@@ -82,6 +93,14 @@ func NewError(status int, code any, message, typ string) error {
 }
 
 func NewErrorf(status int, code any, message, typ string, args ...interface{}) error {
+
+	if errorPrefix := config.GetString(gctx.New(), "core.error_prefix", "fastapi"); errorPrefix != "fastapi" {
+		if c, ok := code.(string); ok {
+			code = gstr.Replace(c, "fastapi", errorPrefix)
+		}
+		typ = gstr.Replace(typ, "fastapi", errorPrefix)
+	}
+
 	return &FastApiError{
 		Err: &sdkerr.ApiError{
 			HttpStatusCode: status,
@@ -102,14 +121,11 @@ func Error(ctx context.Context, err error) IFastApiError {
 	if Is(err, ERR_NO_AVAILABLE_KEY) || Is(err, ERR_NO_AVAILABLE_MODEL_AGENT) ||
 		Is(err, ERR_NO_AVAILABLE_MODEL_AGENT_KEY) || Is(err, ERR_ALL_KEY) ||
 		Is(err, ERR_ALL_MODEL_AGENT) || Is(err, ERR_ALL_MODEL_AGENT_KEY) {
-		err = ERR_SYSTEM
+		err = ERR_INTERNAL_ERROR
 	}
 
 	if e, ok := err.(IFastApiError); ok {
-		if e.ErrCode() == 0 {
-			return NewError(e.Status(), e.ErrCode(), e.ErrMessage(), e.ErrType()).(IFastApiError)
-		}
-		return NewErrorf(e.Status(), e.ErrCode(), e.ErrMessage()+" TraceId: %s", e.ErrType(), gctx.CtxId(ctx)).(IFastApiError)
+		return NewErrorf(e.Status(), e.ErrCode(), e.ErrMessage()+" TraceId: %s Timestamp: %d", e.ErrType(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
 	}
 
 	apiError := &sdkerr.ApiError{}
@@ -121,22 +137,18 @@ func Error(ctx context.Context, err error) IFastApiError {
 	for _, notShieldError := range config.Cfg.Error.NotShield {
 		if gstr.Contains(err.Error(), notShieldError) {
 			e := ERR_UNKNOWN.(IFastApiError)
-			return NewErrorf(e.Status(), e.ErrCode(), err.Error()+" TraceId: %s", e.ErrType(), gctx.CtxId(ctx)).(IFastApiError)
+			return NewErrorf(e.Status(), e.ErrCode(), err.Error()+" TraceId: %s Timestamp: %d", e.ErrType(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
 		}
 	}
 
 	// 未知的错误, 用统一描述处理
 	e := ERR_UNKNOWN.(IFastApiError)
-	return NewErrorf(e.Status(), e.ErrCode(), e.ErrMessage()+" TraceId: %s", e.ErrType(), gctx.CtxId(ctx)).(IFastApiError)
+
+	return NewErrorf(e.Status(), e.ErrCode(), e.ErrMessage()+" TraceId: %s Timestamp: %d", e.ErrType(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
 }
 
 func (e *FastApiError) Error() string {
-
-	if e.Err.HttpStatusCode > 0 {
-		return fmt.Sprintf("error, status code: %d, message: %s", e.Err.HttpStatusCode, e.Err.Message)
-	}
-
-	return e.Err.Message
+	return fmt.Sprintf("statusCode: %d, code: %s, message: %s", e.Err.HttpStatusCode, e.Err.Code, e.Err.Message)
 }
 
 func (e *FastApiError) Unwrap() error {

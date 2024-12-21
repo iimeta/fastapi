@@ -51,7 +51,6 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 
 	key, err := service.App().GetCacheAppKey(ctx, secretKey)
 	if err != nil || key == nil {
-
 		if key, err = service.Key().GetKey(ctx, secretKey); err != nil {
 			logger.Error(ctx, err)
 			return errors.ERR_INVALID_API_KEY
@@ -80,15 +79,22 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 		return err
 	}
 
-	if key.IsLimitQuota && (service.App().GetCacheAppKeyQuota(ctx, key.Key) <= 0 || (key.QuotaExpiresAt != 0 && key.QuotaExpiresAt < gtime.TimestampMilli())) {
-		err = errors.ERR_INSUFFICIENT_QUOTA
-		logger.Error(ctx, err)
-		return err
+	if key.IsLimitQuota {
+		if service.App().GetCacheAppKeyQuota(ctx, key.Key) <= 0 {
+			err = errors.ERR_INSUFFICIENT_QUOTA
+			logger.Error(ctx, err)
+			return err
+		}
+
+		if key.QuotaExpiresAt != 0 && key.QuotaExpiresAt < gtime.TimestampMilli() {
+			err = errors.ERR_KEY_QUOTA_EXPIRED
+			logger.Error(ctx, err)
+			return err
+		}
 	}
 
 	user, err := service.User().GetCacheUser(ctx, service.Session().GetUserId(ctx))
 	if err != nil || user == nil {
-
 		if user, err = service.User().GetUser(ctx, service.Session().GetUserId(ctx)); err != nil {
 			logger.Error(ctx, err)
 			return errors.ERR_INVALID_USER
@@ -112,15 +118,20 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 		return err
 	}
 
-	if service.User().GetCacheUserQuota(ctx, user.UserId) <= 0 || (user.QuotaExpiresAt != 0 && user.QuotaExpiresAt < gtime.TimestampMilli()) {
+	if service.User().GetCacheUserQuota(ctx, user.UserId) <= 0 {
 		err = errors.ERR_INSUFFICIENT_QUOTA
+		logger.Error(ctx, err)
+		return err
+	}
+
+	if user.QuotaExpiresAt != 0 && user.QuotaExpiresAt < gtime.TimestampMilli() {
+		err = errors.ERR_ACCOUNT_QUOTA_EXPIRED
 		logger.Error(ctx, err)
 		return err
 	}
 
 	app, err := service.App().GetCacheApp(ctx, key.AppId)
 	if err != nil || app == nil {
-
 		if app, err = service.App().GetApp(ctx, key.AppId); err != nil {
 			logger.Error(ctx, err)
 			return errors.ERR_INVALID_APP
@@ -149,10 +160,18 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 		return err
 	}
 
-	if app.IsLimitQuota && (service.App().GetCacheAppQuota(ctx, app.AppId) <= 0 || (app.QuotaExpiresAt != 0 && app.QuotaExpiresAt < gtime.TimestampMilli())) {
-		err = errors.ERR_INSUFFICIENT_QUOTA
-		logger.Error(ctx, err)
-		return err
+	if app.IsLimitQuota {
+		if service.App().GetCacheAppQuota(ctx, app.AppId) <= 0 {
+			err = errors.ERR_INSUFFICIENT_QUOTA
+			logger.Error(ctx, err)
+			return err
+		}
+
+		if app.QuotaExpiresAt != 0 && app.QuotaExpiresAt < gtime.TimestampMilli() {
+			err = errors.ERR_APP_QUOTA_EXPIRED
+			logger.Error(ctx, err)
+			return err
+		}
 	}
 
 	service.Session().SaveUser(ctx, user)
