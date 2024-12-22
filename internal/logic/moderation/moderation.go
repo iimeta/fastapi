@@ -48,7 +48,7 @@ func (s *sModeration) Moderations(ctx context.Context, params sdkm.ModerationReq
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client      *sdk.ModerationClient
+		client      sdk.Client
 		retryInfo   *mcommon.Retry
 		totalTokens int
 	)
@@ -113,7 +113,7 @@ func (s *sModeration) Moderations(ctx context.Context, params sdkm.ModerationReq
 
 	request := params
 
-	if client, err = common.NewModerationClient(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
+	if client, err = common.NewClient(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
