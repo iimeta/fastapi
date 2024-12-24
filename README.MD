@@ -1,6 +1,6 @@
 <div align=center>
 
-<img src="https://iim.ai/public/images/logo.png?t=2023112623" width="128"/>
+<img src="https://www.fastapi.ai/logo.png" width="128"/>
 
 # 智元 Fast API
 

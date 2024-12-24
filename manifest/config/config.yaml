@@ -89,9 +89,11 @@ record_logs:
   - messages    # 上下文
   - image       # 多模态识图的BASE64图像数据
 
-# 错误配置
+# 错误配置(区分大小写)
 error:
-  auto_disabled:  # 自动禁用错误(区分大小写)
+  auto_disabled:  # 自动禁用错误(默认会重试)
+    - "Incorrect API key provided or has been disabled."
+    - "You exceeded your current quota."
     - "The OpenAI account associated with this API key has been deactivated."
     - "PERMISSION_DENIED"
     - "BILLING_DISABLED"
@@ -101,3 +103,7 @@ error:
     - "IAM_PERMISSION_DENIED"
     - "SERVICE_DISABLED"
     - "ACCOUNT_STATE_INVALID"
+  not_retry:  # 不重试错误
+    - "Please reduce the length of the messages."
+  not_shield:  # 不屏蔽错误
+    - "Please reduce the length of the messages."
