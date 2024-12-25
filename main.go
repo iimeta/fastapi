@@ -5,8 +5,6 @@ import (
 
 	_ "github.com/iimeta/fastapi/internal/packed"
 
-	_ "github.com/iimeta/fastapi/internal/core"
-
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/cmd"
