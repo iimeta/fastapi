@@ -20,7 +20,6 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
-	"github.com/iimeta/fastapi/utility/util"
 	"time"
 )
 
@@ -132,28 +131,25 @@ func (s *sCore) Refresh(ctx context.Context) error {
 		return err
 	}
 
-	userMap := util.ToMap(users, func(user *model.User) int {
+	userMap := make(map[int]*model.User)
+	for _, user := range users {
 
 		if err = service.User().SaveCacheUser(ctx, user); err != nil {
 			logger.Error(ctx, err)
-			return 0
+			return err
 		}
 
 		if err = service.User().SaveCacheUserQuota(ctx, user.UserId, user.Quota); err != nil {
 			logger.Error(ctx, err)
-			return 0
+			return err
 		}
 
 		if _, err = redis.HSetStrAny(ctx, fmt.Sprintf(consts.API_USAGE_KEY, user.UserId), consts.USER_QUOTA_FIELD, user.Quota); err != nil {
 			logger.Error(ctx, err)
-			return 0
+			return err
 		}
 
-		return user.UserId
-	})
-	if err != nil {
-		logger.Error(ctx, err)
-		return err
+		userMap[user.UserId] = user
 	}
 
 	keys, err := service.Key().List(ctx, 1)
