@@ -20,10 +20,13 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
+	"sync"
 	"time"
 )
 
-type sCore struct{}
+type sCore struct {
+	mutex sync.Mutex
+}
 
 func init() {
 
@@ -44,14 +47,14 @@ func init() {
 		panic(err)
 	}
 
-	_, _ = gcron.AddSingleton(gctx.New(), "0 0/30 * * * ?", func(ctx context.Context) {
-		if err := core.Refresh(ctx); err != nil {
+	_, _ = gcron.AddSingleton(ctx, "0 0/30 * * * ?", func(ctx context.Context) {
+		if err := core.Refresh(gctx.New()); err != nil {
 			logger.Error(ctx, err)
 		}
 	})
 
-	_ = gtimer.AddSingleton(gctx.New(), 30*time.Minute, func(ctx context.Context) {
-		if err := core.Refresh(ctx); err != nil {
+	_ = gtimer.AddSingleton(ctx, 30*time.Minute, func(ctx context.Context) {
+		if err := core.Refresh(gctx.New()); err != nil {
 			logger.Error(ctx, err)
 		}
 	})
@@ -117,6 +120,8 @@ func New() service.ICore {
 
 // 刷新缓存
 func (s *sCore) Refresh(ctx context.Context) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
 	logger.Info(ctx, "sCore Refresh ing...")
 
