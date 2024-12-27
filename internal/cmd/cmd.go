@@ -212,10 +212,17 @@ func middlewareHandlerResponse(r *ghttp.Request) {
 	)
 
 	if err != nil {
+
 		if code == errors.Error(r.GetCtx(), errors.ERR_NIL) {
 			code = errors.Error(r.GetCtx(), errors.ERR_INTERNAL_ERROR)
 		}
+
 		msg = err.Error()
+
+		if gstr.Contains(msg, "timeout") || gstr.Contains(msg, "tcp") || gstr.Contains(msg, "http") || gstr.Contains(msg, "connection") {
+			msg = "系统出现异常, 请联系管理员"
+		}
+
 	} else {
 
 		if r.Response.Status > 0 && r.Response.Status != http.StatusOK {
