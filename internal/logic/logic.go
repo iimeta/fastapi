@@ -15,6 +15,7 @@ import (
 	_ "github.com/iimeta/fastapi/internal/logic/dashboard"
 	_ "github.com/iimeta/fastapi/internal/logic/embedding"
 	_ "github.com/iimeta/fastapi/internal/logic/file"
+	_ "github.com/iimeta/fastapi/internal/logic/google"
 	_ "github.com/iimeta/fastapi/internal/logic/image"
 	_ "github.com/iimeta/fastapi/internal/logic/key"
 	_ "github.com/iimeta/fastapi/internal/logic/midjourney"

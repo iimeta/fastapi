@@ -3,6 +3,7 @@ package common
 import (
 	"context"
 	"github.com/iimeta/fastapi-sdk"
+	"github.com/iimeta/fastapi-sdk/google"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
@@ -18,12 +19,13 @@ func NewClient(ctx context.Context, corp string, model *model.Model, key, baseUR
 	return sdk.NewClient(ctx, GetCorpCode(ctx, corp), model.Model, key, baseURL, path, nil, config.Cfg.Http.ProxyUrl), nil
 }
 
-func NewEmbeddingClient(ctx context.Context, model *model.Model, key, baseURL, path string) (*sdk.EmbeddingClient, error) {
-	return sdk.NewEmbeddingClient(ctx, model.Model, key, baseURL, path, config.Cfg.Http.ProxyUrl), nil
-}
+func NewGoogleClient(ctx context.Context, model *model.Model, key, baseURL, path string) (*google.Client, error) {
 
-func NewModerationClient(ctx context.Context, model *model.Model, key, baseURL, path string) (*sdk.ModerationClient, error) {
-	return sdk.NewModerationClient(ctx, model.Model, key, baseURL, path, config.Cfg.Http.ProxyUrl), nil
+	if model.IsEnablePresetConfig {
+		return google.NewClient(ctx, model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, config.Cfg.Http.ProxyUrl), nil
+	}
+
+	return google.NewClient(ctx, model.Model, key, baseURL, path, nil, config.Cfg.Http.ProxyUrl), nil
 }
 
 func NewRealtimeClient(ctx context.Context, model *model.Model, key, baseURL, path string) (*sdk.RealtimeClient, error) {
