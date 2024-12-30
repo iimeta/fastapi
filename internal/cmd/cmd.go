@@ -14,6 +14,7 @@ import (
 	"github.com/iimeta/fastapi/internal/controller/dashboard"
 	"github.com/iimeta/fastapi/internal/controller/embedding"
 	"github.com/iimeta/fastapi/internal/controller/file"
+	"github.com/iimeta/fastapi/internal/controller/google"
 	"github.com/iimeta/fastapi/internal/controller/health"
 	"github.com/iimeta/fastapi/internal/controller/image"
 	"github.com/iimeta/fastapi/internal/controller/midjourney"
@@ -114,6 +115,14 @@ var (
 				)
 			})
 
+			s.Group("/v1beta", func(v1 *ghttp.RouterGroup) {
+				v1.Middleware(middlewareHandlerResponse)
+				v1.Middleware(middleware)
+				v1.Bind(
+					google.NewV1(),
+				)
+			})
+
 			if config.Cfg.ApiServerAddress != "" {
 				s.SetAddr(config.Cfg.ApiServerAddress)
 			}
@@ -141,6 +150,10 @@ func middleware(r *ghttp.Request) {
 
 	if secretKey == "" {
 		secretKey = r.Get("token").String()
+	}
+
+	if secretKey == "" {
+		secretKey = r.Get("key").String()
 	}
 
 	if secretKey == "" {
@@ -220,7 +233,7 @@ func middlewareHandlerResponse(r *ghttp.Request) {
 		msg = err.Error()
 
 		if gstr.Contains(msg, "timeout") || gstr.Contains(msg, "tcp") || gstr.Contains(msg, "http") || gstr.Contains(msg, "connection") {
-			msg = "系统出现异常, 请联系管理员"
+			msg = "Internal Error."
 		}
 
 	} else {

@@ -30,8 +30,15 @@ const (
 	ROLE_ASSISTANT = "assistant"
 	ROLE_FUNCTION  = "function"
 	ROLE_TOOL      = "tool"
+	ROLE_MODEL     = "model"
 
 	GPT_PREFIX     = "gpt-"
 	DEFAULT_MODEL  = "gpt-3.5-turbo"
 	QUOTA_USD_UNIT = 500000.0 // $1 = 50万tokens
+)
+
+const (
+	COMPLETION_ID_PREFIX     = "chatcmpl-"
+	COMPLETION_OBJECT        = "chat.completion"
+	COMPLETION_STREAM_OBJECT = "chat.completion.chunk"
 )

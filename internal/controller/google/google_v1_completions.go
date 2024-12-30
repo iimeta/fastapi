@@ -17,7 +17,7 @@ func (c *ControllerV1) Completions(ctx context.Context, req *v1.CompletionsReq) 
 		logger.Debugf(ctx, "Controller Google Completions time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	if req.Alt == "sse" {
+	if req.Action == "streamGenerateContent" || req.Alt == "sse" {
 		if err = service.Google().CompletionsStream(ctx, g.RequestFromCtx(ctx), nil, nil); err != nil {
 			return nil, err
 		}
@@ -27,7 +27,7 @@ func (c *ControllerV1) Completions(ctx context.Context, req *v1.CompletionsReq) 
 		if err != nil {
 			return nil, err
 		}
-		g.RequestFromCtx(ctx).Response.WriteJson(response)
+		g.RequestFromCtx(ctx).Response.WriteJson(response.ResponseBytes)
 	}
 
 	return

@@ -10,6 +10,7 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
+	"github.com/gogf/gf/v2/util/grand"
 	"github.com/iimeta/fastapi-sdk/google"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/consts"
@@ -20,6 +21,7 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
+	"github.com/iimeta/go-openai"
 	"github.com/iimeta/tiktoken-go"
 	"io"
 	"math"
@@ -44,7 +46,7 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 	}()
 
 	var (
-		params sdkm.ChatCompletionRequest
+		params = convToChatCompletionRequest(request)
 		mak    = &common.MAK{
 			Model:              params.Model,
 			Messages:           params.Messages,
@@ -327,7 +329,7 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 		return response, err
 	}
 
-	response.ResponseBytes = res.ResponseBytes
+	response = convToChatCompletionResponse(g.RequestFromCtx(ctx).GetCtx(), res, false)
 
 	return response, nil
 }
@@ -341,7 +343,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 	}()
 
 	var (
-		params sdkm.ChatCompletionRequest
+		params = convToChatCompletionRequest(request)
 		mak    = &common.MAK{
 			Model:              params.Model,
 			Messages:           params.Messages,
@@ -521,8 +523,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 		return err
 	}
 
-	// todo
-	_, err = client.ChatCompletionStreamOfficial(ctx, request.GetBody())
+	response, err := client.ChatCompletionStreamOfficial(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -587,13 +588,13 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 		return err
 	}
 
-	response := make(chan *sdkm.ChatCompletionResponse)
-
 	defer close(response)
 
 	for {
 
-		response := <-response
+		res := <-response
+
+		response := convToChatCompletionResponse(g.RequestFromCtx(ctx).GetCtx(), *res, true)
 
 		connTime = response.ConnTime
 		duration = response.Duration
@@ -731,33 +732,180 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 			}
 		}
 
-		// 替换成调用的模型
-		response.Model = mak.ReqModel.Model
+		data := make(map[string]interface{})
+		if err = gjson.Unmarshal(response.ResponseBytes, &data); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
 
-		// OpenAI官方格式
-		if len(response.ResponseBytes) > 0 {
-
-			data := make(map[string]interface{})
-			if err = gjson.Unmarshal(response.ResponseBytes, &data); err != nil {
-				logger.Error(ctx, err)
-				return err
-			}
-
-			// 替换成调用的模型
-			if _, ok := data["model"]; ok {
-				data["model"] = mak.ReqModel.Model
-			}
-
-			if err = util.SSEServer(ctx, gjson.MustEncodeString(data)); err != nil {
-				logger.Error(ctx, err)
-				return err
-			}
-
-		} else {
-			if err = util.SSEServer(ctx, gjson.MustEncodeString(response)); err != nil {
-				logger.Error(ctx, err)
-				return err
-			}
+		if err = util.SSEServer(ctx, gjson.MustEncodeString(data)); err != nil {
+			logger.Error(ctx, err)
+			return err
 		}
 	}
+}
+
+func convToChatCompletionRequest(request *ghttp.Request) sdkm.ChatCompletionRequest {
+
+	googleChatCompletionReq := sdkm.GoogleChatCompletionReq{}
+	if err := gjson.Unmarshal(request.GetBody(), &googleChatCompletionReq); err != nil {
+		logger.Error(request.GetCtx(), err)
+		return sdkm.ChatCompletionRequest{}
+	}
+
+	messages := make([]sdkm.ChatCompletionMessage, 0)
+	for _, content := range googleChatCompletionReq.Contents {
+
+		contents := make([]interface{}, 0)
+		for _, part := range content.Parts {
+			if part.Text != "" {
+				contents = append(contents, g.MapStrAny{
+					"type": "text",
+					"text": part.Text,
+				})
+			}
+		}
+
+		role := content.Role
+
+		if role == consts.ROLE_MODEL {
+			role = consts.ROLE_ASSISTANT
+		}
+
+		messages = append(messages, sdkm.ChatCompletionMessage{
+			Role:    role,
+			Content: contents,
+		})
+
+		//parts := make([]model.Part, 0)
+		//
+		//if contents, ok := message.Content.([]interface{}); ok {
+		//
+		//	for _, value := range contents {
+		//
+		//		if content, ok := value.(map[string]interface{}); ok {
+		//
+		//			if content["type"] == "image_url" {
+		//
+		//				if imageUrl, ok := content["image_url"].(map[string]interface{}); ok {
+		//
+		//					url := gconv.String(imageUrl["url"])
+		//
+		//					if gstr.HasPrefix(url, "data:image/") {
+		//						base64 := gstr.Split(url, "base64,")
+		//						if len(base64) > 1 {
+		//							// data:image/jpeg;base64,
+		//							mimeType := fmt.Sprintf("image/%s", gstr.Split(base64[0][11:], ";")[0])
+		//							parts = append(parts, model.Part{
+		//								InlineData: &model.InlineData{
+		//									MimeType: mimeType,
+		//									Data:     base64[1],
+		//								},
+		//							})
+		//						} else {
+		//							parts = append(parts, model.Part{
+		//								InlineData: &model.InlineData{
+		//									MimeType: "image/jpeg",
+		//									Data:     base64[0],
+		//								},
+		//							})
+		//						}
+		//					} else {
+		//						parts = append(parts, model.Part{
+		//							InlineData: &model.InlineData{
+		//								MimeType: "image/jpeg",
+		//								Data:     url,
+		//							},
+		//						})
+		//					}
+		//				}
+		//
+		//			} else if content["type"] == "video_url" {
+		//				if videoUrl, ok := content["video_url"].(map[string]interface{}); ok {
+		//
+		//					url := gconv.String(videoUrl["url"])
+		//					format := gconv.String(videoUrl["format"])
+		//
+		//					parts = append(parts, model.Part{
+		//						FileData: &model.FileData{
+		//							MimeType: "video/" + format,
+		//							FileUri:  url,
+		//						},
+		//					})
+		//				}
+		//			} else {
+		//				parts = append(parts, model.Part{
+		//					Text: gconv.String(content["text"]),
+		//				})
+		//			}
+		//		}
+		//	}
+		//
+		//} else {
+		//	parts = append(parts, model.Part{
+		//		Text: gconv.String(message.Content),
+		//	})
+		//}
+		//
+		//contents = append(contents, model.Content{
+		//	Role:  role,
+		//	Parts: parts,
+		//})
+	}
+
+	return sdkm.ChatCompletionRequest{
+		Model:       request.GetRouterMap()["model"],
+		Messages:    messages,
+		MaxTokens:   googleChatCompletionReq.GenerationConfig.MaxOutputTokens,
+		Temperature: googleChatCompletionReq.GenerationConfig.Temperature,
+		TopP:        googleChatCompletionReq.GenerationConfig.TopP,
+	}
+}
+
+func convToChatCompletionResponse(ctx context.Context, res sdkm.GoogleChatCompletionRes, stream bool) sdkm.ChatCompletionResponse {
+
+	googleChatCompletionRes := sdkm.GoogleChatCompletionRes{}
+	if err := gjson.Unmarshal(res.ResponseBytes, &googleChatCompletionRes); err != nil {
+		logger.Error(ctx, err)
+	}
+
+	chatCompletionResponse := sdkm.ChatCompletionResponse{
+		ID:            consts.COMPLETION_ID_PREFIX + grand.S(29),
+		Object:        consts.COMPLETION_OBJECT,
+		Created:       gtime.Timestamp(),
+		Model:         googleChatCompletionRes.ModelVersion,
+		ResponseBytes: res.ResponseBytes,
+		ConnTime:      res.ConnTime,
+		Duration:      res.Duration,
+		TotalTime:     res.TotalTime,
+		Error:         res.Err,
+	}
+
+	if stream {
+		chatCompletionResponse.Choices = []sdkm.ChatCompletionChoice{{
+			Index: googleChatCompletionRes.Candidates[0].Index,
+			Delta: &openai.ChatCompletionStreamChoiceDelta{
+				Role:    consts.ROLE_ASSISTANT,
+				Content: googleChatCompletionRes.Candidates[0].Content.Parts[0].Text,
+			},
+		}}
+	} else {
+		chatCompletionResponse.Choices = []sdkm.ChatCompletionChoice{{
+			Message: &openai.ChatCompletionMessage{
+				Role:    consts.ROLE_ASSISTANT,
+				Content: googleChatCompletionRes.Candidates[0].Content.Parts[0].Text,
+			},
+			FinishReason: openai.FinishReasonStop,
+		}}
+	}
+
+	if googleChatCompletionRes.UsageMetadata != nil {
+		chatCompletionResponse.Usage = &sdkm.Usage{
+			PromptTokens:     googleChatCompletionRes.UsageMetadata.PromptTokenCount,
+			CompletionTokens: googleChatCompletionRes.UsageMetadata.CandidatesTokenCount,
+			TotalTokens:      googleChatCompletionRes.UsageMetadata.TotalTokenCount,
+		}
+	}
+
+	return chatCompletionResponse
 }
