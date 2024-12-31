@@ -116,6 +116,12 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 					totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
 				}
 
+				if params.Tools != nil {
+					if tools := gconv.String(params.Tools); gstr.Contains(tools, "google_search") || gstr.Contains(tools, "googleSearch") {
+						totalTokens += mak.ReqModel.MultimodalQuota.SearchQuota
+					}
+				}
+
 			} else if mak.ReqModel.Type == 102 { // 多模态语音
 
 				if response.Usage == nil {
@@ -417,8 +423,16 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				}
 
 				if mak.ReqModel.Type == 100 { // 多模态
+
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 					totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
+
+					if params.Tools != nil {
+						if tools := gconv.String(params.Tools); gstr.Contains(tools, "google_search") || gstr.Contains(tools, "googleSearch") {
+							totalTokens += mak.ReqModel.MultimodalQuota.SearchQuota
+						}
+					}
+
 				} else if mak.ReqModel.Type == 102 { // 多模态语音
 					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
 				} else {
@@ -434,8 +448,16 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			} else if retryInfo == nil && usage != nil && mak.ReqModel != nil {
 
 				if mak.ReqModel.Type == 100 { // 多模态
+
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
+
+					if params.Tools != nil {
+						if tools := gconv.String(params.Tools); gstr.Contains(tools, "google_search") || gstr.Contains(tools, "googleSearch") {
+							totalTokens += mak.ReqModel.MultimodalQuota.SearchQuota
+						}
+					}
+
 				} else if mak.ReqModel.Type == 102 { // 多模态语音
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))

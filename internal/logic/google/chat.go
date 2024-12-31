@@ -22,7 +22,6 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
-	"github.com/iimeta/go-openai"
 	"github.com/iimeta/tiktoken-go"
 	"io"
 	"math"
@@ -834,13 +833,13 @@ func convToChatCompletionRequest(request *ghttp.Request) sdkm.ChatCompletionRequ
 
 func convToChatCompletionResponse(ctx context.Context, res sdkm.GoogleChatCompletionRes, stream bool) sdkm.ChatCompletionResponse {
 
-	googleChatCompletionRes := sdkm.GoogleChatCompletionRes{}
+	googleChatCompletionRes := sdkm.GoogleChatCompletionRes{
+		ResponseBytes: res.ResponseBytes,
+		UsageMetadata: res.UsageMetadata,
+		Err:           res.Err,
+	}
 
-	if res.Err == io.EOF {
-		googleChatCompletionRes.ResponseBytes = res.ResponseBytes
-		googleChatCompletionRes.UsageMetadata = res.UsageMetadata
-		googleChatCompletionRes.Err = io.EOF
-	} else {
+	if res.ResponseBytes != nil {
 		if err := gjson.Unmarshal(res.ResponseBytes, &googleChatCompletionRes); err != nil {
 			logger.Error(ctx, err)
 		}
@@ -858,23 +857,28 @@ func convToChatCompletionResponse(ctx context.Context, res sdkm.GoogleChatComple
 		Error:         googleChatCompletionRes.Err,
 	}
 
-	if googleChatCompletionRes.Err == nil {
+	if len(googleChatCompletionRes.Candidates) > 0 {
 		if stream {
-			chatCompletionResponse.Choices = []sdkm.ChatCompletionChoice{{
-				Index: googleChatCompletionRes.Candidates[0].Index,
-				Delta: &openai.ChatCompletionStreamChoiceDelta{
-					Role:    consts.ROLE_ASSISTANT,
-					Content: googleChatCompletionRes.Candidates[0].Content.Parts[0].Text,
-				},
-			}}
+			for _, candidate := range googleChatCompletionRes.Candidates {
+				chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, sdkm.ChatCompletionChoice{
+					Index: candidate.Index,
+					Delta: &sdkm.ChatCompletionStreamChoiceDelta{
+						Role:    consts.ROLE_ASSISTANT,
+						Content: candidate.Content.Parts[0].Text,
+					},
+				})
+			}
 		} else {
-			chatCompletionResponse.Choices = []sdkm.ChatCompletionChoice{{
-				Message: &openai.ChatCompletionMessage{
-					Role:    consts.ROLE_ASSISTANT,
-					Content: googleChatCompletionRes.Candidates[0].Content.Parts[0].Text,
-				},
-				FinishReason: openai.FinishReasonStop,
-			}}
+			for i, part := range googleChatCompletionRes.Candidates[0].Content.Parts {
+				chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, sdkm.ChatCompletionChoice{
+					Index: i,
+					Message: &sdkm.ChatCompletionMessage{
+						Role:    consts.ROLE_ASSISTANT,
+						Content: part.Text,
+					},
+					FinishReason: "stop",
+				})
+			}
 		}
 	}
 
