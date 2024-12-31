@@ -9,6 +9,7 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/gogf/gf/v2/util/grand"
 	"github.com/iimeta/fastapi-sdk/google"
@@ -103,6 +104,17 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 
 				} else {
 					totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
+				}
+
+				body := make(map[string]interface{})
+				if err := gjson.Unmarshal(request.GetBody(), &body); err == nil {
+					if t, ok := body["tools"]; ok {
+						if tools := gconv.String(t); gstr.Contains(tools, "google_search") || gstr.Contains(tools, "googleSearch") {
+							totalTokens += mak.ReqModel.MultimodalQuota.SearchQuota
+						}
+					}
+				} else {
+					logger.Error(ctx, err)
 				}
 
 			} else if mak.ReqModel.Type == 102 { // 多模态语音
@@ -402,8 +414,21 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 				}
 
 				if mak.ReqModel.Type == 100 { // 多模态
+
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 					totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
+
+					body := make(map[string]interface{})
+					if err := gjson.Unmarshal(request.GetBody(), &body); err == nil {
+						if t, ok := body["tools"]; ok {
+							if tools := gconv.String(t); gstr.Contains(tools, "google_search") || gstr.Contains(tools, "googleSearch") {
+								totalTokens += mak.ReqModel.MultimodalQuota.SearchQuota
+							}
+						}
+					} else {
+						logger.Error(ctx, err)
+					}
+
 				} else if mak.ReqModel.Type == 102 { // 多模态语音
 					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
 				} else {
@@ -419,8 +444,21 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 			} else if retryInfo == nil && usage != nil && mak.ReqModel != nil {
 
 				if mak.ReqModel.Type == 100 { // 多模态
+
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
+
+					body := make(map[string]interface{})
+					if err := gjson.Unmarshal(request.GetBody(), &body); err == nil {
+						if t, ok := body["tools"]; ok {
+							if tools := gconv.String(t); gstr.Contains(tools, "google_search") || gstr.Contains(tools, "googleSearch") {
+								totalTokens += mak.ReqModel.MultimodalQuota.SearchQuota
+							}
+						}
+					} else {
+						logger.Error(ctx, err)
+					}
+
 				} else if mak.ReqModel.Type == 102 { // 多模态语音
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))

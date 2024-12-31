@@ -32,6 +32,8 @@ type AudioQuota struct {
 type MultimodalQuota struct {
 	TextQuota   TextQuota    `bson:"text_quota,omitempty"   json:"text_quota,omitempty"`   // 文本额度
 	ImageQuotas []ImageQuota `bson:"image_quotas,omitempty" json:"image_quotas,omitempty"` // 图像额度
+	FixedQuota  int          `bson:"fixed_quota"            json:"fixed_quota"`            // 固定额度
+	SearchQuota int          `bson:"search_quota"           json:"search_quota"`           // 搜索额度
 }
 
 type RealtimeQuota struct {
