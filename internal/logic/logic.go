@@ -5,6 +5,7 @@
 package logic
 
 import (
+	_ "github.com/iimeta/fastapi/internal/logic/anthropic"
 	_ "github.com/iimeta/fastapi/internal/logic/app"
 	_ "github.com/iimeta/fastapi/internal/logic/audio"
 	_ "github.com/iimeta/fastapi/internal/logic/auth"

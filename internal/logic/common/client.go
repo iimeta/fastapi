@@ -3,6 +3,7 @@ package common
 import (
 	"context"
 	"github.com/iimeta/fastapi-sdk"
+	"github.com/iimeta/fastapi-sdk/anthropic"
 	"github.com/iimeta/fastapi-sdk/google"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/model"
@@ -26,6 +27,17 @@ func NewGoogleClient(ctx context.Context, model *model.Model, key, baseURL, path
 	}
 
 	return google.NewClient(ctx, model.Model, key, baseURL, path, nil, config.Cfg.Http.ProxyUrl), nil
+}
+
+func NewAnthropicClient(ctx context.Context, model *model.Model, key, baseURL, path string) (*anthropic.Client, error) {
+
+	if model.IsEnablePresetConfig {
+		return anthropic.NewClient(ctx, model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, config.Cfg.Http.ProxyUrl), nil
+	}
+
+	isSupportSystemRole := true
+
+	return anthropic.NewClient(ctx, model.Model, key, baseURL, path, &isSupportSystemRole, config.Cfg.Http.ProxyUrl), nil
 }
 
 func NewRealtimeClient(ctx context.Context, model *model.Model, key, baseURL, path string) (*sdk.RealtimeClient, error) {

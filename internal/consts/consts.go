@@ -42,3 +42,8 @@ const (
 	COMPLETION_OBJECT        = "chat.completion"
 	COMPLETION_STREAM_OBJECT = "chat.completion.chunk"
 )
+
+const (
+	DELTA_TYPE_TEXT       = "text_delta"
+	DELTA_TYPE_INPUT_JSON = "input_json_delta"
+)
