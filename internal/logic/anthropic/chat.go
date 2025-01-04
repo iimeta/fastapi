@@ -749,11 +749,46 @@ func convToChatCompletionRequest(request *ghttp.Request) sdkm.ChatCompletionRequ
 		return sdkm.ChatCompletionRequest{}
 	}
 
+	messages := make([]sdkm.ChatCompletionMessage, 0)
+	for _, message := range anthropicChatCompletionReq.Messages {
+
+		if contents, ok := message.Content.([]interface{}); ok {
+
+			for _, value := range contents {
+				if content, ok := value.(map[string]interface{}); ok {
+					if content["type"] == "image" {
+						if source, ok := content["source"].(map[string]interface{}); ok {
+							if source["data"] != nil {
+								content["type"] = "image_url"
+								content["image_url"] = g.MapStrAny{
+									"url": source["data"],
+								}
+								delete(content, "source")
+							}
+						}
+					}
+				}
+			}
+
+			messages = append(messages, sdkm.ChatCompletionMessage{
+				Role:    consts.ROLE_USER,
+				Content: contents,
+			})
+
+		} else {
+			messages = append(messages, message)
+		}
+	}
+
 	return sdkm.ChatCompletionRequest{
-		Model:       request.GetRouterMap()["model"],
-		Messages:    anthropicChatCompletionReq.Messages,
+		Model:       anthropicChatCompletionReq.Model,
+		Messages:    messages,
 		MaxTokens:   anthropicChatCompletionReq.MaxTokens,
+		Stream:      anthropicChatCompletionReq.Stream,
 		Temperature: anthropicChatCompletionReq.Temperature,
+		ToolChoice:  anthropicChatCompletionReq.ToolChoice,
+		Tools:       anthropicChatCompletionReq.Tools,
+		TopK:        anthropicChatCompletionReq.TopK,
 		TopP:        anthropicChatCompletionReq.TopP,
 	}
 }
@@ -772,15 +807,10 @@ func convToChatCompletionResponse(ctx context.Context, res sdkm.AnthropicChatCom
 	}
 
 	chatCompletionResponse := sdkm.ChatCompletionResponse{
-		ID:      consts.COMPLETION_ID_PREFIX + anthropicChatCompletionRes.Id,
-		Object:  consts.COMPLETION_OBJECT,
-		Created: gtime.Timestamp(),
-		Model:   anthropicChatCompletionRes.Model,
-		Usage: &sdkm.Usage{
-			PromptTokens:     anthropicChatCompletionRes.Usage.InputTokens,
-			CompletionTokens: anthropicChatCompletionRes.Usage.OutputTokens,
-			TotalTokens:      anthropicChatCompletionRes.Usage.InputTokens + anthropicChatCompletionRes.Usage.OutputTokens,
-		},
+		ID:            consts.COMPLETION_ID_PREFIX + anthropicChatCompletionRes.Id,
+		Object:        consts.COMPLETION_OBJECT,
+		Created:       gtime.Timestamp(),
+		Model:         anthropicChatCompletionRes.Model,
 		ResponseBytes: res.ResponseBytes,
 		ConnTime:      res.ConnTime,
 		Duration:      res.Duration,
@@ -788,49 +818,47 @@ func convToChatCompletionResponse(ctx context.Context, res sdkm.AnthropicChatCom
 		Error:         anthropicChatCompletionRes.Err,
 	}
 
-	if len(anthropicChatCompletionRes.Content) > 0 {
-		if stream {
-			if anthropicChatCompletionRes.Delta.Type == consts.DELTA_TYPE_INPUT_JSON {
+	if stream {
+		if anthropicChatCompletionRes.Delta.Type == consts.DELTA_TYPE_INPUT_JSON {
+			chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, sdkm.ChatCompletionChoice{
+				Delta: &sdkm.ChatCompletionStreamChoiceDelta{
+					Role: consts.ROLE_ASSISTANT,
+					ToolCalls: []openai.ToolCall{{
+						Function: openai.FunctionCall{
+							Arguments: anthropicChatCompletionRes.Delta.PartialJson,
+						},
+					}},
+				},
+			})
+		} else {
+			chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, sdkm.ChatCompletionChoice{
+				Delta: &sdkm.ChatCompletionStreamChoiceDelta{
+					Role:    consts.ROLE_ASSISTANT,
+					Content: anthropicChatCompletionRes.Delta.Text,
+				},
+			})
+		}
+	} else if len(anthropicChatCompletionRes.Content) > 0 {
+		for _, content := range anthropicChatCompletionRes.Content {
+			if content.Type == consts.DELTA_TYPE_INPUT_JSON {
 				chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, sdkm.ChatCompletionChoice{
 					Delta: &sdkm.ChatCompletionStreamChoiceDelta{
 						Role: consts.ROLE_ASSISTANT,
 						ToolCalls: []openai.ToolCall{{
 							Function: openai.FunctionCall{
-								Arguments: anthropicChatCompletionRes.Delta.PartialJson,
+								Arguments: content.PartialJson,
 							},
 						}},
 					},
 				})
 			} else {
 				chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, sdkm.ChatCompletionChoice{
-					Delta: &sdkm.ChatCompletionStreamChoiceDelta{
-						Role:    consts.ROLE_ASSISTANT,
-						Content: anthropicChatCompletionRes.Delta.Text,
+					Message: &sdkm.ChatCompletionMessage{
+						Role:    anthropicChatCompletionRes.Role,
+						Content: content.Text,
 					},
+					FinishReason: "stop",
 				})
-			}
-		} else {
-			for _, content := range anthropicChatCompletionRes.Content {
-				if content.Type == consts.DELTA_TYPE_INPUT_JSON {
-					chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, sdkm.ChatCompletionChoice{
-						Delta: &sdkm.ChatCompletionStreamChoiceDelta{
-							Role: consts.ROLE_ASSISTANT,
-							ToolCalls: []openai.ToolCall{{
-								Function: openai.FunctionCall{
-									Arguments: content.PartialJson,
-								},
-							}},
-						},
-					})
-				} else {
-					chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, sdkm.ChatCompletionChoice{
-						Message: &sdkm.ChatCompletionMessage{
-							Role:    anthropicChatCompletionRes.Role,
-							Content: content.Text,
-						},
-						FinishReason: "stop",
-					})
-				}
 			}
 		}
 	}

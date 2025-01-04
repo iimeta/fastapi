@@ -9,6 +9,7 @@ import (
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
+	"github.com/iimeta/fastapi/internal/controller/anthropic"
 	"github.com/iimeta/fastapi/internal/controller/audio"
 	"github.com/iimeta/fastapi/internal/controller/chat"
 	"github.com/iimeta/fastapi/internal/controller/dashboard"
@@ -79,6 +80,7 @@ var (
 						embedding.NewV1(),
 						moderation.NewV1(),
 						file.NewV1(),
+						anthropic.NewV1(),
 					)
 				})
 
@@ -154,6 +156,10 @@ func middleware(r *ghttp.Request) {
 
 	if secretKey == "" {
 		secretKey = r.Get("key").String()
+	}
+
+	if secretKey == "" {
+		secretKey = r.Header.Get("x-api-key")
 	}
 
 	if secretKey == "" {
