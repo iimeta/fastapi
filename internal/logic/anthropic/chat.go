@@ -780,6 +780,13 @@ func convToChatCompletionRequest(request *ghttp.Request) sdkm.ChatCompletionRequ
 		}
 	}
 
+	if anthropicChatCompletionReq.System != nil {
+		messages = append([]sdkm.ChatCompletionMessage{{
+			Role:    consts.ROLE_SYSTEM,
+			Content: anthropicChatCompletionReq.System,
+		}}, messages...)
+	}
+
 	return sdkm.ChatCompletionRequest{
 		Model:       anthropicChatCompletionReq.Model,
 		Messages:    messages,
@@ -860,6 +867,14 @@ func convToChatCompletionResponse(ctx context.Context, res sdkm.AnthropicChatCom
 					FinishReason: "stop",
 				})
 			}
+		}
+	}
+
+	if anthropicChatCompletionRes.Message.Usage != nil {
+		chatCompletionResponse.Usage = &sdkm.Usage{
+			PromptTokens:     anthropicChatCompletionRes.Message.Usage.InputTokens,
+			CompletionTokens: anthropicChatCompletionRes.Message.Usage.OutputTokens,
+			TotalTokens:      anthropicChatCompletionRes.Message.Usage.InputTokens + anthropicChatCompletionRes.Message.Usage.OutputTokens,
 		}
 	}
 
