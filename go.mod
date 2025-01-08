@@ -2,21 +2,19 @@ module github.com/iimeta/fastapi
 
 go 1.23
 
-replace github.com/iimeta/fastapi-sdk => ../fastapi-sdk
-
 require (
 	cloud.google.com/go/iam v1.3.1
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/gogf/gf/contrib/nosql/redis/v2 v2.8.3
 	github.com/gogf/gf/v2 v2.8.3
 	github.com/gorilla/websocket v1.5.3
-	github.com/iimeta/fastapi-sdk v1.0.0
+	github.com/iimeta/fastapi-sdk v1.1.0
 	github.com/iimeta/go-openai v0.0.0-20250107091739-d235612d9a2d
 	github.com/iimeta/tiktoken-go v0.0.0-20240913023457-97a6b8dfb0c7
 	github.com/redis/go-redis/v9 v9.7.0
 	github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300
 	github.com/tjfoc/gmsm v1.4.1
-	go.mongodb.org/mongo-driver v1.17.1
+	go.mongodb.org/mongo-driver v1.17.2
 	google.golang.org/api v0.215.0
 )
 
@@ -49,7 +47,7 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.3.4 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
 	github.com/grokify/html-strip-tags-go v0.1.0 // indirect
-	github.com/klauspost/compress v1.13.6 // indirect
+	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/magiconair/properties v1.8.9 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
