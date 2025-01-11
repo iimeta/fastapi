@@ -104,6 +104,14 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 					totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
 				}
 
+				if response.Usage.CacheCreationInputTokens != 0 {
+					totalTokens += int(math.Ceil(float64(response.Usage.CacheCreationInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio * 1.25))
+				}
+
+				if response.Usage.CacheReadInputTokens != 0 {
+					totalTokens += int(math.Ceil(float64(response.Usage.CacheReadInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio * 0.1))
+				}
+
 			} else if mak.ReqModel.Type == 102 { // 多模态语音
 
 				if response.Usage == nil {
@@ -401,8 +409,18 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 				}
 
 				if mak.ReqModel.Type == 100 { // 多模态
+
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 					totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
+
+					if usage.CacheCreationInputTokens != 0 {
+						totalTokens += int(math.Ceil(float64(usage.CacheCreationInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio * 1.25))
+					}
+
+					if usage.CacheReadInputTokens != 0 {
+						totalTokens += int(math.Ceil(float64(usage.CacheReadInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio * 0.1))
+					}
+
 				} else if mak.ReqModel.Type == 102 { // 多模态语音
 					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
 				} else {
@@ -418,8 +436,18 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 			} else if retryInfo == nil && usage != nil && mak.ReqModel != nil {
 
 				if mak.ReqModel.Type == 100 { // 多模态
+
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
+
+					if usage.CacheCreationInputTokens != 0 {
+						totalTokens += int(math.Ceil(float64(usage.CacheCreationInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio * 1.25))
+					}
+
+					if usage.CacheReadInputTokens != 0 {
+						totalTokens += int(math.Ceil(float64(usage.CacheReadInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio * 0.1))
+					}
+
 				} else if mak.ReqModel.Type == 102 { // 多模态语音
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
@@ -617,6 +645,12 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 							usage.TotalTokens = response.Usage.TotalTokens
 						} else {
 							usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+						}
+						if response.Usage.CacheCreationInputTokens != 0 {
+							usage.CacheCreationInputTokens = response.Usage.CacheCreationInputTokens
+						}
+						if response.Usage.CacheReadInputTokens != 0 {
+							usage.CacheReadInputTokens = response.Usage.CacheReadInputTokens
 						}
 					}
 				}
@@ -872,17 +906,21 @@ func convToChatCompletionResponse(ctx context.Context, res sdkm.AnthropicChatCom
 
 	if anthropicChatCompletionRes.Message.Usage != nil {
 		chatCompletionResponse.Usage = &sdkm.Usage{
-			PromptTokens:     anthropicChatCompletionRes.Message.Usage.InputTokens,
-			CompletionTokens: anthropicChatCompletionRes.Message.Usage.OutputTokens,
-			TotalTokens:      anthropicChatCompletionRes.Message.Usage.InputTokens + anthropicChatCompletionRes.Message.Usage.OutputTokens,
+			PromptTokens:             anthropicChatCompletionRes.Message.Usage.InputTokens,
+			CompletionTokens:         anthropicChatCompletionRes.Message.Usage.OutputTokens,
+			TotalTokens:              anthropicChatCompletionRes.Message.Usage.InputTokens + anthropicChatCompletionRes.Message.Usage.OutputTokens,
+			CacheCreationInputTokens: anthropicChatCompletionRes.Message.Usage.CacheCreationInputTokens,
+			CacheReadInputTokens:     anthropicChatCompletionRes.Message.Usage.CacheReadInputTokens,
 		}
 	}
 
 	if anthropicChatCompletionRes.Usage != nil {
 		chatCompletionResponse.Usage = &sdkm.Usage{
-			PromptTokens:     anthropicChatCompletionRes.Usage.InputTokens,
-			CompletionTokens: anthropicChatCompletionRes.Usage.OutputTokens,
-			TotalTokens:      anthropicChatCompletionRes.Usage.InputTokens + anthropicChatCompletionRes.Usage.OutputTokens,
+			PromptTokens:             anthropicChatCompletionRes.Usage.InputTokens,
+			CompletionTokens:         anthropicChatCompletionRes.Usage.OutputTokens,
+			TotalTokens:              anthropicChatCompletionRes.Usage.InputTokens + anthropicChatCompletionRes.Usage.OutputTokens,
+			CacheCreationInputTokens: anthropicChatCompletionRes.Usage.CacheCreationInputTokens,
+			CacheReadInputTokens:     anthropicChatCompletionRes.Usage.CacheReadInputTokens,
 		}
 	}
 

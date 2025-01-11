@@ -119,7 +119,16 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				if params.Tools != nil {
 					if tools := gconv.String(params.Tools); gstr.Contains(tools, "google_search") || gstr.Contains(tools, "googleSearch") {
 						totalTokens += mak.ReqModel.MultimodalQuota.SearchQuota
+						response.Usage.SearchTokens = mak.ReqModel.MultimodalQuota.SearchQuota
 					}
+				}
+
+				if response.Usage.CacheCreationInputTokens != 0 {
+					totalTokens += int(math.Ceil(float64(response.Usage.CacheCreationInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio * 1.25))
+				}
+
+				if response.Usage.CacheReadInputTokens != 0 {
+					totalTokens += int(math.Ceil(float64(response.Usage.CacheReadInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio * 0.1))
 				}
 
 			} else if mak.ReqModel.Type == 102 { // 多模态语音
@@ -433,6 +442,14 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 						}
 					}
 
+					if usage.CacheCreationInputTokens != 0 {
+						totalTokens += int(math.Ceil(float64(usage.CacheCreationInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio * 1.25))
+					}
+
+					if usage.CacheReadInputTokens != 0 {
+						totalTokens += int(math.Ceil(float64(usage.CacheReadInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio * 0.1))
+					}
+
 				} else if mak.ReqModel.Type == 102 { // 多模态语音
 					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
 				} else {
@@ -456,6 +473,14 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 						if tools := gconv.String(params.Tools); gstr.Contains(tools, "google_search") || gstr.Contains(tools, "googleSearch") {
 							totalTokens += mak.ReqModel.MultimodalQuota.SearchQuota
 						}
+					}
+
+					if usage.CacheCreationInputTokens != 0 {
+						totalTokens += int(math.Ceil(float64(usage.CacheCreationInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio * 1.25))
+					}
+
+					if usage.CacheReadInputTokens != 0 {
+						totalTokens += int(math.Ceil(float64(usage.CacheReadInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio * 0.1))
 					}
 
 				} else if mak.ReqModel.Type == 102 { // 多模态语音
@@ -654,6 +679,12 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 						} else {
 							usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 						}
+						if response.Usage.CacheCreationInputTokens != 0 {
+							usage.CacheCreationInputTokens = response.Usage.CacheCreationInputTokens
+						}
+						if response.Usage.CacheReadInputTokens != 0 {
+							usage.CacheReadInputTokens = response.Usage.CacheReadInputTokens
+						}
 					}
 				}
 
@@ -760,6 +791,12 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					usage.TotalTokens = response.Usage.TotalTokens
 				} else {
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+				}
+				if response.Usage.CacheCreationInputTokens != 0 {
+					usage.CacheCreationInputTokens = response.Usage.CacheCreationInputTokens
+				}
+				if response.Usage.CacheReadInputTokens != 0 {
+					usage.CacheReadInputTokens = response.Usage.CacheReadInputTokens
 				}
 			}
 		}
@@ -936,6 +973,9 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 	chat.PromptTokens = completionsRes.Usage.PromptTokens
 	chat.CompletionTokens = completionsRes.Usage.CompletionTokens
 	chat.TotalTokens = completionsRes.Usage.TotalTokens
+	chat.SearchTokens = completionsRes.Usage.SearchTokens
+	chat.CacheWriteTokens = completionsRes.Usage.CacheCreationInputTokens
+	chat.CacheHitTokens = completionsRes.Usage.CacheReadInputTokens
 
 	if fallbackModelAgent != nil {
 		chat.IsEnableFallback = true
