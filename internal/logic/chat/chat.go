@@ -439,6 +439,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					if params.Tools != nil {
 						if tools := gconv.String(params.Tools); gstr.Contains(tools, "google_search") || gstr.Contains(tools, "googleSearch") {
 							totalTokens += mak.ReqModel.MultimodalQuota.SearchQuota
+							usage.SearchTokens = mak.ReqModel.MultimodalQuota.SearchQuota
 						}
 					}
 
@@ -472,6 +473,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					if params.Tools != nil {
 						if tools := gconv.String(params.Tools); gstr.Contains(tools, "google_search") || gstr.Contains(tools, "googleSearch") {
 							totalTokens += mak.ReqModel.MultimodalQuota.SearchQuota
+							usage.SearchTokens = mak.ReqModel.MultimodalQuota.SearchQuota
 						}
 					}
 
