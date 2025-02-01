@@ -9,8 +9,8 @@ import (
 	"github.com/gogf/gf/v2/os/gcfg"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gfsnotify"
+	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/utility/logger"
-	"time"
 )
 
 var Cfg *Config
@@ -41,58 +41,24 @@ func init() {
 
 // 配置信息
 type Config struct {
-	Core             Core       `json:"core"`
-	ApiServerAddress string     `json:"api_server_address"`
-	Http             Http       `json:"http"`
-	Local            Local      `json:"local"`
-	Api              Api        `json:"api"`
-	Midjourney       Midjourney `json:"midjourney"`
-	Gcp              Gcp        `json:"gcp"`
-	RecordLogs       []string   `json:"record_logs"`
-	Error            Error      `json:"error"`
-	Debug            bool       `json:"debug"`
-}
-
-type Core struct {
-	ChannelPrefix string `json:"channel_prefix"`
-}
-
-type Api struct {
-	Retry                   int   `json:"retry"`
-	ModelKeyErrDisable      int64 `json:"model_key_err_disable"`
-	ModelAgentErrDisable    int64 `json:"model_agent_err_disable"`
-	ModelAgentKeyErrDisable int64 `json:"model_agent_key_err_disable"`
-}
-
-type Http struct {
-	Timeout  time.Duration `json:"timeout"`
-	ProxyUrl string        `json:"proxy_url"`
+	ApiServerAddress string `json:"api_server_address"`
+	Local            Local  `json:"local"`
+	*entity.SysConfig
 }
 
 type Local struct {
 	PublicIp []string `json:"public_ip"`
 }
 
-type Midjourney struct {
-	CdnUrl          string          `json:"cdn_url"`
-	MidjourneyProxy MidjourneyProxy `json:"midjourney_proxy"`
-}
+func Reload(ctx context.Context, sysConfig *entity.SysConfig) {
 
-type MidjourneyProxy struct {
-	ApiBaseUrl      string `json:"api_base_url"`
-	ApiSecret       string `json:"api_secret"`
-	ApiSecretHeader string `json:"api_secret_header"`
-	CdnOriginalUrl  string `json:"cdn_original_url"`
-}
+	if sysConfig.Core.ChannelPrefix == "" && Cfg.SysConfig != nil && Cfg.SysConfig.Core != nil {
+		sysConfig.Core.ChannelPrefix = Cfg.SysConfig.Core.ChannelPrefix
+	}
 
-type Gcp struct {
-	GetTokenUrl string `json:"get_token_url" d:"https://www.googleapis.com/oauth2/v4/token"`
-}
+	Cfg.SysConfig = sysConfig
 
-type Error struct {
-	AutoDisabled []string `json:"auto_disabled"`
-	NotRetry     []string `json:"not_retry"`
-	NotShield    []string `json:"not_shield"`
+	logger.Infof(ctx, "加载配置成功, 当前配置信息: %s", gjson.MustEncodeString(Cfg))
 }
 
 func Get(ctx context.Context, pattern string, def ...interface{}) (*gvar.Var, error) {

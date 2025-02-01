@@ -74,14 +74,6 @@ func As(err error, target any) bool {
 }
 
 func NewError(status int, code any, message, typ string) error {
-
-	if errorPrefix := config.GetString(gctx.New(), "core.error_prefix", "fastapi"); errorPrefix != "fastapi" {
-		if c, ok := code.(string); ok {
-			code = gstr.Replace(c, "fastapi", errorPrefix)
-		}
-		typ = gstr.Replace(typ, "fastapi", errorPrefix)
-	}
-
 	return &FastApiError{
 		Err: &sdkerr.ApiError{
 			HttpStatusCode: status,
@@ -93,14 +85,6 @@ func NewError(status int, code any, message, typ string) error {
 }
 
 func NewErrorf(status int, code any, message, typ string, args ...interface{}) error {
-
-	if errorPrefix := config.GetString(gctx.New(), "core.error_prefix", "fastapi"); errorPrefix != "fastapi" {
-		if c, ok := code.(string); ok {
-			code = gstr.Replace(c, "fastapi", errorPrefix)
-		}
-		typ = gstr.Replace(typ, "fastapi", errorPrefix)
-	}
-
 	return &FastApiError{
 		Err: &sdkerr.ApiError{
 			HttpStatusCode: status,
@@ -111,7 +95,17 @@ func NewErrorf(status int, code any, message, typ string, args ...interface{}) e
 	}
 }
 
-func Error(ctx context.Context, err error) IFastApiError {
+func Error(ctx context.Context, err error) (iFastApiError IFastApiError) {
+
+	defer func() {
+		if config.Cfg.Core.ErrorPrefix != "fastapi" {
+			code := iFastApiError.ErrCode()
+			if c, ok := code.(string); ok {
+				code = gstr.Replace(c, "fastapi", config.Cfg.Core.ErrorPrefix)
+			}
+			iFastApiError = NewError(iFastApiError.Status(), code, iFastApiError.ErrMessage(), gstr.Replace(iFastApiError.ErrType(), "fastapi", config.Cfg.Core.ErrorPrefix)).(IFastApiError)
+		}
+	}()
 
 	if err == nil {
 		return ERR_NIL.(IFastApiError)
@@ -119,8 +113,9 @@ func Error(ctx context.Context, err error) IFastApiError {
 
 	// 屏蔽不想对外暴露的错误
 	if Is(err, ERR_NO_AVAILABLE_KEY) || Is(err, ERR_NO_AVAILABLE_MODEL_AGENT) ||
-		Is(err, ERR_NO_AVAILABLE_MODEL_AGENT_KEY) || Is(err, ERR_ALL_KEY) ||
-		Is(err, ERR_ALL_MODEL_AGENT) || Is(err, ERR_ALL_MODEL_AGENT_KEY) {
+		Is(err, ERR_MODEL_AGENT_HAS_BEEN_DISABLED) || Is(err, ERR_NO_AVAILABLE_MODEL_AGENT_KEY) ||
+		Is(err, ERR_ALL_KEY) || Is(err, ERR_ALL_MODEL_AGENT) ||
+		Is(err, ERR_ALL_MODEL_AGENT_KEY) || Is(err, ERR_MODEL_HAS_BEEN_DISABLED) {
 		err = ERR_INTERNAL_ERROR
 	}
 
@@ -134,7 +129,7 @@ func Error(ctx context.Context, err error) IFastApiError {
 	}
 
 	// 不屏蔽错误
-	for _, notShieldError := range config.Cfg.Error.NotShield {
+	for _, notShieldError := range config.Cfg.NotShieldError.Errors {
 		if gstr.Contains(err.Error(), notShieldError) {
 			e := ERR_UNKNOWN.(IFastApiError)
 			return NewErrorf(e.Status(), e.ErrCode(), err.Error()+" TraceId: %s Timestamp: %d", e.ErrType(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)

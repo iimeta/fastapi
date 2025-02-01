@@ -452,11 +452,11 @@ func (s *sRealtime) SaveLog(ctx context.Context, reqModel, realModel *model.Mode
 		Host:         g.RequestFromCtx(ctx).GetHost(),
 	}
 
-	if len(completionsReq.Messages) > 0 && slices.Contains(config.Cfg.RecordLogs, "prompt") {
+	if len(completionsReq.Messages) > 0 && slices.Contains(config.Cfg.Log.Records, "prompt") {
 		chat.Prompt = gconv.String(completionsReq.Messages[len(completionsReq.Messages)-1].Content)
 	}
 
-	if slices.Contains(config.Cfg.RecordLogs, "completion") {
+	if slices.Contains(config.Cfg.Log.Records, "completion") {
 		chat.Completion = completionsRes.Completion
 	}
 
@@ -536,7 +536,7 @@ func (s *sRealtime) SaveLog(ctx context.Context, reqModel, realModel *model.Mode
 		}
 	}
 
-	if slices.Contains(config.Cfg.RecordLogs, "messages") {
+	if slices.Contains(config.Cfg.Log.Records, "messages") {
 		for _, message := range completionsReq.Messages {
 			chat.Messages = append(chat.Messages, mcommon.Message{
 				Role:    message.Role,

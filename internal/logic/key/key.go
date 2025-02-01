@@ -304,7 +304,7 @@ func (s *sKey) RecordErrorModelKey(ctx context.Context, m *model.Model, key *mod
 		logger.Error(ctx, err)
 	}
 
-	if reply >= config.Cfg.Api.ModelKeyErrDisable {
+	if reply >= config.Cfg.Base.ModelKeyErrDisable {
 		s.DisabledModelKey(ctx, key, "Reached the maximum number of errors")
 	}
 }

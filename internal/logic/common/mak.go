@@ -186,7 +186,7 @@ func getRealKey(ctx context.Context, mak *MAK) error {
 
 	if GetCorpCode(ctx, mak.RealModel.Corp) == consts.CORP_GCP_CLAUDE {
 
-		projectId, key, err := getGcpTokenNew(ctx, mak.Key, config.Cfg.Http.ProxyUrl)
+		projectId, key, err := getGcpToken(ctx, mak.Key, config.Cfg.Http.ProxyUrl)
 		if err != nil {
 			logger.Error(ctx, err)
 			return err

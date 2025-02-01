@@ -52,7 +52,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 			FallbackModel:      fallbackModel,
 		}
 		midjourneyQuota mcommon.MidjourneyQuota
-		baseUrl         = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
+		baseUrl         = config.Cfg.Midjourney.ApiBaseUrl
 		path            = request.RequestURI[3:]
 		retryInfo       *mcommon.Retry
 		reqUrl          = request.RequestURI
@@ -123,7 +123,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 		return response, err
 	}
 
-	client := sdk.NewMidjourneyClient(ctx, baseUrl, midjourneyQuota.Path, mak.RealKey, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader, request.Method, config.Cfg.Http.ProxyUrl)
+	client := sdk.NewMidjourneyClient(ctx, baseUrl, midjourneyQuota.Path, mak.RealKey, config.Cfg.Midjourney.ApiSecretHeader, request.Method, config.Cfg.Http.ProxyUrl)
 
 	response, err = client.Request(ctx, request.GetBody())
 	if err != nil {
@@ -217,7 +217,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 			FallbackModel:      fallbackModel,
 		}
 		midjourneyQuota mcommon.MidjourneyQuota
-		baseUrl         = config.Cfg.Midjourney.MidjourneyProxy.ApiBaseUrl
+		baseUrl         = config.Cfg.Midjourney.ApiBaseUrl
 		path            = request.RequestURI[3:]
 		taskId          = request.GetRouterMap()["taskId"]
 		imageUrl        string
@@ -286,7 +286,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 		return response, err
 	}
 
-	client := sdk.NewMidjourneyClient(ctx, baseUrl, path, mak.RealKey, config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader, http.MethodGet, config.Cfg.Http.ProxyUrl)
+	client := sdk.NewMidjourneyClient(ctx, baseUrl, path, mak.RealKey, config.Cfg.Midjourney.ApiSecretHeader, http.MethodGet, config.Cfg.Http.ProxyUrl)
 
 	response, err = client.Request(ctx, request.GetBody())
 	if err != nil {
@@ -362,9 +362,9 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 	imageUrl = data["imageUrl"].(string)
 
 	// 替换图片CDN地址
-	if config.Cfg.Midjourney.CdnUrl != "" && config.Cfg.Midjourney.MidjourneyProxy.CdnOriginalUrl != "" && imageUrl != "" {
+	if config.Cfg.Midjourney.CdnUrl != "" && config.Cfg.Midjourney.CdnOriginalUrl != "" && imageUrl != "" {
 
-		imageUrl = gstr.Replace(imageUrl, config.Cfg.Midjourney.MidjourneyProxy.CdnOriginalUrl, config.Cfg.Midjourney.CdnUrl)
+		imageUrl = gstr.Replace(imageUrl, config.Cfg.Midjourney.CdnOriginalUrl, config.Cfg.Midjourney.CdnUrl)
 		data["imageUrl"] = imageUrl
 
 		if response.Response, err = gjson.Marshal(data); err != nil {

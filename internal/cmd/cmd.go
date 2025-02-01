@@ -147,7 +147,7 @@ func middleware(r *ghttp.Request) {
 
 	secretKey := strings.TrimPrefix(r.GetHeader("Authorization"), "Bearer ")
 	if secretKey == "" {
-		secretKey = r.GetHeader(config.Cfg.Midjourney.MidjourneyProxy.ApiSecretHeader)
+		secretKey = r.GetHeader(config.Cfg.Midjourney.ApiSecretHeader)
 	}
 
 	if secretKey == "" {
@@ -197,7 +197,7 @@ func middleware(r *ghttp.Request) {
 		return
 	}
 
-	if config.Cfg.Debug {
+	if config.Cfg.Debug.Open {
 		if gstr.HasPrefix(r.GetHeader("Content-Type"), "application/json") {
 			logger.Debugf(r.GetCtx(), "url: %s, request body: %s", r.GetUrl(), r.GetBodyString())
 		} else {

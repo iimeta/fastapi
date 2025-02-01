@@ -25,5 +25,6 @@ import (
 	_ "github.com/iimeta/fastapi/internal/logic/moderation"
 	_ "github.com/iimeta/fastapi/internal/logic/realtime"
 	_ "github.com/iimeta/fastapi/internal/logic/session"
+	_ "github.com/iimeta/fastapi/internal/logic/sys_config"
 	_ "github.com/iimeta/fastapi/internal/logic/user"
 )

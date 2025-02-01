@@ -9,6 +9,7 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/os/gtimer"
+	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
 	_ "github.com/iimeta/fastapi/internal/logic/app"
 	_ "github.com/iimeta/fastapi/internal/logic/corp"
@@ -89,19 +90,19 @@ func init() {
 			}
 
 			switch msg.Channel {
-			case consts.CHANGE_CHANNEL_USER:
+			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_USER:
 				err = service.User().Subscribe(ctx, msg.Payload)
-			case consts.CHANGE_CHANNEL_APP:
+			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_APP:
 				err = service.App().Subscribe(ctx, msg.Payload)
-			case consts.CHANGE_CHANNEL_APP_KEY:
+			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_APP_KEY:
 				err = service.App().SubscribeKey(ctx, msg.Payload)
-			case consts.CHANGE_CHANNEL_CORP:
+			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_CORP:
 				err = service.Corp().Subscribe(ctx, msg.Payload)
-			case consts.CHANGE_CHANNEL_MODEL:
+			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_MODEL:
 				err = service.Model().Subscribe(ctx, msg.Payload)
-			case consts.CHANGE_CHANNEL_KEY:
+			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_KEY:
 				err = service.Key().Subscribe(ctx, msg.Payload)
-			case consts.CHANGE_CHANNEL_AGENT:
+			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_AGENT:
 				err = service.ModelAgent().Subscribe(ctx, msg.Payload)
 			}
 

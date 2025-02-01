@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
-	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
@@ -19,73 +18,11 @@ import (
 	"github.com/iimeta/fastapi/utility/crypto"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
-	"github.com/iimeta/fastapi/utility/util"
 	"google.golang.org/api/option"
 	"time"
 )
 
 var gcpCache = cache.New() // [key]Token
-
-func getGcpToken(ctx context.Context, key *model.Key, proxyURL string) string {
-
-	now := gtime.TimestampMilli()
-	defer func() {
-		logger.Debugf(ctx, "getGcpToken time: %d", gtime.TimestampMilli()-now)
-	}()
-
-	if gcpTokenCacheValue := gcpCache.GetVal(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, key.Key)); gcpTokenCacheValue != nil {
-		return gcpTokenCacheValue.(string)
-	}
-
-	reply, err := redis.GetStr(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, key.Key))
-	if err == nil && reply != "" {
-
-		if expiresIn, err := redis.TTL(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, key.Key)); err != nil {
-			logger.Errorf(ctx, "getGcpToken key: %s, error: %v", key.Key, err)
-		} else {
-			if err = gcpCache.Set(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, key.Key), reply, time.Second*time.Duration(expiresIn-60)); err != nil {
-				logger.Errorf(ctx, "getGcpToken key: %s, error: %v", key.Key, err)
-			}
-		}
-
-		return reply
-	}
-
-	result := gstr.Split(key.Key, "|")
-
-	data := g.Map{
-		"client_id":     result[1],
-		"client_secret": result[2],
-		"refresh_token": result[3],
-		"grant_type":    "refresh_token",
-	}
-
-	getGcpTokenRes := new(model.GetGcpTokenRes)
-	if err = util.HttpPost(ctx, config.Cfg.Gcp.GetTokenUrl, nil, data, &getGcpTokenRes, proxyURL); err != nil {
-		logger.Errorf(ctx, "getGcpToken key: %s, error: %v", key.Key, err)
-		return ""
-	}
-
-	if getGcpTokenRes.Error != "" {
-		logger.Errorf(ctx, "getGcpToken key: %s, getGcpTokenRes.Error: %s", key.Key, getGcpTokenRes.Error)
-		if err = grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-			service.Key().DisabledModelKey(ctx, key, getGcpTokenRes.Error)
-		}); err != nil {
-			logger.Error(ctx, err)
-		}
-		return ""
-	}
-
-	if err = gcpCache.Set(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, key.Key), getGcpTokenRes.AccessToken, time.Second*time.Duration(getGcpTokenRes.ExpiresIn-60)); err != nil {
-		logger.Errorf(ctx, "getGcpToken key: %s, error: %v", key.Key, err)
-	}
-
-	if err = redis.SetEX(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, key.Key), getGcpTokenRes.AccessToken, getGcpTokenRes.ExpiresIn-60); err != nil {
-		logger.Errorf(ctx, "getGcpToken key: %s, error: %v", key.Key, err)
-	}
-
-	return getGcpTokenRes.AccessToken
-}
 
 type ApplicationDefaultCredentials struct {
 	Type                    string `json:"type"`
@@ -101,16 +38,16 @@ type ApplicationDefaultCredentials struct {
 	UniverseDomain          string `json:"universe_domain"`
 }
 
-func getGcpTokenNew(ctx context.Context, key *model.Key, proxyURL string) (string, string, error) {
+func getGcpToken(ctx context.Context, key *model.Key, proxyURL string) (string, string, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "getGcpTokenNew time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "getGcpToken time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	adc := &ApplicationDefaultCredentials{}
 	if err := gjson.Unmarshal([]byte(key.Key), adc); err != nil {
-		logger.Errorf(ctx, "getGcpTokenNew gjson.Unmarshal key: %s, error: %v", key.Key, err)
+		logger.Errorf(ctx, "getGcpToken gjson.Unmarshal key: %s, error: %v", key.Key, err)
 		return "", "", err
 	}
 
@@ -122,10 +59,10 @@ func getGcpTokenNew(ctx context.Context, key *model.Key, proxyURL string) (strin
 	if err == nil && reply != "" {
 
 		if expiresIn, err := redis.TTL(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, crypto.SM3(key.Key))); err != nil {
-			logger.Errorf(ctx, "getGcpTokenNew key: %s, error: %v", key.Key, err)
+			logger.Errorf(ctx, "getGcpToken key: %s, error: %v", key.Key, err)
 		} else {
 			if err = gcpCache.Set(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, crypto.SM3(key.Key)), reply, time.Second*time.Duration(expiresIn-60)); err != nil {
-				logger.Errorf(ctx, "getGcpTokenNew key: %s, error: %v", key.Key, err)
+				logger.Errorf(ctx, "getGcpToken key: %s, error: %v", key.Key, err)
 			}
 		}
 
@@ -134,7 +71,7 @@ func getGcpTokenNew(ctx context.Context, key *model.Key, proxyURL string) (strin
 
 	client, err := credentials.NewIamCredentialsClient(ctx, option.WithCredentialsJSON([]byte(key.Key)))
 	if err != nil {
-		logger.Errorf(ctx, "getGcpTokenNew NewIamCredentialsClient key: %s, error: %v", key.Key, err)
+		logger.Errorf(ctx, "getGcpToken NewIamCredentialsClient key: %s, error: %v", key.Key, err)
 		return "", "", err
 	}
 
@@ -151,8 +88,8 @@ func getGcpTokenNew(ctx context.Context, key *model.Key, proxyURL string) (strin
 
 	response, err := client.GenerateAccessToken(ctx, request)
 	if err != nil {
-		logger.Errorf(ctx, "getGcpTokenNew GenerateAccessToken key: %s, error: %v", key.Key, err)
-		for _, autoDisabledError := range config.Cfg.Error.AutoDisabled {
+		logger.Errorf(ctx, "getGcpToken GenerateAccessToken key: %s, error: %v", key.Key, err)
+		for _, autoDisabledError := range config.Cfg.AutoDisabledError.Errors {
 			if gstr.Contains(err.Error(), autoDisabledError) {
 				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 					service.Key().DisabledModelKey(ctx, key, err.Error())
@@ -166,11 +103,11 @@ func getGcpTokenNew(ctx context.Context, key *model.Key, proxyURL string) (strin
 	}
 
 	if err = gcpCache.Set(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, crypto.SM3(key.Key)), response.AccessToken, time.Minute*50); err != nil {
-		logger.Errorf(ctx, "getGcpTokenNew key: %s, error: %v", key.Key, err)
+		logger.Errorf(ctx, "getGcpToken key: %s, error: %v", key.Key, err)
 	}
 
 	if err = redis.SetEX(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, crypto.SM3(key.Key)), response.AccessToken, 60*50); err != nil {
-		logger.Errorf(ctx, "getGcpTokenNew key: %s, error: %v", key.Key, err)
+		logger.Errorf(ctx, "getGcpToken key: %s, error: %v", key.Key, err)
 	}
 
 	return adc.ProjectId, response.AccessToken, nil

@@ -10,6 +10,7 @@ import (
 	"github.com/gogf/gf/v2/os/gcfg"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/text/gstr"
+	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/redis/go-redis/v9"
 	"time"
@@ -214,11 +215,16 @@ func Pipelined(ctx context.Context, pipe pipeliner) ([]redis.Cmder, error) {
 }
 
 func Publish(ctx context.Context, channel string, message interface{}) (int64, error) {
-	return master.Publish(ctx, channel, message)
+	return master.Publish(ctx, config.Cfg.Core.ChannelPrefix+channel, message)
 }
 
 func Subscribe(ctx context.Context, channel string, channels ...string) (gredis.Conn, []*gredis.Subscription, error) {
-	return slave.Subscribe(ctx, channel, channels...)
+	if len(channels) > 0 {
+		for i, channel := range channels {
+			channels[i] = config.Cfg.Core.ChannelPrefix + channel
+		}
+	}
+	return slave.Subscribe(ctx, config.Cfg.Core.ChannelPrefix+channel, channels...)
 }
 
 func PSubscribe(ctx context.Context, pattern string, patterns ...string) (gredis.Conn, []*gredis.Subscription, error) {

@@ -871,7 +871,7 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 		Host:         g.RequestFromCtx(ctx).GetHost(),
 	}
 
-	if len(completionsReq.Messages) > 0 && slices.Contains(config.Cfg.RecordLogs, "prompt") {
+	if len(completionsReq.Messages) > 0 && slices.Contains(config.Cfg.Log.Records, "prompt") {
 
 		prompt := completionsReq.Messages[len(completionsReq.Messages)-1].Content
 
@@ -891,7 +891,7 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 
 		} else {
 
-			if slices.Contains(config.Cfg.RecordLogs, "image") {
+			if slices.Contains(config.Cfg.Log.Records, "image") {
 				chat.Prompt = gconv.String(prompt)
 			} else {
 				if multiContent, ok := prompt.([]interface{}); ok {
@@ -926,7 +926,7 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 		}
 	}
 
-	if slices.Contains(config.Cfg.RecordLogs, "completion") {
+	if slices.Contains(config.Cfg.Log.Records, "completion") {
 		chat.Completion = completionsRes.Completion
 	}
 
@@ -1009,12 +1009,12 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 		}
 	}
 
-	if slices.Contains(config.Cfg.RecordLogs, "messages") {
+	if slices.Contains(config.Cfg.Log.Records, "messages") {
 		for _, message := range completionsReq.Messages {
 
 			content := message.Content
 
-			if !slices.Contains(config.Cfg.RecordLogs, "image") {
+			if !slices.Contains(config.Cfg.Log.Records, "image") {
 
 				if multiContent, ok := content.([]interface{}); ok {
 

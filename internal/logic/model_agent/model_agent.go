@@ -359,7 +359,7 @@ func (s *sModelAgent) RecordErrorModelAgent(ctx context.Context, m *model.Model,
 		logger.Error(ctx, err)
 	}
 
-	if reply >= config.Cfg.Api.ModelAgentErrDisable {
+	if reply >= config.Cfg.Base.ModelAgentErrDisable {
 		s.DisabledModelAgent(ctx, modelAgent, "Reached the maximum number of errors")
 	}
 }
@@ -526,7 +526,7 @@ func (s *sModelAgent) RecordErrorModelAgentKey(ctx context.Context, modelAgent *
 		logger.Error(ctx, err)
 	}
 
-	if reply >= config.Cfg.Api.ModelAgentKeyErrDisable {
+	if reply >= config.Cfg.Base.ModelAgentKeyErrDisable {
 		s.DisabledModelAgentKey(ctx, key, "Reached the maximum number of errors")
 	}
 }

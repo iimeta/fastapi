@@ -20,28 +20,24 @@ import (
 	"strings"
 )
 
-type sCommon struct {
-	secretKeyPrefix string
-}
+type sCommon struct{}
 
 func init() {
 	service.RegisterCommon(New())
 }
 
 func New() service.ICommon {
-	return &sCommon{
-		secretKeyPrefix: config.GetString(gctx.New(), "core.secret_key_prefix", "sk-FastAPI"),
-	}
+	return &sCommon{}
 }
 
 // 解析密钥
 func (s *sCommon) ParseSecretKey(ctx context.Context, secretKey string) (int, int, error) {
 
-	if !gstr.HasPrefix(secretKey, s.secretKeyPrefix) {
+	if !gstr.HasPrefix(secretKey, config.Cfg.Core.SecretKeyPrefix) {
 		return 0, 0, errors.ERR_INVALID_API_KEY
 	}
 
-	secretKey = strings.TrimPrefix(secretKey, s.secretKeyPrefix)
+	secretKey = strings.TrimPrefix(secretKey, config.Cfg.Core.SecretKeyPrefix)
 
 	userId, err := gregex.ReplaceString("[a-zA-Z-]*", "", secretKey[:len(secretKey)/2])
 	if err != nil {
@@ -94,14 +90,14 @@ func IsNeedRetry(err error) (isRetry bool, isDisabled bool) {
 	}
 
 	// 自动禁用错误
-	for _, autoDisabledError := range config.Cfg.Error.AutoDisabled {
+	for _, autoDisabledError := range config.Cfg.AutoDisabledError.Errors {
 		if gstr.Contains(err.Error(), autoDisabledError) {
 			return true, true
 		}
 	}
 
 	// 不重试错误
-	for _, notRetryError := range config.Cfg.Error.NotRetry {
+	for _, notRetryError := range config.Cfg.NotRetryError.Errors {
 		if gstr.Contains(err.Error(), notRetryError) {
 			return false, false
 		}
@@ -112,9 +108,9 @@ func IsNeedRetry(err error) (isRetry bool, isDisabled bool) {
 
 func IsMaxRetry(isEnableModelAgent bool, agentTotal, keyTotal, retry int) bool {
 
-	if config.Cfg.Api.Retry > 0 && retry == config.Cfg.Api.Retry {
+	if config.Cfg.Base.ErrRetry > 0 && retry == config.Cfg.Base.ErrRetry {
 		return true
-	} else if config.Cfg.Api.Retry < 0 {
+	} else if config.Cfg.Base.ErrRetry < 0 {
 		if isEnableModelAgent {
 			if retry == agentTotal {
 				return true
@@ -122,7 +118,7 @@ func IsMaxRetry(isEnableModelAgent bool, agentTotal, keyTotal, retry int) bool {
 		} else if retry == keyTotal {
 			return true
 		}
-	} else if config.Cfg.Api.Retry == 0 {
+	} else if config.Cfg.Base.ErrRetry == 0 {
 		return true
 	}
 
