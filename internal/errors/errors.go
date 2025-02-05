@@ -129,10 +129,12 @@ func Error(ctx context.Context, err error) (iFastApiError IFastApiError) {
 	}
 
 	// 不屏蔽错误
-	for _, notShieldError := range config.Cfg.NotShieldError.Errors {
-		if gstr.Contains(err.Error(), notShieldError) {
-			e := ERR_UNKNOWN.(IFastApiError)
-			return NewErrorf(e.Status(), e.ErrCode(), err.Error()+" TraceId: %s Timestamp: %d", e.ErrType(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
+	if config.Cfg.NotShieldError.Open && len(config.Cfg.NotShieldError.Errors) > 0 {
+		for _, notShieldError := range config.Cfg.NotShieldError.Errors {
+			if gstr.Contains(err.Error(), notShieldError) {
+				e := ERR_UNKNOWN.(IFastApiError)
+				return NewErrorf(e.Status(), e.ErrCode(), err.Error()+" TraceId: %s Timestamp: %d", e.ErrType(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
+			}
 		}
 	}
 

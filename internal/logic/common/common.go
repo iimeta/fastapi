@@ -90,16 +90,20 @@ func IsNeedRetry(err error) (isRetry bool, isDisabled bool) {
 	}
 
 	// 自动禁用错误
-	for _, autoDisabledError := range config.Cfg.AutoDisabledError.Errors {
-		if gstr.Contains(err.Error(), autoDisabledError) {
-			return true, true
+	if config.Cfg.AutoDisabledError.Open && len(config.Cfg.AutoDisabledError.Errors) > 0 {
+		for _, autoDisabledError := range config.Cfg.AutoDisabledError.Errors {
+			if gstr.Contains(err.Error(), autoDisabledError) {
+				return true, true
+			}
 		}
 	}
 
 	// 不重试错误
-	for _, notRetryError := range config.Cfg.NotRetryError.Errors {
-		if gstr.Contains(err.Error(), notRetryError) {
-			return false, false
+	if config.Cfg.NotRetryError.Open && len(config.Cfg.NotRetryError.Errors) > 0 {
+		for _, notRetryError := range config.Cfg.NotRetryError.Errors {
+			if gstr.Contains(err.Error(), notRetryError) {
+				return false, false
+			}
 		}
 	}
 
