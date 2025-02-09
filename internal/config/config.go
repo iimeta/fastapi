@@ -58,6 +58,15 @@ func Reload(ctx context.Context, sysConfig *entity.SysConfig) {
 
 	Cfg.SysConfig = sysConfig
 
+	// 重新加载配置文件的配置进行覆盖, 配置文件的配置优先级最高
+	if data, err := gcfg.Instance().Data(ctx); err != nil {
+		logger.Error(ctx, err)
+	} else {
+		if err = gjson.Unmarshal(gjson.MustEncode(data), &Cfg); err != nil {
+			logger.Error(ctx, err)
+		}
+	}
+
 	logger.Infof(ctx, "加载配置成功, 当前配置信息: %s", gjson.MustEncodeString(Cfg))
 }
 
