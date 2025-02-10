@@ -20,7 +20,7 @@ func init() {
 
 		for _, url := range config.Cfg.Local.PublicIp {
 
-			response, _ := g.Client().Timeout(config.Cfg.Http.Timeout*time.Second).Get(ctx, url)
+			response, _ := g.Client().Timeout(30*time.Second).Get(ctx, url)
 			if response != nil {
 
 				result := gstr.Trim(response.ReadAllString())
