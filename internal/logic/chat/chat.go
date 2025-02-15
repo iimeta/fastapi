@@ -90,7 +90,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 			if mak.ReqModel.Type == 100 { // 多模态
 
-				if response.Usage == nil {
+				if response.Usage == nil || mak.ReqModel.MultimodalQuota.BillingRule == 2 {
 
 					response.Usage = new(sdkm.Usage)
 
@@ -233,7 +233,10 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 								completionsRes.Completion += fmt.Sprintf("index: %d\ncontent: %s\n\n", i, gconv.String(choice.Message.Content))
 							}
 						} else {
-							completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
+							if response.Choices[0].Message.ReasoningContent != nil {
+								completionsRes.Completion = gconv.String(response.Choices[0].Message.ReasoningContent)
+							}
+							completionsRes.Completion += gconv.String(response.Choices[0].Message.Content)
 						}
 					}
 				}
@@ -399,7 +402,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 
 		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-			if retryInfo == nil && completion != "" && (usage == nil || usage.PromptTokens == 0 || usage.CompletionTokens == 0) && mak.ReqModel != nil {
+			if retryInfo == nil && completion != "" && mak.ReqModel != nil && (usage == nil || usage.PromptTokens == 0 || usage.CompletionTokens == 0 || (mak.ReqModel.Type == 100 && mak.ReqModel.MultimodalQuota.BillingRule == 2)) {
 
 				if usage == nil {
 					usage = new(sdkm.Usage)
@@ -770,6 +773,9 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 						completion += fmt.Sprintf("index: %d\ncontent: %s\n\n", i, choice.Delta.Content)
 					}
 				} else {
+					if response.Choices[0].Delta.ReasoningContent != nil {
+						completion += gconv.String(response.Choices[0].Delta.ReasoningContent)
+					}
 					completion += response.Choices[0].Delta.Content
 				}
 			}
