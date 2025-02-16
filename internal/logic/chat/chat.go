@@ -877,7 +877,7 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 		Host:         g.RequestFromCtx(ctx).GetHost(),
 	}
 
-	if len(completionsReq.Messages) > 0 && slices.Contains(config.Cfg.Log.Records, "prompt") {
+	if config.Cfg.Log.Open && len(completionsReq.Messages) > 0 && slices.Contains(config.Cfg.Log.Records, "prompt") {
 
 		prompt := completionsReq.Messages[len(completionsReq.Messages)-1].Content
 
@@ -932,7 +932,7 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 		}
 	}
 
-	if slices.Contains(config.Cfg.Log.Records, "completion") {
+	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.Records, "completion") {
 		chat.Completion = completionsRes.Completion
 	}
 
@@ -1015,7 +1015,7 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 		}
 	}
 
-	if slices.Contains(config.Cfg.Log.Records, "messages") {
+	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.Records, "messages") {
 		for _, message := range completionsReq.Messages {
 
 			content := message.Content
