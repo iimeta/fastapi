@@ -2,8 +2,10 @@ package sys_config
 
 import (
 	"context"
+	"github.com/gogf/gf/v2/os/gcron"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
+	"github.com/gogf/gf/v2/os/gtimer"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
@@ -26,6 +28,14 @@ func init() {
 	if _, err := sSysConfig.Init(ctx); err != nil {
 		panic(err)
 	}
+
+	_, _ = gcron.AddSingleton(gctx.New(), "0 0/30 * * * ?", func(ctx context.Context) {
+		_, _ = service.SysConfig().Init(ctx)
+	})
+
+	_ = gtimer.AddSingleton(gctx.New(), 30*time.Minute, func(ctx context.Context) {
+		_, _ = service.SysConfig().Init(ctx)
+	})
 
 	conn, _, err := redis.Subscribe(ctx, consts.CHANGE_CHANNEL_CONFIG)
 	if err != nil {
