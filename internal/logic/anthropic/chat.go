@@ -189,8 +189,6 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				mak.RealModel.ModelAgent = mak.ModelAgent
-
 				completionsRes := &model.CompletionsRes{
 					Error:        err,
 					ConnTime:     response.ConnTime,
@@ -219,7 +217,7 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 					}
 				}
 
-				service.Chat().SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, false)
+				service.Chat().SaveLog(ctx, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, false)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -476,8 +474,6 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 			if mak.ReqModel != nil && mak.RealModel != nil {
 				if err := grpool.Add(ctx, func(ctx context.Context) {
 
-					mak.RealModel.ModelAgent = mak.ModelAgent
-
 					completionsRes := &model.CompletionsRes{
 						Completion:   completion,
 						Error:        err,
@@ -493,7 +489,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 						completionsRes.Usage.TotalTokens = totalTokens
 					}
 
-					service.Chat().SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, false)
+					service.Chat().SaveLog(ctx, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, false)
 
 				}); err != nil {
 					logger.Error(ctx, err)

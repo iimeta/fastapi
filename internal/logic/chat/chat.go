@@ -208,8 +208,6 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				mak.RealModel.ModelAgent = mak.ModelAgent
-
 				completionsRes := &model.CompletionsRes{
 					Error:        err,
 					ConnTime:     response.ConnTime,
@@ -241,7 +239,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 					}
 				}
 
-				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, false)
+				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, false)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -516,8 +514,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			if mak.ReqModel != nil && mak.RealModel != nil {
 				if err := grpool.Add(ctx, func(ctx context.Context) {
 
-					mak.RealModel.ModelAgent = mak.ModelAgent
-
 					completionsRes := &model.CompletionsRes{
 						Completion:   completion,
 						Error:        err,
@@ -533,7 +529,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 						completionsRes.Usage.TotalTokens = totalTokens
 					}
 
-					s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, false)
+					s.SaveLog(ctx, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, false)
 
 				}); err != nil {
 					logger.Error(ctx, err)
@@ -841,7 +837,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 }
 
 // 保存日志
-func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, isSmartMatch bool, retry ...int) {
+func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, modelAgent, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, isSmartMatch bool, retry ...int) {
 
 	if len(retry) == 0 {
 		s.mutex.Lock()
@@ -859,22 +855,28 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 	}
 
 	chat := do.Chat{
-		TraceId:      gctx.CtxId(ctx),
-		UserId:       service.Session().GetUserId(ctx),
-		AppId:        service.Session().GetAppId(ctx),
-		IsSmartMatch: isSmartMatch,
-		Stream:       completionsReq.Stream,
-		ConnTime:     completionsRes.ConnTime,
-		Duration:     completionsRes.Duration,
-		TotalTime:    completionsRes.TotalTime,
-		InternalTime: completionsRes.InternalTime,
-		ReqTime:      completionsRes.EnterTime,
-		ReqDate:      gtime.NewFromTimeStamp(completionsRes.EnterTime).Format("Y-m-d"),
-		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
-		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
-		LocalIp:      util.GetLocalIp(),
-		Status:       1,
-		Host:         g.RequestFromCtx(ctx).GetHost(),
+		TraceId:          gctx.CtxId(ctx),
+		UserId:           service.Session().GetUserId(ctx),
+		AppId:            service.Session().GetAppId(ctx),
+		IsSmartMatch:     isSmartMatch,
+		Stream:           completionsReq.Stream,
+		PromptTokens:     completionsRes.Usage.PromptTokens,
+		CompletionTokens: completionsRes.Usage.CompletionTokens,
+		TotalTokens:      completionsRes.Usage.TotalTokens,
+		SearchTokens:     completionsRes.Usage.SearchTokens,
+		CacheWriteTokens: completionsRes.Usage.CacheCreationInputTokens,
+		CacheHitTokens:   completionsRes.Usage.CacheReadInputTokens,
+		ConnTime:         completionsRes.ConnTime,
+		Duration:         completionsRes.Duration,
+		TotalTime:        completionsRes.TotalTime,
+		InternalTime:     completionsRes.InternalTime,
+		ReqTime:          completionsRes.EnterTime,
+		ReqDate:          gtime.NewFromTimeStamp(completionsRes.EnterTime).Format("Y-m-d"),
+		ClientIp:         g.RequestFromCtx(ctx).GetClientIp(),
+		RemoteIp:         g.RequestFromCtx(ctx).GetRemoteIp(),
+		LocalIp:          util.GetLocalIp(),
+		Status:           1,
+		Host:             g.RequestFromCtx(ctx).GetHost(),
 	}
 
 	if config.Cfg.Log.Open && len(completionsReq.Messages) > 0 && slices.Contains(config.Cfg.Log.Records, "prompt") {
@@ -954,7 +956,6 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 	}
 
 	if realModel != nil {
-
 		chat.IsEnablePresetConfig = realModel.IsEnablePresetConfig
 		chat.PresetConfig = realModel.PresetConfig
 		chat.IsEnableForward = realModel.IsEnableForward
@@ -963,27 +964,20 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 		chat.RealModelId = realModel.Id
 		chat.RealModelName = realModel.Name
 		chat.RealModel = realModel.Model
-
-		if chat.IsEnableModelAgent && realModel.ModelAgent != nil {
-			chat.ModelAgentId = realModel.ModelAgent.Id
-			chat.ModelAgent = &do.ModelAgent{
-				Corp:    realModel.ModelAgent.Corp,
-				Name:    realModel.ModelAgent.Name,
-				BaseUrl: realModel.ModelAgent.BaseUrl,
-				Path:    realModel.ModelAgent.Path,
-				Weight:  realModel.ModelAgent.Weight,
-				Remark:  realModel.ModelAgent.Remark,
-				Status:  realModel.ModelAgent.Status,
-			}
-		}
 	}
 
-	chat.PromptTokens = completionsRes.Usage.PromptTokens
-	chat.CompletionTokens = completionsRes.Usage.CompletionTokens
-	chat.TotalTokens = completionsRes.Usage.TotalTokens
-	chat.SearchTokens = completionsRes.Usage.SearchTokens
-	chat.CacheWriteTokens = completionsRes.Usage.CacheCreationInputTokens
-	chat.CacheHitTokens = completionsRes.Usage.CacheReadInputTokens
+	if modelAgent != nil {
+		chat.ModelAgentId = modelAgent.Id
+		chat.ModelAgent = &do.ModelAgent{
+			Corp:    modelAgent.Corp,
+			Name:    modelAgent.Name,
+			BaseUrl: modelAgent.BaseUrl,
+			Path:    modelAgent.Path,
+			Weight:  modelAgent.Weight,
+			Remark:  modelAgent.Remark,
+			Status:  modelAgent.Status,
+		}
+	}
 
 	if fallbackModelAgent != nil {
 		chat.IsEnableFallback = true
@@ -1084,6 +1078,6 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, f
 
 		logger.Errorf(ctx, "sChat SaveLog retry: %d", len(retry))
 
-		s.SaveLog(ctx, reqModel, realModel, fallbackModelAgent, fallbackModel, key, completionsReq, completionsRes, retryInfo, isSmartMatch, retry...)
+		s.SaveLog(ctx, reqModel, realModel, modelAgent, fallbackModelAgent, fallbackModel, key, completionsReq, completionsRes, retryInfo, isSmartMatch, retry...)
 	}
 }

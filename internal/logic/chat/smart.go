@@ -106,8 +106,6 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		if mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				mak.RealModel.ModelAgent = mak.ModelAgent
-
 				completionsRes := &model.CompletionsRes{
 					Error:        err,
 					ConnTime:     response.ConnTime,
@@ -126,7 +124,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 					completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
 				}
 
-				s.SaveLog(ctx, reqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, true)
+				s.SaveLog(ctx, reqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, true)
 			}); err != nil {
 				logger.Error(ctx, err)
 			}
