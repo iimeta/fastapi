@@ -966,7 +966,7 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, m
 		chat.RealModel = realModel.Model
 	}
 
-	if modelAgent != nil {
+	if chat.IsEnableModelAgent && modelAgent != nil {
 		chat.ModelAgentId = modelAgent.Id
 		chat.ModelAgent = &do.ModelAgent{
 			Corp:    modelAgent.Corp,
@@ -1066,7 +1066,7 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, m
 	}
 
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
-		logger.Error(ctx, err)
+		logger.Errorf(ctx, "sChat SaveLog error: %v", err)
 
 		if len(retry) == 10 {
 			panic(err)

@@ -80,8 +80,6 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				mak.RealModel.ModelAgent = mak.ModelAgent
-
 				completionsRes := &model.CompletionsRes{
 					Error:        err,
 					TotalTime:    response.TotalTime,
@@ -98,7 +96,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 					completionsRes.Completion = gconv.String(response.Data[0].Embedding)
 				}
 
-				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo)
+				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -187,7 +185,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 }
 
 // 保存日志
-func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel *model.Model, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.EmbeddingRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, retry ...int) {
+func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel *model.Model, modelAgent, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.EmbeddingRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -200,27 +198,30 @@ func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel *model.Mod
 	}
 
 	chat := do.Chat{
-		TraceId:      gctx.CtxId(ctx),
-		UserId:       service.Session().GetUserId(ctx),
-		AppId:        service.Session().GetAppId(ctx),
-		ConnTime:     completionsRes.ConnTime,
-		Duration:     completionsRes.Duration,
-		TotalTime:    completionsRes.TotalTime,
-		InternalTime: completionsRes.InternalTime,
-		ReqTime:      completionsRes.EnterTime,
-		ReqDate:      gtime.NewFromTimeStamp(completionsRes.EnterTime).Format("Y-m-d"),
-		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
-		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
-		LocalIp:      util.GetLocalIp(),
-		Status:       1,
-		Host:         g.RequestFromCtx(ctx).GetHost(),
+		TraceId:          gctx.CtxId(ctx),
+		UserId:           service.Session().GetUserId(ctx),
+		AppId:            service.Session().GetAppId(ctx),
+		PromptTokens:     completionsRes.Usage.PromptTokens,
+		CompletionTokens: completionsRes.Usage.CompletionTokens,
+		TotalTokens:      completionsRes.Usage.TotalTokens,
+		ConnTime:         completionsRes.ConnTime,
+		Duration:         completionsRes.Duration,
+		TotalTime:        completionsRes.TotalTime,
+		InternalTime:     completionsRes.InternalTime,
+		ReqTime:          completionsRes.EnterTime,
+		ReqDate:          gtime.NewFromTimeStamp(completionsRes.EnterTime).Format("Y-m-d"),
+		ClientIp:         g.RequestFromCtx(ctx).GetClientIp(),
+		RemoteIp:         g.RequestFromCtx(ctx).GetRemoteIp(),
+		LocalIp:          util.GetLocalIp(),
+		Status:           1,
+		Host:             g.RequestFromCtx(ctx).GetHost(),
 	}
 
-	if slices.Contains(config.Cfg.Log.Records, "prompt") {
+	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.Records, "prompt") {
 		chat.Prompt = gconv.String(completionsReq.Input)
 	}
 
-	if slices.Contains(config.Cfg.Log.Records, "completion") {
+	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.Records, "completion") {
 		chat.Completion = completionsRes.Completion
 	}
 
@@ -235,7 +236,6 @@ func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel *model.Mod
 	}
 
 	if realModel != nil {
-
 		chat.IsEnablePresetConfig = realModel.IsEnablePresetConfig
 		chat.PresetConfig = realModel.PresetConfig
 		chat.IsEnableForward = realModel.IsEnableForward
@@ -244,24 +244,20 @@ func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel *model.Mod
 		chat.RealModelId = realModel.Id
 		chat.RealModelName = realModel.Name
 		chat.RealModel = realModel.Model
-
-		if chat.IsEnableModelAgent && realModel.ModelAgent != nil {
-			chat.ModelAgentId = realModel.ModelAgent.Id
-			chat.ModelAgent = &do.ModelAgent{
-				Corp:    realModel.ModelAgent.Corp,
-				Name:    realModel.ModelAgent.Name,
-				BaseUrl: realModel.ModelAgent.BaseUrl,
-				Path:    realModel.ModelAgent.Path,
-				Weight:  realModel.ModelAgent.Weight,
-				Remark:  realModel.ModelAgent.Remark,
-				Status:  realModel.ModelAgent.Status,
-			}
-		}
 	}
 
-	chat.PromptTokens = completionsRes.Usage.PromptTokens
-	chat.CompletionTokens = completionsRes.Usage.CompletionTokens
-	chat.TotalTokens = completionsRes.Usage.TotalTokens
+	if chat.IsEnableModelAgent && modelAgent != nil {
+		chat.ModelAgentId = modelAgent.Id
+		chat.ModelAgent = &do.ModelAgent{
+			Corp:    modelAgent.Corp,
+			Name:    modelAgent.Name,
+			BaseUrl: modelAgent.BaseUrl,
+			Path:    modelAgent.Path,
+			Weight:  modelAgent.Weight,
+			Remark:  modelAgent.Remark,
+			Status:  modelAgent.Status,
+		}
+	}
 
 	if fallbackModelAgent != nil {
 		chat.IsEnableFallback = true
@@ -309,7 +305,7 @@ func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel *model.Mod
 	}
 
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
-		logger.Error(ctx, err)
+		logger.Errorf(ctx, "sEmbedding SaveLog error: %v", err)
 
 		if len(retry) == 10 {
 			panic(err)
@@ -321,6 +317,6 @@ func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel *model.Mod
 
 		logger.Errorf(ctx, "sEmbedding SaveLog retry: %d", len(retry))
 
-		s.SaveLog(ctx, reqModel, realModel, fallbackModelAgent, fallbackModel, key, completionsReq, completionsRes, retryInfo, retry...)
+		s.SaveLog(ctx, reqModel, realModel, modelAgent, fallbackModelAgent, fallbackModel, key, completionsReq, completionsRes, retryInfo, retry...)
 	}
 }

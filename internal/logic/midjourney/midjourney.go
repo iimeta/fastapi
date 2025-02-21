@@ -88,8 +88,6 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				mak.RealModel.ModelAgent = mak.ModelAgent
-
 				midjourneyResponse := model.MidjourneyResponse{
 					ReqUrl:             reqUrl,
 					TaskId:             taskId,
@@ -105,7 +103,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 					midjourneyResponse.Usage = *usage
 				}
 
-				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, midjourneyResponse, retryInfo)
+				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, midjourneyResponse, retryInfo)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -252,8 +250,6 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				mak.RealModel.ModelAgent = mak.ModelAgent
-
 				midjourneyResponse := model.MidjourneyResponse{
 					MidjourneyResponse: sdkm.MidjourneyResponse{
 						Response: []byte(fmt.Sprintf("taskId: %s\nimageUrl: %s", taskId, imageUrl)),
@@ -268,7 +264,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 					midjourneyResponse.Usage = *usage
 				}
 
-				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, midjourneyResponse, retryInfo)
+				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, midjourneyResponse, retryInfo)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -377,7 +373,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 }
 
 // 保存日志
-func (s *sMidjourney) SaveLog(ctx context.Context, reqModel, realModel *model.Model, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, response model.MidjourneyResponse, retryInfo *mcommon.Retry, retry ...int) {
+func (s *sMidjourney) SaveLog(ctx context.Context, reqModel, realModel *model.Model, modelAgent, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, response model.MidjourneyResponse, retryInfo *mcommon.Retry, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -400,6 +396,7 @@ func (s *sMidjourney) SaveLog(ctx context.Context, reqModel, realModel *model.Mo
 		PromptEn:     response.PromptEn,
 		ImageUrl:     response.ImageUrl,
 		Progress:     response.Progress,
+		TotalTokens:  response.Usage.TotalTokens,
 		ConnTime:     response.ConnTime,
 		Duration:     response.Duration,
 		TotalTime:    response.TotalTime,
@@ -423,7 +420,6 @@ func (s *sMidjourney) SaveLog(ctx context.Context, reqModel, realModel *model.Mo
 	}
 
 	if realModel != nil {
-
 		midjourney.IsEnablePresetConfig = realModel.IsEnablePresetConfig
 		midjourney.PresetConfig = realModel.PresetConfig
 		midjourney.IsEnableForward = realModel.IsEnableForward
@@ -432,22 +428,20 @@ func (s *sMidjourney) SaveLog(ctx context.Context, reqModel, realModel *model.Mo
 		midjourney.RealModelId = realModel.Id
 		midjourney.RealModelName = realModel.Name
 		midjourney.RealModel = realModel.Model
-
-		if midjourney.IsEnableModelAgent && realModel.ModelAgent != nil {
-			midjourney.ModelAgentId = realModel.ModelAgent.Id
-			midjourney.ModelAgent = &do.ModelAgent{
-				Corp:    realModel.ModelAgent.Corp,
-				Name:    realModel.ModelAgent.Name,
-				BaseUrl: realModel.ModelAgent.BaseUrl,
-				Path:    realModel.ModelAgent.Path,
-				Weight:  realModel.ModelAgent.Weight,
-				Remark:  realModel.ModelAgent.Remark,
-				Status:  realModel.ModelAgent.Status,
-			}
-		}
 	}
 
-	midjourney.TotalTokens = response.Usage.TotalTokens
+	if midjourney.IsEnableModelAgent && modelAgent != nil {
+		midjourney.ModelAgentId = modelAgent.Id
+		midjourney.ModelAgent = &do.ModelAgent{
+			Corp:    modelAgent.Corp,
+			Name:    modelAgent.Name,
+			BaseUrl: modelAgent.BaseUrl,
+			Path:    modelAgent.Path,
+			Weight:  modelAgent.Weight,
+			Remark:  modelAgent.Remark,
+			Status:  modelAgent.Status,
+		}
+	}
 
 	if fallbackModelAgent != nil {
 		midjourney.IsEnableFallback = true
@@ -501,7 +495,7 @@ func (s *sMidjourney) SaveLog(ctx context.Context, reqModel, realModel *model.Mo
 	}
 
 	if _, err := dao.Midjourney.Insert(ctx, midjourney); err != nil {
-		logger.Error(ctx, err)
+		logger.Errorf(ctx, "sMidjourney SaveLog error: %v", err)
 
 		if len(retry) == 10 {
 			panic(err)
@@ -513,6 +507,6 @@ func (s *sMidjourney) SaveLog(ctx context.Context, reqModel, realModel *model.Mo
 
 		logger.Errorf(ctx, "sMidjourney SaveLog retry: %d", len(retry))
 
-		s.SaveLog(ctx, reqModel, realModel, fallbackModelAgent, fallbackModel, key, response, retryInfo, retry...)
+		s.SaveLog(ctx, reqModel, realModel, modelAgent, fallbackModelAgent, fallbackModel, key, response, retryInfo, retry...)
 	}
 }

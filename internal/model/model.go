@@ -24,8 +24,6 @@ type Model struct {
 	IsEnableModelAgent   bool                        `json:"is_enable_model_agent,omitempty"`   // 是否启用模型代理
 	LbStrategy           int                         `json:"lb_strategy,omitempty"`             // 代理负载均衡策略[1:轮询, 2:权重]
 	ModelAgents          []string                    `json:"model_agents,omitempty"`            // 模型代理
-	ModelAgentNames      []string                    `json:"model_agent_names,omitempty"`       // 模型代理名称
-	ModelAgent           *ModelAgent                 `json:"model_agent,omitempty"`             // 模型代理信息
 	IsEnableForward      bool                        `json:"is_enable_forward,omitempty"`       // 是否启用模型转发
 	ForwardConfig        *common.ForwardConfig       `json:"forward_config,omitempty"`          // 模型转发配置
 	IsEnableFallback     bool                        `json:"is_enable_fallback,omitempty"`      // 是否启用后备

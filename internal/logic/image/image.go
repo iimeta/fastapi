@@ -73,8 +73,6 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				mak.RealModel.ModelAgent = mak.ModelAgent
-
 				imageRes := &model.ImageRes{
 					Created:      response.Created,
 					Data:         response.Data,
@@ -88,7 +86,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 					imageRes.Usage = *usage
 				}
 
-				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, fallbackModelAgent, fallbackModel, mak.Key, &params, imageRes, retryInfo)
+				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, imageRes, retryInfo)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -184,7 +182,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 }
 
 // 保存日志
-func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel *model.Model, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *mcommon.Retry, retry ...int) {
+func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel *model.Model, modelAgent, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *mcommon.Retry, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -206,6 +204,7 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel *model.Model, 
 		Quality:        imageReq.Quality,
 		Style:          imageReq.Style,
 		ResponseFormat: imageReq.ResponseFormat,
+		TotalTokens:    imageRes.Usage.TotalTokens,
 		TotalTime:      imageRes.TotalTime,
 		InternalTime:   imageRes.InternalTime,
 		ReqTime:        imageRes.EnterTime,
@@ -235,7 +234,6 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel *model.Model, 
 	}
 
 	if realModel != nil {
-
 		image.IsEnablePresetConfig = realModel.IsEnablePresetConfig
 		image.PresetConfig = realModel.PresetConfig
 		image.IsEnableForward = realModel.IsEnableForward
@@ -244,22 +242,20 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel *model.Model, 
 		image.RealModelId = realModel.Id
 		image.RealModelName = realModel.Name
 		image.RealModel = realModel.Model
-
-		if image.IsEnableModelAgent && realModel.ModelAgent != nil {
-			image.ModelAgentId = realModel.ModelAgent.Id
-			image.ModelAgent = &do.ModelAgent{
-				Corp:    realModel.ModelAgent.Corp,
-				Name:    realModel.ModelAgent.Name,
-				BaseUrl: realModel.ModelAgent.BaseUrl,
-				Path:    realModel.ModelAgent.Path,
-				Weight:  realModel.ModelAgent.Weight,
-				Remark:  realModel.ModelAgent.Remark,
-				Status:  realModel.ModelAgent.Status,
-			}
-		}
 	}
 
-	image.TotalTokens = imageRes.Usage.TotalTokens
+	if image.IsEnableModelAgent && modelAgent != nil {
+		image.ModelAgentId = modelAgent.Id
+		image.ModelAgent = &do.ModelAgent{
+			Corp:    modelAgent.Corp,
+			Name:    modelAgent.Name,
+			BaseUrl: modelAgent.BaseUrl,
+			Path:    modelAgent.Path,
+			Weight:  modelAgent.Weight,
+			Remark:  modelAgent.Remark,
+			Status:  modelAgent.Status,
+		}
+	}
 
 	if fallbackModelAgent != nil {
 		image.IsEnableFallback = true
@@ -307,7 +303,7 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel *model.Model, 
 	}
 
 	if _, err := dao.Image.Insert(ctx, image); err != nil {
-		logger.Error(ctx, err)
+		logger.Errorf(ctx, "sImage SaveLog error: %v", err)
 
 		if len(retry) == 10 {
 			panic(err)
@@ -319,6 +315,6 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel *model.Model, 
 
 		logger.Errorf(ctx, "sImage SaveLog retry: %d", len(retry))
 
-		s.SaveLog(ctx, reqModel, realModel, fallbackModelAgent, fallbackModel, key, imageReq, imageRes, retryInfo, retry...)
+		s.SaveLog(ctx, reqModel, realModel, modelAgent, fallbackModelAgent, fallbackModel, key, imageReq, imageRes, retryInfo, retry...)
 	}
 }
