@@ -26,7 +26,7 @@ type Statistics struct {
 	Open        bool          `bson:"open"         json:"open"`         // 开关
 	Cron        string        `bson:"cron"         json:"cron"`         // CRON表达式
 	Limit       int64         `bson:"limit"        json:"limit"`        // 查询条数
-	LockMinutes time.Duration `bson:"lock_minutes" json:"lock_minutes"` // 锁定时长
+	LockMinutes time.Duration `bson:"lock_minutes" json:"lock_minutes"` // 锁定时长, 单位: 分钟
 }
 
 type Base struct {
@@ -46,8 +46,20 @@ type Midjourney struct {
 }
 
 type Log struct {
-	Open    bool     `bson:"open"    json:"open"`    // 开关
-	Records []string `bson:"records" json:"records"` // 日志记录
+	Open         bool     `bson:"open"          json:"open"`          // 开关
+	ChatRecords  []string `bson:"chat_records"  json:"chat_records"`  // 聊天日志记录内容
+	ChatReserve  int      `bson:"chat_reserve"  json:"chat_reserve"`  // 聊天日志保留天数
+	ImageReserve int      `bson:"image_reserve" json:"image_reserve"` // 绘图日志保留天数
+	AudioReserve int      `bson:"audio_reserve" json:"audio_reserve"` // 音频日志保留天数
+	Cron         string   `bson:"cron"          json:"cron"`          // CRON表达式
+}
+
+type UserLoginRegister struct {
+	AccountLogin  bool `bson:"account_login"  json:"account_login"`  // 账密登录
+	EmailLogin    bool `bson:"email_login"    json:"email_login"`    // 邮箱登录
+	EmailRegister bool `bson:"email_register" json:"email_register"` // 邮箱注册
+	EmailRetrieve bool `bson:"email_retrieve" json:"email_retrieve"` // 找回密码
+	SessionExpire int  `bson:"session_expire" json:"session_expire"` // 会话过期, 单位: 秒
 }
 
 type UserShieldError struct {
@@ -55,9 +67,27 @@ type UserShieldError struct {
 	Errors []string `bson:"errors" json:"errors"` // 错误
 }
 
+type AdminLogin struct {
+	AccountLogin  bool `bson:"account_login"  json:"account_login"`  // 账密登录
+	EmailLogin    bool `bson:"email_login"    json:"email_login"`    // 邮箱登录
+	EmailRetrieve bool `bson:"email_retrieve" json:"email_retrieve"` // 找回密码
+	SessionExpire int  `bson:"session_expire" json:"session_expire"` // 会话过期, 单位: 秒
+}
+
 type AutoDisabledError struct {
 	Open   bool     `bson:"open"   json:"open"`   // 开关
 	Errors []string `bson:"errors" json:"errors"` // 错误
+}
+
+type AutoEnableError struct {
+	Open         bool          `bson:"open"          json:"open"`          // 开关
+	EnableErrors []EnableError `bson:"enable_errors" json:"enable_errors"` // 启用错误
+}
+
+type EnableError struct {
+	Cron       string        `bson:"cron"        json:"cron"`        // CRON表达式
+	EnableTime time.Duration `bson:"enable_time" json:"enable_time"` // 启用时间, 单位: 秒
+	Error      string        `bson:"error"       json:"error"`       // 错误
 }
 
 type NotRetryError struct {

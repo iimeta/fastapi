@@ -217,11 +217,11 @@ func (s *sModeration) SaveLog(ctx context.Context, reqModel, realModel *model.Mo
 		Host:             g.RequestFromCtx(ctx).GetHost(),
 	}
 
-	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.Records, "prompt") {
+	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.ChatRecords, "prompt") {
 		chat.Prompt = gconv.String(completionsReq.Input)
 	}
 
-	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.Records, "completion") {
+	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.ChatRecords, "completion") {
 		chat.Completion = completionsRes.Completion
 	}
 
