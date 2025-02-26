@@ -19,6 +19,7 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
+	"github.com/iimeta/go-openai"
 	"math"
 	"time"
 )
@@ -429,7 +430,13 @@ func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel *model.Model, 
 	}
 
 	if audioRes.Error != nil {
+
 		audio.ErrMsg = audioRes.Error.Error()
+		openaiApiError := &openai.APIError{}
+		if errors.As(audioRes.Error, &openaiApiError) {
+			audio.ErrMsg = openaiApiError.Message
+		}
+
 		if common.IsAborted(audioRes.Error) {
 			audio.Status = 2
 		} else {

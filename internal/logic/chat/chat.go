@@ -23,6 +23,7 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
+	"github.com/iimeta/go-openai"
 	"github.com/iimeta/tiktoken-go"
 	"io"
 	"math"
@@ -1001,7 +1002,13 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, m
 	}
 
 	if completionsRes.Error != nil {
+
 		chat.ErrMsg = completionsRes.Error.Error()
+		openaiApiError := &openai.APIError{}
+		if errors.As(completionsRes.Error, &openaiApiError) {
+			chat.ErrMsg = openaiApiError.Message
+		}
+
 		if common.IsAborted(completionsRes.Error) {
 			chat.Status = 2
 		} else {

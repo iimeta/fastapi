@@ -19,6 +19,7 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
+	"github.com/iimeta/go-openai"
 	"time"
 )
 
@@ -279,7 +280,13 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel *model.Model, 
 	}
 
 	if imageRes.Error != nil {
+
 		image.ErrMsg = imageRes.Error.Error()
+		openaiApiError := &openai.APIError{}
+		if errors.As(imageRes.Error, &openaiApiError) {
+			image.ErrMsg = openaiApiError.Message
+		}
+
 		if common.IsAborted(imageRes.Error) {
 			image.Status = 2
 		} else {
