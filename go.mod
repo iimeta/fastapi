@@ -11,12 +11,12 @@ require (
 	github.com/gogf/gf/v2 v2.8.3
 	github.com/gorilla/websocket v1.5.3
 	github.com/iimeta/fastapi-sdk v1.2.0
-	github.com/iimeta/go-openai v0.0.0-20250211102909-78d557d4921e
+	github.com/iimeta/go-openai v0.0.0-20250228094744-09d098a71069
 	github.com/iimeta/tiktoken-go v0.0.0-20240913023457-97a6b8dfb0c7
-	github.com/redis/go-redis/v9 v9.7.0
+	github.com/redis/go-redis/v9 v9.7.1
 	github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300
 	github.com/tjfoc/gmsm v1.4.1
-	go.mongodb.org/mongo-driver v1.17.2
+	go.mongodb.org/mongo-driver v1.17.3
 	google.golang.org/api v0.221.0
 )
 
@@ -25,12 +25,12 @@ require (
 	cloud.google.com/go/auth/oauth2adapt v0.2.7 // indirect
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.36.1 // indirect
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.8 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.59 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.32 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.32 // indirect
-	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.24.4 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.36.3 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.10 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.61 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.34 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.34 // indirect
+	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.26.0 // indirect
 	github.com/aws/smithy-go v1.22.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect

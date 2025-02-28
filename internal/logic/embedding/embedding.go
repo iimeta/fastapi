@@ -93,8 +93,8 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 					completionsRes.Usage.TotalTokens = totalTokens
 				}
 
-				if retryInfo == nil && len(response.Data) > 0 && len(response.Data[0].Embedding) > 0 {
-					completionsRes.Completion = gconv.String(response.Data[0].Embedding)
+				if retryInfo == nil && len(response.Data) > 0 {
+					completionsRes.Completion = gconv.String(response.Data[0])
 				}
 
 				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo)
