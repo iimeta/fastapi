@@ -70,7 +70,10 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
 			// 替换成调用的模型
-			response.Model = mak.ReqModel.Model
+			if mak.ReqModel.IsEnableForward {
+				response.Model = mak.ReqModel.Model
+			}
+
 			model := mak.ReqModel.Model
 
 			if !tiktoken.IsEncodingForModel(model) {

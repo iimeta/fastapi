@@ -82,7 +82,10 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
 			// 替换成调用的模型
-			response.Model = mak.ReqModel.Model
+			if mak.ReqModel.IsEnableForward {
+				response.Model = mak.ReqModel.Model
+			}
+
 			model := mak.ReqModel.Model
 
 			if !tiktoken.IsEncodingForModel(model) {
@@ -807,7 +810,9 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		}
 
 		// 替换成调用的模型
-		response.Model = mak.ReqModel.Model
+		if mak.ReqModel.IsEnableForward {
+			response.Model = mak.ReqModel.Model
+		}
 
 		// OpenAI官方格式
 		if len(response.ResponseBytes) > 0 {
@@ -819,8 +824,10 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			}
 
 			// 替换成调用的模型
-			if _, ok := data["model"]; ok {
-				data["model"] = mak.ReqModel.Model
+			if mak.ReqModel.IsEnableForward {
+				if _, ok := data["model"]; ok {
+					data["model"] = mak.ReqModel.Model
+				}
 			}
 
 			if err = util.SSEServer(ctx, gjson.MustEncodeString(data)); err != nil {
