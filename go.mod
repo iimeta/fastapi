@@ -4,15 +4,13 @@ go 1.23.0
 
 toolchain go1.23.6
 
-replace github.com/iimeta/fastapi-sdk => ../fastapi-sdk
-
 require (
 	cloud.google.com/go/iam v1.4.0
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/gogf/gf/contrib/nosql/redis/v2 v2.8.3
 	github.com/gogf/gf/v2 v2.8.3
 	github.com/gorilla/websocket v1.5.3
-	github.com/iimeta/fastapi-sdk v1.2.0
+	github.com/iimeta/fastapi-sdk v1.3.0
 	github.com/iimeta/go-openai v0.0.0-20250228094744-09d098a71069
 	github.com/iimeta/tiktoken-go v0.0.0-20240913023457-97a6b8dfb0c7
 	github.com/redis/go-redis/v9 v9.7.1
