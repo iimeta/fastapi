@@ -16,22 +16,22 @@
 
 | 公司         | Completion | Image | Audio | Multimodal | Realtime | Embedding | Moderation |
 | ------------ | ---------- | ----- | ----- | ---------- | -------- | --------- | ---------- |
-| OpenAI       | ✔️         | ✔️    | ✔️     | ✔️         | ✔️       | ✔️        | ✔️         |
-| Azure        | ✔️         | ✔️    | ✔️     | ✔️         |          | ✔️        | ✔️         |
-| 百度         | ✔️         |       |        |           |          |           |            |
-| 科大讯飞     | ✔️         | ✔️    |        |           |          |           |            |
-| 阿里云       | ✔️         |       |        |           |          |           |            |
-| 智谱AI       | ✔️         |       |        |           |          |           |            |
-| Google       | ✔️         |       |        | ✔️        |          |           |            |
-| DeepSeek     | ✔️         |       |        |           |          |           |            |
-| 360智脑      | ✔️         |       |        |           |          |           |            |
-| Midjourney   |            | ✔️    |        |           |          |           |            |
-| Anthropic    | ✔️         |       |        | ✔️        |          |           |            |
-| GCPClaude    | ✔️         |       |        | ✔️        |          |           |            |
-| AWSClaude    | ✔️         |       |        | ✔️        |          |           |            |
-| 百度DeepSeek | ✔️         |       |        |           |          |           |            |
-| 豆包         | ✔️         |       |        |           |          |           |            |
-| 火山引擎     | ✔️         |       |        |           |          |           |            |
+| OpenAI       | ✔️         | ✔️    | ✔️    | ✔️        | ✔️       | ✔️        | ✔️         |
+| Azure        | ✔️         | ✔️    | ✔️    | ✔️        |          | ✔️        | ✔️         |
+| 百度         | ✔️         |       |       |           |          |           |            |
+| 科大讯飞     | ✔️         | ✔️    |       |           |          |           |            |
+| 阿里云       | ✔️         |       |       |           |          |           |            |
+| 智谱AI       | ✔️         |       |       |           |          |           |            |
+| Google       | ✔️         |       |       | ✔️        |          |           |            |
+| DeepSeek     | ✔️         |       |       |           |          |           |            |
+| 360智脑      | ✔️         |       |       |           |          |           |            |
+| Midjourney   |            | ✔️    |       |           |          |           |            |
+| Anthropic    | ✔️         |       |       | ✔️        |          |           |            |
+| GCPClaude    | ✔️         |       |       | ✔️        |          |           |            |
+| AWSClaude    | ✔️         |       |       | ✔️        |          |           |            |
+| 百度DeepSeek | ✔️         |       |       |           |          |           |            |
+| 豆包         | ✔️         |       |       |           |          |           |            |
+| 火山引擎     | ✔️         |       |       |           |          |           |            |
 
 ## 项目预览
 
@@ -124,6 +124,6 @@ curl --location 'https://api.fastapi.ai/v1/chat/completions' \
 
 ## 交流群
 
-<img src="https://iim.ai/public/images/WeChatGroup.jpg?t=20250223" width="320" alt="交流群"/>
+<img src="https://iim.ai/public/images/WeChatGroup.jpg?t=20250302" width="320" alt="交流群"/>
 
 ![Star History Chart](https://api.star-history.com/svg?repos=iimeta/fastapi&type=Date)
