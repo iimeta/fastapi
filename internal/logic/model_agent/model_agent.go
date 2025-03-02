@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
@@ -213,6 +215,56 @@ func (s *sModelAgent) GetModelAgentKeys(ctx context.Context, id string) ([]*mode
 	}
 
 	return items, nil
+}
+
+// 获取模型代理与密钥列表
+func (s *sModelAgent) GetModelAgentsAndKeys(ctx context.Context) ([]*model.ModelAgent, map[string][]*model.Key, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModelAgent GetModelAgentsAndKeys time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	modelAgents, err := s.ListAll(ctx)
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, nil, err
+	}
+
+	results, err := dao.Key.Find(ctx, bson.M{"type": 2})
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, nil, err
+	}
+
+	modelAgentKeyMap := make(map[string][]*model.Key)
+	for _, result := range results {
+
+		key := &model.Key{
+			Id:             result.Id,
+			UserId:         result.UserId,
+			AppId:          result.AppId,
+			Corp:           result.Corp,
+			Key:            result.Key,
+			Type:           result.Type,
+			Weight:         result.Weight,
+			Models:         result.Models,
+			ModelAgents:    result.ModelAgents,
+			IsLimitQuota:   result.IsLimitQuota,
+			Quota:          result.Quota,
+			UsedQuota:      result.UsedQuota,
+			QuotaExpiresAt: result.QuotaExpiresAt,
+			IpWhitelist:    result.IpWhitelist,
+			IpBlacklist:    result.IpBlacklist,
+			Status:         result.Status,
+		}
+
+		for _, modelAgentId := range result.ModelAgents {
+			modelAgentKeyMap[modelAgentId] = append(modelAgentKeyMap[modelAgentId], key)
+		}
+	}
+
+	return modelAgents, modelAgentKeyMap, nil
 }
 
 // 挑选模型代理
@@ -586,11 +638,15 @@ func (s *sModelAgent) SaveCacheList(ctx context.Context, modelAgents []*model.Mo
 		}
 	}
 
-	if len(fields) > 0 {
-		if _, err := redis.HSet(ctx, consts.API_MODEL_AGENTS_KEY, fields); err != nil {
-			logger.Error(ctx, err)
-			return err
+	if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+		if len(fields) > 0 {
+			if _, err := redis.HSet(ctx, consts.API_MODEL_AGENTS_KEY, fields); err != nil {
+				logger.Error(ctx, err)
+			}
 		}
+	}, nil); err != nil {
+		logger.Error(ctx, err)
+		return err
 	}
 
 	return nil
@@ -833,7 +889,11 @@ func (s *sModelAgent) SaveCacheModelAgentKeys(ctx context.Context, id string, ke
 
 	if len(fields) > 0 {
 
-		if _, err := redis.HSet(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id), fields); err != nil {
+		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+			if _, err := redis.HSet(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id), fields); err != nil {
+				logger.Error(ctx, err)
+			}
+		}, nil); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}

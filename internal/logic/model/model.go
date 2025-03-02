@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gregex"
 	"github.com/gogf/gf/v2/text/gstr"
@@ -596,6 +598,58 @@ func (s *sModel) ListAll(ctx context.Context) ([]*model.Model, error) {
 	return items, nil
 }
 
+// 获取模型与密钥列表
+func (s *sModel) GetModelsAndKeys(ctx context.Context) ([]*model.Model, map[string][]*model.Key, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModel GetModelsAndKeys time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	models, err := s.ListAll(ctx)
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, nil, err
+	}
+
+	results, err := dao.Key.Find(ctx, bson.M{"type": 2, "is_agents_only": false})
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, nil, err
+	}
+
+	modelKeyMap := make(map[string][]*model.Key)
+	for _, result := range results {
+
+		key := &model.Key{
+			Id:                  result.Id,
+			UserId:              result.UserId,
+			AppId:               result.AppId,
+			Corp:                result.Corp,
+			Key:                 result.Key,
+			Type:                result.Type,
+			Weight:              result.Weight,
+			Models:              result.Models,
+			ModelAgents:         result.ModelAgents,
+			IsLimitQuota:        result.IsLimitQuota,
+			Quota:               result.Quota,
+			UsedQuota:           result.UsedQuota,
+			QuotaExpiresRule:    result.QuotaExpiresRule,
+			QuotaExpiresAt:      result.QuotaExpiresAt,
+			QuotaExpiresMinutes: result.QuotaExpiresMinutes,
+			IpWhitelist:         result.IpWhitelist,
+			IpBlacklist:         result.IpBlacklist,
+			Status:              result.Status,
+		}
+
+		for _, modelId := range result.Models {
+			modelKeyMap[modelId] = append(modelKeyMap[modelId], key)
+		}
+	}
+
+	return models, modelKeyMap, nil
+}
+
 // 根据模型ID获取模型信息并保存到缓存
 func (s *sModel) GetModelAndSaveCache(ctx context.Context, id string) (*model.Model, error) {
 
@@ -672,11 +726,15 @@ func (s *sModel) SaveCacheList(ctx context.Context, models []*model.Model) error
 		}
 	}
 
-	if len(fields) > 0 {
-		if _, err := redis.HSet(ctx, consts.API_MODELS_KEY, fields); err != nil {
-			logger.Error(ctx, err)
-			return err
+	if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+		if len(fields) > 0 {
+			if _, err := redis.HSet(ctx, consts.API_MODELS_KEY, fields); err != nil {
+				logger.Error(ctx, err)
+			}
 		}
+	}, nil); err != nil {
+		logger.Error(ctx, err)
+		return err
 	}
 
 	return nil

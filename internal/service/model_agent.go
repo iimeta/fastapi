@@ -22,6 +22,8 @@ type (
 		ListAll(ctx context.Context) ([]*model.ModelAgent, error)
 		// 根据模型代理ID获取密钥列表
 		GetModelAgentKeys(ctx context.Context, id string) ([]*model.Key, error)
+		// 获取模型代理与密钥列表
+		GetModelAgentsAndKeys(ctx context.Context) ([]*model.ModelAgent, map[string][]*model.Key, error)
 		// 挑选模型代理
 		PickModelAgent(ctx context.Context, m *model.Model) (int, *model.ModelAgent, error)
 		// 移除模型代理

@@ -74,7 +74,7 @@ func init() {
 		panic(err)
 	}
 
-	if err = grpool.AddWithRecover(ctx, func(ctx context.Context) {
+	if err = grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 		for {
 
 			msg, err := conn.ReceiveMessage(ctx)
@@ -158,14 +158,14 @@ func (s *sCore) Refresh(ctx context.Context) error {
 		userMap[user.UserId] = user
 	}
 
-	keys, err := service.Key().List(ctx, 1)
+	appKeys, err := service.Key().List(ctx, 1)
 	if err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
 
-	keyMap := make(map[int][]*model.Key)
-	for _, key := range keys {
+	appKeyMap := make(map[int][]*model.Key)
+	for _, key := range appKeys {
 
 		if err = service.App().SaveCacheAppKey(ctx, key); err != nil {
 			logger.Error(ctx, err)
@@ -177,7 +177,7 @@ func (s *sCore) Refresh(ctx context.Context) error {
 			return err
 		}
 
-		keyMap[key.AppId] = append(keyMap[key.AppId], key)
+		appKeyMap[key.AppId] = append(appKeyMap[key.AppId], key)
 	}
 
 	apps, err := service.App().List(ctx)
@@ -205,7 +205,7 @@ func (s *sCore) Refresh(ctx context.Context) error {
 				fmt.Sprintf(consts.APP_QUOTA_FIELD, app.AppId): app.Quota,
 			}
 
-			keys := keyMap[app.AppId]
+			keys := appKeyMap[app.AppId]
 			for _, key := range keys {
 				fields[fmt.Sprintf(consts.KEY_QUOTA_FIELD, key.AppId, key.Key)] = key.Quota
 			}
@@ -230,7 +230,35 @@ func (s *sCore) Refresh(ctx context.Context) error {
 		}
 	}
 
-	models, err := service.Model().ListAll(ctx)
+	//models, err := service.Model().ListAll(ctx)
+	//if err != nil {
+	//	logger.Error(ctx, err)
+	//	return err
+	//}
+	//
+	//if len(models) > 0 {
+	//
+	//	if err = service.Model().SaveCacheList(ctx, models); err != nil {
+	//		logger.Error(ctx, err)
+	//		return err
+	//	}
+	//
+	//	for _, model := range models {
+	//
+	//		modelKeys, err := service.Key().GetModelKeys(ctx, model.Id)
+	//		if err != nil {
+	//			logger.Error(ctx, err)
+	//			return err
+	//		}
+	//
+	//		if err = service.Key().SaveCacheModelKeys(ctx, model.Id, modelKeys); err != nil {
+	//			logger.Error(ctx, err)
+	//			return err
+	//		}
+	//	}
+	//}
+
+	models, modelKeyMap, err := service.Model().GetModelsAndKeys(ctx)
 	if err != nil {
 		logger.Error(ctx, err)
 		return err
@@ -244,21 +272,42 @@ func (s *sCore) Refresh(ctx context.Context) error {
 		}
 
 		for _, model := range models {
-
-			modelKeys, err := service.Key().GetModelKeys(ctx, model.Id)
-			if err != nil {
-				logger.Error(ctx, err)
-				return err
-			}
-
-			if err = service.Key().SaveCacheModelKeys(ctx, model.Id, modelKeys); err != nil {
+			if err = service.Key().SaveCacheModelKeys(ctx, model.Id, modelKeyMap[model.Id]); err != nil {
 				logger.Error(ctx, err)
 				return err
 			}
 		}
 	}
 
-	modelAgents, err := service.ModelAgent().ListAll(ctx)
+	//modelAgents, err := service.ModelAgent().ListAll(ctx)
+	//if err != nil {
+	//	logger.Error(ctx, err)
+	//	return err
+	//}
+	//
+	//if len(modelAgents) > 0 {
+	//
+	//	if err = service.ModelAgent().SaveCacheList(ctx, modelAgents); err != nil {
+	//		logger.Error(ctx, err)
+	//		return err
+	//	}
+	//
+	//	for _, modelAgent := range modelAgents {
+	//
+	//		agentKeys, err := service.ModelAgent().GetModelAgentKeys(ctx, modelAgent.Id)
+	//		if err != nil {
+	//			logger.Error(ctx, err)
+	//			return err
+	//		}
+	//
+	//		if err = service.ModelAgent().SaveCacheModelAgentKeys(ctx, modelAgent.Id, agentKeys); err != nil {
+	//			logger.Error(ctx, err)
+	//			return err
+	//		}
+	//	}
+	//}
+
+	modelAgents, modelAgentKeyMap, err := service.ModelAgent().GetModelAgentsAndKeys(ctx)
 	if err != nil {
 		logger.Error(ctx, err)
 		return err
@@ -272,14 +321,7 @@ func (s *sCore) Refresh(ctx context.Context) error {
 		}
 
 		for _, modelAgent := range modelAgents {
-
-			agentKeys, err := service.ModelAgent().GetModelAgentKeys(ctx, modelAgent.Id)
-			if err != nil {
-				logger.Error(ctx, err)
-				return err
-			}
-
-			if err = service.ModelAgent().SaveCacheModelAgentKeys(ctx, modelAgent.Id, agentKeys); err != nil {
+			if err = service.ModelAgent().SaveCacheModelAgentKeys(ctx, modelAgent.Id, modelAgentKeyMap[modelAgent.Id]); err != nil {
 				logger.Error(ctx, err)
 				return err
 			}
