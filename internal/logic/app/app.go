@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
+	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
@@ -164,7 +166,11 @@ func (s *sApp) SaveCacheApp(ctx context.Context, app *model.App) error {
 		return errors.New("app is nil")
 	}
 
-	if _, err := redis.Set(ctx, fmt.Sprintf(consts.API_APP_KEY, app.AppId), app); err != nil {
+	if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+		if _, err := redis.Set(ctx, fmt.Sprintf(consts.API_APP_KEY, app.AppId), app); err != nil {
+			logger.Error(ctx, err)
+		}
+	}, nil); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
@@ -318,7 +324,11 @@ func (s *sApp) SaveCacheAppKey(ctx context.Context, key *model.Key) error {
 		return errors.New("key is nil")
 	}
 
-	if _, err := redis.Set(ctx, fmt.Sprintf(consts.API_APP_KEY_KEY, key.Key), key); err != nil {
+	if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+		if _, err := redis.Set(ctx, fmt.Sprintf(consts.API_APP_KEY_KEY, key.Key), key); err != nil {
+			logger.Error(ctx, err)
+		}
+	}, nil); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}

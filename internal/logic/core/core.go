@@ -230,34 +230,6 @@ func (s *sCore) Refresh(ctx context.Context) error {
 		}
 	}
 
-	//models, err := service.Model().ListAll(ctx)
-	//if err != nil {
-	//	logger.Error(ctx, err)
-	//	return err
-	//}
-	//
-	//if len(models) > 0 {
-	//
-	//	if err = service.Model().SaveCacheList(ctx, models); err != nil {
-	//		logger.Error(ctx, err)
-	//		return err
-	//	}
-	//
-	//	for _, model := range models {
-	//
-	//		modelKeys, err := service.Key().GetModelKeys(ctx, model.Id)
-	//		if err != nil {
-	//			logger.Error(ctx, err)
-	//			return err
-	//		}
-	//
-	//		if err = service.Key().SaveCacheModelKeys(ctx, model.Id, modelKeys); err != nil {
-	//			logger.Error(ctx, err)
-	//			return err
-	//		}
-	//	}
-	//}
-
 	models, modelKeyMap, err := service.Model().GetModelsAndKeys(ctx)
 	if err != nil {
 		logger.Error(ctx, err)
@@ -278,34 +250,6 @@ func (s *sCore) Refresh(ctx context.Context) error {
 			}
 		}
 	}
-
-	//modelAgents, err := service.ModelAgent().ListAll(ctx)
-	//if err != nil {
-	//	logger.Error(ctx, err)
-	//	return err
-	//}
-	//
-	//if len(modelAgents) > 0 {
-	//
-	//	if err = service.ModelAgent().SaveCacheList(ctx, modelAgents); err != nil {
-	//		logger.Error(ctx, err)
-	//		return err
-	//	}
-	//
-	//	for _, modelAgent := range modelAgents {
-	//
-	//		agentKeys, err := service.ModelAgent().GetModelAgentKeys(ctx, modelAgent.Id)
-	//		if err != nil {
-	//			logger.Error(ctx, err)
-	//			return err
-	//		}
-	//
-	//		if err = service.ModelAgent().SaveCacheModelAgentKeys(ctx, modelAgent.Id, agentKeys); err != nil {
-	//			logger.Error(ctx, err)
-	//			return err
-	//		}
-	//	}
-	//}
 
 	modelAgents, modelAgentKeyMap, err := service.ModelAgent().GetModelAgentsAndKeys(ctx)
 	if err != nil {

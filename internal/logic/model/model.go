@@ -726,15 +726,15 @@ func (s *sModel) SaveCacheList(ctx context.Context, models []*model.Model) error
 		}
 	}
 
-	if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-		if len(fields) > 0 {
+	if len(fields) > 0 {
+		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 			if _, err := redis.HSet(ctx, consts.API_MODELS_KEY, fields); err != nil {
 				logger.Error(ctx, err)
 			}
+		}, nil); err != nil {
+			logger.Error(ctx, err)
+			return err
 		}
-	}, nil); err != nil {
-		logger.Error(ctx, err)
-		return err
 	}
 
 	return nil

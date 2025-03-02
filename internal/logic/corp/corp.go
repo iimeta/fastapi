@@ -4,6 +4,8 @@ import (
 	"context"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
@@ -137,7 +139,11 @@ func (s *sCorp) SaveCacheList(ctx context.Context, corps []*model.Corp) error {
 	}
 
 	if len(fields) > 0 {
-		if _, err := redis.HSet(ctx, consts.API_CORPS_KEY, fields); err != nil {
+		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+			if _, err := redis.HSet(ctx, consts.API_CORPS_KEY, fields); err != nil {
+				logger.Error(ctx, err)
+			}
+		}, nil); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
