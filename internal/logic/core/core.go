@@ -150,7 +150,11 @@ func (s *sCore) Refresh(ctx context.Context) error {
 			return err
 		}
 
-		if _, err = redis.HSetStrAny(ctx, fmt.Sprintf(consts.API_USAGE_KEY, user.UserId), consts.USER_QUOTA_FIELD, user.Quota); err != nil {
+		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+			if _, err = redis.HSetStrAny(ctx, fmt.Sprintf(consts.API_USAGE_KEY, user.UserId), consts.USER_QUOTA_FIELD, user.Quota); err != nil {
+				logger.Error(ctx, err)
+			}
+		}, nil); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -210,7 +214,11 @@ func (s *sCore) Refresh(ctx context.Context) error {
 				fields[fmt.Sprintf(consts.KEY_QUOTA_FIELD, key.AppId, key.Key)] = key.Quota
 			}
 
-			if _, err = redis.HSet(ctx, fmt.Sprintf(consts.API_USAGE_KEY, app.UserId), fields); err != nil {
+			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+				if _, err = redis.HSet(ctx, fmt.Sprintf(consts.API_USAGE_KEY, app.UserId), fields); err != nil {
+					logger.Error(ctx, err)
+				}
+			}, nil); err != nil {
 				logger.Error(ctx, err)
 				return err
 			}
