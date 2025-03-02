@@ -43,6 +43,10 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 		logger.Debugf(ctx, "sEmbedding Embeddings time: %d", gtime.TimestampMilli()-now)
 	}()
 
+	if params.Input == nil || len(gconv.SliceAny(params.Input)) == 0 {
+		return response, errors.ERR_INVALID_PARAMETER
+	}
+
 	var (
 		mak = &common.MAK{
 			Model:              gconv.String(params.Model),
