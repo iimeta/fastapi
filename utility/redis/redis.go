@@ -219,12 +219,20 @@ func Publish(ctx context.Context, channel string, message interface{}) (int64, e
 }
 
 func Subscribe(ctx context.Context, channel string, channels ...string) (gredis.Conn, []*gredis.Subscription, error) {
-	if len(channels) > 0 {
+
+	if len(channels) > 0 && config.Cfg.Core.ChannelPrefix != "" {
 		for i, channel := range channels {
-			channels[i] = config.Cfg.Core.ChannelPrefix + channel
+			if !gstr.HasPrefix(channel, config.Cfg.Core.ChannelPrefix) {
+				channels[i] = config.Cfg.Core.ChannelPrefix + channel
+			}
 		}
 	}
-	return slave.Subscribe(ctx, config.Cfg.Core.ChannelPrefix+channel, channels...)
+
+	if config.Cfg.Core.ChannelPrefix != "" && !gstr.HasPrefix(channel, config.Cfg.Core.ChannelPrefix) {
+		channel = config.Cfg.Core.ChannelPrefix + channel
+	}
+
+	return slave.Subscribe(ctx, channel, channels...)
 }
 
 func PSubscribe(ctx context.Context, pattern string, patterns ...string) (gredis.Conn, []*gredis.Subscription, error) {
