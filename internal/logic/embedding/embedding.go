@@ -53,9 +53,10 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client      sdk.Client
-		retryInfo   *mcommon.Retry
-		totalTokens int
+		client          sdk.Client
+		retryInfo       *mcommon.Retry
+		totalTokens     int
+		isModelReplaced bool
 	)
 
 	defer func() {
@@ -72,6 +73,12 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 		}
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
+
+			// 替换成调用的模型
+			if mak.ReqModel.IsEnableForward || isModelReplaced {
+				response.Model = openai.EmbeddingModel(mak.ReqModel.Model)
+			}
+
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key); err != nil {
 					logger.Error(ctx, err)
@@ -115,6 +122,17 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 	}
 
 	request := params
+
+	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
+		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
+			if openai.EmbeddingModel(replaceModel) == request.Model {
+				logger.Infof(ctx, "sEmbedding Embeddings request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
+				request.Model = openai.EmbeddingModel(mak.ModelAgent.TargetModels[i])
+				isModelReplaced = true
+				break
+			}
+		}
+	}
 
 	if client, err = common.NewClient(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)

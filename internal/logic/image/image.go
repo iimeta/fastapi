@@ -109,6 +109,16 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 		request.Model = mak.RealModel.Model
 	}
 
+	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
+		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
+			if replaceModel == request.Model {
+				logger.Infof(ctx, "sImage Generations request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
+				request.Model = mak.ModelAgent.TargetModels[i]
+				break
+			}
+		}
+	}
+
 	if client, err = common.NewClient(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return response, err

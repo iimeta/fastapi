@@ -110,6 +110,16 @@ func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallback
 
 	request := params
 
+	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
+		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
+			if openai.SpeechModel(replaceModel) == request.Model {
+				logger.Infof(ctx, "sAudio Speech request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
+				request.Model = openai.SpeechModel(mak.ModelAgent.TargetModels[i])
+				break
+			}
+		}
+	}
+
 	if client, err = common.NewClient(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return response, err
@@ -267,6 +277,16 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 	}
 
 	request := params
+
+	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
+		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
+			if replaceModel == request.Model {
+				logger.Infof(ctx, "sAudio Transcriptions request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
+				request.Model = mak.ModelAgent.TargetModels[i]
+				break
+			}
+		}
+	}
 
 	if client, err = common.NewClient(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)

@@ -166,6 +166,16 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		}
 	}
 
+	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
+		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
+			if replaceModel == params.Model {
+				logger.Infof(ctx, "sChat SmartCompletions params.Model: %s replaced %s", params.Model, mak.ModelAgent.TargetModels[i])
+				params.Model = mak.ModelAgent.TargetModels[i]
+				break
+			}
+		}
+	}
+
 	if client, err = common.NewClient(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return response, err

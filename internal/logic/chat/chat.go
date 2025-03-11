@@ -66,12 +66,13 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client      sdk.Client
-		retryInfo   *mcommon.Retry
-		textTokens  int
-		imageTokens int
-		audioTokens int
-		totalTokens int
+		client          sdk.Client
+		retryInfo       *mcommon.Retry
+		textTokens      int
+		imageTokens     int
+		audioTokens     int
+		totalTokens     int
+		isModelReplaced bool
 	)
 
 	defer func() {
@@ -82,7 +83,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
 			// 替换成调用的模型
-			if mak.ReqModel.IsEnableForward {
+			if mak.ReqModel.IsEnableForward || isModelReplaced {
 				response.Model = mak.ReqModel.Model
 			}
 
@@ -290,6 +291,17 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		}
 	}
 
+	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
+		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
+			if replaceModel == request.Model {
+				logger.Infof(ctx, "sChat Completions request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
+				request.Model = mak.ModelAgent.TargetModels[i]
+				isModelReplaced = true
+				break
+			}
+		}
+	}
+
 	if client, err = common.NewClient(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return response, err
@@ -385,17 +397,18 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client      sdk.Client
-		completion  string
-		connTime    int64
-		duration    int64
-		totalTime   int64
-		textTokens  int
-		imageTokens int
-		audioTokens int
-		totalTokens int
-		usage       *sdkm.Usage
-		retryInfo   *mcommon.Retry
+		client          sdk.Client
+		completion      string
+		connTime        int64
+		duration        int64
+		totalTime       int64
+		textTokens      int
+		imageTokens     int
+		audioTokens     int
+		totalTokens     int
+		usage           *sdkm.Usage
+		retryInfo       *mcommon.Retry
+		isModelReplaced bool
 	)
 
 	defer func() {
@@ -581,6 +594,17 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				request.MaxTokens = mak.RealModel.PresetConfig.MinTokens
 			} else if mak.RealModel.PresetConfig.MaxTokens != 0 && request.MaxTokens > mak.RealModel.PresetConfig.MaxTokens {
 				request.MaxTokens = mak.RealModel.PresetConfig.MaxTokens
+			}
+		}
+	}
+
+	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
+		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
+			if replaceModel == request.Model {
+				logger.Infof(ctx, "sChat CompletionsStream request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
+				request.Model = mak.ModelAgent.TargetModels[i]
+				isModelReplaced = true
+				break
 			}
 		}
 	}
@@ -810,7 +834,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		}
 
 		// 替换成调用的模型
-		if mak.ReqModel.IsEnableForward {
+		if mak.ReqModel.IsEnableForward || isModelReplaced {
 			response.Model = mak.ReqModel.Model
 		}
 
@@ -824,7 +848,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			}
 
 			// 替换成调用的模型
-			if mak.ReqModel.IsEnableForward {
+			if mak.ReqModel.IsEnableForward || isModelReplaced {
 				if _, ok := data["model"]; ok {
 					data["model"] = mak.ReqModel.Model
 				}

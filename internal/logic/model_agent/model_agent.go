@@ -61,14 +61,18 @@ func (s *sModelAgent) GetModelAgentById(ctx context.Context, id string) (*model.
 	}
 
 	return &model.ModelAgent{
-		Id:         modelAgent.Id,
-		Corp:       modelAgent.Corp,
-		Name:       modelAgent.Name,
-		BaseUrl:    modelAgent.BaseUrl,
-		Path:       modelAgent.Path,
-		Weight:     modelAgent.Weight,
-		LbStrategy: modelAgent.LbStrategy,
-		Status:     modelAgent.Status,
+		Id:                   modelAgent.Id,
+		Corp:                 modelAgent.Corp,
+		Name:                 modelAgent.Name,
+		BaseUrl:              modelAgent.BaseUrl,
+		Path:                 modelAgent.Path,
+		Weight:               modelAgent.Weight,
+		Models:               modelAgent.Models,
+		IsEnableModelReplace: modelAgent.IsEnableModelReplace,
+		ReplaceModels:        modelAgent.ReplaceModels,
+		TargetModels:         modelAgent.TargetModels,
+		LbStrategy:           modelAgent.LbStrategy,
+		Status:               modelAgent.Status,
 	}, nil
 }
 
@@ -99,28 +103,27 @@ func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAge
 	}
 
 	modelMap := make(map[string][]string)
-	modelNameMap := make(map[string][]string)
-
 	for _, model := range modelList {
 		for _, id := range model.ModelAgents {
 			modelMap[id] = append(modelMap[id], model.Id)
-			modelNameMap[id] = append(modelNameMap[id], model.Name)
 		}
 	}
 
 	items := make([]*model.ModelAgent, 0)
 	for _, result := range results {
 		items = append(items, &model.ModelAgent{
-			Id:         result.Id,
-			Corp:       result.Corp,
-			Name:       result.Name,
-			BaseUrl:    result.BaseUrl,
-			Path:       result.Path,
-			Weight:     result.Weight,
-			LbStrategy: result.LbStrategy,
-			Models:     modelMap[result.Id],
-			ModelNames: modelNameMap[result.Id],
-			Status:     result.Status,
+			Id:                   result.Id,
+			Corp:                 result.Corp,
+			Name:                 result.Name,
+			BaseUrl:              result.BaseUrl,
+			Path:                 result.Path,
+			Weight:               result.Weight,
+			LbStrategy:           result.LbStrategy,
+			Models:               modelMap[result.Id],
+			IsEnableModelReplace: result.IsEnableModelReplace,
+			ReplaceModels:        result.ReplaceModels,
+			TargetModels:         result.TargetModels,
+			Status:               result.Status,
 		})
 	}
 
@@ -150,28 +153,27 @@ func (s *sModelAgent) ListAll(ctx context.Context) ([]*model.ModelAgent, error) 
 	}
 
 	modelMap := make(map[string][]string)
-	modelNameMap := make(map[string][]string)
-
 	for _, model := range modelList {
 		for _, id := range model.ModelAgents {
 			modelMap[id] = append(modelMap[id], model.Id)
-			modelNameMap[id] = append(modelNameMap[id], model.Name)
 		}
 	}
 
 	items := make([]*model.ModelAgent, 0)
 	for _, result := range results {
 		items = append(items, &model.ModelAgent{
-			Id:         result.Id,
-			Corp:       result.Corp,
-			Name:       result.Name,
-			BaseUrl:    result.BaseUrl,
-			Path:       result.Path,
-			Weight:     result.Weight,
-			LbStrategy: result.LbStrategy,
-			Models:     modelMap[result.Id],
-			ModelNames: modelNameMap[result.Id],
-			Status:     result.Status,
+			Id:                   result.Id,
+			Corp:                 result.Corp,
+			Name:                 result.Name,
+			BaseUrl:              result.BaseUrl,
+			Path:                 result.Path,
+			Weight:               result.Weight,
+			LbStrategy:           result.LbStrategy,
+			Models:               modelMap[result.Id],
+			IsEnableModelReplace: result.IsEnableModelReplace,
+			ReplaceModels:        result.ReplaceModels,
+			TargetModels:         result.TargetModels,
+			Status:               result.Status,
 		})
 	}
 
@@ -726,15 +728,18 @@ func (s *sModelAgent) CreateCacheModelAgent(ctx context.Context, newData *model.
 	}()
 
 	if err := s.SaveCacheList(ctx, []*model.ModelAgent{{
-		Id:         newData.Id,
-		Corp:       newData.Corp,
-		Name:       newData.Name,
-		BaseUrl:    newData.BaseUrl,
-		Path:       newData.Path,
-		Weight:     newData.Weight,
-		LbStrategy: newData.LbStrategy,
-		Models:     newData.Models,
-		Status:     newData.Status,
+		Id:                   newData.Id,
+		Corp:                 newData.Corp,
+		Name:                 newData.Name,
+		BaseUrl:              newData.BaseUrl,
+		Path:                 newData.Path,
+		Weight:               newData.Weight,
+		Models:               newData.Models,
+		IsEnableModelReplace: newData.IsEnableModelReplace,
+		ReplaceModels:        newData.ReplaceModels,
+		TargetModels:         newData.TargetModels,
+		LbStrategy:           newData.LbStrategy,
+		Status:               newData.Status,
 	}}); err != nil {
 		logger.Error(ctx, err)
 	}
@@ -758,17 +763,20 @@ func (s *sModelAgent) UpdateCacheModelAgent(ctx context.Context, oldData *model.
 	}()
 
 	if err := s.SaveCacheList(ctx, []*model.ModelAgent{{
-		Id:                 newData.Id,
-		Corp:               newData.Corp,
-		Name:               newData.Name,
-		BaseUrl:            newData.BaseUrl,
-		Path:               newData.Path,
-		Weight:             newData.Weight,
-		LbStrategy:         newData.LbStrategy,
-		Models:             newData.Models,
-		Status:             newData.Status,
-		IsAutoDisabled:     newData.IsAutoDisabled,
-		AutoDisabledReason: newData.AutoDisabledReason,
+		Id:                   newData.Id,
+		Corp:                 newData.Corp,
+		Name:                 newData.Name,
+		BaseUrl:              newData.BaseUrl,
+		Path:                 newData.Path,
+		Weight:               newData.Weight,
+		Models:               newData.Models,
+		IsEnableModelReplace: newData.IsEnableModelReplace,
+		ReplaceModels:        newData.ReplaceModels,
+		TargetModels:         newData.TargetModels,
+		LbStrategy:           newData.LbStrategy,
+		Status:               newData.Status,
+		IsAutoDisabled:       newData.IsAutoDisabled,
+		AutoDisabledReason:   newData.AutoDisabledReason,
 	}}); err != nil {
 		logger.Error(ctx, err)
 	}
