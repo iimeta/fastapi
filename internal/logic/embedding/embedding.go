@@ -53,10 +53,9 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client          sdk.Client
-		retryInfo       *mcommon.Retry
-		totalTokens     int
-		isModelReplaced bool
+		client      sdk.Client
+		retryInfo   *mcommon.Retry
+		totalTokens int
 	)
 
 	defer func() {
@@ -75,7 +74,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
 			// 替换成调用的模型
-			if mak.ReqModel.IsEnableForward || isModelReplaced {
+			if mak.ReqModel.IsEnableForward {
 				response.Model = openai.EmbeddingModel(mak.ReqModel.Model)
 			}
 
@@ -128,7 +127,6 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 			if openai.EmbeddingModel(replaceModel) == request.Model {
 				logger.Infof(ctx, "sEmbedding Embeddings request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
 				request.Model = openai.EmbeddingModel(mak.ModelAgent.TargetModels[i])
-				isModelReplaced = true
 				break
 			}
 		}

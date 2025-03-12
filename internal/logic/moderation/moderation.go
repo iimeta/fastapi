@@ -49,10 +49,9 @@ func (s *sModeration) Moderations(ctx context.Context, params sdkm.ModerationReq
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client          sdk.Client
-		retryInfo       *mcommon.Retry
-		totalTokens     int
-		isModelReplaced bool
+		client      sdk.Client
+		retryInfo   *mcommon.Retry
+		totalTokens int
 	)
 
 	defer func() {
@@ -71,7 +70,7 @@ func (s *sModeration) Moderations(ctx context.Context, params sdkm.ModerationReq
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
 			// 替换成调用的模型
-			if mak.ReqModel.IsEnableForward || isModelReplaced {
+			if mak.ReqModel.IsEnableForward {
 				response.Model = mak.ReqModel.Model
 			}
 
@@ -124,7 +123,6 @@ func (s *sModeration) Moderations(ctx context.Context, params sdkm.ModerationReq
 			if replaceModel == request.Model {
 				logger.Infof(ctx, "sModeration Moderations request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
 				request.Model = mak.ModelAgent.TargetModels[i]
-				isModelReplaced = true
 				break
 			}
 		}

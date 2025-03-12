@@ -121,3 +121,25 @@ func GetMultimodalAudioTokens(ctx context.Context, model string, messages []sdkm
 
 	return textTokens, 288
 }
+
+func GetMultimodalSearchTokens(ctx context.Context, webSearchOptions any, reqModel *model.Model) (searchTokens int) {
+
+	var searchContextSize string
+	if content, ok := webSearchOptions.(map[string]interface{}); ok {
+		searchContextSize = gconv.String(content["search_context_size"])
+	}
+
+	for _, size := range reqModel.MultimodalQuota.SearchQuotas {
+
+		if size.SearchContextSize == searchContextSize {
+			searchTokens = size.FixedQuota
+			break
+		}
+
+		if size.IsDefault {
+			searchTokens = size.FixedQuota
+		}
+	}
+
+	return searchTokens
+}
