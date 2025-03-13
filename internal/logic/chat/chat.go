@@ -1096,8 +1096,14 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, m
 			}
 
 			chat.Messages = append(chat.Messages, mcommon.Message{
-				Role:    message.Role,
-				Content: gconv.String(content),
+				Role:         message.Role,
+				Content:      gconv.String(content),
+				Refusal:      message.Refusal,
+				Name:         message.Name,
+				FunctionCall: message.FunctionCall,
+				ToolCalls:    message.ToolCalls,
+				ToolCallId:   message.ToolCallID,
+				Audio:        message.Audio,
 			})
 		}
 	}

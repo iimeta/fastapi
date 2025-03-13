@@ -1,5 +1,7 @@
 package common
 
+import "github.com/iimeta/go-openai"
+
 type PresetConfig struct {
 	IsSupportSystemRole bool   `bson:"is_support_system_role,omitempty" json:"is_support_system_role,omitempty"` // 是否支持system角色
 	SystemRolePrompt    string `bson:"system_role_prompt,omitempty"     json:"system_role_prompt,omitempty"`     // system角色预设提示词
@@ -74,8 +76,14 @@ type FallbackConfig struct {
 }
 
 type Message struct {
-	Role    string `bson:"role,omitempty"    json:"role,omitempty"`    // 角色
-	Content string `bson:"content,omitempty" json:"content,omitempty"` // 内容
+	Role         string               `bson:"role,omitempty"          json:"role,omitempty"`    // 角色
+	Content      string               `bson:"content,omitempty"       json:"content,omitempty"` // 内容
+	Refusal      string               `bson:"refusal,omitempty"       json:"refusal,omitempty"`
+	Name         string               `bson:"name,omitempty"          json:"name,omitempty"`
+	FunctionCall *openai.FunctionCall `bson:"function_call,omitempty" json:"function_call,omitempty"`
+	ToolCalls    []openai.ToolCall    `bson:"tool_calls,omitempty"    json:"tool_calls,omitempty"`
+	ToolCallId   string               `bson:"tool_call_id,omitempty"  json:"tool_call_id,omitempty"`
+	Audio        *openai.Audio        `bson:"audio,omitempty"         json:"audio,omitempty"`
 }
 
 type Retry struct {
