@@ -10,6 +10,7 @@ import (
 	"github.com/gogf/gf/v2/text/gregex"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
+	"github.com/iimeta/fastapi-sdk/consts"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/errors"
@@ -136,7 +137,7 @@ func HandleMessages(messages []sdkm.ChatCompletionMessage) []sdkm.ChatCompletion
 	)
 
 	for _, message := range messages {
-		if message.Content != "" {
+		if message.Content != "" || message.Role != consts.ROLE_USER {
 			newMessages = append(newMessages, message)
 		}
 	}
