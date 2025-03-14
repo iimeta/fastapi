@@ -1126,6 +1126,13 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, m
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
 		logger.Errorf(ctx, "sChat SaveLog error: %v", err)
 
+		if err.Error() == "an inserted document is too large" {
+			completionsReq.Messages = []sdkm.ChatCompletionMessage{{
+				Role:    consts.ROLE_SYSTEM,
+				Content: err.Error(),
+			}}
+		}
+
 		if len(retry) == 10 {
 			panic(err)
 		}
