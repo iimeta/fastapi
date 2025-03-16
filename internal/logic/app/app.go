@@ -2,10 +2,7 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
-	"github.com/gogf/gf/v2/os/gctx"
-	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
@@ -166,15 +163,6 @@ func (s *sApp) SaveCacheApp(ctx context.Context, app *model.App) error {
 		return errors.New("app is nil")
 	}
 
-	if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-		if _, err := redis.Set(ctx, fmt.Sprintf(consts.API_APP_KEY, app.AppId), app); err != nil {
-			logger.Error(ctx, err)
-		}
-	}, nil); err != nil {
-		logger.Error(ctx, err)
-		return err
-	}
-
 	service.Session().SaveApp(ctx, app)
 
 	if err := s.appCache.Set(ctx, app.AppId, app, 0); err != nil {
@@ -208,30 +196,7 @@ func (s *sApp) GetCacheApp(ctx context.Context, appId int) (*model.App, error) {
 		return app, nil
 	}
 
-	reply, err := redis.Get(ctx, fmt.Sprintf(consts.API_APP_KEY, appId))
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	if reply == nil || reply.IsNil() {
-		return nil, errors.New("app is nil")
-	}
-
-	app := new(model.App)
-	if err = reply.Struct(&app); err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	service.Session().SaveApp(ctx, app)
-
-	if err = s.appCache.Set(ctx, app.AppId, app, 0); err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	return app, nil
+	return nil, errors.New("app is nil")
 }
 
 // 更新缓存中的应用信息
@@ -273,10 +238,6 @@ func (s *sApp) RemoveCacheApp(ctx context.Context, appId int) {
 	}
 
 	if _, err := s.appQuotaCache.Remove(ctx, appId); err != nil {
-		logger.Error(ctx, err)
-	}
-
-	if _, err := redis.Del(ctx, fmt.Sprintf(consts.API_APP_KEY, appId)); err != nil {
 		logger.Error(ctx, err)
 	}
 }
@@ -321,16 +282,7 @@ func (s *sApp) SaveCacheAppKey(ctx context.Context, key *model.Key) error {
 	}()
 
 	if key == nil {
-		return errors.New("key is nil")
-	}
-
-	if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-		if _, err := redis.Set(ctx, fmt.Sprintf(consts.API_APP_KEY_KEY, key.Key), key); err != nil {
-			logger.Error(ctx, err)
-		}
-	}, nil); err != nil {
-		logger.Error(ctx, err)
-		return err
+		return errors.New("appKey is nil")
 	}
 
 	service.Session().SaveKey(ctx, key)
@@ -366,30 +318,7 @@ func (s *sApp) GetCacheAppKey(ctx context.Context, secretKey string) (*model.Key
 		return key, nil
 	}
 
-	reply, err := redis.Get(ctx, fmt.Sprintf(consts.API_APP_KEY_KEY, secretKey))
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	if reply == nil || reply.IsNil() {
-		return nil, errors.New("key is nil")
-	}
-
-	key := new(model.Key)
-	if err = reply.Struct(&key); err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	service.Session().SaveKey(ctx, key)
-
-	if err = s.appKeyCache.Set(ctx, key.Key, key, 0); err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	return key, nil
+	return nil, errors.New("appKey is nil")
 }
 
 // 更新缓存中的应用密钥信息
@@ -436,10 +365,6 @@ func (s *sApp) RemoveCacheAppKey(ctx context.Context, secretKey string) {
 	}
 
 	if _, err := s.appKeyQuotaCache.Remove(ctx, secretKey); err != nil {
-		logger.Error(ctx, err)
-	}
-
-	if _, err := redis.Del(ctx, fmt.Sprintf(consts.API_APP_KEY_KEY, secretKey)); err != nil {
 		logger.Error(ctx, err)
 	}
 }

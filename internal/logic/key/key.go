@@ -1,13 +1,9 @@
 package key
 
 import (
-	"cmp"
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
-	"github.com/gogf/gf/v2/frame/g"
-	"github.com/gogf/gf/v2/os/gctx"
-	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
@@ -356,25 +352,10 @@ func (s *sKey) SaveCacheModelKeys(ctx context.Context, id string, keys []*model.
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sKey SaveCacheModelKeys time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sKey SaveCacheModelKeys keys: %d, time: %d", len(keys), gtime.TimestampMilli()-now)
 	}()
 
-	fields := g.Map{}
-	for _, key := range keys {
-		fields[key.Id] = key
-	}
-
-	if len(fields) > 0 {
-
-		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-			if _, err := redis.HSet(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id), fields); err != nil {
-				logger.Error(ctx, err)
-			}
-		}, nil); err != nil {
-			logger.Error(ctx, err)
-			return err
-		}
-
+	if len(keys) > 0 {
 		if err := s.modelKeysCache.Set(ctx, id, keys, 0); err != nil {
 			logger.Error(ctx, err)
 			return err
@@ -396,48 +377,7 @@ func (s *sKey) GetCacheModelKeys(ctx context.Context, id string) ([]*model.Key, 
 		return modelKeysCacheValue.([]*model.Key), nil
 	}
 
-	reply, err := redis.HVals(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id))
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	if reply == nil || len(reply) == 0 {
-		return nil, errors.New("modelKeys is nil")
-	}
-
-	items := make([]*model.Key, 0)
-	for _, str := range reply.Strings() {
-
-		if str == "" {
-			continue
-		}
-
-		result := new(model.Key)
-		if err = gjson.Unmarshal([]byte(str), &result); err != nil {
-			logger.Error(ctx, err)
-			return nil, err
-		}
-
-		if result.Status == 1 {
-			items = append(items, result)
-		}
-	}
-
-	if len(items) == 0 {
-		return nil, errors.New("modelKeys is nil")
-	}
-
-	slices.SortFunc(items, func(k1, k2 *model.Key) int {
-		return cmp.Compare(k1.Id, k2.Id)
-	})
-
-	if err = s.modelKeysCache.Set(ctx, id, items, 0); err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	return items, nil
+	return nil, errors.New("modelKeys is nil")
 }
 
 // 新增模型密钥到缓存列表中
@@ -523,11 +463,10 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 
 		modelKeys, err := s.GetCacheModelKeys(ctx, id)
 		if err != nil {
-			if modelKeys, err = s.GetModelKeys(ctx, id); err != nil {
-				logger.Error(ctx, err)
-				continue
-			}
-		} else if len(modelKeys) == 0 {
+			logger.Error(ctx, err)
+		}
+
+		if len(modelKeys) == 0 {
 			if modelKeys, err = s.GetModelKeys(ctx, id); err != nil {
 				logger.Error(ctx, err)
 				continue
@@ -580,24 +519,17 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 					}
 				}
 
-				if len(modelKeys) > 0 {
+				if len(modelKeys) > 0 && s.modelKeysCache.ContainsKey(ctx, id) {
 
 					newKeys := make([]*model.Key, 0)
 					for _, k := range modelKeys {
-
 						if k.Id != oldData.Id {
 							newKeys = append(newKeys, k)
-						} else {
-							if _, err = redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id), oldData.Id); err != nil {
-								logger.Error(ctx, err)
-							}
 						}
 					}
 
-					if s.modelKeysCache.ContainsKey(ctx, id) {
-						if err = s.modelKeysCache.Set(ctx, id, newKeys, 0); err != nil {
-							logger.Error(ctx, err)
-						}
+					if err = s.modelKeysCache.Set(ctx, id, newKeys, 0); err != nil {
+						logger.Error(ctx, err)
 					}
 				}
 			}
@@ -618,10 +550,6 @@ func (s *sKey) RemoveCacheModelKey(ctx context.Context, key *entity.Key) {
 	}()
 
 	for _, id := range key.Models {
-
-		if _, err := redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_KEYS_KEY, id), key.Id); err != nil {
-			logger.Error(ctx, err)
-		}
 
 		if keysValue := s.modelKeysCache.GetVal(ctx, id); keysValue != nil {
 

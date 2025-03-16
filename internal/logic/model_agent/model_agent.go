@@ -1,13 +1,9 @@
 package model_agent
 
 import (
-	"cmp"
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
-	"github.com/gogf/gf/v2/frame/g"
-	"github.com/gogf/gf/v2/os/gctx"
-	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
@@ -631,21 +627,8 @@ func (s *sModelAgent) SaveCacheList(ctx context.Context, modelAgents []*model.Mo
 		logger.Debugf(ctx, "sModelAgent SaveCacheList time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	fields := g.Map{}
 	for _, modelAgent := range modelAgents {
-		fields[modelAgent.Id] = modelAgent
 		if err := s.modelAgentCache.Set(ctx, modelAgent.Id, modelAgent, 0); err != nil {
-			logger.Error(ctx, err)
-			return err
-		}
-	}
-
-	if len(fields) > 0 {
-		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-			if _, err := redis.HSet(ctx, consts.API_MODEL_AGENTS_KEY, fields); err != nil {
-				logger.Error(ctx, err)
-			}
-		}, nil); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -663,52 +646,9 @@ func (s *sModelAgent) GetCacheList(ctx context.Context, ids ...string) ([]*model
 	}()
 
 	items := make([]*model.ModelAgent, 0)
-
 	for _, id := range ids {
 		if modelAgentCacheValue := s.modelAgentCache.GetVal(ctx, id); modelAgentCacheValue != nil {
 			items = append(items, modelAgentCacheValue.(*model.ModelAgent))
-		}
-	}
-
-	if len(items) == len(ids) {
-		return items, nil
-	}
-
-	reply, err := redis.HMGet(ctx, consts.API_MODEL_AGENTS_KEY, ids...)
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	if reply == nil || len(reply) == 0 {
-		if len(items) != 0 {
-			return items, nil
-		}
-		return nil, errors.New("modelAgentsCache is nil")
-	}
-
-	for _, str := range reply.Strings() {
-
-		if str == "" {
-			continue
-		}
-
-		result := new(model.ModelAgent)
-		if err = gjson.Unmarshal([]byte(str), &result); err != nil {
-			logger.Error(ctx, err)
-			return nil, err
-		}
-
-		if s.modelAgentCache.ContainsKey(ctx, result.Id) {
-			continue
-		}
-
-		if result.Status == 1 {
-			items = append(items, result)
-			if err = s.modelAgentCache.Set(ctx, result.Id, result, 0); err != nil {
-				logger.Error(ctx, err)
-				return nil, err
-			}
 		}
 	}
 
@@ -873,10 +813,6 @@ func (s *sModelAgent) RemoveCacheModelAgent(ctx context.Context, modelAgent *mod
 		}
 	}
 
-	if _, err := redis.HDel(ctx, consts.API_MODEL_AGENTS_KEY, modelAgent.Id); err != nil {
-		logger.Error(ctx, err)
-	}
-
 	if _, err := s.modelAgentCache.Remove(ctx, modelAgent.Id); err != nil {
 		logger.Error(ctx, err)
 	}
@@ -887,29 +823,12 @@ func (s *sModelAgent) SaveCacheModelAgentKeys(ctx context.Context, id string, ke
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent SaveCacheModelAgentKeys time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent SaveCacheModelAgentKeys keys: %d, time: %d", len(keys), gtime.TimestampMilli()-now)
 	}()
 
-	fields := g.Map{}
-	for _, key := range keys {
-		fields[key.Id] = key
-	}
-
-	if len(fields) > 0 {
-
-		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-			if _, err := redis.HSet(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id), fields); err != nil {
-				logger.Error(ctx, err)
-			}
-		}, nil); err != nil {
-			logger.Error(ctx, err)
-			return err
-		}
-
-		if err := s.modelAgentKeysCache.Set(ctx, id, keys, 0); err != nil {
-			logger.Error(ctx, err)
-			return err
-		}
+	if err := s.modelAgentKeysCache.Set(ctx, id, keys, 0); err != nil {
+		logger.Error(ctx, err)
+		return err
 	}
 
 	return nil
@@ -927,48 +846,7 @@ func (s *sModelAgent) GetCacheModelAgentKeys(ctx context.Context, id string) ([]
 		return modelAgentKeysCacheValue.([]*model.Key), nil
 	}
 
-	reply, err := redis.HVals(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id))
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	if reply == nil || len(reply) == 0 {
-		return nil, errors.New("modelAgentKeys is nil")
-	}
-
-	items := make([]*model.Key, 0)
-	for _, str := range reply.Strings() {
-
-		if str == "" {
-			continue
-		}
-
-		result := new(model.Key)
-		if err = gjson.Unmarshal([]byte(str), &result); err != nil {
-			logger.Error(ctx, err)
-			return nil, err
-		}
-
-		if result.Status == 1 {
-			items = append(items, result)
-		}
-	}
-
-	if len(items) == 0 {
-		return nil, errors.New("modelAgentKeys is nil")
-	}
-
-	slices.SortFunc(items, func(k1, k2 *model.Key) int {
-		return cmp.Compare(k1.Id, k2.Id)
-	})
-
-	if err = s.modelAgentKeysCache.Set(ctx, id, items, 0); err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	return items, nil
+	return nil, errors.New("modelAgentKeys is nil")
 }
 
 // 新增模型代理密钥到缓存列表中
@@ -1051,11 +929,9 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 		modelAgentKeys, err := s.GetCacheModelAgentKeys(ctx, id)
 		if err != nil {
 			logger.Error(ctx, err)
-			if modelAgentKeys, err = s.GetModelAgentKeys(ctx, id); err != nil {
-				logger.Error(ctx, err)
-				continue
-			}
-		} else if len(modelAgentKeys) == 0 {
+		}
+
+		if len(modelAgentKeys) == 0 {
 			if modelAgentKeys, err = s.GetModelAgentKeys(ctx, id); err != nil {
 				logger.Error(ctx, err)
 				continue
@@ -1107,24 +983,17 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 					}
 				}
 
-				if len(modelAgentKeys) > 0 {
+				if len(modelAgentKeys) > 0 && s.modelAgentKeysCache.ContainsKey(ctx, id) {
 
 					newKeys := make([]*model.Key, 0)
 					for _, k := range modelAgentKeys {
-
 						if k.Id != oldData.Id {
 							newKeys = append(newKeys, k)
-						} else {
-							if _, err = redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id), oldData.Id); err != nil {
-								logger.Error(ctx, err)
-							}
 						}
 					}
 
-					if s.modelAgentKeysCache.ContainsKey(ctx, id) {
-						if err = s.modelAgentKeysCache.Set(ctx, id, newKeys, 0); err != nil {
-							logger.Error(ctx, err)
-						}
+					if err = s.modelAgentKeysCache.Set(ctx, id, newKeys, 0); err != nil {
+						logger.Error(ctx, err)
 					}
 				}
 			}
@@ -1141,10 +1010,6 @@ func (s *sModelAgent) RemoveCacheModelAgentKey(ctx context.Context, key *entity.
 	}()
 
 	for _, id := range key.ModelAgents {
-
-		if _, err := redis.HDel(ctx, fmt.Sprintf(consts.API_MODEL_AGENT_KEYS_KEY, id), key.Id); err != nil {
-			logger.Error(ctx, err)
-		}
 
 		if modelAgentKeysValue := s.modelAgentKeysCache.GetVal(ctx, id); modelAgentKeysValue != nil {
 

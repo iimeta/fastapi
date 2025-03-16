@@ -2,10 +2,7 @@ package user
 
 import (
 	"context"
-	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
-	"github.com/gogf/gf/v2/os/gctx"
-	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
@@ -15,7 +12,6 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/cache"
 	"github.com/iimeta/fastapi/utility/logger"
-	"github.com/iimeta/fastapi/utility/redis"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -137,15 +133,6 @@ func (s *sUser) SaveCacheUser(ctx context.Context, user *model.User) error {
 		return errors.New("user is nil")
 	}
 
-	if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-		if _, err := redis.Set(ctx, fmt.Sprintf(consts.API_USER_KEY, user.UserId), user); err != nil {
-			logger.Error(ctx, err)
-		}
-	}, nil); err != nil {
-		logger.Error(ctx, err)
-		return err
-	}
-
 	service.Session().SaveUser(ctx, user)
 
 	if err := s.userCache.Set(ctx, user.UserId, user, 0); err != nil {
@@ -179,30 +166,7 @@ func (s *sUser) GetCacheUser(ctx context.Context, userId int) (*model.User, erro
 		return user, nil
 	}
 
-	reply, err := redis.Get(ctx, fmt.Sprintf(consts.API_USER_KEY, userId))
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	if reply == nil || reply.IsNil() {
-		return nil, errors.New("user is nil")
-	}
-
-	user := new(model.User)
-	if err = reply.Struct(&user); err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	service.Session().SaveUser(ctx, user)
-
-	if err = s.userCache.Set(ctx, user.UserId, user, 0); err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	return user, nil
+	return nil, errors.New("user is nil")
 }
 
 // 更新缓存中的用户信息
@@ -243,10 +207,6 @@ func (s *sUser) RemoveCacheUser(ctx context.Context, userId int) {
 	}
 
 	if _, err := s.userQuotaCache.Remove(ctx, userId); err != nil {
-		logger.Error(ctx, err)
-	}
-
-	if _, err := redis.Del(ctx, fmt.Sprintf(consts.API_USER_KEY, userId)); err != nil {
 		logger.Error(ctx, err)
 	}
 }

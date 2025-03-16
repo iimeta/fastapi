@@ -3,9 +3,6 @@ package corp
 import (
 	"context"
 	"github.com/gogf/gf/v2/encoding/gjson"
-	"github.com/gogf/gf/v2/frame/g"
-	"github.com/gogf/gf/v2/os/gctx"
-	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
@@ -15,7 +12,6 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/cache"
 	"github.com/iimeta/fastapi/utility/logger"
-	"github.com/iimeta/fastapi/utility/redis"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -129,21 +125,8 @@ func (s *sCorp) SaveCacheList(ctx context.Context, corps []*model.Corp) error {
 		logger.Debugf(ctx, "sCorp SaveCacheList time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	fields := g.Map{}
 	for _, corp := range corps {
-		fields[corp.Id] = corp
 		if err := s.corpCache.Set(ctx, corp.Id, corp, 0); err != nil {
-			logger.Error(ctx, err)
-			return err
-		}
-	}
-
-	if len(fields) > 0 {
-		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-			if _, err := redis.HSet(ctx, consts.API_CORPS_KEY, fields); err != nil {
-				logger.Error(ctx, err)
-			}
-		}, nil); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -182,50 +165,9 @@ func (s *sCorp) GetCacheList(ctx context.Context, ids ...string) ([]*model.Corp,
 	}()
 
 	items := make([]*model.Corp, 0)
-
 	for _, id := range ids {
 		if corpCacheValue := s.corpCache.GetVal(ctx, id); corpCacheValue != nil {
 			items = append(items, corpCacheValue.(*model.Corp))
-		}
-	}
-
-	if len(items) == len(ids) {
-		return items, nil
-	}
-
-	reply, err := redis.HMGet(ctx, consts.API_CORPS_KEY, ids...)
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	if reply == nil || len(reply) == 0 {
-		if len(items) != 0 {
-			return items, nil
-		}
-		return nil, errors.New("corps is nil")
-	}
-
-	for _, str := range reply.Strings() {
-
-		if str == "" {
-			continue
-		}
-
-		result := new(model.Corp)
-		if err = gjson.Unmarshal([]byte(str), &result); err != nil {
-			logger.Error(ctx, err)
-			return nil, err
-		}
-
-		if s.corpCache.ContainsKey(ctx, result.Id) {
-			continue
-		}
-
-		items = append(items, result)
-		if err = s.corpCache.Set(ctx, result.Id, result, 0); err != nil {
-			logger.Error(ctx, err)
-			return nil, err
 		}
 	}
 
@@ -266,10 +208,6 @@ func (s *sCorp) RemoveCacheCorp(ctx context.Context, id string) {
 	}()
 
 	if _, err := s.corpCache.Remove(ctx, id); err != nil {
-		logger.Error(ctx, err)
-	}
-
-	if _, err := redis.HDel(ctx, consts.API_CORPS_KEY, id); err != nil {
 		logger.Error(ctx, err)
 	}
 }

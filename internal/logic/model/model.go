@@ -4,9 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
-	"github.com/gogf/gf/v2/frame/g"
-	"github.com/gogf/gf/v2/os/gctx"
-	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gregex"
 	"github.com/gogf/gf/v2/text/gstr"
@@ -20,7 +17,6 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/cache"
 	"github.com/iimeta/fastapi/utility/logger"
-	"github.com/iimeta/fastapi/utility/redis"
 	"go.mongodb.org/mongo-driver/bson"
 	"slices"
 	"strconv"
@@ -717,21 +713,8 @@ func (s *sModel) SaveCacheList(ctx context.Context, models []*model.Model) error
 		logger.Debugf(ctx, "sModel SaveCacheList time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	fields := g.Map{}
 	for _, model := range models {
-		fields[model.Id] = model
 		if err := s.modelCache.Set(ctx, model.Id, model, 0); err != nil {
-			logger.Error(ctx, err)
-			return err
-		}
-	}
-
-	if len(fields) > 0 {
-		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-			if _, err := redis.HSet(ctx, consts.API_MODELS_KEY, fields); err != nil {
-				logger.Error(ctx, err)
-			}
-		}, nil); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -749,50 +732,9 @@ func (s *sModel) GetCacheList(ctx context.Context, ids ...string) ([]*model.Mode
 	}()
 
 	items := make([]*model.Model, 0)
-
 	for _, id := range ids {
 		if modelCacheValue := s.modelCache.GetVal(ctx, id); modelCacheValue != nil {
 			items = append(items, modelCacheValue.(*model.Model))
-		}
-	}
-
-	if len(items) == len(ids) {
-		return items, nil
-	}
-
-	reply, err := redis.HMGet(ctx, consts.API_MODELS_KEY, ids...)
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	if reply == nil || len(reply) == 0 {
-		if len(items) != 0 {
-			return items, nil
-		}
-		return nil, errors.New("models is nil")
-	}
-
-	for _, str := range reply.Strings() {
-
-		if str == "" {
-			continue
-		}
-
-		result := new(model.Model)
-		if err = gjson.Unmarshal([]byte(str), &result); err != nil {
-			logger.Error(ctx, err)
-			return nil, err
-		}
-
-		if s.modelCache.ContainsKey(ctx, result.Id) {
-			continue
-		}
-
-		items = append(items, result)
-		if err = s.modelCache.Set(ctx, result.Id, result, 0); err != nil {
-			logger.Error(ctx, err)
-			return nil, err
 		}
 	}
 
@@ -873,10 +815,6 @@ func (s *sModel) RemoveCacheModel(ctx context.Context, id string) {
 	}()
 
 	if _, err := s.modelCache.Remove(ctx, id); err != nil {
-		logger.Error(ctx, err)
-	}
-
-	if _, err := redis.HDel(ctx, consts.API_MODELS_KEY, id); err != nil {
 		logger.Error(ctx, err)
 	}
 }
