@@ -355,11 +355,9 @@ func (s *sKey) SaveCacheModelKeys(ctx context.Context, id string, keys []*model.
 		logger.Debugf(ctx, "sKey SaveCacheModelKeys keys: %d, time: %d", len(keys), gtime.TimestampMilli()-now)
 	}()
 
-	if len(keys) > 0 {
-		if err := s.modelKeysCache.Set(ctx, id, keys, 0); err != nil {
-			logger.Error(ctx, err)
-			return err
-		}
+	if err := s.modelKeysCache.Set(ctx, id, keys, 0); err != nil {
+		logger.Error(ctx, err)
+		return err
 	}
 
 	return nil
