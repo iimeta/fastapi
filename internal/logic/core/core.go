@@ -68,6 +68,7 @@ func init() {
 	channels = append(channels, consts.CHANGE_CHANNEL_MODEL)
 	channels = append(channels, consts.CHANGE_CHANNEL_KEY)
 	channels = append(channels, consts.CHANGE_CHANNEL_AGENT)
+	channels = append(channels, consts.REFRESH_CHANNEL_API)
 
 	conn, _, err := redis.Subscribe(ctx, channels[0], channels[1:]...)
 	if err != nil {
@@ -91,19 +92,21 @@ func init() {
 
 			switch msg.Channel {
 			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_USER:
-				err = service.User().Subscribe(ctx, msg.Payload)
+				err = service.User().Subscribe(gctx.New(), msg.Payload)
 			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_APP:
-				err = service.App().Subscribe(ctx, msg.Payload)
+				err = service.App().Subscribe(gctx.New(), msg.Payload)
 			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_APP_KEY:
-				err = service.App().SubscribeKey(ctx, msg.Payload)
+				err = service.App().SubscribeKey(gctx.New(), msg.Payload)
 			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_CORP:
-				err = service.Corp().Subscribe(ctx, msg.Payload)
+				err = service.Corp().Subscribe(gctx.New(), msg.Payload)
 			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_MODEL:
-				err = service.Model().Subscribe(ctx, msg.Payload)
+				err = service.Model().Subscribe(gctx.New(), msg.Payload)
 			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_KEY:
-				err = service.Key().Subscribe(ctx, msg.Payload)
+				err = service.Key().Subscribe(gctx.New(), msg.Payload)
 			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_AGENT:
-				err = service.ModelAgent().Subscribe(ctx, msg.Payload)
+				err = service.ModelAgent().Subscribe(gctx.New(), msg.Payload)
+			case config.Cfg.Core.ChannelPrefix + consts.REFRESH_CHANNEL_API:
+				err = core.Refresh(gctx.New())
 			}
 
 			if err != nil {

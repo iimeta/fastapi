@@ -12,6 +12,10 @@ const (
 )
 
 const (
+	REFRESH_CHANNEL_API = "admin:refresh:channel:api"
+)
+
+const (
 	ACTION_CREATE = "create"
 	ACTION_UPDATE = "update"
 	ACTION_DELETE = "delete"
