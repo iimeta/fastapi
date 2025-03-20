@@ -865,9 +865,11 @@ func (s *sModel) GetTargetModel(ctx context.Context, model *model.Model, message
 		keywords := model.ForwardConfig.Keywords
 		if slices.Contains(model.ForwardConfig.MatchRule, 2) {
 
+			prompt := gstr.ToLower(gstr.TrimAll(prompt))
+
 			for i, keyword := range keywords {
 
-				if gregex.IsMatchString(gstr.ToLower(gstr.TrimAll(keyword)), gstr.ToLower(gstr.TrimAll(prompt))) {
+				if gregex.IsMatchString(gstr.ToLower(gstr.TrimAll(keyword)), prompt) {
 
 					if targetModel, err = s.GetCacheModel(ctx, model.ForwardConfig.TargetModels[i]); err != nil || targetModel == nil {
 						if targetModel, err = s.GetModelAndSaveCache(ctx, model.ForwardConfig.TargetModels[i]); err != nil {
