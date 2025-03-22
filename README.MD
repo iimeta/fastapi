@@ -52,12 +52,9 @@
 ✔️ 多地部署  
 ✔️ 跨区部署
 
-## Docker部署
+## 部署教程
 
-### [传送门](https://github.com/iimeta/fastapi/tree/docker)
-
-### [部署视频](https://files.fastapi.ai/public/video/install.mp4)
-<https://files.fastapi.ai/public/video/install.mp4>
+### [传送门](https://www.fastapi.ai/guide/)
 
 ## 公益站点
 
@@ -78,20 +75,45 @@
 
 ### 管理端
 
-![dashboard](https://github.com/iimeta/fastapi-admin/assets/138393700/4d26474f-2082-41b4-8bd9-843ccb66d0a7)
-![model](https://github.com/iimeta/fastapi-admin/assets/138393700/89d0721c-a72b-47f3-84e3-0080f5f1c8f9)
-![key](https://github.com/iimeta/fastapi-admin/assets/138393700/f93922de-92e2-438e-8786-ae26981ec154)
-![modelagent](https://github.com/iimeta/fastapi-admin/assets/138393700/f1e2c21f-d5ce-45e7-811d-7a5ed1a04138)
-![user](https://github.com/iimeta/fastapi-admin/assets/138393700/1e812ed7-ff9f-46ab-847d-23a177bbedf0)
-![chat](https://github.com/iimeta/fastapi-admin/assets/138393700/041a4324-eba8-42d4-8467-5964df6242f3)
+![dashboard](https://github.com/user-attachments/assets/16244157-fd63-47bb-9db1-f7980e9c3d31)
+![model](https://github.com/user-attachments/assets/ca12caaa-60ad-484c-a81a-d16927734fb9)
+![key](https://github.com/user-attachments/assets/d9bef722-4643-456a-b7d1-b3e9d903757b)
+![modelagent](https://github.com/user-attachments/assets/7bc78a7b-a335-427e-96f6-f3e6de30ef4b)
+![corp](https://github.com/user-attachments/assets/23b0ba41-514d-4599-92a5-46fc13298bba)
+![group](https://github.com/user-attachments/assets/63a14c81-e589-4d4c-8005-467dc8d595fc)
+![user](https://github.com/user-attachments/assets/f8e9dc20-ef57-4ce4-a0b3-6b65fd1d9c67)
+![app](https://github.com/user-attachments/assets/5e4c75ca-52f4-471d-861e-e63bbe040a87)
+![appkey](https://github.com/user-attachments/assets/930b9c30-a826-4f24-94e0-6a3b6b2177ae)
+![bill_list](https://github.com/user-attachments/assets/2713c41f-7acb-4d4d-ab91-b5065a293068)
+![deal_record](https://github.com/user-attachments/assets/57c76020-5099-458b-aed8-6f56cb84bff6)
+![chat](https://github.com/user-attachments/assets/f8425f91-6f9d-4ac8-a44b-8c5db16298a6)
+![reseller](https://github.com/user-attachments/assets/02073936-54c6-48da-b756-083da5a21693)
+![site](https://github.com/user-attachments/assets/77801369-6202-4a4f-948c-2330cdb46aa2)
+![config](https://github.com/user-attachments/assets/f9065a51-1101-4f78-ac61-b479925bff0b)
+
+### 代理商
+
+![dashboard](https://github.com/user-attachments/assets/778e37bc-27ca-4adc-a112-5d6032577eed)
+![mymodel](https://github.com/user-attachments/assets/507f24bf-3723-4d3f-8fa8-edb4250b419e)
+![mygroup](https://github.com/user-attachments/assets/ec4b90c6-912a-476c-942e-1ed5816583bc)
+![user](https://github.com/user-attachments/assets/bcba5e4b-6bc5-4f0b-9331-ccf699e0c377)
+![app](https://github.com/user-attachments/assets/907bbb5f-60ec-4ade-a0e7-ed3a77321686)
+![appkey](https://github.com/user-attachments/assets/1c84da90-70be-4481-ae3d-1299e4259d99)
+![bill_list](https://github.com/user-attachments/assets/80f62d7d-bcf9-429f-a88e-985e45507234)
+![deal_record](https://github.com/user-attachments/assets/f0875f47-4f2a-47de-b414-f91b220dee2a)
+![chat](https://github.com/user-attachments/assets/7a6328e8-c407-49ba-a03a-3fde10cf40d7)
+![site](https://github.com/user-attachments/assets/60f31ad1-577e-462b-ba3f-0da25325cbea)
 
 ### 用户端
 
-![dashboard](https://github.com/iimeta/fastapi-admin/assets/138393700/94cd152c-b370-4cd9-b3f2-ca1dddf6821e)
-![mymodel](https://github.com/iimeta/fastapi-admin/assets/138393700/cd8fec82-b2b8-4af4-b471-2c313e321d30)
-![app](https://github.com/iimeta/fastapi-admin/assets/138393700/4dec9a5f-f399-4bfc-a3e3-bb50248a2c4c)
-![appkey](https://github.com/iimeta/fastapi-admin/assets/138393700/662fe51d-9ed1-4672-b9db-f418b492b9a2)
-![chat](https://github.com/iimeta/fastapi-admin/assets/138393700/5a92ab02-1319-436c-af2d-7d9ef0f49fe5)
+![dashboard](https://github.com/user-attachments/assets/161f5448-0f84-4ab0-85fa-93c0c18a7c27)
+![mymodel](https://github.com/user-attachments/assets/67de1da1-6347-4ffb-853e-07e102f828d5)
+![mygroup](https://github.com/user-attachments/assets/6c0b7ebf-44e6-4c67-94d9-e6724ce60ad3)
+![app](https://github.com/user-attachments/assets/063e1928-7be4-4f09-9c26-6283cf65bb9b)
+![appkey](https://github.com/user-attachments/assets/cf7a0a58-5a09-427f-9d4f-61632e0369c2)
+![bill_list](https://github.com/user-attachments/assets/c0d43e2a-fc96-4fb0-8526-cc088c3946c9)
+![deal_record](https://github.com/user-attachments/assets/dfe29b40-a055-4ce6-94e6-ed35f5d41cb7)
+![chat](https://github.com/user-attachments/assets/a00b0f6d-44de-4841-a84c-a1e9ba54aade)
 
 ## API接口
 
