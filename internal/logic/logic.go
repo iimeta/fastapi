@@ -23,6 +23,7 @@ import (
 	_ "github.com/iimeta/fastapi/internal/logic/model"
 	_ "github.com/iimeta/fastapi/internal/logic/model_agent"
 	_ "github.com/iimeta/fastapi/internal/logic/moderation"
+	_ "github.com/iimeta/fastapi/internal/logic/openai"
 	_ "github.com/iimeta/fastapi/internal/logic/realtime"
 	_ "github.com/iimeta/fastapi/internal/logic/session"
 	_ "github.com/iimeta/fastapi/internal/logic/sys_config"
