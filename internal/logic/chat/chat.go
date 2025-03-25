@@ -3,6 +3,7 @@ package chat
 import (
 	"context"
 	"fmt"
+	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
@@ -28,13 +29,10 @@ import (
 	"io"
 	"math"
 	"slices"
-	"sync"
 	"time"
 )
 
-type sChat struct {
-	mutex sync.Mutex
-}
+type sChat struct{}
 
 func init() {
 	service.RegisterChat(New())
@@ -885,11 +883,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 // 保存日志
 func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, modelAgent, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, isSmartMatch bool, retry ...int) {
 
-	if len(retry) == 0 {
-		s.mutex.Lock()
-		defer s.mutex.Unlock()
-	}
-
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "sChat SaveLog time: %d", gtime.TimestampMilli()-now)
@@ -950,14 +943,23 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, m
 			} else {
 				if multiContent, ok := prompt.([]interface{}); ok {
 
+					multiContents := make([]interface{}, 0)
+
 					for _, value := range multiContent {
 
 						if content, ok := value.(map[string]interface{}); ok {
 
 							if content["type"] == "image_url" {
+
 								if imageUrl, ok := content["image_url"].(map[string]interface{}); ok {
+
 									if !gstr.HasPrefix(gconv.String(imageUrl["url"]), "http") {
+
+										imageUrl = gmap.NewStrAnyMapFrom(imageUrl).MapCopy()
 										imageUrl["url"] = "[BASE64图像数据]"
+
+										content = gmap.NewStrAnyMapFrom(content).MapCopy()
+										content["image_url"] = imageUrl
 									}
 								}
 							}
@@ -965,13 +967,18 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, m
 							if content["type"] == "image" {
 								if source, ok := content["source"].(sdkm.Source); ok {
 									source.Data = "[BASE64图像数据]"
+									content = gmap.NewStrAnyMapFrom(content).MapCopy()
 									content["source"] = source
 								}
 							}
+
+							value = content
 						}
+
+						multiContents = append(multiContents, value)
 					}
 
-					chat.Prompt = gconv.String(multiContent)
+					chat.Prompt = gconv.String(multiContents)
 
 				} else {
 					chat.Prompt = gconv.String(prompt)
@@ -1070,14 +1077,23 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, m
 
 				if multiContent, ok := content.([]interface{}); ok {
 
+					multiContents := make([]interface{}, 0)
+
 					for _, value := range multiContent {
 
 						if content, ok := value.(map[string]interface{}); ok {
 
 							if content["type"] == "image_url" {
+
 								if imageUrl, ok := content["image_url"].(map[string]interface{}); ok {
+
 									if !gstr.HasPrefix(gconv.String(imageUrl["url"]), "http") {
+
+										imageUrl = gmap.NewStrAnyMapFrom(imageUrl).MapCopy()
 										imageUrl["url"] = "[BASE64图像数据]"
+
+										content = gmap.NewStrAnyMapFrom(content).MapCopy()
+										content["image_url"] = imageUrl
 									}
 								}
 							}
@@ -1085,13 +1101,18 @@ func (s *sChat) SaveLog(ctx context.Context, reqModel, realModel *model.Model, m
 							if content["type"] == "image" {
 								if source, ok := content["source"].(sdkm.Source); ok {
 									source.Data = "[BASE64图像数据]"
+									content = gmap.NewStrAnyMapFrom(content).MapCopy()
 									content["source"] = source
 								}
 							}
+
+							value = content
 						}
+
+						multiContents = append(multiContents, value)
 					}
 
-					content = gconv.String(multiContent)
+					content = gconv.String(multiContents)
 				}
 			}
 
