@@ -37,6 +37,10 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string) 
 		panic(err)
 	}
 
+	if err := service.User().SaveCacheUserQuota(ctx, userId, currentQuota); err != nil {
+		logger.Error(ctx, err)
+	}
+
 	if err = mongoSpendQuota(ctx, func() error {
 		return service.User().SpendQuota(ctx, userId, totalTokens, currentQuota)
 	}); err != nil {

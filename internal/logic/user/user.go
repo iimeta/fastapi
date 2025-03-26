@@ -114,10 +114,6 @@ func (s *sUser) SpendQuota(ctx context.Context, userId, spendQuota, currentQuota
 		return err
 	}
 
-	if err := s.SaveCacheUserQuota(ctx, userId, currentQuota); err != nil {
-		logger.Error(ctx, err)
-	}
-
 	return nil
 }
 
