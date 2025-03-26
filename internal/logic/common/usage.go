@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
+	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
@@ -37,8 +39,20 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string) 
 		panic(err)
 	}
 
-	if err := service.User().SaveCacheUserQuota(ctx, userId, currentQuota); err != nil {
+	if err = service.User().SaveCacheUserQuota(ctx, userId, currentQuota); err != nil {
 		logger.Error(ctx, err)
+	}
+
+	if currentQuota <= config.Cfg.QuotaWarning.Threshold {
+		if _, err = redis.Publish(ctx, consts.CHANGE_CHANNEL_USER, model.PubMessage{
+			Action: consts.ACTION_CACHE,
+			NewData: &model.UserQuota{
+				UserId:       userId,
+				CurrentQuota: currentQuota,
+			},
+		}); err != nil {
+			logger.Error(ctx, err)
+		}
 	}
 
 	if err = mongoSpendQuota(ctx, func() error {

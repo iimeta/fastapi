@@ -100,6 +100,15 @@ type NotShieldError struct {
 	Errors []string `bson:"errors" json:"errors"` // 错误
 }
 
+type QuotaWarning struct {
+	Open             bool          `bson:"open"              json:"open"`              // 额度预警开关
+	Threshold        int           `bson:"threshold"         json:"threshold"`         // 额度预警阈值, 单位: $
+	ExhaustionNotice bool          `bson:"exhaustion_notice" json:"exhaustion_notice"` // 额度耗尽通知开关
+	ExpireWarning    bool          `bson:"expire_warning"    json:"expire_warning"`    // 额度过期预警开关
+	ExpireThreshold  time.Duration `bson:"expire_threshold"  json:"expire_threshold"`  // 额度过期预警阈值, 单位: 天
+	ExpireNotice     bool          `bson:"expire_notice"     json:"expire_notice"`     // 额度过期通知开关
+}
+
 type Debug struct {
 	Open bool `bson:"open" json:"open"` // 开关
 }

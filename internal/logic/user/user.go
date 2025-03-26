@@ -272,6 +272,18 @@ func (s *sUser) Subscribe(ctx context.Context, msg string) error {
 		}
 
 		s.RemoveCacheUser(ctx, user.UserId)
+
+	case consts.ACTION_CACHE:
+
+		var userQuota *model.UserQuota
+		if err := gjson.Unmarshal(gjson.MustEncode(message.NewData), &userQuota); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+
+		if err := s.SaveCacheUserQuota(ctx, userQuota.UserId, userQuota.CurrentQuota); err != nil {
+			logger.Error(ctx, err)
+		}
 	}
 
 	return nil

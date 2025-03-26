@@ -17,6 +17,7 @@ type SysConfig struct {
 	AutoDisabledError *common.AutoDisabledError `bson:"auto_disabled_error,omitempty"` // 自动禁用错误
 	NotRetryError     *common.NotRetryError     `bson:"not_retry_error,omitempty"`     // 不重试错误
 	NotShieldError    *common.NotShieldError    `bson:"not_shield_error,omitempty"`    // 不屏蔽错误
+	QuotaWarning      *common.QuotaWarning      `bson:"quota_warning,omitempty"`       // 额度预警
 	Debug             *common.Debug             `bson:"debug,omitempty"`               // 调试
 	Creator           string                    `bson:"creator,omitempty"`             // 创建人
 	Updater           string                    `bson:"updater,omitempty"`             // 更新人

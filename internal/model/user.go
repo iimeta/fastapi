@@ -16,3 +16,8 @@ type User struct {
 	CreatedAt      string   `json:"created_at,omitempty"`       // 创建时间
 	UpdatedAt      string   `json:"updated_at,omitempty"`       // 更新时间
 }
+
+type UserQuota struct {
+	UserId       int `json:"user_id,omitempty"` // 用户ID
+	CurrentQuota int `json:"quota,omitempty"`   // 当前额度
+}

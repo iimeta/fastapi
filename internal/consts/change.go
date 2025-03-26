@@ -21,4 +21,5 @@ const (
 	ACTION_DELETE = "delete"
 	ACTION_STATUS = "status"
 	ACTION_MODELS = "models"
+	ACTION_CACHE  = "cache"
 )
