@@ -86,7 +86,7 @@ func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAge
 		},
 	}
 
-	results, err := dao.ModelAgent.Find(ctx, filter, "status", "-weight")
+	results, err := dao.ModelAgent.Find(ctx, filter, &dao.FindOptions{SortFields: []string{"status", "-weight", "-updated_at"}})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -136,7 +136,7 @@ func (s *sModelAgent) ListAll(ctx context.Context) ([]*model.ModelAgent, error) 
 
 	filter := bson.M{}
 
-	results, err := dao.ModelAgent.Find(ctx, filter, "status", "-weight")
+	results, err := dao.ModelAgent.Find(ctx, filter, &dao.FindOptions{SortFields: []string{"status", "-weight", "-updated_at"}})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -184,7 +184,7 @@ func (s *sModelAgent) GetModelAgentKeys(ctx context.Context, id string) ([]*mode
 		logger.Debugf(ctx, "sModelAgent GetModelAgentKeys time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	results, err := dao.Key.Find(ctx, bson.M{"type": 2, "model_agents": bson.M{"$in": []string{id}}})
+	results, err := dao.Key.Find(ctx, bson.M{"type": 2, "model_agents": bson.M{"$in": []string{id}}}, &dao.FindOptions{SortFields: []string{"status", "-weight", "-updated_at"}})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -229,7 +229,7 @@ func (s *sModelAgent) GetModelAgentsAndKeys(ctx context.Context) ([]*model.Model
 		return nil, nil, err
 	}
 
-	results, err := dao.Key.Find(ctx, bson.M{"type": 2})
+	results, err := dao.Key.Find(ctx, bson.M{"type": 2}, &dao.FindOptions{SortFields: []string{"status", "-weight", "-updated_at"}})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, nil, err

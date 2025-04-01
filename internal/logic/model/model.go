@@ -498,7 +498,7 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 		},
 	}
 
-	results, err := dao.Model.Find(ctx, filter, "status", "-updated_at")
+	results, err := dao.Model.Find(ctx, filter, &dao.FindOptions{SortFields: []string{"status", "-updated_at"}})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -551,7 +551,7 @@ func (s *sModel) ListAll(ctx context.Context) ([]*model.Model, error) {
 
 	filter := bson.M{}
 
-	results, err := dao.Model.Find(ctx, filter, "status", "-updated_at")
+	results, err := dao.Model.Find(ctx, filter, &dao.FindOptions{SortFields: []string{"status", "-updated_at"}})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -608,7 +608,7 @@ func (s *sModel) GetModelsAndKeys(ctx context.Context) ([]*model.Model, map[stri
 		return nil, nil, err
 	}
 
-	results, err := dao.Key.Find(ctx, bson.M{"type": 2, "is_agents_only": false})
+	results, err := dao.Key.Find(ctx, bson.M{"type": 2, "is_agents_only": false}, &dao.FindOptions{SortFields: []string{"status", "-weight", "-updated_at"}})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, nil, err

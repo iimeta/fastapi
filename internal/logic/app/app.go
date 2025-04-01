@@ -78,7 +78,7 @@ func (s *sApp) List(ctx context.Context) ([]*model.App, error) {
 
 	filter := bson.M{}
 
-	results, err := dao.App.Find(ctx, filter, "status", "-updated_at")
+	results, err := dao.App.Find(ctx, filter, &dao.FindOptions{SortFields: []string{"status", "-updated_at"}})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err

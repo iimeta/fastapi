@@ -21,6 +21,13 @@ type MongoDB[T IMongoDB] struct {
 	*db.MongoDB
 }
 
+type FindOptions struct {
+	SortFields    []string // 排序字段
+	Index         string   // 查询索引
+	IncludeFields []string // 包含字段
+	ExcludeFields []string // 排除字段
+}
+
 func NewMongoDB[T IMongoDB](database, collection string) *MongoDB[T] {
 	return &MongoDB[T]{
 		MongoDB: &db.MongoDB{
@@ -29,17 +36,17 @@ func NewMongoDB[T IMongoDB](database, collection string) *MongoDB[T] {
 		}}
 }
 
-func (m *MongoDB[T]) Find(ctx context.Context, filter map[string]interface{}, sortFields ...string) ([]*T, error) {
+func (m *MongoDB[T]) Find(ctx context.Context, filter map[string]interface{}, findOptions ...*FindOptions) ([]*T, error) {
 
 	var result []*T
-	if err := Find(ctx, m.Database, m.Collection, filter, &result, sortFields...); err != nil {
+	if err := find(ctx, m.Database, m.Collection, filter, &result, findOptions...); err != nil {
 		return nil, err
 	}
 
 	return result, nil
 }
 
-func Find(ctx context.Context, database, collection string, filter map[string]interface{}, result interface{}, sortFields ...string) error {
+func find(ctx context.Context, database, collection string, filter map[string]interface{}, result interface{}, findOptions ...*FindOptions) error {
 
 	m := &db.MongoDB{
 		Database:   database,
@@ -47,83 +54,27 @@ func Find(ctx context.Context, database, collection string, filter map[string]in
 		Filter:     filter,
 	}
 
-	return m.Find(ctx, result, sortFields...)
-}
-
-func (m *MongoDB[T]) FindOne(ctx context.Context, filter map[string]interface{}, sortFields ...string) (*T, error) {
-
-	var result *T
-	if err := FindOne(ctx, m.Database, m.Collection, filter, &result, sortFields...); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-func FindOne(ctx context.Context, database, collection string, filter map[string]interface{}, result interface{}, sortFields ...string) error {
-
-	m := &db.MongoDB{
-		Database:   database,
-		Collection: collection,
-		Filter:     filter,
-	}
-
-	return m.FindOne(ctx, result, sortFields...)
-}
-
-func (m *MongoDB[T]) FindById(ctx context.Context, id interface{}) (*T, error) {
-
-	var result *T
-	if err := FindById(ctx, m.Database, m.Collection, id, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-func FindById(ctx context.Context, database, collection string, id, result interface{}) error {
-
-	m := &db.MongoDB{
-		Database:   database,
-		Collection: collection,
-		Filter:     bson.M{"_id": id},
-	}
-
-	return m.FindOne(ctx, result)
-}
-
-func (m *MongoDB[T]) FindByIds(ctx context.Context, ids interface{}) ([]*T, error) {
-
-	var result []*T
-	if err := FindByIds(ctx, m.Database, m.Collection, ids, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-func FindByIds(ctx context.Context, database, collection string, ids, result interface{}) error {
-
-	m := &db.MongoDB{
-		Database:   database,
-		Collection: collection,
-		Filter:     bson.M{"_id": bson.M{"$in": ids}},
+	if len(findOptions) > 0 {
+		m.SortFields = findOptions[0].SortFields
+		m.Index = findOptions[0].Index
+		m.IncludeFields = findOptions[0].IncludeFields
+		m.ExcludeFields = findOptions[0].ExcludeFields
 	}
 
 	return m.Find(ctx, result)
 }
 
-func (m *MongoDB[T]) FindByPage(ctx context.Context, paging *db.Paging, filter map[string]interface{}, sortFields ...string) ([]*T, error) {
+func (m *MongoDB[T]) FindOne(ctx context.Context, filter map[string]interface{}, findOptions ...*FindOptions) (*T, error) {
 
-	var result []*T
-	if err := FindByPage(ctx, m.Database, m.Collection, paging, filter, &result, sortFields...); err != nil {
+	var result *T
+	if err := findOne(ctx, m.Database, m.Collection, filter, &result, findOptions...); err != nil {
 		return nil, err
 	}
 
 	return result, nil
 }
 
-func FindByPage(ctx context.Context, database, collection string, paging *db.Paging, filter map[string]interface{}, result interface{}, sortFields ...string) error {
+func findOne(ctx context.Context, database, collection string, filter map[string]interface{}, result interface{}, findOptions ...*FindOptions) error {
 
 	m := &db.MongoDB{
 		Database:   database,
@@ -131,14 +82,110 @@ func FindByPage(ctx context.Context, database, collection string, paging *db.Pag
 		Filter:     filter,
 	}
 
-	return m.FindByPage(ctx, paging, result, sortFields...)
+	if len(findOptions) > 0 {
+		m.SortFields = findOptions[0].SortFields
+		m.Index = findOptions[0].Index
+		m.IncludeFields = findOptions[0].IncludeFields
+		m.ExcludeFields = findOptions[0].ExcludeFields
+	}
+
+	return m.FindOne(ctx, result)
+}
+
+func (m *MongoDB[T]) FindById(ctx context.Context, id interface{}, findOptions ...*FindOptions) (*T, error) {
+
+	var result *T
+	if err := findById(ctx, m.Database, m.Collection, id, &result, findOptions...); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func findById(ctx context.Context, database, collection string, id, result interface{}, findOptions ...*FindOptions) error {
+
+	filter := bson.M{"_id": id}
+
+	m := &db.MongoDB{
+		Database:   database,
+		Collection: collection,
+		Filter:     filter,
+	}
+
+	if len(findOptions) > 0 {
+		m.SortFields = findOptions[0].SortFields
+		m.Index = findOptions[0].Index
+		m.IncludeFields = findOptions[0].IncludeFields
+		m.ExcludeFields = findOptions[0].ExcludeFields
+	}
+
+	return m.FindOne(ctx, result)
+}
+
+func (m *MongoDB[T]) FindByIds(ctx context.Context, ids interface{}, findOptions ...*FindOptions) ([]*T, error) {
+
+	var result []*T
+	if err := findByIds(ctx, m.Database, m.Collection, ids, &result, findOptions...); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func findByIds(ctx context.Context, database, collection string, ids, result interface{}, findOptions ...*FindOptions) error {
+
+	filter := bson.M{"_id": bson.M{"$in": ids}}
+
+	m := &db.MongoDB{
+		Database:   database,
+		Collection: collection,
+		Filter:     filter,
+	}
+
+	if len(findOptions) > 0 {
+		m.SortFields = findOptions[0].SortFields
+		m.Index = findOptions[0].Index
+		m.IncludeFields = findOptions[0].IncludeFields
+		m.ExcludeFields = findOptions[0].ExcludeFields
+	}
+
+	return m.Find(ctx, result)
+}
+
+func (m *MongoDB[T]) FindByPage(ctx context.Context, paging *db.Paging, filter map[string]interface{}, findOptions ...*FindOptions) ([]*T, error) {
+
+	var result []*T
+
+	if err := findByPage(ctx, m.Database, m.Collection, paging, filter, &result, findOptions...); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func findByPage(ctx context.Context, database, collection string, paging *db.Paging, filter map[string]interface{}, result interface{}, findOptions ...*FindOptions) error {
+
+	m := &db.MongoDB{
+		Database:   database,
+		Collection: collection,
+		Filter:     filter,
+	}
+
+	if len(findOptions) > 0 {
+		m.SortFields = findOptions[0].SortFields
+		m.Index = findOptions[0].Index
+		m.IncludeFields = findOptions[0].IncludeFields
+		m.ExcludeFields = findOptions[0].ExcludeFields
+	}
+
+	return m.FindByPage(ctx, paging, result)
 }
 
 func (m *MongoDB[T]) Insert(ctx context.Context, document interface{}) (string, error) {
-	return Insert(ctx, m.Database, document)
+	return insert(ctx, m.Database, document)
 }
 
-func Insert(ctx context.Context, database string, document interface{}) (string, error) {
+func insert(ctx context.Context, database string, document interface{}) (string, error) {
 
 	collection := gmeta.Get(document, "collection").String()
 	if collection == "" {
@@ -156,7 +203,9 @@ func Insert(ctx context.Context, database string, document interface{}) (string,
 	}
 
 	// 统一主键成int类型的string格式, 雪花ID
-	value["_id"] = util.GenerateId()
+	if value["_id"] == nil || value["_id"] == "" {
+		value["_id"] = util.GenerateId()
+	}
 
 	if value["creator"] == nil || value["creator"] == "" {
 		value["creator"] = service.Session().GetSecretKey(ctx)
@@ -184,10 +233,10 @@ func Insert(ctx context.Context, database string, document interface{}) (string,
 }
 
 func (m *MongoDB[T]) Inserts(ctx context.Context, documents []interface{}) ([]string, error) {
-	return Inserts(ctx, m.Database, documents)
+	return inserts(ctx, m.Database, documents)
 }
 
-func Inserts(ctx context.Context, database string, documents []interface{}) ([]string, error) {
+func inserts(ctx context.Context, database string, documents []interface{}) ([]string, error) {
 
 	collection := gmeta.Get(documents[0], "collection").String()
 	if collection == "" {
@@ -208,7 +257,9 @@ func Inserts(ctx context.Context, database string, documents []interface{}) ([]s
 		}
 
 		// 统一主键成int类型的string格式, 雪花ID
-		value["_id"] = util.GenerateId()
+		if value["_id"] == nil || value["_id"] == "" {
+			value["_id"] = util.GenerateId()
+		}
 
 		if value["creator"] == nil || value["creator"] == "" {
 			value["creator"] = service.Session().GetSecretKey(ctx)
@@ -239,18 +290,14 @@ func Inserts(ctx context.Context, database string, documents []interface{}) ([]s
 }
 
 func (m *MongoDB[T]) UpdateById(ctx context.Context, id, update interface{}, isUpsert ...bool) error {
-	return UpdateById(ctx, m.Database, m.Collection, id, update, isUpsert...)
-}
-
-func UpdateById(ctx context.Context, database, collection string, id, update interface{}, isUpsert ...bool) error {
-	return UpdateOne(ctx, database, collection, bson.M{"_id": id}, update, isUpsert...)
+	return m.UpdateOne(ctx, bson.M{"_id": id}, update, isUpsert...)
 }
 
 func (m *MongoDB[T]) UpdateOne(ctx context.Context, filter map[string]interface{}, update interface{}, isUpsert ...bool) error {
-	return UpdateOne(ctx, m.Database, m.Collection, filter, update, isUpsert...)
+	return updateOne(ctx, m.Database, m.Collection, filter, update, isUpsert...)
 }
 
-func UpdateOne(ctx context.Context, database, collection string, filter map[string]interface{}, update interface{}, isUpsert ...bool) error {
+func updateOne(ctx context.Context, database, collection string, filter map[string]interface{}, update interface{}, isUpsert ...bool) error {
 
 	m := &db.MongoDB{
 		Database:   database,
@@ -285,62 +332,54 @@ func UpdateOne(ctx context.Context, database, collection string, filter map[stri
 	} else {
 
 		value := gconv.Map(update)
+		for k, v := range value {
 
-		containKey := false
-		for key := range value {
-			if gstr.Contains(key, "$") {
-				containKey = true
-				break
+			if gstr.Contains(k, "$") {
+				continue
 			}
-		}
 
-		if containKey {
-
-			if value["updater"] == nil || value["updater"] == "" {
-				if value["$set"] != nil {
-					setValues := gconv.Map(value["$set"])
-					if setValues["updater"] == nil || setValues["updater"] == "" {
-						setValues["updater"] = service.Session().GetSecretKey(ctx)
-						value["$set"] = setValues
-					}
-				} else {
-					value["$set"] = bson.M{
-						"updater": service.Session().GetSecretKey(ctx),
-					}
+			if value["$set"] != nil {
+				setValues := gconv.Map(value["$set"])
+				setValues[k] = v
+				value["$set"] = setValues
+			} else {
+				value["$set"] = bson.M{
+					k: v,
 				}
 			}
 
-			if value["updated_at"] == nil || gconv.Int(value["updated_at"]) == 0 {
-				if value["$set"] != nil {
-					setValues := gconv.Map(value["$set"])
-					if setValues["updated_at"] == nil || gconv.Int(setValues["updated_at"]) == 0 {
-						setValues["updated_at"] = gtime.TimestampMilli()
-						value["$set"] = setValues
-					}
-				} else {
-					value["$set"] = bson.M{
-						"updated_at": gtime.TimestampMilli(),
-					}
+			delete(value, k)
+		}
+
+		if value["updater"] == nil || value["updater"] == "" {
+			if value["$set"] != nil {
+				setValues := gconv.Map(value["$set"])
+				if setValues["updater"] == nil || setValues["updater"] == "" {
+					setValues["updater"] = service.Session().GetSecretKey(ctx)
+					value["$set"] = setValues
+				}
+			} else {
+				value["$set"] = bson.M{
+					"updater": service.Session().GetSecretKey(ctx),
 				}
 			}
-		} else {
+		}
 
-			if value["updater"] == nil || value["updater"] == "" {
-				value["updater"] = service.Session().GetSecretKey(ctx)
-			}
-
-			if value["updated_at"] == nil || gconv.Int(value["updated_at"]) == 0 {
-				value["updated_at"] = gtime.TimestampMilli()
+		if value["updated_at"] == nil || gconv.Int(value["updated_at"]) == 0 {
+			if value["$set"] != nil {
+				setValues := gconv.Map(value["$set"])
+				if setValues["updated_at"] == nil || gconv.Int(setValues["updated_at"]) == 0 {
+					setValues["updated_at"] = gtime.TimestampMilli()
+					value["$set"] = setValues
+				}
+			} else {
+				value["$set"] = bson.M{
+					"updated_at": gtime.TimestampMilli(),
+				}
 			}
 		}
 
-		if !containKey {
-			update = bson.M{
-				"$set": value,
-			}
-		} else {
-			update = value
-		}
+		update = value
 	}
 
 	opt := &options.UpdateOptions{}
@@ -352,10 +391,10 @@ func UpdateOne(ctx context.Context, database, collection string, filter map[stri
 }
 
 func (m *MongoDB[T]) UpdateMany(ctx context.Context, filter map[string]interface{}, update interface{}, isUpsert ...bool) error {
-	return UpdateMany(ctx, m.Database, m.Collection, filter, update, isUpsert...)
+	return updateMany(ctx, m.Database, m.Collection, filter, update, isUpsert...)
 }
 
-func UpdateMany(ctx context.Context, database, collection string, filter map[string]interface{}, update interface{}, isUpsert ...bool) error {
+func updateMany(ctx context.Context, database, collection string, filter map[string]interface{}, update interface{}, isUpsert ...bool) error {
 
 	m := &db.MongoDB{
 		Database:   database,
@@ -375,25 +414,69 @@ func UpdateMany(ctx context.Context, database, collection string, filter map[str
 			return err
 		}
 
+		if value["updater"] == nil || value["updater"] == "" {
+			value["updater"] = service.Session().GetSecretKey(ctx)
+		}
+
+		if value["updated_at"] == nil || gconv.Int(value["updated_at"]) == 0 {
+			value["updated_at"] = gtime.TimestampMilli()
+		}
+
 		update = bson.M{
 			"$set": value,
 		}
 
 	} else {
 
-		containKey := false
-		for key := range gconv.Map(update) {
-			if gstr.Contains(key, "$") {
-				containKey = true
-				break
+		value := gconv.Map(update)
+		for k, v := range value {
+
+			if gstr.Contains(k, "$") {
+				continue
+			}
+
+			if value["$set"] != nil {
+				setValues := gconv.Map(value["$set"])
+				setValues[k] = v
+				value["$set"] = setValues
+			} else {
+				value["$set"] = bson.M{
+					k: v,
+				}
+			}
+
+			delete(value, k)
+		}
+
+		if value["updater"] == nil || value["updater"] == "" {
+			if value["$set"] != nil {
+				setValues := gconv.Map(value["$set"])
+				if setValues["updater"] == nil || setValues["updater"] == "" {
+					setValues["updater"] = service.Session().GetSecretKey(ctx)
+					value["$set"] = setValues
+				}
+			} else {
+				value["$set"] = bson.M{
+					"updater": service.Session().GetSecretKey(ctx),
+				}
 			}
 		}
 
-		if !containKey {
-			update = bson.M{
-				"$set": update,
+		if value["updated_at"] == nil || gconv.Int(value["updated_at"]) == 0 {
+			if value["$set"] != nil {
+				setValues := gconv.Map(value["$set"])
+				if setValues["updated_at"] == nil || gconv.Int(setValues["updated_at"]) == 0 {
+					setValues["updated_at"] = gtime.TimestampMilli()
+					value["$set"] = setValues
+				}
+			} else {
+				value["$set"] = bson.M{
+					"updated_at": gtime.TimestampMilli(),
+				}
 			}
 		}
+
+		update = value
 	}
 
 	opt := &options.UpdateOptions{}
@@ -404,25 +487,124 @@ func UpdateMany(ctx context.Context, database, collection string, filter map[str
 	return m.UpdateMany(ctx, update, opt)
 }
 
-func (m *MongoDB[T]) DeleteById(ctx context.Context, id interface{}) error {
-	return DeleteById(ctx, m.Database, m.Collection, id)
+func (m *MongoDB[T]) FindOneAndUpdateById(ctx context.Context, id interface{}, update interface{}, isUpsert ...bool) (*T, error) {
+	return m.FindOneAndUpdate(ctx, bson.M{"_id": id}, update, isUpsert...)
 }
 
-func DeleteById(ctx context.Context, database, collection string, id interface{}) error {
+func (m *MongoDB[T]) FindOneAndUpdate(ctx context.Context, filter map[string]interface{}, update interface{}, isUpsert ...bool) (*T, error) {
+
+	var result *T
+	if err := findOneAndUpdate(ctx, m.Database, m.Collection, filter, update, &result, isUpsert...); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func findOneAndUpdate(ctx context.Context, database, collection string, filter map[string]interface{}, update interface{}, result interface{}, isUpsert ...bool) error {
 
 	m := &db.MongoDB{
 		Database:   database,
 		Collection: collection,
+		Filter:     filter,
 	}
 
-	return m.DeleteById(ctx, id)
+	if isStruct(update) {
+
+		bytes, err := bson.Marshal(update)
+		if err != nil {
+			return err
+		}
+
+		value := bson.M{}
+		if err = bson.Unmarshal(bytes, &value); err != nil {
+			return err
+		}
+
+		if value["updater"] == nil || value["updater"] == "" {
+			value["updater"] = service.Session().GetSecretKey(ctx)
+		}
+
+		if value["updated_at"] == nil || gconv.Int(value["updated_at"]) == 0 {
+			value["updated_at"] = gtime.TimestampMilli()
+		}
+
+		update = bson.M{
+			"$set": value,
+		}
+
+	} else {
+
+		value := gconv.Map(update)
+		for k, v := range value {
+
+			if gstr.Contains(k, "$") {
+				continue
+			}
+
+			if value["$set"] != nil {
+				setValues := gconv.Map(value["$set"])
+				setValues[k] = v
+				value["$set"] = setValues
+			} else {
+				value["$set"] = bson.M{
+					k: v,
+				}
+			}
+
+			delete(value, k)
+		}
+
+		if value["updater"] == nil || value["updater"] == "" {
+			if value["$set"] != nil {
+				setValues := gconv.Map(value["$set"])
+				if setValues["updater"] == nil || setValues["updater"] == "" {
+					setValues["updater"] = service.Session().GetSecretKey(ctx)
+					value["$set"] = setValues
+				}
+			} else {
+				value["$set"] = bson.M{
+					"updater": service.Session().GetSecretKey(ctx),
+				}
+			}
+		}
+
+		if value["updated_at"] == nil || gconv.Int(value["updated_at"]) == 0 {
+			if value["$set"] != nil {
+				setValues := gconv.Map(value["$set"])
+				if setValues["updated_at"] == nil || gconv.Int(setValues["updated_at"]) == 0 {
+					setValues["updated_at"] = gtime.TimestampMilli()
+					value["$set"] = setValues
+				}
+			} else {
+				value["$set"] = bson.M{
+					"updated_at": gtime.TimestampMilli(),
+				}
+			}
+		}
+
+		update = value
+	}
+
+	opt := &options.FindOneAndUpdateOptions{}
+	opt.SetReturnDocument(options.After)
+
+	if len(isUpsert) > 0 && isUpsert[0] {
+		opt.SetUpsert(true)
+	}
+
+	return m.FindOneAndUpdate(ctx, update, result, opt)
+}
+
+func (m *MongoDB[T]) DeleteById(ctx context.Context, id interface{}) (int64, error) {
+	return m.DeleteOne(ctx, bson.M{"_id": id})
 }
 
 func (m *MongoDB[T]) DeleteOne(ctx context.Context, filter map[string]interface{}) (int64, error) {
-	return DeleteOne(ctx, m.Database, m.Collection, filter)
+	return deleteOne(ctx, m.Database, m.Collection, filter)
 }
 
-func DeleteOne(ctx context.Context, database, collection string, filter map[string]interface{}) (int64, error) {
+func deleteOne(ctx context.Context, database, collection string, filter map[string]interface{}) (int64, error) {
 
 	m := &db.MongoDB{
 		Database:   database,
@@ -434,10 +616,10 @@ func DeleteOne(ctx context.Context, database, collection string, filter map[stri
 }
 
 func (m *MongoDB[T]) DeleteMany(ctx context.Context, filter map[string]interface{}) (int64, error) {
-	return DeleteMany(ctx, m.Database, m.Collection, filter)
+	return deleteMany(ctx, m.Database, m.Collection, filter)
 }
 
-func DeleteMany(ctx context.Context, database, collection string, filter map[string]interface{}) (int64, error) {
+func deleteMany(ctx context.Context, database, collection string, filter map[string]interface{}) (int64, error) {
 
 	m := &db.MongoDB{
 		Database:   database,
@@ -448,11 +630,36 @@ func DeleteMany(ctx context.Context, database, collection string, filter map[str
 	return m.DeleteMany(ctx)
 }
 
-func (m *MongoDB[T]) CountDocuments(ctx context.Context, filter map[string]interface{}) (int64, error) {
-	return CountDocuments(ctx, m.Database, m.Collection, filter)
+func (m *MongoDB[T]) FindOneAndDeleteById(ctx context.Context, id interface{}) (*T, error) {
+	return m.FindOneAndDelete(ctx, bson.M{"_id": id})
 }
 
-func CountDocuments(ctx context.Context, database, collection string, filter map[string]interface{}) (int64, error) {
+func (m *MongoDB[T]) FindOneAndDelete(ctx context.Context, filter map[string]interface{}) (*T, error) {
+
+	var result *T
+	if err := findOneAndDelete(ctx, m.Database, m.Collection, filter, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func findOneAndDelete(ctx context.Context, database, collection string, filter map[string]interface{}, result interface{}) error {
+
+	m := &db.MongoDB{
+		Database:   database,
+		Collection: collection,
+		Filter:     filter,
+	}
+
+	return m.FindOneAndDelete(ctx, result)
+}
+
+func (m *MongoDB[T]) CountDocuments(ctx context.Context, filter map[string]interface{}) (int64, error) {
+	return countDocuments(ctx, m.Database, m.Collection, filter)
+}
+
+func countDocuments(ctx context.Context, database, collection string, filter map[string]interface{}) (int64, error) {
 
 	m := &db.MongoDB{
 		Database:   database,
@@ -464,10 +671,10 @@ func CountDocuments(ctx context.Context, database, collection string, filter map
 }
 
 func (m *MongoDB[T]) EstimatedDocumentCount(ctx context.Context) (int64, error) {
-	return EstimatedDocumentCount(ctx, m.Database, m.Collection)
+	return estimatedDocumentCount(ctx, m.Database, m.Collection)
 }
 
-func EstimatedDocumentCount(ctx context.Context, database, collection string) (int64, error) {
+func estimatedDocumentCount(ctx context.Context, database, collection string) (int64, error) {
 
 	m := &db.MongoDB{
 		Database:   database,
