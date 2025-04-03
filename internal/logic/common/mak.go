@@ -184,7 +184,15 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 
 func getRealKey(ctx context.Context, mak *MAK) error {
 
-	if GetCorpCode(ctx, mak.RealModel.Corp) == consts.CORP_GCP_CLAUDE || GetCorpCode(ctx, mak.RealModel.Corp) == consts.CORP_GCP_GEMINI {
+	corp := mak.RealModel.Corp
+
+	if mak.ModelAgent != nil {
+		corp = mak.ModelAgent.Corp
+	}
+
+	corpCode := GetCorpCode(ctx, corp)
+
+	if corpCode == consts.CORP_GCP_CLAUDE || corpCode == consts.CORP_GCP_GEMINI {
 
 		projectId, key, err := getGcpToken(ctx, mak.Key, config.Cfg.Http.ProxyUrl)
 		if err != nil {
@@ -195,7 +203,7 @@ func getRealKey(ctx context.Context, mak *MAK) error {
 		mak.RealKey = key
 		mak.Path = fmt.Sprintf(mak.Path, projectId, mak.RealModel.Model)
 
-	} else if GetCorpCode(ctx, mak.RealModel.Corp) == consts.CORP_BAIDU {
+	} else if corpCode == consts.CORP_BAIDU {
 		mak.RealKey = getBaiduToken(ctx, mak.Key.Key, mak.BaseUrl, config.Cfg.Http.ProxyUrl)
 	} else {
 		mak.RealKey = mak.Key.Key
