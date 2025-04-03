@@ -283,6 +283,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 			if replaceModel == request.Model {
 				logger.Infof(ctx, "sAudio Transcriptions request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
 				request.Model = mak.ModelAgent.TargetModels[i]
+				mak.RealModel.Model = request.Model
 				break
 			}
 		}

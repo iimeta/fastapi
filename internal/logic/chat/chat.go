@@ -299,6 +299,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			if replaceModel == request.Model {
 				logger.Infof(ctx, "sChat Completions request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
 				request.Model = mak.ModelAgent.TargetModels[i]
+				mak.RealModel.Model = request.Model
 				break
 			}
 		}
@@ -616,6 +617,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			if replaceModel == request.Model {
 				logger.Infof(ctx, "sChat CompletionsStream request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
 				request.Model = mak.ModelAgent.TargetModels[i]
+				mak.RealModel.Model = request.Model
 				break
 			}
 		}

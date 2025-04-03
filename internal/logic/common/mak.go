@@ -201,6 +201,17 @@ func getRealKey(ctx context.Context, mak *MAK) error {
 		}
 
 		mak.RealKey = key
+
+		if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
+			for i, replaceModel := range mak.ModelAgent.ReplaceModels {
+				if replaceModel == mak.RealModel.Model {
+					logger.Infof(ctx, "getRealKey mak.RealModel.Model: %s replaced %s", mak.RealModel.Model, mak.ModelAgent.TargetModels[i])
+					mak.RealModel.Model = mak.ModelAgent.TargetModels[i]
+					break
+				}
+			}
+		}
+
 		mak.Path = fmt.Sprintf(mak.Path, projectId, mak.RealModel.Model)
 
 	} else if corpCode == consts.CORP_BAIDU {

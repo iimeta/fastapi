@@ -123,6 +123,7 @@ func (s *sModeration) Moderations(ctx context.Context, params sdkm.ModerationReq
 			if replaceModel == request.Model {
 				logger.Infof(ctx, "sModeration Moderations request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
 				request.Model = mak.ModelAgent.TargetModels[i]
+				mak.RealModel.Model = request.Model
 				break
 			}
 		}

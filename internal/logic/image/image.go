@@ -114,6 +114,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 			if replaceModel == request.Model {
 				logger.Infof(ctx, "sImage Generations request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
 				request.Model = mak.ModelAgent.TargetModels[i]
+				mak.RealModel.Model = request.Model
 				break
 			}
 		}
