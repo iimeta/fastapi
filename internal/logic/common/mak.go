@@ -184,7 +184,7 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 
 func getRealKey(ctx context.Context, mak *MAK) error {
 
-	if GetCorpCode(ctx, mak.RealModel.Corp) == consts.CORP_GCP_CLAUDE {
+	if GetCorpCode(ctx, mak.RealModel.Corp) == consts.CORP_GCP_CLAUDE || GetCorpCode(ctx, mak.RealModel.Corp) == consts.CORP_GCP_GEMINI {
 
 		projectId, key, err := getGcpToken(ctx, mak.Key, config.Cfg.Http.ProxyUrl)
 		if err != nil {
