@@ -24,6 +24,7 @@ const (
 	CORP_DEEPSEEK   = "DeepSeek"
 	CORP_MIDJOURNEY = "Midjourney"
 	CORP_GCP_CLAUDE = "GCPClaude"
+	CORP_GCP_GEMINI = "GCPGemini"
 
 	ROLE_SYSTEM    = "system"
 	ROLE_USER      = "user"
