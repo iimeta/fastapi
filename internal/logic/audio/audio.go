@@ -483,6 +483,10 @@ func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel *model.Model, 
 	if _, err := dao.Audio.Insert(ctx, audio); err != nil {
 		logger.Errorf(ctx, "sAudio SaveLog error: %v", err)
 
+		if err.Error() == "an inserted document is too large" {
+			audioReq.Input = err.Error()
+		}
+
 		if len(retry) == 10 {
 			panic(err)
 		}

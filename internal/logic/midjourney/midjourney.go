@@ -497,6 +497,11 @@ func (s *sMidjourney) SaveLog(ctx context.Context, reqModel, realModel *model.Mo
 	if _, err := dao.Midjourney.Insert(ctx, midjourney); err != nil {
 		logger.Errorf(ctx, "sMidjourney SaveLog error: %v", err)
 
+		if err.Error() == "an inserted document is too large" {
+			response.Prompt = err.Error()
+			response.PromptEn = err.Error()
+		}
+
 		if len(retry) == 10 {
 			panic(err)
 		}

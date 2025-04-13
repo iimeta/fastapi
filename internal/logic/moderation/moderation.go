@@ -331,6 +331,10 @@ func (s *sModeration) SaveLog(ctx context.Context, reqModel, realModel *model.Mo
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
 		logger.Errorf(ctx, "sModeration SaveLog error: %v", err)
 
+		if err.Error() == "an inserted document is too large" {
+			completionsReq.Input = err.Error()
+		}
+
 		if len(retry) == 10 {
 			panic(err)
 		}

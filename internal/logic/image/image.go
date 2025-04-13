@@ -323,6 +323,10 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel *model.Model, 
 	if _, err := dao.Image.Insert(ctx, image); err != nil {
 		logger.Errorf(ctx, "sImage SaveLog error: %v", err)
 
+		if err.Error() == "an inserted document is too large" {
+			imageReq.Prompt = err.Error()
+		}
+
 		if len(retry) == 10 {
 			panic(err)
 		}
