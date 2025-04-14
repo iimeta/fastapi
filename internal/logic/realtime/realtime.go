@@ -14,6 +14,7 @@ import (
 	sdk "github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/config"
+	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
@@ -563,6 +564,13 @@ func (s *sRealtime) SaveLog(ctx context.Context, reqModel, realModel *model.Mode
 
 	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
 		logger.Errorf(ctx, "sRealtime SaveLog error: %v", err)
+
+		if err.Error() == "an inserted document is too large" {
+			completionsReq.Messages = []sdkm.ChatCompletionMessage{{
+				Role:    consts.ROLE_SYSTEM,
+				Content: err.Error(),
+			}}
+		}
 
 		if len(retry) == 10 {
 			panic(err)
