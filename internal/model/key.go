@@ -11,6 +11,7 @@ type Key struct {
 	CurrentWeight       int      `json:"current_weight,omitempty"`       // 当前权重
 	Models              []string `json:"models,omitempty"`               // 模型
 	ModelAgents         []string `json:"model_agents,omitempty"`         // 模型代理
+	IsNeverDisable      bool     `json:"is_never_disable,omitempty"`     // 是否永不禁用
 	IsLimitQuota        bool     `json:"is_limit_quota"`                 // 是否限制额度
 	Quota               int      `json:"quota,omitempty"`                // 剩余额度
 	UsedQuota           int      `json:"used_quota,omitempty"`           // 已用额度

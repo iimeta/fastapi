@@ -60,6 +60,7 @@ func (s *sKey) GetKey(ctx context.Context, secretKey string) (*model.Key, error)
 		Weight:              key.Weight,
 		Models:              key.Models,
 		ModelAgents:         key.ModelAgents,
+		IsNeverDisable:      key.IsNeverDisable,
 		IsLimitQuota:        key.IsLimitQuota,
 		Quota:               key.Quota,
 		UsedQuota:           key.UsedQuota,
@@ -98,6 +99,7 @@ func (s *sKey) GetModelKeys(ctx context.Context, id string) ([]*model.Key, error
 			Weight:              result.Weight,
 			Models:              result.Models,
 			ModelAgents:         result.ModelAgents,
+			IsNeverDisable:      result.IsNeverDisable,
 			IsLimitQuota:        result.IsLimitQuota,
 			Quota:               result.Quota,
 			UsedQuota:           result.UsedQuota,
@@ -143,6 +145,7 @@ func (s *sKey) List(ctx context.Context, typ int) ([]*model.Key, error) {
 			Weight:              result.Weight,
 			Models:              result.Models,
 			ModelAgents:         result.ModelAgents,
+			IsNeverDisable:      result.IsNeverDisable,
 			IsLimitQuota:        result.IsLimitQuota,
 			Quota:               result.Quota,
 			UsedQuota:           result.UsedQuota,
@@ -315,6 +318,11 @@ func (s *sKey) DisabledModelKey(ctx context.Context, key *model.Key, disabledRea
 		logger.Debugf(ctx, "sKey DisabledModelKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
+	// 永不禁用
+	if key.IsNeverDisable {
+		return
+	}
+
 	s.UpdateCacheModelKey(ctx, nil, &entity.Key{
 		Id:                  key.Id,
 		UserId:              key.UserId,
@@ -325,6 +333,7 @@ func (s *sKey) DisabledModelKey(ctx context.Context, key *model.Key, disabledRea
 		Weight:              key.Weight,
 		Models:              key.Models,
 		ModelAgents:         key.ModelAgents,
+		IsNeverDisable:      key.IsNeverDisable,
 		IsLimitQuota:        key.IsLimitQuota,
 		Quota:               key.Quota,
 		UsedQuota:           key.UsedQuota,
@@ -396,6 +405,7 @@ func (s *sKey) CreateCacheModelKey(ctx context.Context, key *entity.Key) {
 		Weight:              key.Weight,
 		Models:              key.Models,
 		ModelAgents:         key.ModelAgents,
+		IsNeverDisable:      key.IsNeverDisable,
 		IsLimitQuota:        key.IsLimitQuota,
 		Quota:               key.Quota,
 		UsedQuota:           key.UsedQuota,
@@ -439,6 +449,7 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 		Weight:              newData.Weight,
 		Models:              newData.Models,
 		ModelAgents:         newData.ModelAgents,
+		IsNeverDisable:      newData.IsNeverDisable,
 		IsLimitQuota:        newData.IsLimitQuota,
 		Quota:               newData.Quota,
 		UsedQuota:           newData.UsedQuota,

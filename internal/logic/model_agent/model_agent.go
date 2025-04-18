@@ -67,6 +67,7 @@ func (s *sModelAgent) GetModelAgentById(ctx context.Context, id string) (*model.
 		IsEnableModelReplace: modelAgent.IsEnableModelReplace,
 		ReplaceModels:        modelAgent.ReplaceModels,
 		TargetModels:         modelAgent.TargetModels,
+		IsNeverDisable:       modelAgent.IsNeverDisable,
 		LbStrategy:           modelAgent.LbStrategy,
 		Status:               modelAgent.Status,
 	}, nil
@@ -114,11 +115,12 @@ func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAge
 			BaseUrl:              result.BaseUrl,
 			Path:                 result.Path,
 			Weight:               result.Weight,
-			LbStrategy:           result.LbStrategy,
 			Models:               modelMap[result.Id],
 			IsEnableModelReplace: result.IsEnableModelReplace,
 			ReplaceModels:        result.ReplaceModels,
 			TargetModels:         result.TargetModels,
+			IsNeverDisable:       result.IsNeverDisable,
+			LbStrategy:           result.LbStrategy,
 			Status:               result.Status,
 		})
 	}
@@ -164,11 +166,12 @@ func (s *sModelAgent) ListAll(ctx context.Context) ([]*model.ModelAgent, error) 
 			BaseUrl:              result.BaseUrl,
 			Path:                 result.Path,
 			Weight:               result.Weight,
-			LbStrategy:           result.LbStrategy,
 			Models:               modelMap[result.Id],
 			IsEnableModelReplace: result.IsEnableModelReplace,
 			ReplaceModels:        result.ReplaceModels,
 			TargetModels:         result.TargetModels,
+			IsNeverDisable:       result.IsNeverDisable,
+			LbStrategy:           result.LbStrategy,
 			Status:               result.Status,
 		})
 	}
@@ -202,6 +205,7 @@ func (s *sModelAgent) GetModelAgentKeys(ctx context.Context, id string) ([]*mode
 			Weight:         result.Weight,
 			Models:         result.Models,
 			ModelAgents:    result.ModelAgents,
+			IsNeverDisable: result.IsNeverDisable,
 			IsLimitQuota:   result.IsLimitQuota,
 			Quota:          result.Quota,
 			UsedQuota:      result.UsedQuota,
@@ -248,6 +252,7 @@ func (s *sModelAgent) GetModelAgentsAndKeys(ctx context.Context) ([]*model.Model
 			Weight:         result.Weight,
 			Models:         result.Models,
 			ModelAgents:    result.ModelAgents,
+			IsNeverDisable: result.IsNeverDisable,
 			IsLimitQuota:   result.IsLimitQuota,
 			Quota:          result.Quota,
 			UsedQuota:      result.UsedQuota,
@@ -422,6 +427,11 @@ func (s *sModelAgent) DisabledModelAgent(ctx context.Context, modelAgent *model.
 		logger.Debugf(ctx, "sModelAgent DisabledModelAgent time: %d", gtime.TimestampMilli()-now)
 	}()
 
+	// 永不禁用
+	if modelAgent.IsNeverDisable {
+		return
+	}
+
 	modelAgent.Status = 2
 	modelAgent.IsAutoDisabled = true
 	modelAgent.AutoDisabledReason = disabledReason
@@ -589,6 +599,11 @@ func (s *sModelAgent) DisabledModelAgentKey(ctx context.Context, key *model.Key,
 		logger.Debugf(ctx, "sModelAgent DisabledModelAgentKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
+	// 永不禁用
+	if key.IsNeverDisable {
+		return
+	}
+
 	s.UpdateCacheModelAgentKey(ctx, nil, &entity.Key{
 		Id:                 key.Id,
 		UserId:             key.UserId,
@@ -599,6 +614,7 @@ func (s *sModelAgent) DisabledModelAgentKey(ctx context.Context, key *model.Key,
 		Weight:             key.Weight,
 		Models:             key.Models,
 		ModelAgents:        key.ModelAgents,
+		IsNeverDisable:     key.IsNeverDisable,
 		IsLimitQuota:       key.IsLimitQuota,
 		Quota:              key.Quota,
 		UsedQuota:          key.UsedQuota,
@@ -678,6 +694,7 @@ func (s *sModelAgent) CreateCacheModelAgent(ctx context.Context, newData *model.
 		IsEnableModelReplace: newData.IsEnableModelReplace,
 		ReplaceModels:        newData.ReplaceModels,
 		TargetModels:         newData.TargetModels,
+		IsNeverDisable:       newData.IsNeverDisable,
 		LbStrategy:           newData.LbStrategy,
 		Status:               newData.Status,
 	}}); err != nil {
@@ -713,6 +730,7 @@ func (s *sModelAgent) UpdateCacheModelAgent(ctx context.Context, oldData *model.
 		IsEnableModelReplace: newData.IsEnableModelReplace,
 		ReplaceModels:        newData.ReplaceModels,
 		TargetModels:         newData.TargetModels,
+		IsNeverDisable:       newData.IsNeverDisable,
 		LbStrategy:           newData.LbStrategy,
 		Status:               newData.Status,
 		IsAutoDisabled:       newData.IsAutoDisabled,
@@ -867,6 +885,7 @@ func (s *sModelAgent) CreateCacheModelAgentKey(ctx context.Context, key *entity.
 		Weight:         key.Weight,
 		Models:         key.Models,
 		ModelAgents:    key.ModelAgents,
+		IsNeverDisable: key.IsNeverDisable,
 		IsLimitQuota:   key.IsLimitQuota,
 		Quota:          key.Quota,
 		UsedQuota:      key.UsedQuota,
@@ -908,6 +927,7 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 		Weight:             newData.Weight,
 		Models:             newData.Models,
 		ModelAgents:        newData.ModelAgents,
+		IsNeverDisable:     newData.IsNeverDisable,
 		IsLimitQuota:       newData.IsLimitQuota,
 		Quota:              newData.Quota,
 		UsedQuota:          newData.UsedQuota,

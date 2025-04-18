@@ -16,6 +16,7 @@ type ModelAgent struct {
 	IsEnableModelReplace bool     `bson:"is_enable_model_replace,omitempty"` // 是否启用模型替换
 	ReplaceModels        []string `bson:"replace_models,omitempty"`          // 替换模型
 	TargetModels         []string `bson:"target_models,omitempty"`           // 目标模型
+	IsNeverDisable       bool     `bson:"is_never_disable,omitempty"`        // 是否永不禁用
 	LbStrategy           int      `bson:"lb_strategy,omitempty"`             // 密钥负载均衡策略[1:轮询, 2:权重]
 	Remark               string   `bson:"remark,omitempty"`                  // 备注
 	Status               int      `bson:"status,omitempty"`                  // 状态[1:正常, 2:禁用, -1:删除]
