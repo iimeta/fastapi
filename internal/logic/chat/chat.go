@@ -236,13 +236,26 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 					} else {
 						if len(response.Choices) > 1 {
 							for i, choice := range response.Choices {
-								completionsRes.Completion += fmt.Sprintf("index: %d\ncontent: %s\n\n", i, gconv.String(choice.Message.Content))
+
+								if choice.Message.Content != nil {
+									completionsRes.Completion += fmt.Sprintf("index: %d\ncontent: %s\n\n", i, gconv.String(choice.Message.Content))
+								}
+
+								if len(choice.Message.ToolCalls) > 0 {
+									completionsRes.Completion += fmt.Sprintf("index: %d\ntool_calls: %s\n\n", i, gconv.String(choice.Message.ToolCalls))
+								}
 							}
 						} else {
+
 							if response.Choices[0].Message.ReasoningContent != nil {
 								completionsRes.Completion = gconv.String(response.Choices[0].Message.ReasoningContent)
 							}
+
 							completionsRes.Completion += gconv.String(response.Choices[0].Message.Content)
+
+							if len(response.Choices[0].Message.ToolCalls) > 0 {
+								completionsRes.Completion += fmt.Sprintf("\ntool_calls: %s", gconv.String(response.Choices[0].Message.ToolCalls))
+							}
 						}
 					}
 				}
