@@ -20,7 +20,10 @@ type MongoDB struct {
 
 func (m *MongoDB) Find(ctx context.Context, result interface{}) error {
 
-	var findOptions []*options.FindOptions
+	allowDiskUse := true
+	findOptions := []*options.FindOptions{{
+		AllowDiskUse: &allowDiskUse,
+	}}
 
 	if len(m.SortFields) > 0 {
 
