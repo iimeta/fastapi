@@ -56,7 +56,9 @@ func (s *sUser) GetUser(ctx context.Context, userId int) (*model.User, error) {
 		UsedQuota:      user.UsedQuota,
 		QuotaExpiresAt: user.QuotaExpiresAt,
 		Models:         user.Models,
+		Groups:         user.Groups,
 		Status:         user.Status,
+		Rid:            user.Rid,
 	}, nil
 }
 
@@ -89,7 +91,9 @@ func (s *sUser) List(ctx context.Context) ([]*model.User, error) {
 			UsedQuota:      result.UsedQuota,
 			QuotaExpiresAt: result.QuotaExpiresAt,
 			Models:         result.Models,
+			Groups:         result.Groups,
 			Status:         result.Status,
+			Rid:            result.Rid,
 		})
 	}
 
@@ -184,7 +188,9 @@ func (s *sUser) UpdateCacheUser(ctx context.Context, user *entity.User) {
 		UsedQuota:      user.UsedQuota,
 		QuotaExpiresAt: user.QuotaExpiresAt,
 		Models:         user.Models,
+		Groups:         user.Groups,
 		Status:         user.Status,
+		Rid:            user.Rid,
 	}); err != nil {
 		logger.Error(ctx, err)
 	}

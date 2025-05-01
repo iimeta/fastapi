@@ -18,10 +18,11 @@ type (
 		// 记录错误次数和禁用
 		RecordError(ctx context.Context, model *model.Model, key *model.Key, modelAgent *model.ModelAgent)
 		// 记录使用额度
-		RecordUsage(ctx context.Context, totalTokens int, key string) error
+		RecordUsage(ctx context.Context, totalTokens int, key string, group *model.Group) error
 		GetUserTotalTokens(ctx context.Context) (int, error)
 		GetAppTotalTokens(ctx context.Context) (int, error)
 		GetKeyTotalTokens(ctx context.Context) (int, error)
+		GetResellerUsageKey(ctx context.Context) string
 		GetUserUsageKey(ctx context.Context) string
 		GetAppTotalTokensField(ctx context.Context) string
 		GetKeyTotalTokensField(ctx context.Context) string

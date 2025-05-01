@@ -1,6 +1,7 @@
 package consts
 
 const (
+	SESSION_RESELLER           = "session_reseller"
 	SESSION_USER               = "session_user"
 	SESSION_APP                = "session_app"
 	SESSION_KEY                = "session_key"
@@ -8,6 +9,7 @@ const (
 	SESSION_ERROR_KEYS         = "session_error_keys"
 
 	HOST_KEY               = "host"
+	RID_KEY                = "rid"
 	USER_ID_KEY            = "user_id"
 	APP_ID_KEY             = "app_id"
 	SECRET_KEY             = "sk"

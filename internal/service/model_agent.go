@@ -26,6 +26,8 @@ type (
 		GetModelAgentsAndKeys(ctx context.Context) ([]*model.ModelAgent, map[string][]*model.Key, error)
 		// 挑选模型代理
 		PickModelAgent(ctx context.Context, m *model.Model) (int, *model.ModelAgent, error)
+		// 根据模型挑选分组模型代理
+		PickGroupModelAgent(ctx context.Context, m *model.Model, group *model.Group) (int, *model.ModelAgent, error)
 		// 移除模型代理
 		RemoveModelAgent(ctx context.Context, m *model.Model, modelAgent *model.ModelAgent)
 		// 记录错误模型代理
@@ -68,6 +70,8 @@ type (
 		SaveCache(ctx context.Context, modelAgent *model.ModelAgent) error
 		// 获取后备模型代理
 		GetFallbackModelAgent(ctx context.Context, model *model.Model) (fallbackModelAgent *model.ModelAgent, err error)
+		// 保存分组模型代理列表到缓存
+		SaveGroupModelAgentsCache(ctx context.Context, group *model.Group) error
 		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
 	}

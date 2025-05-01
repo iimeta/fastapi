@@ -50,6 +50,24 @@ func (s *sSession) SaveIsLimitQuota(ctx context.Context, app, key bool) {
 	}
 }
 
+// 保存代理商ID到会话中
+func (s *sSession) SaveRid(ctx context.Context, rid int) {
+	if r := g.RequestFromCtx(ctx); r != nil {
+		r.SetCtxVar(consts.RID_KEY, rid)
+	}
+}
+
+// 获取代理商ID
+func (s *sSession) GetRid(ctx context.Context) int {
+
+	rid := ctx.Value(consts.RID_KEY)
+	if rid == nil {
+		return 0
+	}
+
+	return rid.(int)
+}
+
 // 获取用户ID
 func (s *sSession) GetUserId(ctx context.Context) int {
 
@@ -108,6 +126,24 @@ func (s *sSession) GetKeyIsLimitQuota(ctx context.Context) bool {
 	}
 
 	return isLimitQuota.(bool)
+}
+
+// 保存代理商信息到会话中
+func (s *sSession) SaveReseller(ctx context.Context, reseller *model.Reseller) {
+	if r := g.RequestFromCtx(ctx); r != nil {
+		r.SetCtxVar(consts.SESSION_RESELLER, reseller)
+	}
+}
+
+// 获取会话中的代理商信息
+func (s *sSession) GetReseller(ctx context.Context) *model.Reseller {
+
+	reseller := ctx.Value(consts.SESSION_RESELLER)
+	if reseller == nil {
+		return nil
+	}
+
+	return reseller.(*model.Reseller)
 }
 
 // 保存用户信息到会话中

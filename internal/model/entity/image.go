@@ -10,6 +10,9 @@ type Image struct {
 	UserId               int                    `bson:"user_id,omitempty"`                 // 用户ID
 	AppId                int                    `bson:"app_id,omitempty"`                  // 应用ID
 	Corp                 string                 `bson:"corp,omitempty"`                    // 公司
+	GroupId              string                 `bson:"group_id,omitempty"`                // 分组ID
+	GroupName            string                 `bson:"group_name,omitempty"`              // 分组名称
+	Discount             float64                `bson:"discount,omitempty"`                // 分组折扣
 	ModelId              string                 `bson:"model_id,omitempty"`                // 模型ID
 	Name                 string                 `bson:"name,omitempty"`                    // 模型名称
 	Model                string                 `bson:"model,omitempty"`                   // 模型
@@ -49,6 +52,7 @@ type Image struct {
 	Retry                *common.Retry          `bson:"retry,omitempty"`                   // 重试
 	Status               int                    `bson:"status,omitempty"`                  // 状态[1:成功, -1:失败, 2:中止, 3:重试]
 	Host                 string                 `bson:"host,omitempty"`                    // Host
+	Rid                  int                    `bson:"rid,omitempty"`                     // 代理商ID
 	Creator              string                 `bson:"creator,omitempty"`                 // 创建人
 	Updater              string                 `bson:"updater,omitempty"`                 // 更新人
 	CreatedAt            int64                  `bson:"created_at,omitempty"`              // 创建时间

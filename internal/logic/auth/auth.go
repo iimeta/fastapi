@@ -130,6 +130,50 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 		return err
 	}
 
+	if user.Rid != 0 {
+
+		reseller, err := service.Reseller().GetCacheReseller(ctx, user.Rid)
+		if err != nil || reseller == nil {
+
+			if reseller, err = service.Reseller().GetReseller(ctx, user.Rid); err != nil {
+				logger.Error(ctx, err)
+				return errors.ERR_INVALID_RESELLER
+			}
+
+			if err = service.Reseller().SaveCacheReseller(ctx, reseller); err != nil {
+				logger.Error(ctx, err)
+				return err
+			}
+		}
+
+		if reseller == nil {
+			err = errors.ERR_INVALID_RESELLER
+			logger.Error(ctx, err)
+			return err
+		}
+
+		if reseller.Status == 2 {
+			err = errors.ERR_RESELLER_DISABLED
+			logger.Error(ctx, err)
+			return err
+		}
+
+		if service.Reseller().GetCacheResellerQuota(ctx, reseller.UserId) <= 0 {
+			err = errors.ERR_RESELLER_INSUFFICIENT_QUOTA
+			logger.Error(ctx, err)
+			return err
+		}
+
+		if reseller.QuotaExpiresAt != 0 && reseller.QuotaExpiresAt < gtime.TimestampMilli() {
+			err = errors.ERR_RESELLER_QUOTA_EXPIRED
+			logger.Error(ctx, err)
+			return err
+		}
+
+		service.Session().SaveRid(ctx, reseller.UserId)
+		service.Session().SaveReseller(ctx, reseller)
+	}
+
 	app, err := service.App().GetCacheApp(ctx, key.AppId)
 	if err != nil || app == nil {
 		if app, err = service.App().GetApp(ctx, key.AppId); err != nil {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
+	"github.com/gogf/gf/v2/os/gtime"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
@@ -12,6 +13,7 @@ import (
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
+	"slices"
 )
 
 type MAK struct {
@@ -29,12 +31,110 @@ type MAK struct {
 	RealKey            string
 	BaseUrl            string
 	Path               string
+	User               *model.User
+	App                *model.App
+	AppKey             *model.Key
+	Group              *model.Group
 }
 
 func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 
 	if mak.RealModel == nil {
 		mak.RealModel = new(model.Model)
+	}
+
+	if mak.User == nil {
+		if mak.User, err = service.User().GetCacheUser(ctx, service.Session().GetUserId(ctx)); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+	}
+
+	if mak.App == nil {
+		if mak.App, err = service.App().GetCacheApp(ctx, service.Session().GetAppId(ctx)); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+	}
+
+	if mak.AppKey == nil {
+		if mak.AppKey, err = service.App().GetCacheAppKey(ctx, service.Session().GetSecretKey(ctx)); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+	}
+
+	if mak.Group == nil {
+		if len(mak.User.Groups) > 0 && !mak.AppKey.IsBindGroup && !mak.App.IsBindGroup {
+
+			if mak.ReqModel, mak.Group, err = service.Group().PickGroupModel(ctx, mak.Model, mak.User.Groups...); err != nil {
+				logger.Error(ctx, err)
+				return err
+			}
+
+		} else if mak.AppKey.IsBindGroup {
+
+			if mak.AppKey.Group == "" {
+				err = errors.ERR_GROUP_NOT_FOUND
+				logger.Error(ctx, err)
+				return err
+			}
+
+			if mak.Group, err = service.Group().GetCacheGroup(ctx, mak.AppKey.Group); err != nil {
+				logger.Error(ctx, err)
+				return err
+			}
+
+		} else if mak.App.IsBindGroup {
+
+			if mak.App.Group == "" {
+				err = errors.ERR_GROUP_NOT_FOUND
+				logger.Error(ctx, err)
+				return err
+			}
+
+			if mak.Group, err = service.Group().GetCacheGroup(ctx, mak.App.Group); err != nil {
+				logger.Error(ctx, err)
+				return err
+			}
+		}
+	}
+
+	if mak.Group != nil {
+
+		if !slices.Contains(mak.User.Groups, mak.Group.Id) {
+			err = errors.ERR_GROUP_NOT_FOUND
+			logger.Error(ctx, err)
+			return err
+		}
+
+		if mak.Group.Status == 2 {
+			err = errors.ERR_GROUP_DISABLED
+			logger.Error(ctx, err)
+			return err
+		}
+
+		if mak.Group.ExpiresAt != 0 && mak.Group.ExpiresAt < gtime.TimestampMilli() {
+			err = errors.ERR_GROUP_EXPIRED
+			logger.Error(ctx, err)
+			return err
+		}
+
+		if mak.Group.IsLimitQuota && service.Group().GetCacheGroupQuota(ctx, mak.Group.Id) <= 0 {
+			err = errors.ERR_GROUP_INSUFFICIENT_QUOTA
+			logger.Error(ctx, err)
+			return err
+		}
+	}
+
+	if mak.ReqModel == nil && mak.Group != nil {
+		if mak.ReqModel, err = service.Model().GetModelByGroup(ctx, mak.Model, mak.Group); err != nil {
+			if !mak.Group.IsDefault || !errors.Is(err, errors.ERR_MODEL_NOT_FOUND) {
+				logger.Error(ctx, err)
+				return err
+			}
+			mak.Group = nil
+		}
 	}
 
 	if mak.ReqModel == nil {
@@ -50,7 +150,12 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 		*mak.RealModel = *mak.ReqModel
 	}
 
-	if mak.RealModel.IsEnableForward {
+	if mak.Group != nil && mak.Group.IsEnableForward {
+		if mak.RealModel, err = service.Model().GetGroupTargetModel(ctx, mak.Group, mak.RealModel, mak.Messages); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+	} else if mak.RealModel.IsEnableForward {
 		if mak.RealModel, err = service.Model().GetTargetModel(ctx, mak.RealModel, mak.Messages); err != nil {
 			logger.Error(ctx, err)
 			return err
@@ -61,7 +166,12 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 	mak.BaseUrl = mak.RealModel.BaseUrl
 	mak.Path = mak.RealModel.Path
 
-	if mak.FallbackModelAgent != nil || mak.RealModel.IsEnableModelAgent {
+	if mak.Group != nil && mak.Group.IsEnableModelAgent {
+		if mak.AgentTotal, mak.ModelAgent, err = service.ModelAgent().PickGroupModelAgent(ctx, mak.RealModel, mak.Group); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+	} else if mak.FallbackModelAgent != nil || mak.RealModel.IsEnableModelAgent {
 
 		if mak.FallbackModelAgent != nil {
 			mak.ModelAgent = mak.FallbackModelAgent
@@ -90,39 +200,39 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 				return err
 			}
 		}
+	}
 
-		if mak.ModelAgent != nil {
+	if mak.ModelAgent != nil {
 
-			mak.Corp = mak.ModelAgent.Corp
-			mak.BaseUrl = mak.ModelAgent.BaseUrl
-			mak.Path = mak.ModelAgent.Path
+		mak.Corp = mak.ModelAgent.Corp
+		mak.BaseUrl = mak.ModelAgent.BaseUrl
+		mak.Path = mak.ModelAgent.Path
 
-			if mak.KeyTotal, mak.Key, err = service.ModelAgent().PickModelAgentKey(ctx, mak.ModelAgent); err != nil {
-				logger.Error(ctx, err)
+		if mak.KeyTotal, mak.Key, err = service.ModelAgent().PickModelAgentKey(ctx, mak.ModelAgent); err != nil {
+			logger.Error(ctx, err)
 
-				service.ModelAgent().RecordErrorModelAgent(ctx, mak.RealModel, mak.ModelAgent)
+			service.ModelAgent().RecordErrorModelAgent(ctx, mak.RealModel, mak.ModelAgent)
 
-				if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY) {
-					service.ModelAgent().DisabledModelAgent(ctx, mak.ModelAgent, "No available model agent key")
-				}
-
-				if mak.RealModel.IsEnableFallback {
-
-					if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
-						if mak.FallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, mak.RealModel); mak.FallbackModelAgent != nil {
-							return mak.InitMAK(ctx)
-						}
-					}
-
-					if mak.RealModel.FallbackConfig.Model != "" {
-						if mak.FallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); mak.FallbackModel != nil {
-							return mak.InitMAK(ctx)
-						}
-					}
-				}
-
-				return err
+			if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY) {
+				service.ModelAgent().DisabledModelAgent(ctx, mak.ModelAgent, "No available model agent key")
 			}
+
+			if mak.RealModel.IsEnableFallback {
+
+				if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
+					if mak.FallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, mak.RealModel); mak.FallbackModelAgent != nil {
+						return mak.InitMAK(ctx)
+					}
+				}
+
+				if mak.RealModel.FallbackConfig.Model != "" {
+					if mak.FallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); mak.FallbackModel != nil {
+						return mak.InitMAK(ctx)
+					}
+				}
+			}
+
+			return err
 		}
 
 	} else {

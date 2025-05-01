@@ -1,6 +1,6 @@
 package model
 
-type User struct {
+type Reseller struct {
 	Id             string   `json:"id,omitempty"`               // ID
 	UserId         int      `json:"user_id,omitempty"`          // 用户ID
 	Name           string   `json:"name,omitempty"`             // 姓名
@@ -14,12 +14,6 @@ type User struct {
 	Groups         []string `json:"groups,omitempty"`           // 分组权限
 	Remark         string   `json:"remark,omitempty"`           // 备注
 	Status         int      `json:"status,omitempty"`           // 状态[1:正常, 2:禁用, -1:删除]
-	Rid            int      `json:"rid,omitempty"`              // 代理商ID
 	CreatedAt      string   `json:"created_at,omitempty"`       // 创建时间
 	UpdatedAt      string   `json:"updated_at,omitempty"`       // 更新时间
-}
-
-type UserQuota struct {
-	UserId       int `json:"user_id,omitempty"` // 用户ID
-	CurrentQuota int `json:"quota,omitempty"`   // 当前额度
 }

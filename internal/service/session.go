@@ -17,6 +17,10 @@ type (
 		Save(ctx context.Context, secretKey string) error
 		// 保存应用和密钥是否限制额度
 		SaveIsLimitQuota(ctx context.Context, app bool, key bool)
+		// 保存代理商ID到会话中
+		SaveRid(ctx context.Context, rid int)
+		// 获取代理商ID
+		GetRid(ctx context.Context) int
 		// 获取用户ID
 		GetUserId(ctx context.Context) int
 		// 获取应用ID
@@ -27,6 +31,10 @@ type (
 		GetAppIsLimitQuota(ctx context.Context) bool
 		// 获取密钥是否限制额度
 		GetKeyIsLimitQuota(ctx context.Context) bool
+		// 保存代理商信息到会话中
+		SaveReseller(ctx context.Context, reseller *model.Reseller)
+		// 获取会话中的代理商信息
+		GetReseller(ctx context.Context) *model.Reseller
 		// 保存用户信息到会话中
 		SaveUser(ctx context.Context, user *model.User)
 		// 获取会话中的用户信息

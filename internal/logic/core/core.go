@@ -13,9 +13,11 @@ import (
 	"github.com/iimeta/fastapi/internal/consts"
 	_ "github.com/iimeta/fastapi/internal/logic/app"
 	_ "github.com/iimeta/fastapi/internal/logic/corp"
+	_ "github.com/iimeta/fastapi/internal/logic/group"
 	_ "github.com/iimeta/fastapi/internal/logic/key"
 	_ "github.com/iimeta/fastapi/internal/logic/model"
 	_ "github.com/iimeta/fastapi/internal/logic/model_agent"
+	_ "github.com/iimeta/fastapi/internal/logic/reseller"
 	_ "github.com/iimeta/fastapi/internal/logic/user"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
@@ -61,6 +63,7 @@ func init() {
 	})
 
 	channels := make([]string, 0)
+	channels = append(channels, consts.CHANGE_CHANNEL_RESELLER)
 	channels = append(channels, consts.CHANGE_CHANNEL_USER)
 	channels = append(channels, consts.CHANGE_CHANNEL_APP)
 	channels = append(channels, consts.CHANGE_CHANNEL_APP_KEY)
@@ -68,6 +71,7 @@ func init() {
 	channels = append(channels, consts.CHANGE_CHANNEL_MODEL)
 	channels = append(channels, consts.CHANGE_CHANNEL_KEY)
 	channels = append(channels, consts.CHANGE_CHANNEL_AGENT)
+	channels = append(channels, consts.CHANGE_CHANNEL_GROUP)
 	channels = append(channels, consts.REFRESH_CHANNEL_API)
 
 	conn, _, err := redis.Subscribe(ctx, channels[0], channels[1:]...)
@@ -91,6 +95,8 @@ func init() {
 			}
 
 			switch msg.Channel {
+			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_RESELLER:
+				err = service.Reseller().Subscribe(gctx.New(), msg.Payload)
 			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_USER:
 				err = service.User().Subscribe(gctx.New(), msg.Payload)
 			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_APP:
@@ -105,6 +111,8 @@ func init() {
 				err = service.Key().Subscribe(gctx.New(), msg.Payload)
 			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_AGENT:
 				err = service.ModelAgent().Subscribe(gctx.New(), msg.Payload)
+			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_GROUP:
+				err = service.Group().Subscribe(gctx.New(), msg.Payload)
 			case config.Cfg.Core.ChannelPrefix + consts.REFRESH_CHANNEL_API:
 				err = core.Refresh(gctx.New())
 			}
@@ -134,6 +142,34 @@ func (s *sCore) Refresh(ctx context.Context) error {
 		logger.Debugf(ctx, "sCore Refresh time: %d", gtime.TimestampMilli()-now)
 	}()
 
+	resellers, err := service.Reseller().List(ctx)
+	if err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	for _, reseller := range resellers {
+
+		if err = service.Reseller().SaveCacheReseller(ctx, reseller); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+
+		if err = service.Reseller().SaveCacheResellerQuota(ctx, reseller.UserId, reseller.Quota); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+
+		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+			if _, err = redis.HSetStrAny(ctx, fmt.Sprintf(consts.API_RESELLER_USAGE_KEY, reseller.UserId), consts.RESELLER_QUOTA_FIELD, reseller.Quota); err != nil {
+				logger.Error(ctx, err)
+			}
+		}, nil); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+	}
+
 	users, err := service.User().List(ctx)
 	if err != nil {
 		logger.Error(ctx, err)
@@ -154,7 +190,7 @@ func (s *sCore) Refresh(ctx context.Context) error {
 		}
 
 		if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-			if _, err = redis.HSetStrAny(ctx, fmt.Sprintf(consts.API_USAGE_KEY, user.UserId), consts.USER_QUOTA_FIELD, user.Quota); err != nil {
+			if _, err = redis.HSetStrAny(ctx, fmt.Sprintf(consts.API_USER_USAGE_KEY, user.UserId), consts.USER_QUOTA_FIELD, user.Quota); err != nil {
 				logger.Error(ctx, err)
 			}
 		}, nil); err != nil {
@@ -218,7 +254,7 @@ func (s *sCore) Refresh(ctx context.Context) error {
 			}
 
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if _, err = redis.HSet(ctx, fmt.Sprintf(consts.API_USAGE_KEY, app.UserId), fields); err != nil {
+				if _, err = redis.HSet(ctx, fmt.Sprintf(consts.API_USER_USAGE_KEY, app.UserId), fields); err != nil {
 					logger.Error(ctx, err)
 				}
 			}, nil); err != nil {
@@ -280,6 +316,36 @@ func (s *sCore) Refresh(ctx context.Context) error {
 				logger.Error(ctx, err)
 				return err
 			}
+		}
+	}
+
+	groups, err := service.Group().List(ctx)
+	if err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	if len(groups) > 0 {
+
+		if err = service.Group().SaveCacheList(ctx, groups); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+
+		fields := g.Map{}
+		for _, group := range groups {
+
+			if err = service.Group().SaveCacheGroupQuota(ctx, group.Id, group.Quota); err != nil {
+				logger.Error(ctx, err)
+				return err
+			}
+
+			fields[group.Id] = group.Quota
+		}
+
+		if _, err = redis.HSet(ctx, consts.API_GROUP_USAGE_KEY, fields); err != nil {
+			logger.Error(ctx, err)
+			return err
 		}
 	}
 

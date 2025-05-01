@@ -21,6 +21,7 @@ import (
 	"github.com/iimeta/fastapi/utility/util"
 	"github.com/iimeta/go-openai"
 	"math"
+	"slices"
 	"time"
 )
 
@@ -66,8 +67,13 @@ func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallback
 				totalTokens = mak.ReqModel.AudioQuota.FixedQuota
 			}
 
+			// 分组折扣
+			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
+				totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
+			}
+
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key); err != nil {
+				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -95,7 +101,7 @@ func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallback
 					audioRes.TotalTokens = totalTokens
 				}
 
-				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, audioReq, audioRes, retryInfo)
+				s.SaveLog(ctx, mak.Group, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, audioReq, audioRes, retryInfo)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -233,8 +239,13 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 				totalTokens = mak.ReqModel.AudioQuota.FixedQuota
 			}
 
+			// 分组折扣
+			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
+				totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
+			}
+
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key); err != nil {
+				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -263,7 +274,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 					audioRes.TotalTokens = totalTokens
 				}
 
-				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, audioReq, audioRes, retryInfo)
+				s.SaveLog(ctx, mak.Group, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, audioReq, audioRes, retryInfo)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -363,7 +374,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 }
 
 // 保存日志
-func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel *model.Model, modelAgent, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, audioReq *model.AudioReq, audioRes *model.AudioRes, retryInfo *mcommon.Retry, retry ...int) {
+func (s *sAudio) SaveLog(ctx context.Context, group *model.Group, reqModel, realModel *model.Model, modelAgent, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, audioReq *model.AudioReq, audioRes *model.AudioRes, retryInfo *mcommon.Retry, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -371,7 +382,12 @@ func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel *model.Model, 
 	}()
 
 	// 不记录此错误日志
-	if audioRes.Error != nil && (errors.Is(audioRes.Error, errors.ERR_MODEL_NOT_FOUND) || errors.Is(audioRes.Error, errors.ERR_MODEL_DISABLED)) {
+	if audioRes.Error != nil && (errors.Is(audioRes.Error, errors.ERR_MODEL_NOT_FOUND) ||
+		errors.Is(audioRes.Error, errors.ERR_MODEL_DISABLED) ||
+		errors.Is(audioRes.Error, errors.ERR_GROUP_NOT_FOUND) ||
+		errors.Is(audioRes.Error, errors.ERR_GROUP_DISABLED) ||
+		errors.Is(audioRes.Error, errors.ERR_GROUP_EXPIRED) ||
+		errors.Is(audioRes.Error, errors.ERR_GROUP_INSUFFICIENT_QUOTA)) {
 		return
 	}
 
@@ -394,6 +410,13 @@ func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel *model.Model, 
 		LocalIp:      util.GetLocalIp(),
 		Status:       1,
 		Host:         g.RequestFromCtx(ctx).GetHost(),
+		Rid:          service.Session().GetRid(ctx),
+	}
+
+	if group != nil {
+		audio.GroupId = group.Id
+		audio.GroupName = group.Name
+		audio.Discount = group.Discount
 	}
 
 	if reqModel != nil {
@@ -497,6 +520,6 @@ func (s *sAudio) SaveLog(ctx context.Context, reqModel, realModel *model.Model, 
 
 		logger.Errorf(ctx, "sAudio SaveLog retry: %d", len(retry))
 
-		s.SaveLog(ctx, reqModel, realModel, modelAgent, fallbackModelAgent, fallbackModel, key, audioReq, audioRes, retryInfo, retry...)
+		s.SaveLog(ctx, group, reqModel, realModel, modelAgent, fallbackModelAgent, fallbackModel, key, audioReq, audioRes, retryInfo, retry...)
 	}
 }

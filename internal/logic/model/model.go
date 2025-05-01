@@ -484,6 +484,118 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 	return nil, errors.ERR_MODEL_NOT_FOUND
 }
 
+// 根据model和group获取模型信息
+func (s *sModel) GetModelByGroup(ctx context.Context, m string, group *model.Group) (*model.Model, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModel GetModelByGroup time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	if len(group.Models) == 0 {
+		err := errors.ERR_MODEL_NOT_FOUND
+		logger.Info(ctx, err)
+		return nil, err
+	}
+
+	models, err := s.GetCacheList(ctx, group.Models...)
+	if err != nil || len(models) != len(group.Models) {
+		if models, err = s.GetModelListAndSaveCacheList(ctx, group.Models); err != nil {
+			logger.Error(ctx, err)
+			return nil, err
+		}
+	}
+
+	if len(models) == 0 {
+		err = errors.ERR_MODEL_NOT_FOUND
+		logger.Info(ctx, err)
+		return nil, err
+	}
+
+	groupModels := make([]*model.Model, 0)
+	groupWildcardModels := make([]*model.Model, 0)
+
+	for _, v := range models {
+
+		if gstr.Contains(v.Name, "*") {
+			groupWildcardModels = append(groupWildcardModels, v)
+		}
+
+		if v.Name == m {
+			groupModels = append(groupModels, v)
+			break
+		}
+	}
+
+	for _, v := range models {
+
+		if gstr.Contains(v.Model, "*") {
+			groupWildcardModels = append(groupWildcardModels, v)
+		}
+
+		if v.Model == m {
+			groupModels = append(groupModels, v)
+		}
+	}
+
+	if len(groupModels) == 0 && len(groupWildcardModels) > 0 {
+
+		for _, v := range groupWildcardModels {
+			if gregex.IsMatchString(v.Name, m) {
+				groupModels = append(groupModels, v)
+			}
+		}
+
+		for _, v := range groupWildcardModels {
+			if gregex.IsMatchString(v.Model, m) {
+				groupModels = append(groupModels, v)
+			}
+		}
+	}
+
+	if len(groupModels) == 0 {
+		err = errors.ERR_MODEL_NOT_FOUND
+		logger.Info(ctx, err)
+		return nil, err
+	}
+
+	isModelDisabled := false
+
+	for _, groupModel := range groupModels {
+
+		if groupModel.Name == m || (len(groupWildcardModels) > 0 && gregex.IsMatchString(groupModel.Name, m)) {
+
+			if groupModel.Status == 2 {
+				isModelDisabled = true
+				continue
+			}
+
+			return groupModel, nil
+		}
+	}
+
+	for _, groupModel := range groupModels {
+
+		if groupModel.Model == m || (len(groupWildcardModels) > 0 && gregex.IsMatchString(groupModel.Model, m)) {
+
+			if groupModel.Status == 2 {
+				isModelDisabled = true
+				continue
+			}
+
+			return groupModel, nil
+		}
+	}
+
+	if isModelDisabled {
+		err = errors.ERR_MODEL_DISABLED
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	return nil, errors.ERR_MODEL_NOT_FOUND
+}
+
 // 模型列表
 func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error) {
 
@@ -945,6 +1057,161 @@ func (s *sModel) GetTargetModel(ctx context.Context, model *model.Model, message
 					targetModel, err = s.GetCacheModel(ctx, model.ForwardConfig.TargetModels[index])
 					if err != nil || targetModel == nil {
 						if targetModel, err = s.GetModelAndSaveCache(ctx, model.ForwardConfig.TargetModels[index]); err != nil {
+							logger.Error(ctx, err)
+							return nil, err
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if targetModel == nil || targetModel.Status != 1 {
+		return model, nil
+	}
+
+	return s.GetTargetModel(ctx, targetModel, messages)
+}
+
+// 获取分组目标模型
+func (s *sModel) GetGroupTargetModel(ctx context.Context, group *model.Group, model *model.Model, messages []sdkm.ChatCompletionMessage) (targetModel *model.Model, err error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModel GetGroupTargetModel time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	if !group.IsEnableForward {
+		return model, nil
+	}
+
+	if group.ForwardConfig.ForwardRule == 1 {
+
+		if targetModel, err = s.GetCacheModel(ctx, group.ForwardConfig.TargetModel); err != nil || targetModel == nil {
+			if targetModel, err = s.GetModelAndSaveCache(ctx, group.ForwardConfig.TargetModel); err != nil {
+				logger.Error(ctx, err)
+				return nil, err
+			}
+		}
+
+	} else if group.ForwardConfig.ForwardRule == 3 {
+
+		contentLength := 0
+		for _, message := range messages {
+			contentLength += len(gconv.String(message.Content))
+		}
+
+		if contentLength < group.ForwardConfig.ContentLength {
+			return model, nil
+		}
+
+		if targetModel, err = s.GetCacheModel(ctx, group.ForwardConfig.TargetModel); err != nil || targetModel == nil {
+			if targetModel, err = s.GetModelAndSaveCache(ctx, group.ForwardConfig.TargetModel); err != nil {
+				logger.Error(ctx, err)
+				return nil, err
+			}
+		}
+
+	} else if group.ForwardConfig.ForwardRule == 4 {
+
+		if group.UsedQuota < group.ForwardConfig.UsedQuota {
+			return model, nil
+		}
+
+		if targetModel, err = s.GetCacheModel(ctx, group.ForwardConfig.TargetModel); err != nil || targetModel == nil {
+			if targetModel, err = s.GetModelAndSaveCache(ctx, group.ForwardConfig.TargetModel); err != nil {
+				logger.Error(ctx, err)
+				return nil, err
+			}
+		}
+
+	} else {
+
+		prompt := gconv.String(messages[len(messages)-1].Content)
+
+		keywords := group.ForwardConfig.Keywords
+		if slices.Contains(group.ForwardConfig.MatchRule, 2) {
+
+			prompt := gstr.ToLower(gstr.TrimAll(prompt))
+
+			for i, keyword := range keywords {
+
+				if gregex.IsMatchString(gstr.ToLower(gstr.TrimAll(keyword)), prompt) {
+
+					if targetModel, err = s.GetCacheModel(ctx, group.ForwardConfig.TargetModels[i]); err != nil || targetModel == nil {
+						if targetModel, err = s.GetModelAndSaveCache(ctx, group.ForwardConfig.TargetModels[i]); err != nil {
+							logger.Error(ctx, err)
+							return nil, err
+						}
+					}
+
+					if targetModel != nil {
+						break
+					}
+				}
+			}
+		}
+
+		if targetModel == nil && slices.Contains(group.ForwardConfig.MatchRule, 1) {
+
+			decisionModel, err := s.GetCacheModel(ctx, group.ForwardConfig.DecisionModel)
+			if err != nil || decisionModel == nil {
+				decisionModel, err = s.GetModelAndSaveCache(ctx, group.ForwardConfig.DecisionModel)
+			}
+
+			if decisionModel == nil || decisionModel.Status != 1 {
+				return model, nil
+			}
+
+			systemPrompt := "You are an emotionless question judgment expert. You will only return the content within the options and will not add any other information. The enumerated content options that can be returned are as follows: [-1%s]"
+			systemEnum := ""
+			decisionPrompt := "please only return the value that include in enum: [-1%s]; Return the result based on the nature of the conversation: %s Other: -1. The question you need to decide is: '%s'"
+			decisionEnum := ""
+
+			for i, keyword := range keywords {
+				if i == 0 {
+					systemEnum = fmt.Sprintf(",%d", i)
+					decisionEnum = fmt.Sprintf("About %s, return %d;", gstr.Replace(keyword, "|", " or about "), i)
+				} else {
+					systemEnum += fmt.Sprintf(",%d", i)
+					decisionEnum += fmt.Sprintf(" About %s, return %d;", gstr.Replace(keyword, "|", " or about "), i)
+				}
+			}
+
+			systemPrompt = fmt.Sprintf(systemPrompt, systemEnum)
+			decisionPrompt = fmt.Sprintf(decisionPrompt, systemEnum, decisionEnum, prompt)
+
+			messages := []sdkm.ChatCompletionMessage{{
+				Role:    consts.ROLE_SYSTEM,
+				Content: systemPrompt,
+			}, {
+				Role:    consts.ROLE_USER,
+				Content: decisionPrompt,
+			}}
+
+			response, err := service.Chat().SmartCompletions(ctx, sdkm.ChatCompletionRequest{
+				Model:    decisionModel.Model,
+				Messages: messages,
+			}, decisionModel, nil, nil)
+
+			if err != nil {
+				logger.Error(ctx, err)
+				return nil, err
+			}
+
+			logger.Infof(ctx, "sModel GetGroupTargetModel SmartCompletions response: %s", gjson.MustEncodeString(response))
+
+			if len(response.Choices) > 0 {
+
+				if index, err := strconv.Atoi(gconv.String(response.Choices[0].Message.Content)); err == nil {
+
+					if index == -1 {
+						return model, nil
+					}
+
+					targetModel, err = s.GetCacheModel(ctx, group.ForwardConfig.TargetModels[index])
+					if err != nil || targetModel == nil {
+						if targetModel, err = s.GetModelAndSaveCache(ctx, group.ForwardConfig.TargetModels[index]); err != nil {
 							logger.Error(ctx, err)
 							return nil, err
 						}

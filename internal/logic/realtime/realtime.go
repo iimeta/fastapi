@@ -112,7 +112,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 					EnterTime:    enterTime,
 				}
 
-				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &sdkm.ChatCompletionRequest{Stream: true}, completionsRes, retryInfo, false)
+				s.SaveLog(ctx, mak.Group, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &sdkm.ChatCompletionRequest{Stream: true}, completionsRes, retryInfo, false)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -242,7 +242,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 						EnterTime:    enterTime,
 					}
 
-					s.SaveLog(ctx, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &sdkm.ChatCompletionRequest{Stream: true}, completionsRes, retryInfo, false)
+					s.SaveLog(ctx, mak.Group, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &sdkm.ChatCompletionRequest{Stream: true}, completionsRes, retryInfo, false)
 
 				}); err != nil {
 					logger.Error(ctx, err)
@@ -326,7 +326,13 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 				}
 
 				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key); err != nil {
+
+					// 分组折扣
+					if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
+						totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
+					}
+
+					if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
 						logger.Error(ctx, err)
 						panic(err)
 					}
@@ -353,7 +359,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 					completionsRes.Usage = *usage
 					completionsRes.Usage.TotalTokens = totalTokens
 
-					s.SaveLog(ctx, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &sdkm.ChatCompletionRequest{Stream: true, Messages: []sdkm.ChatCompletionMessage{{Content: message}}}, completionsRes, retryInfo, false)
+					s.SaveLog(ctx, mak.Group, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &sdkm.ChatCompletionRequest{Stream: true, Messages: []sdkm.ChatCompletionMessage{{Content: message}}}, completionsRes, retryInfo, false)
 
 				}); err != nil {
 					logger.Error(ctx, err)
@@ -419,7 +425,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 }
 
 // 保存日志
-func (s *sRealtime) SaveLog(ctx context.Context, reqModel, realModel *model.Model, modelAgent, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, isSmartMatch bool, retry ...int) {
+func (s *sRealtime) SaveLog(ctx context.Context, group *model.Group, reqModel, realModel *model.Model, modelAgent, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.ChatCompletionRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, isSmartMatch bool, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -427,7 +433,12 @@ func (s *sRealtime) SaveLog(ctx context.Context, reqModel, realModel *model.Mode
 	}()
 
 	// 不记录此错误日志
-	if completionsRes.Error != nil && (errors.Is(completionsRes.Error, errors.ERR_MODEL_NOT_FOUND) || errors.Is(completionsRes.Error, errors.ERR_MODEL_DISABLED)) {
+	if completionsRes.Error != nil && (errors.Is(completionsRes.Error, errors.ERR_MODEL_NOT_FOUND) ||
+		errors.Is(completionsRes.Error, errors.ERR_MODEL_DISABLED) ||
+		errors.Is(completionsRes.Error, errors.ERR_GROUP_NOT_FOUND) ||
+		errors.Is(completionsRes.Error, errors.ERR_GROUP_DISABLED) ||
+		errors.Is(completionsRes.Error, errors.ERR_GROUP_EXPIRED) ||
+		errors.Is(completionsRes.Error, errors.ERR_GROUP_INSUFFICIENT_QUOTA)) {
 		return
 	}
 
@@ -451,6 +462,13 @@ func (s *sRealtime) SaveLog(ctx context.Context, reqModel, realModel *model.Mode
 		LocalIp:          util.GetLocalIp(),
 		Status:           1,
 		Host:             g.RequestFromCtx(ctx).GetHost(),
+		Rid:              service.Session().GetRid(ctx),
+	}
+
+	if group != nil {
+		chat.GroupId = group.Id
+		chat.GroupName = group.Name
+		chat.Discount = group.Discount
 	}
 
 	if config.Cfg.Log.Open && len(completionsReq.Messages) > 0 && slices.Contains(config.Cfg.Log.ChatRecords, "prompt") {
@@ -582,6 +600,6 @@ func (s *sRealtime) SaveLog(ctx context.Context, reqModel, realModel *model.Mode
 
 		logger.Errorf(ctx, "sRealtime SaveLog retry: %d", len(retry))
 
-		s.SaveLog(ctx, reqModel, realModel, modelAgent, fallbackModelAgent, fallbackModel, key, completionsReq, completionsRes, retryInfo, isSmartMatch, retry...)
+		s.SaveLog(ctx, group, reqModel, realModel, modelAgent, fallbackModelAgent, fallbackModel, key, completionsReq, completionsRes, retryInfo, isSmartMatch, retry...)
 	}
 }

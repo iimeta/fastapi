@@ -21,11 +21,13 @@ import (
 )
 
 type sModelAgent struct {
-	modelAgentCache               *cache.Cache // [模型代理ID]模型代理
-	modelAgentsCache              *cache.Cache // [模型ID][]模型代理列表
-	modelAgentsRoundRobinCache    *cache.Cache // [模型ID]模型代理下标索引
-	modelAgentKeysCache           *cache.Cache // [模型代理ID][]模型代理密钥列表
-	modelAgentKeysRoundRobinCache *cache.Cache // [模型代理ID]模型代理密钥下标索引
+	modelAgentCache                 *cache.Cache // [模型代理ID]模型代理
+	modelAgentKeysCache             *cache.Cache // [模型代理ID][]模型代理密钥列表
+	modelAgentKeysRoundRobinCache   *cache.Cache // [模型代理ID]模型代理密钥下标索引
+	modelAgentsCache                *cache.Cache // [模型ID][]模型代理列表
+	modelAgentsRoundRobinCache      *cache.Cache // [模型ID]模型代理下标索引
+	groupModelAgentsCache           *cache.Cache // [分组ID][]模型代理列表
+	groupModelAgentsRoundRobinCache *cache.Cache // [分组ID]模型代理下标索引
 }
 
 func init() {
@@ -34,11 +36,13 @@ func init() {
 
 func New() service.IModelAgent {
 	return &sModelAgent{
-		modelAgentsCache:              cache.New(),
-		modelAgentsRoundRobinCache:    cache.New(),
-		modelAgentKeysRoundRobinCache: cache.New(),
-		modelAgentCache:               cache.New(),
-		modelAgentKeysCache:           cache.New(),
+		modelAgentCache:                 cache.New(),
+		modelAgentKeysCache:             cache.New(),
+		modelAgentKeysRoundRobinCache:   cache.New(),
+		modelAgentsCache:                cache.New(),
+		modelAgentsRoundRobinCache:      cache.New(),
+		groupModelAgentsCache:           cache.New(),
+		groupModelAgentsRoundRobinCache: cache.New(),
 	}
 }
 
@@ -210,6 +214,8 @@ func (s *sModelAgent) GetModelAgentKeys(ctx context.Context, id string) ([]*mode
 			Quota:          result.Quota,
 			UsedQuota:      result.UsedQuota,
 			QuotaExpiresAt: result.QuotaExpiresAt,
+			IsBindGroup:    result.IsBindGroup,
+			Group:          result.Group,
 			IpWhitelist:    result.IpWhitelist,
 			IpBlacklist:    result.IpBlacklist,
 			Status:         result.Status,
@@ -359,6 +365,103 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (int, 
 	if roundRobin == nil {
 		roundRobin = lb.NewRoundRobin()
 		if err = s.modelAgentsRoundRobinCache.Set(ctx, m.Id, roundRobin, 0); err != nil {
+			logger.Error(ctx, err)
+			return 0, nil, err
+		}
+	}
+
+	return len(filterModelAgentList), filterModelAgentList[roundRobin.Index(len(filterModelAgentList))], nil
+}
+
+// 根据模型挑选分组模型代理
+func (s *sModelAgent) PickGroupModelAgent(ctx context.Context, m *model.Model, group *model.Group) (int, *model.ModelAgent, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModelAgent PickGroupModelAgent time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	var (
+		modelAgents []*model.ModelAgent
+		roundRobin  *lb.RoundRobin
+		err         error
+	)
+
+	if modelAgentsValue := s.groupModelAgentsCache.GetVal(ctx, group.Id); modelAgentsValue != nil {
+		modelAgents = modelAgentsValue.([]*model.ModelAgent)
+	}
+
+	if len(modelAgents) != len(group.ModelAgents) {
+
+		modelAgents, err = s.GetCacheList(ctx, group.ModelAgents...)
+		if err != nil || len(modelAgents) != len(group.ModelAgents) {
+
+			if modelAgents, err = s.List(ctx, group.ModelAgents); err != nil {
+				logger.Error(ctx, err)
+				return 0, nil, err
+			}
+
+			if err = s.SaveCacheList(ctx, modelAgents); err != nil {
+				logger.Error(ctx, err)
+				return 0, nil, err
+			}
+		}
+
+		if len(modelAgents) == 0 {
+			return 0, nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT
+		}
+
+		if err = s.groupModelAgentsCache.Set(ctx, group.Id, modelAgents, 0); err != nil {
+			logger.Error(ctx, err)
+			return 0, nil, err
+		}
+	}
+
+	modelAgentList := make([]*model.ModelAgent, 0)
+	for _, modelAgent := range modelAgents {
+		// 过滤被禁用的模型代理
+		if modelAgent.Status == 1 && slices.Contains(modelAgent.Models, m.Id) {
+			modelAgentList = append(modelAgentList, modelAgent)
+		}
+	}
+
+	if len(modelAgentList) == 0 {
+		return 0, nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT
+	}
+
+	filterModelAgentList := make([]*model.ModelAgent, 0)
+	if len(modelAgentList) > 1 {
+		errorModelAgents := service.Session().GetErrorModelAgents(ctx)
+		if len(errorModelAgents) > 0 {
+			for _, modelAgent := range modelAgentList {
+				// 过滤错误的模型代理
+				if !slices.Contains(errorModelAgents, modelAgent.Id) {
+					filterModelAgentList = append(filterModelAgentList, modelAgent)
+				}
+			}
+		} else {
+			filterModelAgentList = modelAgentList
+		}
+	} else {
+		filterModelAgentList = modelAgentList
+	}
+
+	if len(filterModelAgentList) == 0 {
+		return 0, nil, errors.ERR_ALL_MODEL_AGENT
+	}
+
+	// 负载策略-权重
+	if group.LbStrategy == 2 {
+		return len(filterModelAgentList), lb.NewModelAgentWeight(filterModelAgentList).PickModelAgent(), nil
+	}
+
+	if roundRobinValue := s.groupModelAgentsRoundRobinCache.GetVal(ctx, group.Id); roundRobinValue != nil {
+		roundRobin = roundRobinValue.(*lb.RoundRobin)
+	}
+
+	if roundRobin == nil {
+		roundRobin = lb.NewRoundRobin()
+		if err = s.groupModelAgentsRoundRobinCache.Set(ctx, group.Id, roundRobin, 0); err != nil {
 			logger.Error(ctx, err)
 			return 0, nil, err
 		}
@@ -619,6 +722,8 @@ func (s *sModelAgent) DisabledModelAgentKey(ctx context.Context, key *model.Key,
 		Quota:              key.Quota,
 		UsedQuota:          key.UsedQuota,
 		QuotaExpiresAt:     key.QuotaExpiresAt,
+		IsBindGroup:        key.IsBindGroup,
+		Group:              key.Group,
 		IpWhitelist:        key.IpWhitelist,
 		IpBlacklist:        key.IpBlacklist,
 		Status:             2,
@@ -801,6 +906,32 @@ func (s *sModelAgent) UpdateCacheModelAgent(ctx context.Context, oldData *model.
 			}
 		}
 	}
+
+	if groups, err := s.groupModelAgentsCache.Keys(ctx); err == nil {
+		for _, id := range groups {
+
+			if modelAgentsValue := s.groupModelAgentsCache.GetVal(ctx, id); modelAgentsValue != nil {
+
+				if modelAgents := modelAgentsValue.([]*model.ModelAgent); len(modelAgents) > 0 {
+
+					newModelAgents := make([]*model.ModelAgent, 0)
+					for _, agent := range modelAgents {
+						if agent.Id != newData.Id {
+							newModelAgents = append(newModelAgents, agent)
+						} else {
+							newModelAgents = append(newModelAgents, newData)
+						}
+					}
+
+					if err := s.groupModelAgentsCache.Set(ctx, id, newModelAgents, 0); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
+			}
+		}
+	} else {
+		logger.Error(ctx, err)
+	}
 }
 
 // 移除缓存中的模型代理
@@ -829,6 +960,30 @@ func (s *sModelAgent) RemoveCacheModelAgent(ctx context.Context, modelAgent *mod
 				}
 			}
 		}
+	}
+
+	if groups, err := s.groupModelAgentsCache.Keys(ctx); err == nil {
+		for _, id := range groups {
+
+			if modelAgentsValue := s.groupModelAgentsCache.GetVal(ctx, id); modelAgentsValue != nil {
+
+				if modelAgents := modelAgentsValue.([]*model.ModelAgent); len(modelAgents) > 0 {
+
+					newModelAgents := make([]*model.ModelAgent, 0)
+					for _, agent := range modelAgents {
+						if agent.Id != modelAgent.Id {
+							newModelAgents = append(newModelAgents, agent)
+						}
+					}
+
+					if err := s.groupModelAgentsCache.Set(ctx, id, newModelAgents, 0); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
+			}
+		}
+	} else {
+		logger.Error(ctx, err)
 	}
 
 	if _, err := s.modelAgentCache.Remove(ctx, modelAgent.Id); err != nil {
@@ -890,6 +1045,8 @@ func (s *sModelAgent) CreateCacheModelAgentKey(ctx context.Context, key *entity.
 		Quota:          key.Quota,
 		UsedQuota:      key.UsedQuota,
 		QuotaExpiresAt: key.QuotaExpiresAt,
+		IsBindGroup:    key.IsBindGroup,
+		Group:          key.Group,
 		IpWhitelist:    key.IpWhitelist,
 		IpBlacklist:    key.IpBlacklist,
 		Status:         key.Status,
@@ -932,6 +1089,8 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 		Quota:              newData.Quota,
 		UsedQuota:          newData.UsedQuota,
 		QuotaExpiresAt:     newData.QuotaExpiresAt,
+		IsBindGroup:        newData.IsBindGroup,
+		Group:              newData.Group,
 		IpWhitelist:        newData.IpWhitelist,
 		IpBlacklist:        newData.IpBlacklist,
 		Status:             newData.Status,
@@ -1128,6 +1287,40 @@ func (s *sModelAgent) GetFallbackModelAgent(ctx context.Context, model *model.Mo
 	}
 
 	return fallbackModelAgent, nil
+}
+
+// 保存分组模型代理列表到缓存
+func (s *sModelAgent) SaveGroupModelAgentsCache(ctx context.Context, group *model.Group) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sModelAgent SaveGroupModelAgentsCache time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	if len(group.ModelAgents) == 0 {
+		return nil
+	}
+
+	modelAgents, err := s.GetCacheList(ctx, group.ModelAgents...)
+	if err != nil || len(modelAgents) != len(group.ModelAgents) {
+
+		if modelAgents, err = s.List(ctx, group.ModelAgents); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+
+		if err = s.SaveCacheList(ctx, modelAgents); err != nil {
+			logger.Error(ctx, err)
+			return err
+		}
+	}
+
+	if err = s.groupModelAgentsCache.Set(ctx, group.Id, modelAgents, 0); err != nil {
+		logger.Error(ctx, err)
+		return err
+	}
+
+	return nil
 }
 
 // 变更订阅

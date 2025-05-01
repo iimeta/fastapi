@@ -20,6 +20,8 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
 	"github.com/iimeta/go-openai"
+	"math"
+	"slices"
 	"time"
 )
 
@@ -61,8 +63,14 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 		}
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
+
+			// 分组折扣
+			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
+				usage.TotalTokens = int(math.Ceil(float64(usage.TotalTokens) * mak.Group.Discount))
+			}
+
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, usage.TotalTokens, mak.Key.Key); err != nil {
+				if err := service.Common().RecordUsage(ctx, usage.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -87,7 +95,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 					imageRes.Usage = *usage
 				}
 
-				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, imageRes, retryInfo)
+				s.SaveLog(ctx, mak.Group, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, imageRes, retryInfo)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -194,7 +202,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 }
 
 // 保存日志
-func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel *model.Model, modelAgent, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *mcommon.Retry, retry ...int) {
+func (s *sImage) SaveLog(ctx context.Context, group *model.Group, reqModel, realModel *model.Model, modelAgent, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, imageReq *sdkm.ImageRequest, imageRes *model.ImageRes, retryInfo *mcommon.Retry, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -202,7 +210,12 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel *model.Model, 
 	}()
 
 	// 不记录此错误日志
-	if imageRes.Error != nil && (errors.Is(imageRes.Error, errors.ERR_MODEL_NOT_FOUND) || errors.Is(imageRes.Error, errors.ERR_MODEL_DISABLED)) {
+	if imageRes.Error != nil && (errors.Is(imageRes.Error, errors.ERR_MODEL_NOT_FOUND) ||
+		errors.Is(imageRes.Error, errors.ERR_MODEL_DISABLED) ||
+		errors.Is(imageRes.Error, errors.ERR_GROUP_NOT_FOUND) ||
+		errors.Is(imageRes.Error, errors.ERR_GROUP_DISABLED) ||
+		errors.Is(imageRes.Error, errors.ERR_GROUP_EXPIRED) ||
+		errors.Is(imageRes.Error, errors.ERR_GROUP_INSUFFICIENT_QUOTA)) {
 		return
 	}
 
@@ -226,6 +239,13 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel *model.Model, 
 		LocalIp:        util.GetLocalIp(),
 		Status:         1,
 		Host:           g.RequestFromCtx(ctx).GetHost(),
+		Rid:            service.Session().GetRid(ctx),
+	}
+
+	if group != nil {
+		image.GroupId = group.Id
+		image.GroupName = group.Name
+		image.Discount = group.Discount
 	}
 
 	for _, data := range imageRes.Data {
@@ -337,6 +357,6 @@ func (s *sImage) SaveLog(ctx context.Context, reqModel, realModel *model.Model, 
 
 		logger.Errorf(ctx, "sImage SaveLog retry: %d", len(retry))
 
-		s.SaveLog(ctx, reqModel, realModel, modelAgent, fallbackModelAgent, fallbackModel, key, imageReq, imageRes, retryInfo, retry...)
+		s.SaveLog(ctx, group, reqModel, realModel, modelAgent, fallbackModelAgent, fallbackModel, key, imageReq, imageRes, retryInfo, retry...)
 	}
 }

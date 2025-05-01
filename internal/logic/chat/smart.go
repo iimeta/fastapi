@@ -124,7 +124,8 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 					completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
 				}
 
-				s.SaveLog(ctx, reqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, true)
+				s.SaveLog(ctx, mak.Group, reqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, true)
+
 			}); err != nil {
 				logger.Error(ctx, err)
 			}

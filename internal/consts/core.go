@@ -1,11 +1,14 @@
 package consts
 
 const (
-	API_USAGE_KEY = "api:user:%d:usage"
+	API_RESELLER_USAGE_KEY = "api:reseller:%d:usage"
+	API_USER_USAGE_KEY     = "api:user:%d:usage"
+	API_GROUP_USAGE_KEY    = "api:group:usage"
 
-	USER_QUOTA_FIELD = "user.quota"
-	APP_QUOTA_FIELD  = "app.%d.quota"
-	KEY_QUOTA_FIELD  = "key.%d.%s.quota"
+	RESELLER_QUOTA_FIELD = "reseller.quota"
+	USER_QUOTA_FIELD     = "user.quota"
+	APP_QUOTA_FIELD      = "app.%d.quota"
+	KEY_QUOTA_FIELD      = "key.%d.%s.quota"
 
 	ERROR_MODEL_KEY       = "api:error:model:key:%s"
 	ERROR_MODEL_AGENT     = "api:error:model:agent:%s"

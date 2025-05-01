@@ -78,8 +78,13 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 				response.Model = openai.EmbeddingModel(mak.ReqModel.Model)
 			}
 
+			// 分组折扣
+			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
+				totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
+			}
+
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key); err != nil {
+				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -107,7 +112,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 					completionsRes.Completion = gconv.String(response.Data[0])
 				}
 
-				s.SaveLog(ctx, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo)
+				s.SaveLog(ctx, mak.Group, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -206,7 +211,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 }
 
 // 保存日志
-func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel *model.Model, modelAgent, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.EmbeddingRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, retry ...int) {
+func (s *sEmbedding) SaveLog(ctx context.Context, group *model.Group, reqModel, realModel *model.Model, modelAgent, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, completionsReq *sdkm.EmbeddingRequest, completionsRes *model.CompletionsRes, retryInfo *mcommon.Retry, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -214,7 +219,12 @@ func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel *model.Mod
 	}()
 
 	// 不记录此错误日志
-	if completionsRes.Error != nil && (errors.Is(completionsRes.Error, errors.ERR_MODEL_NOT_FOUND) || errors.Is(completionsRes.Error, errors.ERR_MODEL_DISABLED)) {
+	if completionsRes.Error != nil && (errors.Is(completionsRes.Error, errors.ERR_MODEL_NOT_FOUND) ||
+		errors.Is(completionsRes.Error, errors.ERR_MODEL_DISABLED) ||
+		errors.Is(completionsRes.Error, errors.ERR_GROUP_NOT_FOUND) ||
+		errors.Is(completionsRes.Error, errors.ERR_GROUP_DISABLED) ||
+		errors.Is(completionsRes.Error, errors.ERR_GROUP_EXPIRED) ||
+		errors.Is(completionsRes.Error, errors.ERR_GROUP_INSUFFICIENT_QUOTA)) {
 		return
 	}
 
@@ -236,6 +246,13 @@ func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel *model.Mod
 		LocalIp:          util.GetLocalIp(),
 		Status:           1,
 		Host:             g.RequestFromCtx(ctx).GetHost(),
+		Rid:              service.Session().GetRid(ctx),
+	}
+
+	if group != nil {
+		chat.GroupId = group.Id
+		chat.GroupName = group.Name
+		chat.Discount = group.Discount
 	}
 
 	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.ChatRecords, "prompt") {
@@ -348,6 +365,6 @@ func (s *sEmbedding) SaveLog(ctx context.Context, reqModel, realModel *model.Mod
 
 		logger.Errorf(ctx, "sEmbedding SaveLog retry: %d", len(retry))
 
-		s.SaveLog(ctx, reqModel, realModel, modelAgent, fallbackModelAgent, fallbackModel, key, completionsReq, completionsRes, retryInfo, retry...)
+		s.SaveLog(ctx, group, reqModel, realModel, modelAgent, fallbackModelAgent, fallbackModel, key, completionsReq, completionsRes, retryInfo, retry...)
 	}
 }
