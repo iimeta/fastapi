@@ -60,7 +60,7 @@ func (c *ControllerV1) Models(ctx context.Context, req *v1.ModelsReq) (res *v1.M
 					BaseUrl:              m.BaseUrl,
 					Path:                 m.Path,
 					TextQuota:            m.TextQuota,
-					ImageQuotas:          m.ImageQuotas,
+					ImageQuota:           m.ImageQuota,
 					AudioQuota:           m.AudioQuota,
 					MultimodalQuota:      m.MultimodalQuota,
 					RealtimeQuota:        m.RealtimeQuota,

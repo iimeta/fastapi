@@ -54,20 +54,20 @@ func GetMultimodalTokens(ctx context.Context, model string, multiContent []inter
 
 				detail := imageUrl["detail"]
 
-				var imageQuota mcommon.ImageQuota
-				for _, quota := range reqModel.MultimodalQuota.ImageQuotas {
+				var visionQuota mcommon.VisionQuota
+				for _, quota := range reqModel.MultimodalQuota.VisionQuotas {
 
 					if quota.Mode == detail {
-						imageQuota = quota
+						visionQuota = quota
 						break
 					}
 
 					if quota.IsDefault {
-						imageQuota = quota
+						visionQuota = quota
 					}
 				}
 
-				imageTokens += imageQuota.FixedQuota
+				imageTokens += visionQuota.FixedQuota
 			}
 
 		} else {

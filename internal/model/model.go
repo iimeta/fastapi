@@ -13,7 +13,7 @@ type Model struct {
 	IsEnablePresetConfig bool                        `json:"is_enable_preset_config,omitempty"` // 是否启用预设配置
 	PresetConfig         common.PresetConfig         `json:"preset_config,omitempty"`           // 预设配置
 	TextQuota            common.TextQuota            `json:"text_quota,omitempty"`              // 文本额度
-	ImageQuotas          []common.ImageQuota         `json:"image_quotas,omitempty"`            // 图像额度
+	ImageQuota           common.ImageQuota           `json:"image_quota,omitempty"`             // 图像额度
 	AudioQuota           common.AudioQuota           `json:"audio_quota,omitempty"`             // 音频额度
 	MultimodalQuota      common.MultimodalQuota      `json:"multimodal_quota,omitempty"`        // 多模态额度
 	RealtimeQuota        common.RealtimeQuota        `json:"realtime_quota,omitempty"`          // 多模态实时额度

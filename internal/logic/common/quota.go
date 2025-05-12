@@ -9,7 +9,7 @@ import (
 	mcommon "github.com/iimeta/fastapi/internal/model/common"
 )
 
-func GetImageQuota(model *model.Model, size string) (imageQuota mcommon.ImageQuota) {
+func GetImageGenerationQuota(model *model.Model, quality, size string) (generationQuota mcommon.GenerationQuota) {
 
 	var (
 		width  int
@@ -42,18 +42,18 @@ func GetImageQuota(model *model.Model, size string) (imageQuota mcommon.ImageQuo
 		}
 	}
 
-	for _, quota := range model.ImageQuotas {
+	for _, quota := range model.ImageQuota.GenerationQuotas {
 
-		if quota.Width == width && quota.Height == height {
+		if quota.Quality == quality && quota.Width == width && quota.Height == height {
 			return quota
 		}
 
 		if quota.IsDefault {
-			imageQuota = quota
+			generationQuota = quota
 		}
 	}
 
-	return imageQuota
+	return generationQuota
 }
 
 func GetMidjourneyQuota(model *model.Model, request *ghttp.Request, path string) (mcommon.MidjourneyQuota, error) {

@@ -49,9 +49,9 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client     sdk.Client
-		imageQuota mcommon.ImageQuota
-		retryInfo  *mcommon.Retry
+		client          sdk.Client
+		generationQuota mcommon.GenerationQuota
+		retryInfo       *mcommon.Retry
 	)
 
 	defer func() {
@@ -59,7 +59,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := &sdkm.Usage{
-			TotalTokens: imageQuota.FixedQuota * len(response.Data),
+			TotalTokens: generationQuota.FixedQuota * len(response.Data),
 		}
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
@@ -108,10 +108,11 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageRequest, fall
 		return response, err
 	}
 
-	request := params
+	generationQuota = common.GetImageGenerationQuota(mak.RealModel, params.Quality, params.Size)
+	params.Quality = generationQuota.Quality
+	params.Size = fmt.Sprintf("%dx%d", generationQuota.Width, generationQuota.Height)
 
-	imageQuota = common.GetImageQuota(mak.RealModel, request.Size)
-	request.Size = fmt.Sprintf("%dx%d", imageQuota.Width, imageQuota.Height)
+	request := params
 
 	if !gstr.Contains(mak.RealModel.Model, "*") {
 		request.Model = mak.RealModel.Model
@@ -262,7 +263,7 @@ func (s *sImage) SaveLog(ctx context.Context, group *model.Group, reqModel, real
 		image.Name = reqModel.Name
 		image.Model = reqModel.Model
 		image.Type = reqModel.Type
-		image.ImageQuotas = reqModel.ImageQuotas
+		image.ImageQuota = reqModel.ImageQuota
 	}
 
 	if realModel != nil {
