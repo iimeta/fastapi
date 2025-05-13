@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/gogf/gf/v2/net/ghttp"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 )
 
@@ -23,4 +24,17 @@ type ImageRes struct {
 	TotalTime    int64                         `json:"-"`
 	InternalTime int64                         `json:"-"`
 	EnterTime    int64                         `json:"-"`
+}
+
+type ImageEditRequest struct {
+	Image          []*ghttp.UploadFile `json:"image,omitempty"`
+	Prompt         string              `json:"prompt,omitempty"`
+	Background     string              `json:"background,omitempty"`
+	Mask           *ghttp.UploadFile   `json:"mask,omitempty"`
+	Model          string              `json:"model,omitempty"`
+	N              int                 `json:"n,omitempty"`
+	Quality        string              `json:"quality,omitempty"`
+	ResponseFormat string              `json:"response_format,omitempty"`
+	Size           string              `json:"size,omitempty"`
+	User           string              `json:"user,omitempty"`
 }

@@ -17,7 +17,7 @@ func (c *ControllerV1) Generations(ctx context.Context, req *v1.GenerationsReq) 
 		logger.Debugf(ctx, "Controller Generations time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	response, err := service.Image().Generations(ctx, req.ImageRequest, nil, nil)
+	response, err := service.Image().Generations(ctx, req.ImageGenerationRequest, nil, nil)
 	if err != nil {
 		return nil, err
 	}
