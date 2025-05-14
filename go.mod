@@ -11,7 +11,7 @@ require (
 	github.com/gogf/gf/v2 v2.9.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/iimeta/fastapi-sdk v1.4.0
-	github.com/iimeta/go-openai v0.0.0-20250513162551-da00ea22b961
+	github.com/iimeta/go-openai v0.0.0-20250514172810-c3fb1a8cfde9
 	github.com/iimeta/tiktoken-go v0.0.0-20240913023457-97a6b8dfb0c7
 	github.com/redis/go-redis/v9 v9.8.0
 	github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300

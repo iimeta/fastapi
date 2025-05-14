@@ -149,10 +149,10 @@ func Error(ctx context.Context, err error) (iFastApiError IFastApiError) {
 					if _, ok := openaiApiError.Code.(string); ok {
 						openaiApiError.Code = e.ErrCode()
 					}
-					return NewErrorf(openaiApiError.HTTPStatusCode, openaiApiError.Code, gstr.Split(openaiApiError.Message, " TraceId")[0]+" TraceId: %s Timestamp: %d", e.ErrType(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
+					return NewErrorf(openaiApiError.HTTPStatusCode, openaiApiError.Code, gstr.Split(gstr.Split(openaiApiError.Message, " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", e.ErrType(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
 				}
 
-				return NewErrorf(e.Status(), e.ErrCode(), gstr.Split(err.Error(), " TraceId")[0]+" TraceId: %s Timestamp: %d", e.ErrType(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
+				return NewErrorf(e.Status(), e.ErrCode(), gstr.Split(gstr.Split(err.Error(), " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", e.ErrType(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
 			}
 		}
 	}
