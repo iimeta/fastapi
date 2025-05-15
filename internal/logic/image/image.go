@@ -58,11 +58,26 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageGenerationReq
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		usage := &sdkm.Usage{
-			TotalTokens: generationQuota.FixedQuota * len(response.Data),
-		}
+		usage := response.Usage
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
+
+			if mak.ReqModel.ImageQuota.BillingMethod == 1 {
+
+				usage.TotalTokens = generationQuota.FixedQuota * len(response.Data)
+
+				if usage.InputTokens > 0 {
+					usage.TotalTokens += int(math.Ceil(float64(usage.InputTokensDetails.TextTokens) * mak.ReqModel.ImageQuota.TextRatio))
+					usage.TotalTokens += int(math.Ceil(float64(usage.InputTokensDetails.ImageTokens) * mak.ReqModel.ImageQuota.InputRatio))
+				}
+
+				if usage.OutputTokens > 0 {
+					usage.TotalTokens += int(math.Ceil(float64(usage.OutputTokens) * mak.ReqModel.ImageQuota.OutputRatio))
+				}
+
+			} else {
+				usage.TotalTokens = mak.ReqModel.ImageQuota.FixedQuota
+			}
 
 			// 分组折扣
 			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
@@ -108,9 +123,11 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageGenerationReq
 		return response, err
 	}
 
-	generationQuota = common.GetImageGenerationQuota(mak.RealModel, params.Quality, params.Size)
-	params.Quality = generationQuota.Quality
-	params.Size = fmt.Sprintf("%dx%d", generationQuota.Width, generationQuota.Height)
+	if mak.ReqModel.ImageQuota.BillingMethod == 1 {
+		generationQuota = common.GetImageGenerationQuota(mak.RealModel, params.Quality, params.Size)
+		params.Quality = generationQuota.Quality
+		params.Size = fmt.Sprintf("%dx%d", generationQuota.Width, generationQuota.Height)
+	}
 
 	request := params
 
@@ -225,11 +242,26 @@ func (s *sImage) Edits(ctx context.Context, params model.ImageEditRequest, fallb
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		usage := &sdkm.Usage{
-			TotalTokens: generationQuota.FixedQuota * len(response.Data),
-		}
+		usage := response.Usage
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
+
+			if mak.ReqModel.ImageQuota.BillingMethod == 1 {
+
+				usage.TotalTokens = generationQuota.FixedQuota * len(response.Data)
+
+				if usage.InputTokens > 0 {
+					usage.TotalTokens += int(math.Ceil(float64(usage.InputTokensDetails.TextTokens) * mak.ReqModel.ImageQuota.TextRatio))
+					usage.TotalTokens += int(math.Ceil(float64(usage.InputTokensDetails.ImageTokens) * mak.ReqModel.ImageQuota.InputRatio))
+				}
+
+				if usage.OutputTokens > 0 {
+					usage.TotalTokens += int(math.Ceil(float64(usage.OutputTokens) * mak.ReqModel.ImageQuota.OutputRatio))
+				}
+
+			} else {
+				usage.TotalTokens = mak.ReqModel.ImageQuota.FixedQuota
+			}
 
 			// 分组折扣
 			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
@@ -286,9 +318,11 @@ func (s *sImage) Edits(ctx context.Context, params model.ImageEditRequest, fallb
 		return response, err
 	}
 
-	generationQuota = common.GetImageGenerationQuota(mak.RealModel, params.Quality, params.Size)
-	params.Quality = generationQuota.Quality
-	params.Size = fmt.Sprintf("%dx%d", generationQuota.Width, generationQuota.Height)
+	if mak.ReqModel.ImageQuota.BillingMethod == 1 {
+		generationQuota = common.GetImageGenerationQuota(mak.RealModel, params.Quality, params.Size)
+		params.Quality = generationQuota.Quality
+		params.Size = fmt.Sprintf("%dx%d", generationQuota.Width, generationQuota.Height)
+	}
 
 	request := sdkm.ImageEditRequest{
 		Prompt:         params.Prompt,
@@ -425,6 +459,10 @@ func (s *sImage) SaveLog(ctx context.Context, group *model.Group, reqModel, real
 		Quality:        imageReq.Quality,
 		Style:          imageReq.Style,
 		ResponseFormat: imageReq.ResponseFormat,
+		InputTokens:    imageRes.Usage.InputTokens,
+		OutputTokens:   imageRes.Usage.OutputTokens,
+		TextTokens:     imageRes.Usage.InputTokensDetails.TextTokens,
+		ImageTokens:    imageRes.Usage.InputTokensDetails.ImageTokens,
 		TotalTokens:    imageRes.Usage.TotalTokens,
 		TotalTime:      imageRes.TotalTime,
 		InternalTime:   imageRes.InternalTime,
