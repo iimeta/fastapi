@@ -98,12 +98,13 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageGenerationReq
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				imageRes := &model.ImageRes{
-					Created:      response.Created,
-					Data:         response.Data,
-					TotalTime:    response.TotalTime,
-					Error:        err,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
+					Created:         response.Created,
+					Data:            response.Data,
+					TotalTime:       response.TotalTime,
+					Error:           err,
+					InternalTime:    internalTime,
+					EnterTime:       enterTime,
+					GenerationQuota: generationQuota,
 				}
 
 				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
@@ -282,12 +283,13 @@ func (s *sImage) Edits(ctx context.Context, params model.ImageEditRequest, fallb
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				imageRes := &model.ImageRes{
-					Created:      response.Created,
-					Data:         response.Data,
-					TotalTime:    response.TotalTime,
-					Error:        err,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
+					Created:         response.Created,
+					Data:            response.Data,
+					TotalTime:       response.TotalTime,
+					Error:           err,
+					InternalTime:    internalTime,
+					EnterTime:       enterTime,
+					GenerationQuota: generationQuota,
 				}
 
 				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
@@ -450,30 +452,31 @@ func (s *sImage) SaveLog(ctx context.Context, group *model.Group, reqModel, real
 	}
 
 	image := do.Image{
-		TraceId:        gctx.CtxId(ctx),
-		UserId:         service.Session().GetUserId(ctx),
-		AppId:          service.Session().GetAppId(ctx),
-		Prompt:         imageReq.Prompt,
-		Size:           imageReq.Size,
-		N:              imageReq.N,
-		Quality:        imageReq.Quality,
-		Style:          imageReq.Style,
-		ResponseFormat: imageReq.ResponseFormat,
-		InputTokens:    imageRes.Usage.InputTokens,
-		OutputTokens:   imageRes.Usage.OutputTokens,
-		TextTokens:     imageRes.Usage.InputTokensDetails.TextTokens,
-		ImageTokens:    imageRes.Usage.InputTokensDetails.ImageTokens,
-		TotalTokens:    imageRes.Usage.TotalTokens,
-		TotalTime:      imageRes.TotalTime,
-		InternalTime:   imageRes.InternalTime,
-		ReqTime:        imageRes.EnterTime,
-		ReqDate:        gtime.NewFromTimeStamp(imageRes.EnterTime).Format("Y-m-d"),
-		ClientIp:       g.RequestFromCtx(ctx).GetClientIp(),
-		RemoteIp:       g.RequestFromCtx(ctx).GetRemoteIp(),
-		LocalIp:        util.GetLocalIp(),
-		Status:         1,
-		Host:           g.RequestFromCtx(ctx).GetHost(),
-		Rid:            service.Session().GetRid(ctx),
+		TraceId:         gctx.CtxId(ctx),
+		UserId:          service.Session().GetUserId(ctx),
+		AppId:           service.Session().GetAppId(ctx),
+		Prompt:          imageReq.Prompt,
+		Size:            imageReq.Size,
+		N:               imageReq.N,
+		Quality:         imageReq.Quality,
+		Style:           imageReq.Style,
+		ResponseFormat:  imageReq.ResponseFormat,
+		GenerationQuota: imageRes.GenerationQuota,
+		InputTokens:     imageRes.Usage.InputTokens,
+		OutputTokens:    imageRes.Usage.OutputTokens,
+		TextTokens:      imageRes.Usage.InputTokensDetails.TextTokens,
+		ImageTokens:     imageRes.Usage.InputTokensDetails.ImageTokens,
+		TotalTokens:     imageRes.Usage.TotalTokens,
+		TotalTime:       imageRes.TotalTime,
+		InternalTime:    imageRes.InternalTime,
+		ReqTime:         imageRes.EnterTime,
+		ReqDate:         gtime.NewFromTimeStamp(imageRes.EnterTime).Format("Y-m-d"),
+		ClientIp:        g.RequestFromCtx(ctx).GetClientIp(),
+		RemoteIp:        g.RequestFromCtx(ctx).GetRemoteIp(),
+		LocalIp:         util.GetLocalIp(),
+		Status:          1,
+		Host:            g.RequestFromCtx(ctx).GetHost(),
+		Rid:             service.Session().GetRid(ctx),
 	}
 
 	if group != nil {
