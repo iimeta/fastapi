@@ -12,4 +12,5 @@ import (
 
 type IOpenaiV1 interface {
 	Responses(ctx context.Context, req *v1.ResponsesReq) (res *v1.ResponsesRes, err error)
+	ResponsesChatCompletions(ctx context.Context, req *v1.ResponsesChatCompletionsReq) (res *v1.ResponsesChatCompletionsRes, err error)
 }

@@ -2,22 +2,29 @@ package openai
 
 import (
 	"context"
+	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/gogf/gf/v2/text/gstr"
+	"github.com/gogf/gf/v2/util/gconv"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi-sdk/openai"
 	"github.com/iimeta/fastapi/internal/consts"
+	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
 	mcommon "github.com/iimeta/fastapi/internal/model/common"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
+	"github.com/iimeta/fastapi/utility/util"
 	"github.com/iimeta/tiktoken-go"
+	"io"
 	"math"
+	"slices"
 )
 
 type sOpenAI struct{}
@@ -39,186 +46,222 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, fallbac
 	}()
 
 	var (
-		params = convToResponsesRequest(request)
+		params = convToChatCompletionRequest(request)
 		mak    = &common.MAK{
 			Model:              params.Model,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client    *openai.Client
-		res       sdkm.OpenAIResponsesRes
-		retryInfo *mcommon.Retry
-		//textTokens  int
-		//imageTokens int
-		//audioTokens int
-		//totalTokens int
+		client      *openai.Client
+		res         sdkm.OpenAIResponsesRes
+		retryInfo   *mcommon.Retry
+		textTokens  int
+		imageTokens int
+		audioTokens int
+		totalTokens int
 	)
 
 	defer func() {
 
-		//enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		//internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
+		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
+		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
+		chatCompletionResponse := convToChatCompletionResponse(ctx, response, false)
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
-			//// 替换成调用的模型
-			//if mak.ReqModel.IsEnableForward {
-			//	response.Model = mak.ReqModel.Model
-			//}
-			//
-			//model := mak.ReqModel.Model
-			//
-			//if !tiktoken.IsEncodingForModel(model) {
-			//	model = consts.DEFAULT_MODEL
-			//}
-			//
-			//if mak.ReqModel.Type == 100 { // 多模态
-			//
-			//	if response.Usage == nil {
-			//
-			//		response.Usage = new(sdkm.Usage)
-			//
-			//		if content, ok := params.Messages[len(params.Messages)-1].Content.([]interface{}); ok {
-			//			textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, mak.ReqModel)
-			//			response.Usage.PromptTokens = textTokens + imageTokens
-			//		} else {
-			//			if response.Usage.PromptTokens == 0 {
-			//				response.Usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
-			//			}
-			//		}
-			//
-			//		if response.Usage.CompletionTokens == 0 && len(response.Choices) > 0 && response.Choices[0].Message != nil {
-			//			for _, choice := range response.Choices {
-			//				response.Usage.CompletionTokens += common.GetCompletionTokens(ctx, model, gconv.String(choice.Message.Content))
-			//			}
-			//		}
-			//
-			//		response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
-			//		totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
-			//
-			//	} else {
-			//		totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
-			//	}
-			//
-			//	if response.Usage.CacheCreationInputTokens != 0 {
-			//		totalTokens += int(math.Ceil(float64(response.Usage.CacheCreationInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio * 1.25))
-			//	}
-			//
-			//	if response.Usage.CacheReadInputTokens != 0 {
-			//		totalTokens += int(math.Ceil(float64(response.Usage.CacheReadInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio * 0.1))
-			//	}
-			//
-			//} else if mak.ReqModel.Type == 102 { // 多模态语音
-			//
-			//	if response.Usage == nil {
-			//
-			//		response.Usage = new(sdkm.Usage)
-			//
-			//		textTokens, audioTokens = common.GetMultimodalAudioTokens(ctx, model, params.Messages, mak.ReqModel)
-			//		response.Usage.PromptTokens = textTokens + audioTokens
-			//
-			//		if len(response.Choices) > 0 && response.Choices[0].Message != nil && response.Choices[0].Message.Audio != nil {
-			//			for _, choice := range response.Choices {
-			//				response.Usage.CompletionTokens += common.GetCompletionTokens(ctx, model, choice.Message.Audio.Transcript) + 388
-			//			}
-			//		}
-			//	}
-			//
-			//	response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
-			//	totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
-			//
-			//} else if response.Usage == nil || response.Usage.TotalTokens == 0 {
-			//
-			//	response.Usage = new(sdkm.Usage)
-			//
-			//	response.Usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
-			//
-			//	if len(response.Choices) > 0 && response.Choices[0].Message != nil {
-			//		for _, choice := range response.Choices {
-			//			response.Usage.CompletionTokens += common.GetCompletionTokens(ctx, model, gconv.String(choice.Message.Content))
-			//		}
-			//	}
-			//
-			//	response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
-			//}
+			// 替换成调用的模型
+			if mak.ReqModel.IsEnableForward {
+				chatCompletionResponse.Model = mak.ReqModel.Model
+			}
+
+			model := mak.ReqModel.Model
+
+			if !tiktoken.IsEncodingForModel(model) {
+				model = consts.DEFAULT_MODEL
+			}
+
+			if mak.ReqModel.Type == 100 { // 多模态
+
+				if chatCompletionResponse.Usage == nil || mak.ReqModel.MultimodalQuota.BillingRule == 2 {
+
+					chatCompletionResponse.Usage = new(sdkm.Usage)
+
+					if content, ok := params.Messages[len(params.Messages)-1].Content.([]interface{}); ok {
+						textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, mak.ReqModel)
+						chatCompletionResponse.Usage.PromptTokens = textTokens + imageTokens
+					} else {
+						if chatCompletionResponse.Usage.PromptTokens == 0 {
+							chatCompletionResponse.Usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
+						}
+					}
+
+					if chatCompletionResponse.Usage.CompletionTokens == 0 && len(chatCompletionResponse.Choices) > 0 && chatCompletionResponse.Choices[0].Message != nil {
+						for _, choice := range chatCompletionResponse.Choices {
+							chatCompletionResponse.Usage.CompletionTokens += common.GetCompletionTokens(ctx, model, gconv.String(choice.Message.Content))
+						}
+					}
+
+					chatCompletionResponse.Usage.TotalTokens = chatCompletionResponse.Usage.PromptTokens + chatCompletionResponse.Usage.CompletionTokens
+					totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
+
+				} else {
+					totalTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
+				}
+
+				if params.Tools != nil {
+					if tools := gconv.String(params.Tools); gstr.Contains(tools, "google_search") || gstr.Contains(tools, "googleSearch") {
+						totalTokens += mak.ReqModel.MultimodalQuota.SearchQuota
+						chatCompletionResponse.Usage.SearchTokens = mak.ReqModel.MultimodalQuota.SearchQuota
+					}
+				}
+
+				if params.WebSearchOptions != nil {
+					searchTokens := common.GetMultimodalSearchTokens(ctx, params.WebSearchOptions, mak.ReqModel)
+					totalTokens += searchTokens
+					chatCompletionResponse.Usage.SearchTokens = searchTokens
+				}
+
+				if chatCompletionResponse.Usage.CacheCreationInputTokens != 0 {
+					totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CacheCreationInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio * 1.25))
+				}
+
+				if chatCompletionResponse.Usage.CacheReadInputTokens != 0 {
+					totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CacheReadInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio * 0.1))
+				}
+
+			} else if mak.ReqModel.Type == 102 { // 多模态语音
+
+				if chatCompletionResponse.Usage == nil {
+
+					chatCompletionResponse.Usage = new(sdkm.Usage)
+
+					textTokens, audioTokens = common.GetMultimodalAudioTokens(ctx, model, params.Messages, mak.ReqModel)
+					chatCompletionResponse.Usage.PromptTokens = textTokens + audioTokens
+
+					if len(chatCompletionResponse.Choices) > 0 && chatCompletionResponse.Choices[0].Message != nil && chatCompletionResponse.Choices[0].Message.Audio != nil {
+						for _, choice := range chatCompletionResponse.Choices {
+							chatCompletionResponse.Usage.CompletionTokens += common.GetCompletionTokens(ctx, model, choice.Message.Audio.Transcript) + 388
+						}
+					}
+				}
+
+				chatCompletionResponse.Usage.TotalTokens = chatCompletionResponse.Usage.PromptTokens + chatCompletionResponse.Usage.CompletionTokens
+				totalTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
+
+			} else if chatCompletionResponse.Usage == nil || chatCompletionResponse.Usage.TotalTokens == 0 {
+
+				chatCompletionResponse.Usage = new(sdkm.Usage)
+
+				chatCompletionResponse.Usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
+
+				if len(chatCompletionResponse.Choices) > 0 && chatCompletionResponse.Choices[0].Message != nil {
+					for _, choice := range chatCompletionResponse.Choices {
+						chatCompletionResponse.Usage.CompletionTokens += common.GetCompletionTokens(ctx, model, gconv.String(choice.Message.Content))
+					}
+				}
+
+				chatCompletionResponse.Usage.TotalTokens = chatCompletionResponse.Usage.PromptTokens + chatCompletionResponse.Usage.CompletionTokens
+			}
 		}
 
-		//if mak.ReqModel != nil && response.Usage != nil {
-		//	if mak.ReqModel.Type == 102 {
-		//
-		//		if response.Usage.PromptTokensDetails != nil {
-		//			textTokens = int(math.Ceil(float64(response.Usage.PromptTokensDetails.TextTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.PromptRatio))
-		//			audioTokens = int(math.Ceil(float64(response.Usage.PromptTokensDetails.AudioTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio))
-		//		} else {
-		//			audioTokens = int(math.Ceil(float64(response.Usage.PromptTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio))
-		//		}
-		//
-		//		if response.Usage.CompletionTokensDetails != nil {
-		//			textTokens += int(math.Ceil(float64(response.Usage.CompletionTokensDetails.TextTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.CompletionRatio))
-		//			audioTokens += int(math.Ceil(float64(response.Usage.CompletionTokensDetails.AudioTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
-		//		} else {
-		//			audioTokens += int(math.Ceil(float64(response.Usage.CompletionTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
-		//		}
-		//
-		//		totalTokens = textTokens + audioTokens
-		//
-		//	} else if mak.ReqModel.Type != 100 {
-		//		if mak.ReqModel.TextQuota.BillingMethod == 1 {
-		//			totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*mak.ReqModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*mak.ReqModel.TextQuota.CompletionRatio))
-		//		} else {
-		//			totalTokens = mak.ReqModel.TextQuota.FixedQuota
-		//		}
-		//	}
-		//}
-		//
-		//if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
-		//	if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-		//		if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key); err != nil {
-		//			logger.Error(ctx, err)
-		//			panic(err)
-		//		}
-		//	}); err != nil {
-		//		logger.Error(ctx, err)
-		//	}
-		//}
-		//
-		//if mak.ReqModel != nil && mak.RealModel != nil {
-		//	if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-		//
-		//		completionsRes := &model.ResponsesRes{
-		//			Error:        err,
-		//			ConnTime:     response.ConnTime,
-		//			Duration:     response.Duration,
-		//			TotalTime:    response.TotalTime,
-		//			InternalTime: internalTime,
-		//			EnterTime:    enterTime,
-		//		}
-		//
-		//		if retryInfo == nil && response.Usage != nil {
-		//			completionsRes.Usage = *response.Usage
-		//			completionsRes.Usage.TotalTokens = totalTokens
-		//		}
-		//
-		//		if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
-		//			if mak.RealModel.Type == 102 && response.Choices[0].Message.Audio != nil {
-		//				completionsRes.Completion = response.Choices[0].Message.Audio.Transcript
-		//			} else {
-		//				if len(response.Choices) > 1 {
-		//					for i, choice := range response.Choices {
-		//						completionsRes.Completion += fmt.Sprintf("index: %d\ncontent: %s\n\n", i, gconv.String(choice.Message.Content))
-		//					}
-		//				} else {
-		//					completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
-		//				}
-		//			}
-		//		}
-		//
-		//		service.Chat().SaveLog(ctx, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, false)
-		//
-		//	}); err != nil {
-		//		logger.Error(ctx, err)
-		//	}
-		//}
+		if mak.ReqModel != nil && chatCompletionResponse.Usage != nil {
+			if mak.ReqModel.Type == 102 {
+
+				if chatCompletionResponse.Usage.PromptTokensDetails != nil {
+					textTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokensDetails.TextTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.PromptRatio))
+					audioTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokensDetails.AudioTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio))
+				} else {
+					audioTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio))
+				}
+
+				if chatCompletionResponse.Usage.CompletionTokensDetails != nil {
+					textTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokensDetails.TextTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.CompletionRatio))
+					audioTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokensDetails.AudioTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
+				} else {
+					audioTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
+				}
+
+				totalTokens = textTokens + audioTokens
+
+			} else if mak.ReqModel.Type != 100 {
+				if mak.ReqModel.TextQuota.BillingMethod == 1 {
+					totalTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokens)*mak.ReqModel.TextQuota.PromptRatio + float64(chatCompletionResponse.Usage.CompletionTokens)*mak.ReqModel.TextQuota.CompletionRatio))
+				} else {
+					totalTokens = mak.ReqModel.TextQuota.FixedQuota
+				}
+			}
+		}
+
+		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
+
+			// 分组折扣
+			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
+				totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
+			}
+
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
+					logger.Error(ctx, err)
+					panic(err)
+				}
+			}); err != nil {
+				logger.Error(ctx, err)
+			}
+		}
+
+		if mak.ReqModel != nil && mak.RealModel != nil {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+				completionsRes := &model.CompletionsRes{
+					Error:        err,
+					ConnTime:     chatCompletionResponse.ConnTime,
+					Duration:     chatCompletionResponse.Duration,
+					TotalTime:    chatCompletionResponse.TotalTime,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
+				}
+
+				if retryInfo == nil && chatCompletionResponse.Usage != nil {
+					completionsRes.Usage = *chatCompletionResponse.Usage
+					completionsRes.Usage.TotalTokens = totalTokens
+				}
+
+				if retryInfo == nil && len(chatCompletionResponse.Choices) > 0 && chatCompletionResponse.Choices[0].Message != nil {
+					if mak.RealModel.Type == 102 && chatCompletionResponse.Choices[0].Message.Audio != nil {
+						completionsRes.Completion = chatCompletionResponse.Choices[0].Message.Audio.Transcript
+					} else {
+						if len(chatCompletionResponse.Choices) > 1 {
+							for i, choice := range chatCompletionResponse.Choices {
+
+								if choice.Message.Content != nil {
+									completionsRes.Completion += fmt.Sprintf("index: %d\ncontent: %s\n\n", i, gconv.String(choice.Message.Content))
+								}
+
+								if len(choice.Message.ToolCalls) > 0 {
+									completionsRes.Completion += fmt.Sprintf("index: %d\ntool_calls: %s\n\n", i, gconv.String(choice.Message.ToolCalls))
+								}
+							}
+						} else {
+
+							if chatCompletionResponse.Choices[0].Message.ReasoningContent != nil {
+								completionsRes.Completion = gconv.String(chatCompletionResponse.Choices[0].Message.ReasoningContent)
+							}
+
+							completionsRes.Completion += gconv.String(chatCompletionResponse.Choices[0].Message.Content)
+
+							if len(chatCompletionResponse.Choices[0].Message.ToolCalls) > 0 {
+								completionsRes.Completion += fmt.Sprintf("\ntool_calls: %s", gconv.String(chatCompletionResponse.Choices[0].Message.ToolCalls))
+							}
+						}
+					}
+				}
+
+				service.Chat().SaveLog(ctx, mak.Group, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, false)
+
+			}); err != nil {
+				logger.Error(ctx, err)
+			}
+		}
 	}()
 
 	if err = mak.InitMAK(ctx); err != nil {
@@ -310,20 +353,21 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 	}()
 
 	var (
-		params = convToResponsesRequest(request)
+		params = convToChatCompletionRequest(request)
 		mak    = &common.MAK{
 			Model:              params.Model,
+			Messages:           params.Messages,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client     *openai.Client
-		completion string
-		//connTime    int64
-		//duration    int64
-		//totalTime   int64
+		client      *openai.Client
+		completion  string
+		connTime    int64
+		duration    int64
+		totalTime   int64
 		textTokens  int
 		imageTokens int
-		//audioTokens int
+		audioTokens int
 		totalTokens int
 		usage       *sdkm.Usage
 		retryInfo   *mcommon.Retry
@@ -331,11 +375,11 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 
 	defer func() {
 
-		//enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		//internalTime := gtime.TimestampMilli() - enterTime - totalTime
+		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
+		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 
 		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-			if retryInfo == nil && completion != "" && (usage == nil || usage.PromptTokens == 0 || usage.CompletionTokens == 0) && mak.ReqModel != nil {
+			if retryInfo == nil && completion != "" && mak.ReqModel != nil && (usage == nil || usage.PromptTokens == 0 || usage.CompletionTokens == 0 || (mak.ReqModel.Type == 100 && mak.ReqModel.MultimodalQuota.BillingRule == 2)) {
 
 				if usage == nil {
 					usage = new(sdkm.Usage)
@@ -346,19 +390,19 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 					model = consts.DEFAULT_MODEL
 				}
 
-				//if mak.ReqModel.Type == 102 { // 多模态语音
-				//	textTokens, audioTokens = common.GetMultimodalAudioTokens(ctx, model, params.Messages, mak.ReqModel)
-				//	usage.PromptTokens = textTokens + audioTokens
-				//} else {
-				//	if content, ok := params.Messages[len(params.Messages)-1].Content.([]interface{}); ok {
-				//		textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, mak.ReqModel)
-				//		usage.PromptTokens = textTokens + imageTokens
-				//	} else {
-				//		if usage.PromptTokens == 0 {
-				//			usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
-				//		}
-				//	}
-				//}
+				if mak.ReqModel.Type == 102 { // 多模态语音
+					textTokens, audioTokens = common.GetMultimodalAudioTokens(ctx, model, params.Messages, mak.ReqModel)
+					usage.PromptTokens = textTokens + audioTokens
+				} else {
+					if content, ok := params.Messages[len(params.Messages)-1].Content.([]interface{}); ok {
+						textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, mak.ReqModel)
+						usage.PromptTokens = textTokens + imageTokens
+					} else {
+						if usage.PromptTokens == 0 {
+							usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
+						}
+					}
+				}
 
 				if usage.CompletionTokens == 0 {
 					usage.CompletionTokens = common.GetCompletionTokens(ctx, model, completion)
@@ -371,6 +415,19 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 					totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
+
+					if params.Tools != nil {
+						if tools := gconv.String(params.Tools); gstr.Contains(tools, "google_search") || gstr.Contains(tools, "googleSearch") {
+							totalTokens += mak.ReqModel.MultimodalQuota.SearchQuota
+							usage.SearchTokens = mak.ReqModel.MultimodalQuota.SearchQuota
+						}
+					}
+
+					if params.WebSearchOptions != nil {
+						searchTokens := common.GetMultimodalSearchTokens(ctx, params.WebSearchOptions, mak.ReqModel)
+						totalTokens += searchTokens
+						usage.SearchTokens = searchTokens
+					}
 
 					if usage.CacheCreationInputTokens != 0 {
 						totalTokens += int(math.Ceil(float64(usage.CacheCreationInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio * 1.25))
@@ -399,6 +456,19 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
 
+					if params.Tools != nil {
+						if tools := gconv.String(params.Tools); gstr.Contains(tools, "google_search") || gstr.Contains(tools, "googleSearch") {
+							totalTokens += mak.ReqModel.MultimodalQuota.SearchQuota
+							usage.SearchTokens = mak.ReqModel.MultimodalQuota.SearchQuota
+						}
+					}
+
+					if params.WebSearchOptions != nil {
+						searchTokens := common.GetMultimodalSearchTokens(ctx, params.WebSearchOptions, mak.ReqModel)
+						totalTokens += searchTokens
+						usage.SearchTokens = searchTokens
+					}
+
 					if usage.CacheCreationInputTokens != 0 {
 						totalTokens += int(math.Ceil(float64(usage.CacheCreationInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio * 1.25))
 					}
@@ -422,6 +492,12 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 			}
 
 			if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
+
+				// 分组折扣
+				if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
+					totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
+				}
+
 				if err := grpool.Add(ctx, func(ctx context.Context) {
 					if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
 						logger.Error(ctx, err)
@@ -432,31 +508,31 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 				}
 			}
 
-			//if mak.ReqModel != nil && mak.RealModel != nil {
-			//	if err := grpool.Add(ctx, func(ctx context.Context) {
-			//
-			//		completionsRes := &model.ResponsesRes{
-			//			Completion:   completion,
-			//			Error:        err,
-			//			ConnTime:     connTime,
-			//			Duration:     duration,
-			//			TotalTime:    totalTime,
-			//			InternalTime: internalTime,
-			//			EnterTime:    enterTime,
-			//		}
-			//
-			//		if usage != nil {
-			//			completionsRes.Usage = *usage
-			//			completionsRes.Usage.TotalTokens = totalTokens
-			//		}
-			//
-			//		service.Chat().SaveLog(ctx, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, false)
-			//
-			//	}); err != nil {
-			//		logger.Error(ctx, err)
-			//		panic(err)
-			//	}
-			//}
+			if mak.ReqModel != nil && mak.RealModel != nil {
+				if err := grpool.Add(ctx, func(ctx context.Context) {
+
+					completionsRes := &model.CompletionsRes{
+						Completion:   completion,
+						Error:        err,
+						ConnTime:     connTime,
+						Duration:     duration,
+						TotalTime:    totalTime,
+						InternalTime: internalTime,
+						EnterTime:    enterTime,
+					}
+
+					if usage != nil {
+						completionsRes.Usage = *usage
+						completionsRes.Usage.TotalTokens = totalTokens
+					}
+
+					service.Chat().SaveLog(ctx, mak.Group, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, false)
+
+				}); err != nil {
+					logger.Error(ctx, err)
+					panic(err)
+				}
+			}
 
 		}); err != nil {
 			logger.Error(ctx, err)
@@ -480,12 +556,12 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 	//	// 替换预设提示词
 	//	if mak.RealModel.PresetConfig.IsSupportSystemRole && mak.RealModel.PresetConfig.SystemRolePrompt != "" {
 	//		if request.Messages[0].Role == consts.ROLE_SYSTEM {
-	//			request.Messages = append([]sdkm.ResponsesMessage{{
+	//			request.Messages = append([]sdkm.ChatCompletionMessage{{
 	//				Role:    consts.ROLE_SYSTEM,
 	//				Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 	//			}}, request.Messages[1:]...)
 	//		} else {
-	//			request.Messages = append([]sdkm.ResponsesMessage{{
+	//			request.Messages = append([]sdkm.ChatCompletionMessage{{
 	//				Role:    consts.ROLE_SYSTEM,
 	//				Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 	//			}}, request.Messages...)
@@ -498,6 +574,17 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 	//			request.MaxTokens = mak.RealModel.PresetConfig.MinTokens
 	//		} else if mak.RealModel.PresetConfig.MaxTokens != 0 && request.MaxTokens > mak.RealModel.PresetConfig.MaxTokens {
 	//			request.MaxTokens = mak.RealModel.PresetConfig.MaxTokens
+	//		}
+	//	}
+	//}
+	//
+	//if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
+	//	for i, replaceModel := range mak.ModelAgent.ReplaceModels {
+	//		if replaceModel == request.Model {
+	//			logger.Infof(ctx, "sOpenAI ResponsesStream request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
+	//			request.Model = mak.ModelAgent.TargetModels[i]
+	//			mak.RealModel.Model = request.Model
+	//			break
 	//		}
 	//	}
 	//}
@@ -574,165 +661,226 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 
 	defer close(response)
 
-	//for {
-	//
-	//	res := <-response
-	//
-	//	response := convToResponsesResponse(g.RequestFromCtx(ctx).GetCtx(), *res, true)
-	//
-	//	connTime = response.ConnTime
-	//	duration = response.Duration
-	//	totalTime = response.TotalTime
-	//
-	//	if response.Error != nil {
-	//
-	//		if errors.Is(response.Error, io.EOF) {
-	//
-	//			if response.Usage != nil {
-	//				if usage == nil {
-	//					usage = response.Usage
-	//				} else {
-	//					if response.Usage.PromptTokens != 0 {
-	//						usage.PromptTokens = response.Usage.PromptTokens
-	//					}
-	//					if response.Usage.CompletionTokens != 0 {
-	//						usage.CompletionTokens = response.Usage.CompletionTokens
-	//					}
-	//					if response.Usage.TotalTokens != 0 {
-	//						usage.TotalTokens = response.Usage.TotalTokens
-	//					} else {
-	//						usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-	//					}
-	//					if response.Usage.CacheCreationInputTokens != 0 {
-	//						usage.CacheCreationInputTokens = response.Usage.CacheCreationInputTokens
-	//					}
-	//					if response.Usage.CacheReadInputTokens != 0 {
-	//						usage.CacheReadInputTokens = response.Usage.CacheReadInputTokens
-	//					}
-	//				}
-	//			}
-	//
-	//			if err = util.SSEServer(ctx, "[DONE]"); err != nil {
-	//				logger.Error(ctx, err)
-	//				return err
-	//			}
-	//
-	//			return nil
-	//		}
-	//
-	//		err = response.Error
-	//
-	//		// 记录错误次数和禁用
-	//		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
-	//
-	//		isRetry, isDisabled := common.IsNeedRetry(err)
-	//
-	//		if isDisabled {
-	//			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-	//				if mak.RealModel.IsEnableModelAgent {
-	//					service.ModelAgent().DisabledModelAgentKey(ctx, mak.Key, err.Error())
-	//				} else {
-	//					service.Key().DisabledModelKey(ctx, mak.Key, err.Error())
-	//				}
-	//			}, nil); err != nil {
-	//				logger.Error(ctx, err)
-	//			}
-	//		}
-	//
-	//		if isRetry {
-	//
-	//			if common.IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
-	//
-	//				if mak.RealModel.IsEnableFallback {
-	//
-	//					if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
-	//						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, mak.RealModel); fallbackModelAgent != nil {
-	//							retryInfo = &mcommon.Retry{
-	//								IsRetry:    true,
-	//								RetryCount: len(retry),
-	//								ErrMsg:     err.Error(),
-	//							}
-	//							return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
-	//						}
-	//					}
-	//
-	//					if mak.RealModel.FallbackConfig.Model != "" {
-	//						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
-	//							retryInfo = &mcommon.Retry{
-	//								IsRetry:    true,
-	//								RetryCount: len(retry),
-	//								ErrMsg:     err.Error(),
-	//							}
-	//							return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
-	//						}
-	//					}
-	//				}
-	//
-	//				return err
-	//			}
-	//
-	//			retryInfo = &mcommon.Retry{
-	//				IsRetry:    true,
-	//				RetryCount: len(retry),
-	//				ErrMsg:     err.Error(),
-	//			}
-	//
-	//			return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
-	//		}
-	//
-	//		return err
-	//	}
-	//
-	//	if len(response.Choices) > 0 && response.Choices[0].Delta != nil {
-	//		if mak.RealModel.Type == 102 && response.Choices[0].Delta.Audio != nil {
-	//			completion += response.Choices[0].Delta.Audio.Transcript
-	//		} else {
-	//			if len(response.Choices) > 1 {
-	//				for i, choice := range response.Choices {
-	//					completion += fmt.Sprintf("index: %d\ncontent: %s\n\n", i, choice.Delta.Content)
-	//				}
-	//			} else {
-	//				completion += response.Choices[0].Delta.Content
-	//			}
-	//		}
-	//	}
-	//
-	//	if len(response.Choices) > 0 && response.Choices[0].Delta != nil && len(response.Choices[0].Delta.ToolCalls) > 0 {
-	//		completion += response.Choices[0].Delta.ToolCalls[0].Function.Arguments
-	//	}
-	//
-	//	if response.Usage != nil {
-	//		if usage == nil {
-	//			usage = response.Usage
-	//		} else {
-	//			if response.Usage.PromptTokens != 0 {
-	//				usage.PromptTokens = response.Usage.PromptTokens
-	//			}
-	//			if response.Usage.CompletionTokens != 0 {
-	//				usage.CompletionTokens = response.Usage.CompletionTokens
-	//			}
-	//			if response.Usage.TotalTokens != 0 {
-	//				usage.TotalTokens = response.Usage.TotalTokens
-	//			} else {
-	//				usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-	//			}
-	//		}
-	//	}
-	//
-	//	data := make(map[string]interface{})
-	//	if err = gjson.Unmarshal(response.ResponseBytes, &data); err != nil {
-	//		logger.Error(ctx, err)
-	//		return err
-	//	}
-	//
-	//	if err = util.SSEServer(ctx, gjson.MustEncodeString(data)); err != nil {
-	//		logger.Error(ctx, err)
-	//		return err
-	//	}
-	//}
+	for {
 
-	// todo
-	return err
+		res := <-response
+
+		response := convToResponsesResponse(ctx, *res, true)
+
+		connTime = response.ConnTime
+		duration = response.Duration
+		totalTime = response.TotalTime
+
+		if response.Err != nil {
+
+			if errors.Is(response.Err, io.EOF) {
+
+				if response.Usage != nil {
+					if usage == nil {
+						usage = response.Usage
+					} else {
+						if response.Usage.PromptTokens != 0 {
+							usage.PromptTokens = response.Usage.PromptTokens
+						}
+						if response.Usage.CompletionTokens != 0 {
+							usage.CompletionTokens = response.Usage.CompletionTokens
+						}
+						if response.Usage.TotalTokens != 0 {
+							usage.TotalTokens = response.Usage.TotalTokens
+						} else {
+							usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+						}
+						if response.Usage.CacheCreationInputTokens != 0 {
+							usage.CacheCreationInputTokens = response.Usage.CacheCreationInputTokens
+						}
+						if response.Usage.CacheReadInputTokens != 0 {
+							usage.CacheReadInputTokens = response.Usage.CacheReadInputTokens
+						}
+					}
+				}
+
+				if err = util.SSEServer(ctx, "[DONE]"); err != nil {
+					logger.Error(ctx, err)
+					return err
+				}
+
+				return nil
+			}
+
+			err = response.Err
+
+			// 记录错误次数和禁用
+			service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
+
+			isRetry, isDisabled := common.IsNeedRetry(err)
+
+			if isDisabled {
+				if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+					if mak.RealModel.IsEnableModelAgent {
+						service.ModelAgent().DisabledModelAgentKey(ctx, mak.Key, err.Error())
+					} else {
+						service.Key().DisabledModelKey(ctx, mak.Key, err.Error())
+					}
+				}, nil); err != nil {
+					logger.Error(ctx, err)
+				}
+			}
+
+			if isRetry {
+
+				if common.IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
+
+					if mak.RealModel.IsEnableFallback {
+
+						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
+							if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, mak.RealModel); fallbackModelAgent != nil {
+								retryInfo = &mcommon.Retry{
+									IsRetry:    true,
+									RetryCount: len(retry),
+									ErrMsg:     err.Error(),
+								}
+								return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
+							}
+						}
+
+						if mak.RealModel.FallbackConfig.Model != "" {
+							if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
+								retryInfo = &mcommon.Retry{
+									IsRetry:    true,
+									RetryCount: len(retry),
+									ErrMsg:     err.Error(),
+								}
+								return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
+							}
+						}
+					}
+
+					return err
+				}
+
+				retryInfo = &mcommon.Retry{
+					IsRetry:    true,
+					RetryCount: len(retry),
+					ErrMsg:     err.Error(),
+				}
+
+				return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+			}
+
+			return err
+		}
+
+		//if len(response.Choices) > 0 && response.Choices[0].Delta != nil {
+		//	if mak.RealModel.Type == 102 && response.Choices[0].Delta.Audio != nil {
+		//		completion += response.Choices[0].Delta.Audio.Transcript
+		//	} else {
+		//		if len(response.Choices) > 1 {
+		//			for i, choice := range response.Choices {
+		//				completion += fmt.Sprintf("index: %d\ncontent: %s\n\n", i, choice.Delta.Content)
+		//			}
+		//		} else {
+		//			if response.Choices[0].Delta.ReasoningContent != nil {
+		//				completion += gconv.String(response.Choices[0].Delta.ReasoningContent)
+		//			}
+		//			completion += response.Choices[0].Delta.Content
+		//		}
+		//	}
+		//}
+		//
+		//if len(response.Choices) > 0 && response.Choices[0].Delta != nil && len(response.Choices[0].Delta.ToolCalls) > 0 {
+		//	completion += response.Choices[0].Delta.ToolCalls[0].Function.Arguments
+		//}
+
+		if response.Usage != nil {
+			if usage == nil {
+				usage = response.Usage
+			} else {
+				if response.Usage.PromptTokens != 0 {
+					usage.PromptTokens = response.Usage.PromptTokens
+				}
+				if response.Usage.CompletionTokens != 0 {
+					usage.CompletionTokens = response.Usage.CompletionTokens
+				}
+				if response.Usage.TotalTokens != 0 {
+					usage.TotalTokens = response.Usage.TotalTokens
+				} else {
+					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+				}
+				if response.Usage.CacheCreationInputTokens != 0 {
+					usage.CacheCreationInputTokens = response.Usage.CacheCreationInputTokens
+				}
+				if response.Usage.CacheReadInputTokens != 0 {
+					usage.CacheReadInputTokens = response.Usage.CacheReadInputTokens
+				}
+			}
+		}
+
+		// 替换成调用的模型
+		if mak.ReqModel.IsEnableForward {
+			response.Model = mak.ReqModel.Model
+		}
+
+		// OpenAI官方格式
+		if len(response.ResponseBytes) > 0 {
+
+			data := make(map[string]interface{})
+			if err = gjson.Unmarshal(response.ResponseBytes, &data); err != nil {
+				logger.Error(ctx, err)
+				return err
+			}
+
+			// 替换成调用的模型
+			if mak.ReqModel.IsEnableForward {
+				if _, ok := data["model"]; ok {
+					data["model"] = mak.ReqModel.Model
+				}
+			}
+
+			if err = util.SSEServer(ctx, gjson.MustEncodeString(data)); err != nil {
+				logger.Error(ctx, err)
+				return err
+			}
+
+		} else {
+			if err = util.SSEServer(ctx, gjson.MustEncodeString(response)); err != nil {
+				logger.Error(ctx, err)
+				return err
+			}
+		}
+	}
+}
+
+func convToChatCompletionRequest(request *ghttp.Request) sdkm.ChatCompletionRequest {
+
+	openaiResponsesReq := sdkm.OpenAIResponsesReq{}
+	if err := gjson.Unmarshal(request.GetBody(), &openaiResponsesReq); err != nil {
+		logger.Error(request.GetCtx(), err)
+		return sdkm.ChatCompletionRequest{}
+	}
+
+	chatCompletionRequest := sdkm.ChatCompletionRequest{}
+
+	return chatCompletionRequest
+}
+
+func convToChatCompletionResponse(ctx context.Context, res sdkm.OpenAIResponsesRes, stream bool) sdkm.ChatCompletionResponse {
+
+	openaiResponsesRes := sdkm.OpenAIResponsesRes{
+		Model:         res.Model,
+		Usage:         res.Usage,
+		ResponseBytes: res.ResponseBytes,
+		Err:           res.Err,
+	}
+
+	if res.ResponseBytes != nil {
+		if err := gjson.Unmarshal(res.ResponseBytes, &openaiResponsesRes); err != nil {
+			logger.Error(ctx, err)
+		}
+	}
+
+	chatCompletionResponse := sdkm.ChatCompletionResponse{}
+
+	return chatCompletionResponse
 }
 
 func convToResponsesRequest(request *ghttp.Request) sdkm.OpenAIResponsesReq {

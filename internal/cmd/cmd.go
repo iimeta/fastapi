@@ -20,6 +20,7 @@ import (
 	"github.com/iimeta/fastapi/internal/controller/image"
 	"github.com/iimeta/fastapi/internal/controller/midjourney"
 	"github.com/iimeta/fastapi/internal/controller/moderation"
+	"github.com/iimeta/fastapi/internal/controller/openai"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
@@ -81,7 +82,7 @@ var (
 						moderation.NewV1(),
 						file.NewV1(),
 						anthropic.NewV1(),
-						//openai.NewV1(),
+						openai.NewV1(),
 					)
 				})
 

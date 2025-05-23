@@ -12,4 +12,5 @@ import (
 
 type IChatV1 interface {
 	Completions(ctx context.Context, req *v1.CompletionsReq) (res *v1.CompletionsRes, err error)
+	CompletionsResponses(ctx context.Context, req *v1.CompletionsResponsesReq) (res *v1.CompletionsResponsesRes, err error)
 }

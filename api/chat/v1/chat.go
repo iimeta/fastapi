@@ -5,13 +5,24 @@ import (
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 )
 
-// Completions接口请求参数
+// ChatCompletions接口请求参数
 type CompletionsReq struct {
-	g.Meta `path:"/completions" tags:"chat" method:"post" summary:"Completions接口"`
+	g.Meta `path:"/completions" tags:"chat" method:"post" summary:"ChatCompletions接口"`
 	sdkm.ChatCompletionRequest
 }
 
-// Completions接口响应参数
+// ChatCompletions接口响应参数
 type CompletionsRes struct {
+	g.Meta `mime:"application/json" example:"json"`
+}
+
+// ChatCompletionsToResponses接口请求参数
+type CompletionsResponsesReq struct {
+	g.Meta `path:"/completions/responses" tags:"chat" method:"post" summary:"ChatCompletionsToResponses接口"`
+	sdkm.ChatCompletionRequest
+}
+
+// ChatCompletionsToResponses接口响应参数
+type CompletionsResponsesRes struct {
 	g.Meta `mime:"application/json" example:"json"`
 }
