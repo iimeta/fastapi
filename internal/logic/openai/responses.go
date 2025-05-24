@@ -858,7 +858,47 @@ func convToChatCompletionRequest(request *ghttp.Request) sdkm.ChatCompletionRequ
 		return sdkm.ChatCompletionRequest{}
 	}
 
-	chatCompletionRequest := sdkm.ChatCompletionRequest{}
+	chatCompletionRequest := sdkm.ChatCompletionRequest{
+		Model:               openaiResponsesReq.Model,
+		MaxCompletionTokens: openaiResponsesReq.MaxOutputTokens,
+		Temperature:         openaiResponsesReq.Temperature,
+		TopP:                openaiResponsesReq.TopP,
+		Stream:              openaiResponsesReq.Stream,
+		User:                openaiResponsesReq.User,
+		Tools:               openaiResponsesReq.Tools,
+		ToolChoice:          openaiResponsesReq.ToolChoice,
+		ParallelToolCalls:   openaiResponsesReq.ParallelToolCalls,
+		Store:               openaiResponsesReq.Store,
+		Metadata:            openaiResponsesReq.Metadata,
+	}
+
+	if openaiResponsesReq.Input != nil {
+		if value, ok := openaiResponsesReq.Input.([]interface{}); ok {
+
+			inputs := make([]sdkm.OpenAIResponsesInput, 0)
+			if err := gjson.Unmarshal(gjson.MustEncode(value), &inputs); err != nil {
+				logger.Error(request.GetCtx(), err)
+				return chatCompletionRequest
+			}
+
+			for _, input := range inputs {
+				chatCompletionRequest.Messages = append(chatCompletionRequest.Messages, sdkm.ChatCompletionMessage{
+					Role:    input.Role,
+					Content: input.Content,
+				})
+			}
+
+		} else {
+			chatCompletionRequest.Messages = []sdkm.ChatCompletionMessage{{
+				Role:    "user",
+				Content: openaiResponsesReq.Input,
+			}}
+		}
+	}
+
+	if openaiResponsesReq.Reasoning != nil {
+		chatCompletionRequest.ReasoningEffort = openaiResponsesReq.Reasoning.Effort
+	}
 
 	return chatCompletionRequest
 }
