@@ -3,7 +3,6 @@ package openai
 import (
 	"context"
 	"fmt"
-	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gctx"
@@ -46,14 +45,13 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, fallbac
 	}()
 
 	var (
-		params = convToChatCompletionRequest(request)
+		params = common.ConvToChatCompletionRequest(request)
 		mak    = &common.MAK{
 			Model:              params.Model,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
 		client      *openai.Client
-		res         sdkm.OpenAIResponsesRes
 		retryInfo   *mcommon.Retry
 		textTokens  int
 		imageTokens int
@@ -65,7 +63,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, fallbac
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		chatCompletionResponse := convToChatCompletionResponse(ctx, response, false)
+		chatCompletionResponse := common.ConvToChatCompletionResponse(ctx, response, false)
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
@@ -274,7 +272,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, fallbac
 		return response, err
 	}
 
-	res, err = client.Responses(ctx, request.GetBody())
+	response, err = client.Responses(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -339,8 +337,6 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, fallbac
 		return response, err
 	}
 
-	response = convToResponsesResponse(g.RequestFromCtx(ctx).GetCtx(), res, false)
-
 	return response, nil
 }
 
@@ -353,7 +349,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 	}()
 
 	var (
-		params = convToChatCompletionRequest(request)
+		params = common.ConvToChatCompletionRequest(request)
 		mak    = &common.MAK{
 			Model:              params.Model,
 			Messages:           params.Messages,
@@ -665,15 +661,15 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 
 		res := <-response
 
-		response := convToResponsesResponse(ctx, *res, true)
+		response := common.ConvToChatCompletionResponse(ctx, *res, true)
 
 		connTime = response.ConnTime
 		duration = response.Duration
 		totalTime = response.TotalTime
 
-		if response.Err != nil {
+		if response.Error != nil {
 
-			if errors.Is(response.Err, io.EOF) {
+			if errors.Is(response.Error, io.EOF) {
 
 				if response.Usage != nil {
 					if usage == nil {
@@ -707,7 +703,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 				return nil
 			}
 
-			err = response.Err
+			err = response.Error
 
 			// 记录错误次数和禁用
 			service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
@@ -770,26 +766,26 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 			return err
 		}
 
-		//if len(response.Choices) > 0 && response.Choices[0].Delta != nil {
-		//	if mak.RealModel.Type == 102 && response.Choices[0].Delta.Audio != nil {
-		//		completion += response.Choices[0].Delta.Audio.Transcript
-		//	} else {
-		//		if len(response.Choices) > 1 {
-		//			for i, choice := range response.Choices {
-		//				completion += fmt.Sprintf("index: %d\ncontent: %s\n\n", i, choice.Delta.Content)
-		//			}
-		//		} else {
-		//			if response.Choices[0].Delta.ReasoningContent != nil {
-		//				completion += gconv.String(response.Choices[0].Delta.ReasoningContent)
-		//			}
-		//			completion += response.Choices[0].Delta.Content
-		//		}
-		//	}
-		//}
-		//
-		//if len(response.Choices) > 0 && response.Choices[0].Delta != nil && len(response.Choices[0].Delta.ToolCalls) > 0 {
-		//	completion += response.Choices[0].Delta.ToolCalls[0].Function.Arguments
-		//}
+		if len(response.Choices) > 0 && response.Choices[0].Delta != nil {
+			if mak.RealModel.Type == 102 && response.Choices[0].Delta.Audio != nil {
+				completion += response.Choices[0].Delta.Audio.Transcript
+			} else {
+				if len(response.Choices) > 1 {
+					for i, choice := range response.Choices {
+						completion += fmt.Sprintf("index: %d\ncontent: %s\n\n", i, choice.Delta.Content)
+					}
+				} else {
+					if response.Choices[0].Delta.ReasoningContent != nil {
+						completion += gconv.String(response.Choices[0].Delta.ReasoningContent)
+					}
+					completion += response.Choices[0].Delta.Content
+				}
+			}
+		}
+
+		if len(response.Choices) > 0 && response.Choices[0].Delta != nil && len(response.Choices[0].Delta.ToolCalls) > 0 {
+			completion += response.Choices[0].Delta.ToolCalls[0].Function.Arguments
+		}
 
 		if response.Usage != nil {
 			if usage == nil {
@@ -816,138 +812,36 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 		}
 
 		// 替换成调用的模型
-		if mak.ReqModel.IsEnableForward {
-			response.Model = mak.ReqModel.Model
-		}
+		//if mak.ReqModel.IsEnableForward {
+		//	response.Model = mak.ReqModel.Model
+		//}
 
 		// OpenAI官方格式
-		if len(response.ResponseBytes) > 0 {
-
-			data := make(map[string]interface{})
-			if err = gjson.Unmarshal(response.ResponseBytes, &data); err != nil {
-				logger.Error(ctx, err)
-				return err
-			}
-
-			// 替换成调用的模型
-			if mak.ReqModel.IsEnableForward {
-				if _, ok := data["model"]; ok {
-					data["model"] = mak.ReqModel.Model
-				}
-			}
-
-			if err = util.SSEServer(ctx, gjson.MustEncodeString(data)); err != nil {
-				logger.Error(ctx, err)
-				return err
-			}
-
-		} else {
-			if err = util.SSEServer(ctx, gjson.MustEncodeString(response)); err != nil {
-				logger.Error(ctx, err)
-				return err
-			}
-		}
-	}
-}
-
-func convToChatCompletionRequest(request *ghttp.Request) sdkm.ChatCompletionRequest {
-
-	openaiResponsesReq := sdkm.OpenAIResponsesReq{}
-	if err := gjson.Unmarshal(request.GetBody(), &openaiResponsesReq); err != nil {
-		logger.Error(request.GetCtx(), err)
-		return sdkm.ChatCompletionRequest{}
-	}
-
-	chatCompletionRequest := sdkm.ChatCompletionRequest{
-		Model:               openaiResponsesReq.Model,
-		MaxCompletionTokens: openaiResponsesReq.MaxOutputTokens,
-		Temperature:         openaiResponsesReq.Temperature,
-		TopP:                openaiResponsesReq.TopP,
-		Stream:              openaiResponsesReq.Stream,
-		User:                openaiResponsesReq.User,
-		Tools:               openaiResponsesReq.Tools,
-		ToolChoice:          openaiResponsesReq.ToolChoice,
-		ParallelToolCalls:   openaiResponsesReq.ParallelToolCalls,
-		Store:               openaiResponsesReq.Store,
-		Metadata:            openaiResponsesReq.Metadata,
-	}
-
-	if openaiResponsesReq.Input != nil {
-		if value, ok := openaiResponsesReq.Input.([]interface{}); ok {
-
-			inputs := make([]sdkm.OpenAIResponsesInput, 0)
-			if err := gjson.Unmarshal(gjson.MustEncode(value), &inputs); err != nil {
-				logger.Error(request.GetCtx(), err)
-				return chatCompletionRequest
-			}
-
-			for _, input := range inputs {
-				chatCompletionRequest.Messages = append(chatCompletionRequest.Messages, sdkm.ChatCompletionMessage{
-					Role:    input.Role,
-					Content: input.Content,
-				})
-			}
-
-		} else {
-			chatCompletionRequest.Messages = []sdkm.ChatCompletionMessage{{
-				Role:    "user",
-				Content: openaiResponsesReq.Input,
-			}}
-		}
-	}
-
-	if openaiResponsesReq.Reasoning != nil {
-		chatCompletionRequest.ReasoningEffort = openaiResponsesReq.Reasoning.Effort
-	}
-
-	return chatCompletionRequest
-}
-
-func convToChatCompletionResponse(ctx context.Context, res sdkm.OpenAIResponsesRes, stream bool) sdkm.ChatCompletionResponse {
-
-	openaiResponsesRes := sdkm.OpenAIResponsesRes{
-		Model:         res.Model,
-		Usage:         res.Usage,
-		ResponseBytes: res.ResponseBytes,
-		Err:           res.Err,
-	}
-
-	if res.ResponseBytes != nil {
-		if err := gjson.Unmarshal(res.ResponseBytes, &openaiResponsesRes); err != nil {
+		//if len(res.ResponseBytes) > 0 {
+		//
+		//	data := make(map[string]interface{})
+		//	if err = gjson.Unmarshal(res.ResponseBytes, &data); err != nil {
+		//		logger.Error(ctx, err)
+		//		return err
+		//	}
+		//
+		//	// 替换成调用的模型
+		//	if mak.ReqModel.IsEnableForward {
+		//		if _, ok := data["model"]; ok {
+		//			data["model"] = mak.ReqModel.Model
+		//		}
+		//	}
+		//
+		//	if err = util.SSEServer(ctx, gjson.MustEncodeString(data)); err != nil {
+		//		logger.Error(ctx, err)
+		//		return err
+		//	}
+		//
+		//} else {
+		if err = util.SSEServer(ctx, string(res.ResponseBytes)); err != nil {
 			logger.Error(ctx, err)
+			return err
 		}
+		//}
 	}
-
-	chatCompletionResponse := sdkm.ChatCompletionResponse{}
-
-	return chatCompletionResponse
-}
-
-func convToResponsesRequest(request *ghttp.Request) sdkm.OpenAIResponsesReq {
-
-	openaiResponsesReq := sdkm.OpenAIResponsesReq{}
-	if err := gjson.Unmarshal(request.GetBody(), &openaiResponsesReq); err != nil {
-		logger.Error(request.GetCtx(), err)
-		return sdkm.OpenAIResponsesReq{}
-	}
-
-	return openaiResponsesReq
-}
-
-func convToResponsesResponse(ctx context.Context, res sdkm.OpenAIResponsesRes, stream bool) sdkm.OpenAIResponsesRes {
-
-	openaiResponsesRes := sdkm.OpenAIResponsesRes{
-		Model:         res.Model,
-		Usage:         res.Usage,
-		ResponseBytes: res.ResponseBytes,
-		Err:           res.Err,
-	}
-
-	if res.ResponseBytes != nil {
-		if err := gjson.Unmarshal(res.ResponseBytes, &openaiResponsesRes); err != nil {
-			logger.Error(ctx, err)
-		}
-	}
-
-	return openaiResponsesRes
 }
