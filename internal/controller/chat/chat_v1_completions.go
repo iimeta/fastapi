@@ -17,17 +17,32 @@ func (c *ControllerV1) Completions(ctx context.Context, req *v1.CompletionsReq) 
 		logger.Debugf(ctx, "Controller Completions time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	if req.Stream {
-		if err = service.Chat().CompletionsStream(ctx, req.ChatCompletionRequest, nil, nil); err != nil {
-			return nil, err
+	if !req.IsToResponses {
+		if req.Stream {
+			if err = service.Chat().CompletionsStream(ctx, req.ChatCompletionRequest, nil, nil); err != nil {
+				return nil, err
+			}
+			g.RequestFromCtx(ctx).SetCtxVar("stream", req.Stream)
+		} else {
+			response, err := service.Chat().Completions(ctx, req.ChatCompletionRequest, nil, nil)
+			if err != nil {
+				return nil, err
+			}
+			g.RequestFromCtx(ctx).Response.WriteJson(response)
 		}
-		g.RequestFromCtx(ctx).SetCtxVar("stream", req.Stream)
 	} else {
-		response, err := service.Chat().Completions(ctx, req.ChatCompletionRequest, nil, nil)
-		if err != nil {
-			return nil, err
+		if req.Stream {
+			if err = service.OpenAI().ResponsesStream(ctx, g.RequestFromCtx(ctx), true, nil, nil); err != nil {
+				return nil, err
+			}
+			g.RequestFromCtx(ctx).SetCtxVar("stream", true)
+		} else {
+			response, err := service.OpenAI().Responses(ctx, g.RequestFromCtx(ctx), true, nil, nil)
+			if err != nil {
+				return nil, err
+			}
+			g.RequestFromCtx(ctx).Response.WriteJson(response.ResponseBytes)
 		}
-		g.RequestFromCtx(ctx).Response.WriteJson(response)
 	}
 
 	return

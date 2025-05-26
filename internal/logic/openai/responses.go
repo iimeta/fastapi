@@ -66,6 +66,10 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		chatCompletionResponse := common.ConvResponsesToChatCompletionsResponse(ctx, response)
 
+		if isChatCompletions {
+			response.ResponseBytes = gjson.MustEncode(chatCompletionResponse)
+		}
+
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
 			// 替换成调用的模型
@@ -342,10 +346,6 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 		}
 
 		return response, err
-	}
-
-	if isChatCompletions {
-		response.ResponseBytes = gjson.MustEncode(common.ConvResponsesToChatCompletionsResponse(ctx, response))
 	}
 
 	return response, nil

@@ -9,6 +9,7 @@ import (
 type CompletionsReq struct {
 	g.Meta `path:"/completions" tags:"chat" method:"post" summary:"ChatCompletions接口"`
 	sdkm.ChatCompletionRequest
+	IsToResponses bool `json:"is_to_responses"`
 }
 
 // ChatCompletions接口响应参数
