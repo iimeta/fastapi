@@ -16,14 +16,14 @@ type ResponsesRes struct {
 	g.Meta `mime:"application/json" example:"json"`
 }
 
-// ResponsesToChatCompletions接口请求参数
+// ChatCompletionsToResponses接口请求参数
 type ResponsesChatCompletionsReq struct {
-	g.Meta `path:"/responses/chat/completions" tags:"openai" method:"post" summary:"ResponsesToChatCompletions接口"`
+	g.Meta `path:"/responses/chat/completions" tags:"openai" method:"post" summary:"ChatCompletionsToResponses接口"`
 	Model  string `json:"model"`
 	Stream bool   `json:"stream"`
 }
 
-// ResponsesToChatCompletions接口响应参数
+// ChatCompletionsToResponses接口响应参数
 type ResponsesChatCompletionsRes struct {
 	g.Meta `mime:"application/json" example:"json"`
 }

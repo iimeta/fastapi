@@ -18,12 +18,12 @@ func (c *ControllerV1) Responses(ctx context.Context, req *v1.ResponsesReq) (res
 	}()
 
 	if req.Stream {
-		if err = service.OpenAI().ResponsesStream(ctx, g.RequestFromCtx(ctx), nil, nil); err != nil {
+		if err = service.OpenAI().ResponsesStream(ctx, g.RequestFromCtx(ctx), false, nil, nil); err != nil {
 			return nil, err
 		}
 		g.RequestFromCtx(ctx).SetCtxVar("stream", true)
 	} else {
-		response, err := service.OpenAI().Responses(ctx, g.RequestFromCtx(ctx), nil, nil)
+		response, err := service.OpenAI().Responses(ctx, g.RequestFromCtx(ctx), false, nil, nil)
 		if err != nil {
 			return nil, err
 		}

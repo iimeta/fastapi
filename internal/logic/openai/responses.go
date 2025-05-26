@@ -3,6 +3,7 @@ package openai
 import (
 	"context"
 	"fmt"
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gctx"
@@ -37,7 +38,7 @@ func New() service.IOpenAI {
 }
 
 // Responses
-func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.OpenAIResponsesRes, err error) {
+func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatCompletions bool, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.OpenAIResponsesRes, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -45,7 +46,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, fallbac
 	}()
 
 	var (
-		params = common.ConvToChatCompletionRequest(request)
+		params = common.ConvResponsesToChatCompletionsRequest(request, isChatCompletions)
 		mak    = &common.MAK{
 			Model:              params.Model,
 			FallbackModelAgent: fallbackModelAgent,
@@ -63,7 +64,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, fallbac
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		chatCompletionResponse := common.ConvToChatCompletionResponse(ctx, response, false)
+		chatCompletionResponse := common.ConvResponsesToChatCompletionsResponse(ctx, response)
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
@@ -272,7 +273,13 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, fallbac
 		return response, err
 	}
 
-	response, err = client.Responses(ctx, request.GetBody())
+	data := request.GetBody()
+
+	if isChatCompletions {
+		data = gjson.MustEncode(common.ConvChatCompletionsToResponsesRequest(request))
+	}
+
+	response, err = client.Responses(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -306,7 +313,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, fallbac
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Responses(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
+							return s.Responses(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel)
 						}
 					}
 
@@ -317,7 +324,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, fallbac
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Responses(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
+							return s.Responses(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, nil, fallbackModel)
 						}
 					}
 				}
@@ -331,17 +338,21 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, fallbac
 				ErrMsg:     err.Error(),
 			}
 
-			return s.Responses(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+			return s.Responses(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
 		return response, err
+	}
+
+	if isChatCompletions {
+		response.ResponseBytes = gjson.MustEncode(common.ConvResponsesToChatCompletionsResponse(ctx, response))
 	}
 
 	return response, nil
 }
 
 // ResponsesStream
-func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (err error) {
+func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, isChatCompletions bool, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -349,7 +360,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 	}()
 
 	var (
-		params = common.ConvToChatCompletionRequest(request)
+		params = common.ConvResponsesToChatCompletionsRequest(request, isChatCompletions)
 		mak    = &common.MAK{
 			Model:              params.Model,
 			Messages:           params.Messages,
@@ -590,7 +601,13 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 		return err
 	}
 
-	response, err := client.ResponsesStream(ctx, request.GetBody())
+	data := request.GetBody()
+
+	if isChatCompletions {
+		data = gjson.MustEncode(common.ConvChatCompletionsToResponsesRequest(request))
+	}
+
+	response, err := client.ResponsesStream(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -624,7 +641,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
+							return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel)
 						}
 					}
 
@@ -635,7 +652,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
+							return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, nil, fallbackModel)
 						}
 					}
 				}
@@ -649,7 +666,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 				ErrMsg:     err.Error(),
 			}
 
-			return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+			return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
 		return err
@@ -661,7 +678,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 
 		res := <-response
 
-		response := common.ConvToChatCompletionResponse(ctx, *res, true)
+		response := common.ConvResponsesStreamToChatCompletionsResponse(ctx, *res)
 
 		connTime = response.ConnTime
 		duration = response.Duration
@@ -735,7 +752,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
-								return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
+								return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel)
 							}
 						}
 
@@ -746,7 +763,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
-								return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
+								return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, nil, fallbackModel)
 							}
 						}
 					}
@@ -760,7 +777,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 					ErrMsg:     err.Error(),
 				}
 
-				return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+				return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 			}
 
 			return err
@@ -838,7 +855,13 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, f
 		//	}
 		//
 		//} else {
-		if err = util.SSEServer(ctx, string(res.ResponseBytes)); err != nil {
+
+		data := res.ResponseBytes
+		if isChatCompletions {
+			data = gjson.MustEncode(response)
+		}
+
+		if err = util.SSEServer(ctx, string(data)); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
