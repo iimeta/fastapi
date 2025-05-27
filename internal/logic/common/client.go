@@ -47,6 +47,10 @@ func NewRealtimeClient(ctx context.Context, model *model.Model, key, baseURL, pa
 
 func NewOpenAIClient(ctx context.Context, model *model.Model, key, baseURL, path string) (*openai.Client, error) {
 
+	if path == "" {
+		path = "/responses"
+	}
+
 	if model.IsEnablePresetConfig {
 		return openai.NewClient(ctx, model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, config.Cfg.Http.ProxyUrl), nil
 	}

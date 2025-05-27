@@ -1019,6 +1019,19 @@ func (s *sChat) SaveLog(ctx context.Context, group *model.Group, reqModel, realM
 
 					chat.Prompt = gconv.String(multiContents)
 
+				} else if multiContent, ok := prompt.([]sdkm.OpenAIResponsesContent); ok {
+
+					multiContents := make([]sdkm.OpenAIResponsesContent, 0)
+
+					for _, value := range multiContent {
+						if value.Type == "input_image" && !gstr.HasPrefix(value.ImageUrl, "http") {
+							value.ImageUrl = "[BASE64图像数据]"
+						}
+						multiContents = append(multiContents, value)
+					}
+
+					chat.Prompt = gconv.String(multiContents)
+
 				} else {
 					chat.Prompt = gconv.String(prompt)
 				}
@@ -1148,6 +1161,19 @@ func (s *sChat) SaveLog(ctx context.Context, group *model.Group, reqModel, realM
 							value = content
 						}
 
+						multiContents = append(multiContents, value)
+					}
+
+					content = gconv.String(multiContents)
+
+				} else if multiContent, ok := content.([]sdkm.OpenAIResponsesContent); ok {
+
+					multiContents := make([]sdkm.OpenAIResponsesContent, 0)
+
+					for _, value := range multiContent {
+						if value.Type == "input_image" && !gstr.HasPrefix(value.ImageUrl, "http") {
+							value.ImageUrl = "[BASE64图像数据]"
+						}
 						multiContents = append(multiContents, value)
 					}
 
