@@ -97,7 +97,7 @@ type Message struct {
 	Refusal      string               `bson:"refusal,omitempty"       json:"refusal,omitempty"`
 	Name         string               `bson:"name,omitempty"          json:"name,omitempty"`
 	FunctionCall *openai.FunctionCall `bson:"function_call,omitempty" json:"function_call,omitempty"`
-	ToolCalls    []openai.ToolCall    `bson:"tool_calls,omitempty"    json:"tool_calls,omitempty"`
+	ToolCalls    any                  `bson:"tool_calls,omitempty"    json:"tool_calls,omitempty"`
 	ToolCallId   string               `bson:"tool_call_id,omitempty"  json:"tool_call_id,omitempty"`
 	Audio        *openai.Audio        `bson:"audio,omitempty"         json:"audio,omitempty"`
 }

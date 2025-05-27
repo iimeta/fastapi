@@ -240,7 +240,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 									completionsRes.Completion += fmt.Sprintf("index: %d\ncontent: %s\n\n", i, gconv.String(choice.Message.Content))
 								}
 
-								if len(choice.Message.ToolCalls) > 0 {
+								if choice.Message.ToolCalls != nil {
 									completionsRes.Completion += fmt.Sprintf("index: %d\ntool_calls: %s\n\n", i, gconv.String(choice.Message.ToolCalls))
 								}
 							}
@@ -252,7 +252,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 
 							completionsRes.Completion += gconv.String(chatCompletionResponse.Choices[0].Message.Content)
 
-							if len(chatCompletionResponse.Choices[0].Message.ToolCalls) > 0 {
+							if chatCompletionResponse.Choices[0].Message.ToolCalls != nil {
 								completionsRes.Completion += fmt.Sprintf("\ntool_calls: %s", gconv.String(chatCompletionResponse.Choices[0].Message.ToolCalls))
 							}
 						}
@@ -800,8 +800,8 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 			}
 		}
 
-		if len(response.Choices) > 0 && response.Choices[0].Delta != nil && len(response.Choices[0].Delta.ToolCalls) > 0 {
-			completion += response.Choices[0].Delta.ToolCalls[0].Function.Arguments
+		if len(response.Choices) > 0 && response.Choices[0].Delta != nil && response.Choices[0].Delta.ToolCalls != nil {
+			completion += gconv.String(response.Choices[0].Delta.ToolCalls)
 		}
 
 		if response.Usage != nil {

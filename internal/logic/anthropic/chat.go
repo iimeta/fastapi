@@ -739,8 +739,8 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 			}
 		}
 
-		if len(response.Choices) > 0 && response.Choices[0].Delta != nil && len(response.Choices[0].Delta.ToolCalls) > 0 {
-			completion += response.Choices[0].Delta.ToolCalls[0].Function.Arguments
+		if len(response.Choices) > 0 && response.Choices[0].Delta != nil && response.Choices[0].Delta.ToolCalls != nil {
+			completion += gconv.String(response.Choices[0].Delta.ToolCalls)
 		}
 
 		if response.Usage != nil {

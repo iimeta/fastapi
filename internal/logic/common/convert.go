@@ -102,12 +102,24 @@ func ConvResponsesToChatCompletionsResponse(ctx context.Context, res sdkm.OpenAI
 	}
 
 	for _, output := range responsesRes.Output {
+		if len(output.Content) > 0 {
+			chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, sdkm.ChatCompletionChoice{
+				Message: &sdkm.ChatCompletionMessage{
+					Role:    output.Role,
+					Content: output.Content[0].Text,
+				},
+				FinishReason: "stop",
+			})
+		}
+	}
+
+	if responsesRes.Tools != nil && len(gconv.Interfaces(responsesRes.Tools)) > 0 {
 		chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, sdkm.ChatCompletionChoice{
 			Message: &sdkm.ChatCompletionMessage{
-				Role:    output.Role,
-				Content: output.Content[0].Text,
+				Role:      "assistant",
+				ToolCalls: responsesRes.Tools,
 			},
-			FinishReason: "stop",
+			FinishReason: "tool_calls",
 		})
 	}
 
