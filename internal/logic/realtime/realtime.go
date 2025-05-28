@@ -325,6 +325,14 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.RealtimeQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.RealtimeQuota.AudioQuota.CompletionRatio))
 				}
 
+				if usage.PromptTokensDetails.CachedTokens != 0 {
+					totalTokens += int(math.Ceil(float64(usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.RealtimeQuota.TextQuota.CachedRatio))
+				}
+
+				if usage.CompletionTokensDetails.CachedTokens != 0 {
+					totalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.RealtimeQuota.TextQuota.CachedRatio))
+				}
+
 				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 					// 分组折扣

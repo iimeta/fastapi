@@ -10,10 +10,11 @@ type PresetConfig struct {
 }
 
 type TextQuota struct {
-	BillingMethod   int     `bson:"billing_method,omitempty"   json:"billing_method,omitempty"`         // 计费方式[1:倍率, 2:固定额度]
-	PromptRatio     float64 `bson:"prompt_ratio,omitempty"     json:"prompt_ratio,omitempty"     d:"1"` // 提示倍率(提问倍率)
-	CompletionRatio float64 `bson:"completion_ratio,omitempty" json:"completion_ratio,omitempty" d:"1"` // 补全倍率(回答倍率)
-	FixedQuota      int     `bson:"fixed_quota,omitempty"      json:"fixed_quota,omitempty"`            // 固定额度
+	BillingMethod   int     `bson:"billing_method,omitempty"   json:"billing_method,omitempty"`   // 计费方式[1:倍率, 2:固定额度]
+	PromptRatio     float64 `bson:"prompt_ratio,omitempty"     json:"prompt_ratio,omitempty"`     // 提示倍率(提问倍率)
+	CompletionRatio float64 `bson:"completion_ratio,omitempty" json:"completion_ratio,omitempty"` // 补全倍率(回答倍率)
+	CachedRatio     float64 `bson:"cached_ratio,omitempty"     json:"cached_ratio,omitempty"`     // 缓存倍率
+	FixedQuota      int     `bson:"fixed_quota,omitempty"      json:"fixed_quota,omitempty"`      // 固定额度
 }
 
 type ImageQuota struct {
@@ -22,6 +23,7 @@ type ImageQuota struct {
 	TextRatio        float64           `bson:"text_ratio,omitempty"        json:"text_ratio,omitempty"`        // 文本倍率
 	InputRatio       float64           `bson:"input_ratio,omitempty"       json:"input_ratio,omitempty"`       // 输入倍率
 	OutputRatio      float64           `bson:"output_ratio,omitempty"      json:"output_ratio,omitempty"`      // 输出倍率
+	CachedRatio      float64           `bson:"cached_ratio,omitempty"      json:"cached_ratio,omitempty"`      // 缓存倍率
 	FixedQuota       int               `bson:"fixed_quota,omitempty"       json:"fixed_quota,omitempty"`       // 固定额度
 }
 
@@ -34,10 +36,11 @@ type GenerationQuota struct {
 }
 
 type AudioQuota struct {
-	BillingMethod   int     `bson:"billing_method,omitempty"   json:"billing_method,omitempty"`         // 计费方式[1:倍率, 2:固定额度]
-	PromptRatio     float64 `bson:"prompt_ratio,omitempty"     json:"prompt_ratio,omitempty"     d:"1"` // 提示倍率(提问倍率)
-	CompletionRatio float64 `bson:"completion_ratio,omitempty" json:"completion_ratio,omitempty" d:"1"` // 补全倍率(回答倍率)
-	FixedQuota      int     `bson:"fixed_quota,omitempty"      json:"fixed_quota,omitempty"`            // 固定额度
+	BillingMethod   int     `bson:"billing_method,omitempty"   json:"billing_method,omitempty"`   // 计费方式[1:倍率, 2:固定额度]
+	PromptRatio     float64 `bson:"prompt_ratio,omitempty"     json:"prompt_ratio,omitempty"`     // 提示倍率(提问倍率)
+	CompletionRatio float64 `bson:"completion_ratio,omitempty" json:"completion_ratio,omitempty"` // 补全倍率(回答倍率)
+	CachedRatio     float64 `bson:"cached_ratio,omitempty"     json:"cached_ratio,omitempty"`     // 缓存倍率
+	FixedQuota      int     `bson:"fixed_quota,omitempty"      json:"fixed_quota,omitempty"`      // 固定额度
 }
 
 type MultimodalQuota struct {

@@ -132,6 +132,14 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 					totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CacheReadInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio * 0.1))
 				}
 
+				if chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens != 0 {
+					totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CachedRatio))
+				}
+
+				if chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens != 0 {
+					totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CachedRatio))
+				}
+
 			} else if mak.ReqModel.Type == 102 { // 多模态语音
 
 				if chatCompletionResponse.Usage == nil {
@@ -150,6 +158,14 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 
 				chatCompletionResponse.Usage.TotalTokens = chatCompletionResponse.Usage.PromptTokens + chatCompletionResponse.Usage.CompletionTokens
 				totalTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
+
+				if chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens != 0 {
+					totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.CachedRatio))
+				}
+
+				if chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens != 0 {
+					totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.CachedRatio))
+				}
 
 			} else if chatCompletionResponse.Usage == nil || chatCompletionResponse.Usage.TotalTokens == 0 {
 
@@ -170,15 +186,21 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 		if mak.ReqModel != nil && chatCompletionResponse.Usage != nil {
 			if mak.ReqModel.Type == 102 {
 
-				if chatCompletionResponse.Usage.PromptTokensDetails != nil {
+				if chatCompletionResponse.Usage.PromptTokensDetails.TextTokens > 0 {
 					textTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokensDetails.TextTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.PromptRatio))
+				}
+
+				if chatCompletionResponse.Usage.PromptTokensDetails.AudioTokens > 0 {
 					audioTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokensDetails.AudioTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio))
 				} else {
 					audioTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio))
 				}
 
-				if chatCompletionResponse.Usage.CompletionTokensDetails != nil {
+				if chatCompletionResponse.Usage.CompletionTokensDetails.TextTokens > 0 {
 					textTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokensDetails.TextTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.CompletionRatio))
+				}
+
+				if chatCompletionResponse.Usage.CompletionTokensDetails.AudioTokens > 0 {
 					audioTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokensDetails.AudioTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
 				} else {
 					audioTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
@@ -186,9 +208,27 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 
 				totalTokens = textTokens + audioTokens
 
+				if chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens != 0 {
+					totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CachedRatio))
+				}
+
+				if chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens != 0 {
+					totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CachedRatio))
+				}
+
 			} else if mak.ReqModel.Type != 100 {
 				if mak.ReqModel.TextQuota.BillingMethod == 1 {
+
 					totalTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokens)*mak.ReqModel.TextQuota.PromptRatio + float64(chatCompletionResponse.Usage.CompletionTokens)*mak.ReqModel.TextQuota.CompletionRatio))
+
+					if chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens != 0 {
+						totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.TextQuota.CachedRatio))
+					}
+
+					if chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens != 0 {
+						totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.TextQuota.CachedRatio))
+					}
+
 				} else {
 					totalTokens = mak.ReqModel.TextQuota.FixedQuota
 				}
@@ -444,12 +484,40 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 						totalTokens += int(math.Ceil(float64(usage.CacheReadInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio * 0.1))
 					}
 
+					if usage.PromptTokensDetails.CachedTokens != 0 {
+						totalTokens += int(math.Ceil(float64(usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CachedRatio))
+					}
+
+					if usage.CompletionTokensDetails.CachedTokens != 0 {
+						totalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CachedRatio))
+					}
+
 				} else if mak.ReqModel.Type == 102 { // 多模态语音
+
 					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
+
+					if usage.PromptTokensDetails.CachedTokens != 0 {
+						totalTokens += int(math.Ceil(float64(usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.CachedRatio))
+					}
+
+					if usage.CompletionTokensDetails.CachedTokens != 0 {
+						totalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.CachedRatio))
+					}
+
 				} else {
 					if mak.ReqModel.TextQuota.BillingMethod == 1 {
+
 						usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 						totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.TextQuota.PromptRatio + float64(usage.CompletionTokens)*mak.ReqModel.TextQuota.CompletionRatio))
+
+						if usage.PromptTokensDetails.CachedTokens != 0 {
+							totalTokens += int(math.Ceil(float64(usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.TextQuota.CachedRatio))
+						}
+
+						if usage.CompletionTokensDetails.CachedTokens != 0 {
+							totalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.TextQuota.CachedRatio))
+						}
+
 					} else {
 						usage.TotalTokens = mak.ReqModel.TextQuota.FixedQuota
 						totalTokens = mak.ReqModel.TextQuota.FixedQuota
@@ -484,13 +552,41 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 						totalTokens += int(math.Ceil(float64(usage.CacheReadInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio * 0.1))
 					}
 
+					if usage.PromptTokensDetails.CachedTokens != 0 {
+						totalTokens += int(math.Ceil(float64(usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CachedRatio))
+					}
+
+					if usage.CompletionTokensDetails.CachedTokens != 0 {
+						totalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CachedRatio))
+					}
+
 				} else if mak.ReqModel.Type == 102 { // 多模态语音
+
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
+
+					if usage.PromptTokensDetails.CachedTokens != 0 {
+						totalTokens += int(math.Ceil(float64(usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CachedRatio))
+					}
+
+					if usage.CompletionTokensDetails.CachedTokens != 0 {
+						totalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CachedRatio))
+					}
+
 				} else {
 					if mak.ReqModel.TextQuota.BillingMethod == 1 {
+
 						usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 						totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.TextQuota.PromptRatio + float64(usage.CompletionTokens)*mak.ReqModel.TextQuota.CompletionRatio))
+
+						if usage.PromptTokensDetails.CachedTokens != 0 {
+							totalTokens += int(math.Ceil(float64(usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.TextQuota.CachedRatio))
+						}
+
+						if usage.CompletionTokensDetails.CachedTokens != 0 {
+							totalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.TextQuota.CachedRatio))
+						}
+
 					} else {
 						usage.TotalTokens = mak.ReqModel.TextQuota.FixedQuota
 						totalTokens = mak.ReqModel.TextQuota.FixedQuota

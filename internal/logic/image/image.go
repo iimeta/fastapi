@@ -75,6 +75,10 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageGenerationReq
 					usage.TotalTokens += int(math.Ceil(float64(usage.OutputTokens) * mak.ReqModel.ImageQuota.OutputRatio))
 				}
 
+				if usage.InputTokensDetails.CachedTokens > 0 {
+					usage.TotalTokens += int(math.Ceil(float64(usage.InputTokensDetails.CachedTokens) * mak.ReqModel.ImageQuota.CachedRatio))
+				}
+
 			} else {
 				usage.TotalTokens = mak.ReqModel.ImageQuota.FixedQuota
 			}
@@ -258,6 +262,10 @@ func (s *sImage) Edits(ctx context.Context, params model.ImageEditRequest, fallb
 
 				if usage.OutputTokens > 0 {
 					usage.TotalTokens += int(math.Ceil(float64(usage.OutputTokens) * mak.ReqModel.ImageQuota.OutputRatio))
+				}
+
+				if usage.InputTokensDetails.CachedTokens > 0 {
+					usage.TotalTokens += int(math.Ceil(float64(usage.InputTokensDetails.CachedTokens) * mak.ReqModel.ImageQuota.CachedRatio))
 				}
 
 			} else {
