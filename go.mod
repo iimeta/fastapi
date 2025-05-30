@@ -17,7 +17,7 @@ require (
 	github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300
 	github.com/tjfoc/gmsm v1.4.1
 	go.mongodb.org/mongo-driver v1.17.3
-	google.golang.org/api v0.234.0
+	google.golang.org/api v0.235.0
 )
 
 require (
