@@ -137,6 +137,24 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 		}
 	}
 
+	if mak.Group != nil && mak.ReqModel != nil {
+		if app, err := service.App().GetCacheApp(ctx, service.Session().GetAppId(ctx)); err != nil {
+			logger.Error(ctx, err)
+			return err
+		} else if len(app.Models) > 0 && !slices.Contains(app.Models, mak.ReqModel.Id) {
+			err = errors.ERR_MODEL_NOT_FOUND
+			logger.Info(ctx, err)
+			return err
+		} else if appKey, err := service.App().GetCacheAppKey(ctx, service.Session().GetSecretKey(ctx)); err != nil {
+			logger.Error(ctx, err)
+			return err
+		} else if len(appKey.Models) > 0 && !slices.Contains(appKey.Models, mak.ReqModel.Id) {
+			err = errors.ERR_MODEL_NOT_FOUND
+			logger.Info(ctx, err)
+			return err
+		}
+	}
+
 	if mak.ReqModel == nil {
 		if mak.ReqModel, err = service.Model().GetModelBySecretKey(ctx, mak.Model, service.Session().GetSecretKey(ctx)); err != nil {
 			logger.Error(ctx, err)
