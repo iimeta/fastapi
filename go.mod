@@ -2,15 +2,13 @@ module github.com/iimeta/fastapi
 
 go 1.24
 
-replace github.com/iimeta/fastapi-sdk => ../fastapi-sdk
-
 require (
 	cloud.google.com/go/iam v1.5.2
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/gogf/gf/contrib/nosql/redis/v2 v2.9.0
 	github.com/gogf/gf/v2 v2.9.0
 	github.com/gorilla/websocket v1.5.3
-	github.com/iimeta/fastapi-sdk v1.4.0
+	github.com/iimeta/fastapi-sdk v1.5.0
 	github.com/iimeta/go-openai v0.0.0-20250528155556-3b1f184b87fc
 	github.com/iimeta/tiktoken-go v0.0.0-20240913023457-97a6b8dfb0c7
 	github.com/redis/go-redis/v9 v9.9.0
