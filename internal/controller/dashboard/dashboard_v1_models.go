@@ -9,7 +9,6 @@ import (
 	"github.com/iimeta/fastapi/api/dashboard/v1"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
-	"github.com/iimeta/fastapi/utility/logger"
 )
 
 func (c *ControllerV1) Models(ctx context.Context, req *v1.ModelsReq) (res *v1.ModelsRes, err error) {
@@ -25,7 +24,6 @@ func (c *ControllerV1) Models(ctx context.Context, req *v1.ModelsReq) (res *v1.M
 	}
 
 	if app, err := service.App().GetCacheApp(ctx, service.Session().GetAppId(ctx)); err != nil {
-		logger.Error(ctx, err)
 		return nil, err
 	} else if len(app.Models) > 0 {
 		modelIds = app.Models
@@ -34,7 +32,6 @@ func (c *ControllerV1) Models(ctx context.Context, req *v1.ModelsReq) (res *v1.M
 			return nil, err
 		}
 	} else if appKey, err := service.App().GetCacheAppKey(ctx, service.Session().GetSecretKey(ctx)); err != nil {
-		logger.Error(ctx, err)
 		return nil, err
 	} else if len(appKey.Models) > 0 {
 		modelIds = appKey.Models
