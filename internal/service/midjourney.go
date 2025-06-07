@@ -11,7 +11,6 @@ import (
 	"github.com/gogf/gf/v2/net/ghttp"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/model"
-	mcommon "github.com/iimeta/fastapi/internal/model/common"
 )
 
 type (
@@ -21,7 +20,7 @@ type (
 		// 任务查询
 		Task(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.MidjourneyResponse, err error)
 		// 保存日志
-		SaveLog(ctx context.Context, group *model.Group, reqModel *model.Model, realModel *model.Model, modelAgent *model.ModelAgent, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, response model.MidjourneyResponse, retryInfo *mcommon.Retry, retry ...int)
+		SaveLog(ctx context.Context, midjourneyLog model.MidjourneyLog, retry ...int)
 	}
 )
 

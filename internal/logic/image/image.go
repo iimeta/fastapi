@@ -115,7 +115,18 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageGenerationReq
 					imageRes.Usage = usage
 				}
 
-				s.SaveLog(ctx, mak.Group, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, imageRes, retryInfo)
+				s.SaveLog(ctx, model.ImageLog{
+					Group:              mak.Group,
+					ReqModel:           mak.ReqModel,
+					RealModel:          mak.RealModel,
+					ModelAgent:         mak.ModelAgent,
+					FallbackModelAgent: fallbackModelAgent,
+					FallbackModel:      fallbackModel,
+					Key:                mak.Key,
+					ImageReq:           &params,
+					ImageRes:           imageRes,
+					RetryInfo:          retryInfo,
+				})
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -315,7 +326,18 @@ func (s *sImage) Edits(ctx context.Context, params model.ImageEditRequest, fallb
 					User:           params.User,
 				}
 
-				s.SaveLog(ctx, mak.Group, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, imageReq, imageRes, retryInfo)
+				s.SaveLog(ctx, model.ImageLog{
+					Group:              mak.Group,
+					ReqModel:           mak.ReqModel,
+					RealModel:          mak.RealModel,
+					ModelAgent:         mak.ModelAgent,
+					FallbackModelAgent: fallbackModelAgent,
+					FallbackModel:      fallbackModel,
+					Key:                mak.Key,
+					ImageReq:           imageReq,
+					ImageRes:           imageRes,
+					RetryInfo:          retryInfo,
+				})
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -442,7 +464,7 @@ func (s *sImage) Edits(ctx context.Context, params model.ImageEditRequest, fallb
 }
 
 // 保存日志
-func (s *sImage) SaveLog(ctx context.Context, group *model.Group, reqModel, realModel *model.Model, modelAgent, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, imageReq *sdkm.ImageGenerationRequest, imageRes *model.ImageRes, retryInfo *mcommon.Retry, retry ...int) {
+func (s *sImage) SaveLog(ctx context.Context, imageLog model.ImageLog, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -450,12 +472,12 @@ func (s *sImage) SaveLog(ctx context.Context, group *model.Group, reqModel, real
 	}()
 
 	// 不记录此错误日志
-	if imageRes.Error != nil && (errors.Is(imageRes.Error, errors.ERR_MODEL_NOT_FOUND) ||
-		errors.Is(imageRes.Error, errors.ERR_MODEL_DISABLED) ||
-		errors.Is(imageRes.Error, errors.ERR_GROUP_NOT_FOUND) ||
-		errors.Is(imageRes.Error, errors.ERR_GROUP_DISABLED) ||
-		errors.Is(imageRes.Error, errors.ERR_GROUP_EXPIRED) ||
-		errors.Is(imageRes.Error, errors.ERR_GROUP_INSUFFICIENT_QUOTA)) {
+	if imageLog.ImageRes.Error != nil && (errors.Is(imageLog.ImageRes.Error, errors.ERR_MODEL_NOT_FOUND) ||
+		errors.Is(imageLog.ImageRes.Error, errors.ERR_MODEL_DISABLED) ||
+		errors.Is(imageLog.ImageRes.Error, errors.ERR_GROUP_NOT_FOUND) ||
+		errors.Is(imageLog.ImageRes.Error, errors.ERR_GROUP_DISABLED) ||
+		errors.Is(imageLog.ImageRes.Error, errors.ERR_GROUP_EXPIRED) ||
+		errors.Is(imageLog.ImageRes.Error, errors.ERR_GROUP_INSUFFICIENT_QUOTA)) {
 		return
 	}
 
@@ -463,22 +485,22 @@ func (s *sImage) SaveLog(ctx context.Context, group *model.Group, reqModel, real
 		TraceId:         gctx.CtxId(ctx),
 		UserId:          service.Session().GetUserId(ctx),
 		AppId:           service.Session().GetAppId(ctx),
-		Prompt:          imageReq.Prompt,
-		Size:            imageReq.Size,
-		N:               imageReq.N,
-		Quality:         imageReq.Quality,
-		Style:           imageReq.Style,
-		ResponseFormat:  imageReq.ResponseFormat,
-		GenerationQuota: imageRes.GenerationQuota,
-		InputTokens:     imageRes.Usage.InputTokens,
-		OutputTokens:    imageRes.Usage.OutputTokens,
-		TextTokens:      imageRes.Usage.InputTokensDetails.TextTokens,
-		ImageTokens:     imageRes.Usage.InputTokensDetails.ImageTokens,
-		TotalTokens:     imageRes.Usage.TotalTokens,
-		TotalTime:       imageRes.TotalTime,
-		InternalTime:    imageRes.InternalTime,
-		ReqTime:         imageRes.EnterTime,
-		ReqDate:         gtime.NewFromTimeStamp(imageRes.EnterTime).Format("Y-m-d"),
+		Prompt:          imageLog.ImageReq.Prompt,
+		Size:            imageLog.ImageReq.Size,
+		N:               imageLog.ImageReq.N,
+		Quality:         imageLog.ImageReq.Quality,
+		Style:           imageLog.ImageReq.Style,
+		ResponseFormat:  imageLog.ImageReq.ResponseFormat,
+		GenerationQuota: imageLog.ImageRes.GenerationQuota,
+		InputTokens:     imageLog.ImageRes.Usage.InputTokens,
+		OutputTokens:    imageLog.ImageRes.Usage.OutputTokens,
+		TextTokens:      imageLog.ImageRes.Usage.InputTokensDetails.TextTokens,
+		ImageTokens:     imageLog.ImageRes.Usage.InputTokensDetails.ImageTokens,
+		TotalTokens:     imageLog.ImageRes.Usage.TotalTokens,
+		TotalTime:       imageLog.ImageRes.TotalTime,
+		InternalTime:    imageLog.ImageRes.InternalTime,
+		ReqTime:         imageLog.ImageRes.EnterTime,
+		ReqDate:         gtime.NewFromTimeStamp(imageLog.ImageRes.EnterTime).Format("Y-m-d"),
 		ClientIp:        g.RequestFromCtx(ctx).GetClientIp(),
 		RemoteIp:        g.RequestFromCtx(ctx).GetRemoteIp(),
 		LocalIp:         util.GetLocalIp(),
@@ -487,13 +509,13 @@ func (s *sImage) SaveLog(ctx context.Context, group *model.Group, reqModel, real
 		Rid:             service.Session().GetRid(ctx),
 	}
 
-	if group != nil {
-		image.GroupId = group.Id
-		image.GroupName = group.Name
-		image.Discount = group.Discount
+	if imageLog.Group != nil {
+		image.GroupId = imageLog.Group.Id
+		image.GroupName = imageLog.Group.Name
+		image.Discount = imageLog.Group.Discount
 	}
 
-	for _, data := range imageRes.Data {
+	for _, data := range imageLog.ImageRes.Data {
 		image.ImageData = append(image.ImageData, mcommon.ImageData{
 			URL: data.URL,
 			//B64JSON:       data.B64JSON, // 太大了, 不存
@@ -501,87 +523,87 @@ func (s *sImage) SaveLog(ctx context.Context, group *model.Group, reqModel, real
 		})
 	}
 
-	if reqModel != nil {
-		image.Corp = reqModel.Corp
-		image.ModelId = reqModel.Id
-		image.Name = reqModel.Name
-		image.Model = reqModel.Model
-		image.Type = reqModel.Type
-		image.ImageQuota = reqModel.ImageQuota
+	if imageLog.ReqModel != nil {
+		image.Corp = imageLog.ReqModel.Corp
+		image.ModelId = imageLog.ReqModel.Id
+		image.Name = imageLog.ReqModel.Name
+		image.Model = imageLog.ReqModel.Model
+		image.Type = imageLog.ReqModel.Type
+		image.ImageQuota = imageLog.ReqModel.ImageQuota
 	}
 
-	if realModel != nil {
-		image.IsEnablePresetConfig = realModel.IsEnablePresetConfig
-		image.PresetConfig = realModel.PresetConfig
-		image.IsEnableForward = realModel.IsEnableForward
-		image.ForwardConfig = realModel.ForwardConfig
-		image.IsEnableModelAgent = realModel.IsEnableModelAgent
-		image.RealModelId = realModel.Id
-		image.RealModelName = realModel.Name
-		image.RealModel = realModel.Model
+	if imageLog.RealModel != nil {
+		image.IsEnablePresetConfig = imageLog.RealModel.IsEnablePresetConfig
+		image.PresetConfig = imageLog.RealModel.PresetConfig
+		image.IsEnableForward = imageLog.RealModel.IsEnableForward
+		image.ForwardConfig = imageLog.RealModel.ForwardConfig
+		image.IsEnableModelAgent = imageLog.RealModel.IsEnableModelAgent
+		image.RealModelId = imageLog.RealModel.Id
+		image.RealModelName = imageLog.RealModel.Name
+		image.RealModel = imageLog.RealModel.Model
 	}
 
-	if image.IsEnableModelAgent && modelAgent != nil {
-		image.ModelAgentId = modelAgent.Id
+	if image.IsEnableModelAgent && imageLog.ModelAgent != nil {
+		image.ModelAgentId = imageLog.ModelAgent.Id
 		image.ModelAgent = &do.ModelAgent{
-			Corp:    modelAgent.Corp,
-			Name:    modelAgent.Name,
-			BaseUrl: modelAgent.BaseUrl,
-			Path:    modelAgent.Path,
-			Weight:  modelAgent.Weight,
-			Remark:  modelAgent.Remark,
-			Status:  modelAgent.Status,
+			Corp:    imageLog.ModelAgent.Corp,
+			Name:    imageLog.ModelAgent.Name,
+			BaseUrl: imageLog.ModelAgent.BaseUrl,
+			Path:    imageLog.ModelAgent.Path,
+			Weight:  imageLog.ModelAgent.Weight,
+			Remark:  imageLog.ModelAgent.Remark,
+			Status:  imageLog.ModelAgent.Status,
 		}
 	}
 
-	if fallbackModelAgent != nil {
+	if imageLog.FallbackModelAgent != nil {
 		image.IsEnableFallback = true
 		image.FallbackConfig = &mcommon.FallbackConfig{
-			ModelAgent:     fallbackModelAgent.Id,
-			ModelAgentName: fallbackModelAgent.Name,
+			ModelAgent:     imageLog.FallbackModelAgent.Id,
+			ModelAgentName: imageLog.FallbackModelAgent.Name,
 		}
 	}
 
-	if fallbackModel != nil {
+	if imageLog.FallbackModel != nil {
 		image.IsEnableFallback = true
 		if image.FallbackConfig == nil {
 			image.FallbackConfig = new(mcommon.FallbackConfig)
 		}
-		image.FallbackConfig.Model = fallbackModel.Model
-		image.FallbackConfig.ModelName = fallbackModel.Name
+		image.FallbackConfig.Model = imageLog.FallbackModel.Model
+		image.FallbackConfig.ModelName = imageLog.FallbackModel.Name
 	}
 
-	if key != nil {
-		image.Key = key.Key
+	if imageLog.Key != nil {
+		image.Key = imageLog.Key.Key
 	}
 
-	if imageRes.Error != nil {
+	if imageLog.ImageRes.Error != nil {
 
-		image.ErrMsg = imageRes.Error.Error()
+		image.ErrMsg = imageLog.ImageRes.Error.Error()
 		openaiApiError := &openai.APIError{}
-		if errors.As(imageRes.Error, &openaiApiError) {
+		if errors.As(imageLog.ImageRes.Error, &openaiApiError) {
 			image.ErrMsg = openaiApiError.Message
 		}
 
-		if common.IsAborted(imageRes.Error) {
+		if common.IsAborted(imageLog.ImageRes.Error) {
 			image.Status = 2
 		} else {
 			image.Status = -1
 		}
 	}
 
-	if retryInfo != nil {
+	if imageLog.RetryInfo != nil {
 
-		image.IsRetry = retryInfo.IsRetry
+		image.IsRetry = imageLog.RetryInfo.IsRetry
 		image.Retry = &mcommon.Retry{
-			IsRetry:    retryInfo.IsRetry,
-			RetryCount: retryInfo.RetryCount,
-			ErrMsg:     retryInfo.ErrMsg,
+			IsRetry:    imageLog.RetryInfo.IsRetry,
+			RetryCount: imageLog.RetryInfo.RetryCount,
+			ErrMsg:     imageLog.RetryInfo.ErrMsg,
 		}
 
 		if image.IsRetry {
 			image.Status = 3
-			image.ErrMsg = retryInfo.ErrMsg
+			image.ErrMsg = imageLog.RetryInfo.ErrMsg
 		}
 	}
 
@@ -589,7 +611,7 @@ func (s *sImage) SaveLog(ctx context.Context, group *model.Group, reqModel, real
 		logger.Errorf(ctx, "sImage SaveLog error: %v", err)
 
 		if err.Error() == "an inserted document is too large" {
-			imageReq.Prompt = err.Error()
+			imageLog.ImageReq.Prompt = err.Error()
 		}
 
 		if len(retry) == 10 {
@@ -602,6 +624,6 @@ func (s *sImage) SaveLog(ctx context.Context, group *model.Group, reqModel, real
 
 		logger.Errorf(ctx, "sImage SaveLog retry: %d", len(retry))
 
-		s.SaveLog(ctx, group, reqModel, realModel, modelAgent, fallbackModelAgent, fallbackModel, key, imageReq, imageRes, retryInfo, retry...)
+		s.SaveLog(ctx, imageLog, retry...)
 	}
 }

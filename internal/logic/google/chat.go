@@ -271,7 +271,18 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 					}
 				}
 
-				service.Chat().SaveLog(ctx, mak.Group, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, false)
+				service.Chat().SaveLog(ctx, model.ChatLog{
+					Group:              mak.Group,
+					ReqModel:           mak.ReqModel,
+					RealModel:          mak.RealModel,
+					ModelAgent:         mak.ModelAgent,
+					FallbackModelAgent: fallbackModelAgent,
+					FallbackModel:      fallbackModel,
+					Key:                mak.Key,
+					CompletionsReq:     &params,
+					CompletionsRes:     completionsRes,
+					RetryInfo:          retryInfo,
+				})
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -611,7 +622,18 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 						completionsRes.Usage.TotalTokens = totalTokens
 					}
 
-					service.Chat().SaveLog(ctx, mak.Group, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, &params, completionsRes, retryInfo, false)
+					service.Chat().SaveLog(ctx, model.ChatLog{
+						Group:              mak.Group,
+						ReqModel:           mak.ReqModel,
+						RealModel:          mak.RealModel,
+						ModelAgent:         mak.ModelAgent,
+						FallbackModelAgent: fallbackModelAgent,
+						FallbackModel:      fallbackModel,
+						Key:                mak.Key,
+						CompletionsReq:     &params,
+						CompletionsRes:     completionsRes,
+						RetryInfo:          retryInfo,
+					})
 
 				}); err != nil {
 					logger.Error(ctx, err)

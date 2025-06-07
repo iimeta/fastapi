@@ -111,7 +111,17 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 					midjourneyResponse.Usage = *usage
 				}
 
-				s.SaveLog(ctx, mak.Group, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, midjourneyResponse, retryInfo)
+				s.SaveLog(ctx, model.MidjourneyLog{
+					Group:              mak.Group,
+					ReqModel:           mak.ReqModel,
+					RealModel:          mak.RealModel,
+					ModelAgent:         mak.ModelAgent,
+					FallbackModelAgent: fallbackModelAgent,
+					FallbackModel:      fallbackModel,
+					Key:                mak.Key,
+					Response:           midjourneyResponse,
+					RetryInfo:          retryInfo,
+				})
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -278,7 +288,17 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 					midjourneyResponse.Usage = *usage
 				}
 
-				s.SaveLog(ctx, mak.Group, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, midjourneyResponse, retryInfo)
+				s.SaveLog(ctx, model.MidjourneyLog{
+					Group:              mak.Group,
+					ReqModel:           mak.ReqModel,
+					RealModel:          mak.RealModel,
+					ModelAgent:         mak.ModelAgent,
+					FallbackModelAgent: fallbackModelAgent,
+					FallbackModel:      fallbackModel,
+					Key:                mak.Key,
+					Response:           midjourneyResponse,
+					RetryInfo:          retryInfo,
+				})
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -387,7 +407,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 }
 
 // 保存日志
-func (s *sMidjourney) SaveLog(ctx context.Context, group *model.Group, reqModel, realModel *model.Model, modelAgent, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, response model.MidjourneyResponse, retryInfo *mcommon.Retry, retry ...int) {
+func (s *sMidjourney) SaveLog(ctx context.Context, midjourneyLog model.MidjourneyLog, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -395,12 +415,12 @@ func (s *sMidjourney) SaveLog(ctx context.Context, group *model.Group, reqModel,
 	}()
 
 	// 不记录此错误日志
-	if response.Error != nil && (errors.Is(response.Error, errors.ERR_MODEL_NOT_FOUND) ||
-		errors.Is(response.Error, errors.ERR_MODEL_DISABLED) ||
-		errors.Is(response.Error, errors.ERR_GROUP_NOT_FOUND) ||
-		errors.Is(response.Error, errors.ERR_GROUP_DISABLED) ||
-		errors.Is(response.Error, errors.ERR_GROUP_EXPIRED) ||
-		errors.Is(response.Error, errors.ERR_GROUP_INSUFFICIENT_QUOTA)) {
+	if midjourneyLog.Response.Error != nil && (errors.Is(midjourneyLog.Response.Error, errors.ERR_MODEL_NOT_FOUND) ||
+		errors.Is(midjourneyLog.Response.Error, errors.ERR_MODEL_DISABLED) ||
+		errors.Is(midjourneyLog.Response.Error, errors.ERR_GROUP_NOT_FOUND) ||
+		errors.Is(midjourneyLog.Response.Error, errors.ERR_GROUP_DISABLED) ||
+		errors.Is(midjourneyLog.Response.Error, errors.ERR_GROUP_EXPIRED) ||
+		errors.Is(midjourneyLog.Response.Error, errors.ERR_GROUP_INSUFFICIENT_QUOTA)) {
 		return
 	}
 
@@ -408,20 +428,20 @@ func (s *sMidjourney) SaveLog(ctx context.Context, group *model.Group, reqModel,
 		TraceId:      gctx.CtxId(ctx),
 		UserId:       service.Session().GetUserId(ctx),
 		AppId:        service.Session().GetAppId(ctx),
-		ReqUrl:       response.ReqUrl,
-		TaskId:       response.TaskId,
-		Action:       response.Action,
-		Prompt:       response.Prompt,
-		PromptEn:     response.PromptEn,
-		ImageUrl:     response.ImageUrl,
-		Progress:     response.Progress,
-		TotalTokens:  response.Usage.TotalTokens,
-		ConnTime:     response.ConnTime,
-		Duration:     response.Duration,
-		TotalTime:    response.TotalTime,
-		InternalTime: response.InternalTime,
-		ReqTime:      response.EnterTime,
-		ReqDate:      gtime.NewFromTimeStamp(response.EnterTime).Format("Y-m-d"),
+		ReqUrl:       midjourneyLog.Response.ReqUrl,
+		TaskId:       midjourneyLog.Response.TaskId,
+		Action:       midjourneyLog.Response.Action,
+		Prompt:       midjourneyLog.Response.Prompt,
+		PromptEn:     midjourneyLog.Response.PromptEn,
+		ImageUrl:     midjourneyLog.Response.ImageUrl,
+		Progress:     midjourneyLog.Response.Progress,
+		TotalTokens:  midjourneyLog.Response.Usage.TotalTokens,
+		ConnTime:     midjourneyLog.Response.ConnTime,
+		Duration:     midjourneyLog.Response.Duration,
+		TotalTime:    midjourneyLog.Response.TotalTime,
+		InternalTime: midjourneyLog.Response.InternalTime,
+		ReqTime:      midjourneyLog.Response.EnterTime,
+		ReqDate:      gtime.NewFromTimeStamp(midjourneyLog.Response.EnterTime).Format("Y-m-d"),
 		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
 		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
 		LocalIp:      util.GetLocalIp(),
@@ -430,93 +450,93 @@ func (s *sMidjourney) SaveLog(ctx context.Context, group *model.Group, reqModel,
 		Rid:          service.Session().GetRid(ctx),
 	}
 
-	if group != nil {
-		midjourney.GroupId = group.Id
-		midjourney.GroupName = group.Name
-		midjourney.Discount = group.Discount
+	if midjourneyLog.Group != nil {
+		midjourney.GroupId = midjourneyLog.Group.Id
+		midjourney.GroupName = midjourneyLog.Group.Name
+		midjourney.Discount = midjourneyLog.Group.Discount
 	}
 
-	if reqModel != nil {
-		midjourney.Corp = reqModel.Corp
-		midjourney.ModelId = reqModel.Id
-		midjourney.Name = reqModel.Name
-		midjourney.Model = reqModel.Model
-		midjourney.Type = reqModel.Type
-		midjourney.MidjourneyQuotas = reqModel.MidjourneyQuotas
+	if midjourneyLog.ReqModel != nil {
+		midjourney.Corp = midjourneyLog.ReqModel.Corp
+		midjourney.ModelId = midjourneyLog.ReqModel.Id
+		midjourney.Name = midjourneyLog.ReqModel.Name
+		midjourney.Model = midjourneyLog.ReqModel.Model
+		midjourney.Type = midjourneyLog.ReqModel.Type
+		midjourney.MidjourneyQuotas = midjourneyLog.ReqModel.MidjourneyQuotas
 	}
 
-	if realModel != nil {
-		midjourney.IsEnablePresetConfig = realModel.IsEnablePresetConfig
-		midjourney.PresetConfig = realModel.PresetConfig
-		midjourney.IsEnableForward = realModel.IsEnableForward
-		midjourney.ForwardConfig = realModel.ForwardConfig
-		midjourney.IsEnableModelAgent = realModel.IsEnableModelAgent
-		midjourney.RealModelId = realModel.Id
-		midjourney.RealModelName = realModel.Name
-		midjourney.RealModel = realModel.Model
+	if midjourneyLog.RealModel != nil {
+		midjourney.IsEnablePresetConfig = midjourneyLog.RealModel.IsEnablePresetConfig
+		midjourney.PresetConfig = midjourneyLog.RealModel.PresetConfig
+		midjourney.IsEnableForward = midjourneyLog.RealModel.IsEnableForward
+		midjourney.ForwardConfig = midjourneyLog.RealModel.ForwardConfig
+		midjourney.IsEnableModelAgent = midjourneyLog.RealModel.IsEnableModelAgent
+		midjourney.RealModelId = midjourneyLog.RealModel.Id
+		midjourney.RealModelName = midjourneyLog.RealModel.Name
+		midjourney.RealModel = midjourneyLog.RealModel.Model
 	}
 
-	if midjourney.IsEnableModelAgent && modelAgent != nil {
-		midjourney.ModelAgentId = modelAgent.Id
+	if midjourney.IsEnableModelAgent && midjourneyLog.ModelAgent != nil {
+		midjourney.ModelAgentId = midjourneyLog.ModelAgent.Id
 		midjourney.ModelAgent = &do.ModelAgent{
-			Corp:    modelAgent.Corp,
-			Name:    modelAgent.Name,
-			BaseUrl: modelAgent.BaseUrl,
-			Path:    modelAgent.Path,
-			Weight:  modelAgent.Weight,
-			Remark:  modelAgent.Remark,
-			Status:  modelAgent.Status,
+			Corp:    midjourneyLog.ModelAgent.Corp,
+			Name:    midjourneyLog.ModelAgent.Name,
+			BaseUrl: midjourneyLog.ModelAgent.BaseUrl,
+			Path:    midjourneyLog.ModelAgent.Path,
+			Weight:  midjourneyLog.ModelAgent.Weight,
+			Remark:  midjourneyLog.ModelAgent.Remark,
+			Status:  midjourneyLog.ModelAgent.Status,
 		}
 	}
 
-	if fallbackModelAgent != nil {
+	if midjourneyLog.FallbackModelAgent != nil {
 		midjourney.IsEnableFallback = true
 		midjourney.FallbackConfig = &mcommon.FallbackConfig{
-			ModelAgent:     fallbackModelAgent.Id,
-			ModelAgentName: fallbackModelAgent.Name,
+			ModelAgent:     midjourneyLog.FallbackModelAgent.Id,
+			ModelAgentName: midjourneyLog.FallbackModelAgent.Name,
 		}
 	}
 
-	if fallbackModel != nil {
+	if midjourneyLog.FallbackModel != nil {
 		midjourney.IsEnableFallback = true
 		if midjourney.FallbackConfig == nil {
 			midjourney.FallbackConfig = new(mcommon.FallbackConfig)
 		}
-		midjourney.FallbackConfig.Model = fallbackModel.Model
-		midjourney.FallbackConfig.ModelName = fallbackModel.Name
+		midjourney.FallbackConfig.Model = midjourneyLog.FallbackModel.Model
+		midjourney.FallbackConfig.ModelName = midjourneyLog.FallbackModel.Name
 	}
 
-	if key != nil {
-		midjourney.Key = key.Key
+	if midjourneyLog.Key != nil {
+		midjourney.Key = midjourneyLog.Key.Key
 	}
 
-	if response.Response != nil {
-		if err := gjson.Unmarshal(response.Response, &midjourney.Response); err != nil {
+	if midjourneyLog.Response.Response != nil {
+		if err := gjson.Unmarshal(midjourneyLog.Response.Response, &midjourney.Response); err != nil {
 			logger.Error(ctx, err)
 		}
 	}
 
-	if response.Error != nil {
-		midjourney.ErrMsg = response.Error.Error()
-		if common.IsAborted(response.Error) {
+	if midjourneyLog.Response.Error != nil {
+		midjourney.ErrMsg = midjourneyLog.Response.Error.Error()
+		if common.IsAborted(midjourneyLog.Response.Error) {
 			midjourney.Status = 2
 		} else {
 			midjourney.Status = -1
 		}
 	}
 
-	if retryInfo != nil {
+	if midjourneyLog.RetryInfo != nil {
 
-		midjourney.IsRetry = retryInfo.IsRetry
+		midjourney.IsRetry = midjourneyLog.RetryInfo.IsRetry
 		midjourney.Retry = &mcommon.Retry{
-			IsRetry:    retryInfo.IsRetry,
-			RetryCount: retryInfo.RetryCount,
-			ErrMsg:     retryInfo.ErrMsg,
+			IsRetry:    midjourneyLog.RetryInfo.IsRetry,
+			RetryCount: midjourneyLog.RetryInfo.RetryCount,
+			ErrMsg:     midjourneyLog.RetryInfo.ErrMsg,
 		}
 
 		if midjourney.IsRetry {
 			midjourney.Status = 3
-			midjourney.ErrMsg = retryInfo.ErrMsg
+			midjourney.ErrMsg = midjourneyLog.RetryInfo.ErrMsg
 		}
 	}
 
@@ -524,8 +544,8 @@ func (s *sMidjourney) SaveLog(ctx context.Context, group *model.Group, reqModel,
 		logger.Errorf(ctx, "sMidjourney SaveLog error: %v", err)
 
 		if err.Error() == "an inserted document is too large" {
-			response.Prompt = err.Error()
-			response.PromptEn = err.Error()
+			midjourneyLog.Response.Prompt = err.Error()
+			midjourneyLog.Response.PromptEn = err.Error()
 		}
 
 		if len(retry) == 10 {
@@ -538,6 +558,6 @@ func (s *sMidjourney) SaveLog(ctx context.Context, group *model.Group, reqModel,
 
 		logger.Errorf(ctx, "sMidjourney SaveLog retry: %d", len(retry))
 
-		s.SaveLog(ctx, group, reqModel, realModel, modelAgent, fallbackModelAgent, fallbackModel, key, response, retryInfo, retry...)
+		s.SaveLog(ctx, midjourneyLog, retry...)
 	}
 }

@@ -101,7 +101,18 @@ func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallback
 					audioRes.TotalTokens = totalTokens
 				}
 
-				s.SaveLog(ctx, mak.Group, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, audioReq, audioRes, retryInfo)
+				s.SaveLog(ctx, model.AudioLog{
+					Group:              mak.Group,
+					ReqModel:           mak.ReqModel,
+					RealModel:          mak.RealModel,
+					ModelAgent:         mak.ModelAgent,
+					FallbackModelAgent: fallbackModelAgent,
+					FallbackModel:      fallbackModel,
+					Key:                mak.Key,
+					AudioReq:           audioReq,
+					AudioRes:           audioRes,
+					RetryInfo:          retryInfo,
+				})
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -274,7 +285,18 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 					audioRes.TotalTokens = totalTokens
 				}
 
-				s.SaveLog(ctx, mak.Group, mak.ReqModel, mak.RealModel, mak.ModelAgent, fallbackModelAgent, fallbackModel, mak.Key, audioReq, audioRes, retryInfo)
+				s.SaveLog(ctx, model.AudioLog{
+					Group:              mak.Group,
+					ReqModel:           mak.ReqModel,
+					RealModel:          mak.RealModel,
+					ModelAgent:         mak.ModelAgent,
+					FallbackModelAgent: fallbackModelAgent,
+					FallbackModel:      fallbackModel,
+					Key:                mak.Key,
+					AudioReq:           audioReq,
+					AudioRes:           audioRes,
+					RetryInfo:          retryInfo,
+				})
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -374,7 +396,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 }
 
 // 保存日志
-func (s *sAudio) SaveLog(ctx context.Context, group *model.Group, reqModel, realModel *model.Model, modelAgent, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, key *model.Key, audioReq *model.AudioReq, audioRes *model.AudioRes, retryInfo *mcommon.Retry, retry ...int) {
+func (s *sAudio) SaveLog(ctx context.Context, audioLog model.AudioLog, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -382,12 +404,12 @@ func (s *sAudio) SaveLog(ctx context.Context, group *model.Group, reqModel, real
 	}()
 
 	// 不记录此错误日志
-	if audioRes.Error != nil && (errors.Is(audioRes.Error, errors.ERR_MODEL_NOT_FOUND) ||
-		errors.Is(audioRes.Error, errors.ERR_MODEL_DISABLED) ||
-		errors.Is(audioRes.Error, errors.ERR_GROUP_NOT_FOUND) ||
-		errors.Is(audioRes.Error, errors.ERR_GROUP_DISABLED) ||
-		errors.Is(audioRes.Error, errors.ERR_GROUP_EXPIRED) ||
-		errors.Is(audioRes.Error, errors.ERR_GROUP_INSUFFICIENT_QUOTA)) {
+	if audioLog.AudioRes.Error != nil && (errors.Is(audioLog.AudioRes.Error, errors.ERR_MODEL_NOT_FOUND) ||
+		errors.Is(audioLog.AudioRes.Error, errors.ERR_MODEL_DISABLED) ||
+		errors.Is(audioLog.AudioRes.Error, errors.ERR_GROUP_NOT_FOUND) ||
+		errors.Is(audioLog.AudioRes.Error, errors.ERR_GROUP_DISABLED) ||
+		errors.Is(audioLog.AudioRes.Error, errors.ERR_GROUP_EXPIRED) ||
+		errors.Is(audioLog.AudioRes.Error, errors.ERR_GROUP_INSUFFICIENT_QUOTA)) {
 		return
 	}
 
@@ -395,16 +417,16 @@ func (s *sAudio) SaveLog(ctx context.Context, group *model.Group, reqModel, real
 		TraceId:      gctx.CtxId(ctx),
 		UserId:       service.Session().GetUserId(ctx),
 		AppId:        service.Session().GetAppId(ctx),
-		Input:        audioReq.Input,
-		Text:         audioRes.Text,
-		Characters:   audioRes.Characters,
-		Minute:       audioRes.Minute,
-		FilePath:     audioReq.FilePath,
-		TotalTokens:  audioRes.TotalTokens,
-		TotalTime:    audioRes.TotalTime,
-		InternalTime: audioRes.InternalTime,
-		ReqTime:      audioRes.EnterTime,
-		ReqDate:      gtime.NewFromTimeStamp(audioRes.EnterTime).Format("Y-m-d"),
+		Input:        audioLog.AudioReq.Input,
+		Text:         audioLog.AudioRes.Text,
+		Characters:   audioLog.AudioRes.Characters,
+		Minute:       audioLog.AudioRes.Minute,
+		FilePath:     audioLog.AudioReq.FilePath,
+		TotalTokens:  audioLog.AudioRes.TotalTokens,
+		TotalTime:    audioLog.AudioRes.TotalTime,
+		InternalTime: audioLog.AudioRes.InternalTime,
+		ReqTime:      audioLog.AudioRes.EnterTime,
+		ReqDate:      gtime.NewFromTimeStamp(audioLog.AudioRes.EnterTime).Format("Y-m-d"),
 		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
 		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
 		LocalIp:      util.GetLocalIp(),
@@ -413,93 +435,93 @@ func (s *sAudio) SaveLog(ctx context.Context, group *model.Group, reqModel, real
 		Rid:          service.Session().GetRid(ctx),
 	}
 
-	if group != nil {
-		audio.GroupId = group.Id
-		audio.GroupName = group.Name
-		audio.Discount = group.Discount
+	if audioLog.Group != nil {
+		audio.GroupId = audioLog.Group.Id
+		audio.GroupName = audioLog.Group.Name
+		audio.Discount = audioLog.Group.Discount
 	}
 
-	if reqModel != nil {
-		audio.Corp = reqModel.Corp
-		audio.ModelId = reqModel.Id
-		audio.Name = reqModel.Name
-		audio.Model = reqModel.Model
-		audio.Type = reqModel.Type
-		audio.AudioQuota = reqModel.AudioQuota
+	if audioLog.ReqModel != nil {
+		audio.Corp = audioLog.ReqModel.Corp
+		audio.ModelId = audioLog.ReqModel.Id
+		audio.Name = audioLog.ReqModel.Name
+		audio.Model = audioLog.ReqModel.Model
+		audio.Type = audioLog.ReqModel.Type
+		audio.AudioQuota = audioLog.ReqModel.AudioQuota
 	}
 
-	if realModel != nil {
-		audio.IsEnablePresetConfig = realModel.IsEnablePresetConfig
-		audio.PresetConfig = realModel.PresetConfig
-		audio.IsEnableForward = realModel.IsEnableForward
-		audio.ForwardConfig = realModel.ForwardConfig
-		audio.IsEnableModelAgent = realModel.IsEnableModelAgent
-		audio.RealModelId = realModel.Id
-		audio.RealModelName = realModel.Name
-		audio.RealModel = realModel.Model
+	if audioLog.RealModel != nil {
+		audio.IsEnablePresetConfig = audioLog.RealModel.IsEnablePresetConfig
+		audio.PresetConfig = audioLog.RealModel.PresetConfig
+		audio.IsEnableForward = audioLog.RealModel.IsEnableForward
+		audio.ForwardConfig = audioLog.RealModel.ForwardConfig
+		audio.IsEnableModelAgent = audioLog.RealModel.IsEnableModelAgent
+		audio.RealModelId = audioLog.RealModel.Id
+		audio.RealModelName = audioLog.RealModel.Name
+		audio.RealModel = audioLog.RealModel.Model
 	}
 
-	if audio.IsEnableModelAgent && modelAgent != nil {
-		audio.ModelAgentId = modelAgent.Id
+	if audio.IsEnableModelAgent && audioLog.ModelAgent != nil {
+		audio.ModelAgentId = audioLog.ModelAgent.Id
 		audio.ModelAgent = &do.ModelAgent{
-			Corp:    modelAgent.Corp,
-			Name:    modelAgent.Name,
-			BaseUrl: modelAgent.BaseUrl,
-			Path:    modelAgent.Path,
-			Weight:  modelAgent.Weight,
-			Remark:  modelAgent.Remark,
-			Status:  modelAgent.Status,
+			Corp:    audioLog.ModelAgent.Corp,
+			Name:    audioLog.ModelAgent.Name,
+			BaseUrl: audioLog.ModelAgent.BaseUrl,
+			Path:    audioLog.ModelAgent.Path,
+			Weight:  audioLog.ModelAgent.Weight,
+			Remark:  audioLog.ModelAgent.Remark,
+			Status:  audioLog.ModelAgent.Status,
 		}
 	}
 
-	if fallbackModelAgent != nil {
+	if audioLog.FallbackModelAgent != nil {
 		audio.IsEnableFallback = true
 		audio.FallbackConfig = &mcommon.FallbackConfig{
-			ModelAgent:     fallbackModelAgent.Id,
-			ModelAgentName: fallbackModelAgent.Name,
+			ModelAgent:     audioLog.FallbackModelAgent.Id,
+			ModelAgentName: audioLog.FallbackModelAgent.Name,
 		}
 	}
 
-	if fallbackModel != nil {
+	if audioLog.FallbackModel != nil {
 		audio.IsEnableFallback = true
 		if audio.FallbackConfig == nil {
 			audio.FallbackConfig = new(mcommon.FallbackConfig)
 		}
-		audio.FallbackConfig.Model = fallbackModel.Model
-		audio.FallbackConfig.ModelName = fallbackModel.Name
+		audio.FallbackConfig.Model = audioLog.FallbackModel.Model
+		audio.FallbackConfig.ModelName = audioLog.FallbackModel.Name
 	}
 
-	if key != nil {
-		audio.Key = key.Key
+	if audioLog.Key != nil {
+		audio.Key = audioLog.Key.Key
 	}
 
-	if audioRes.Error != nil {
+	if audioLog.AudioRes.Error != nil {
 
-		audio.ErrMsg = audioRes.Error.Error()
+		audio.ErrMsg = audioLog.AudioRes.Error.Error()
 		openaiApiError := &openai.APIError{}
-		if errors.As(audioRes.Error, &openaiApiError) {
+		if errors.As(audioLog.AudioRes.Error, &openaiApiError) {
 			audio.ErrMsg = openaiApiError.Message
 		}
 
-		if common.IsAborted(audioRes.Error) {
+		if common.IsAborted(audioLog.AudioRes.Error) {
 			audio.Status = 2
 		} else {
 			audio.Status = -1
 		}
 	}
 
-	if retryInfo != nil {
+	if audioLog.RetryInfo != nil {
 
-		audio.IsRetry = retryInfo.IsRetry
+		audio.IsRetry = audioLog.RetryInfo.IsRetry
 		audio.Retry = &mcommon.Retry{
-			IsRetry:    retryInfo.IsRetry,
-			RetryCount: retryInfo.RetryCount,
-			ErrMsg:     retryInfo.ErrMsg,
+			IsRetry:    audioLog.RetryInfo.IsRetry,
+			RetryCount: audioLog.RetryInfo.RetryCount,
+			ErrMsg:     audioLog.RetryInfo.ErrMsg,
 		}
 
 		if audio.IsRetry {
 			audio.Status = 3
-			audio.ErrMsg = retryInfo.ErrMsg
+			audio.ErrMsg = audioLog.RetryInfo.ErrMsg
 		}
 	}
 
@@ -507,7 +529,7 @@ func (s *sAudio) SaveLog(ctx context.Context, group *model.Group, reqModel, real
 		logger.Errorf(ctx, "sAudio SaveLog error: %v", err)
 
 		if err.Error() == "an inserted document is too large" {
-			audioReq.Input = err.Error()
+			audioLog.AudioReq.Input = err.Error()
 		}
 
 		if len(retry) == 10 {
@@ -520,6 +542,6 @@ func (s *sAudio) SaveLog(ctx context.Context, group *model.Group, reqModel, real
 
 		logger.Errorf(ctx, "sAudio SaveLog retry: %d", len(retry))
 
-		s.SaveLog(ctx, group, reqModel, realModel, modelAgent, fallbackModelAgent, fallbackModel, key, audioReq, audioRes, retryInfo, retry...)
+		s.SaveLog(ctx, audioLog, retry...)
 	}
 }
