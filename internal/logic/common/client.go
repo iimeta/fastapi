@@ -15,30 +15,31 @@ import (
 func NewClient(ctx context.Context, corp string, model *model.Model, key, baseURL, path string) (sdk.Client, error) {
 
 	if model.IsEnablePresetConfig {
-		return sdk.NewClient(ctx, GetCorpCode(ctx, corp), model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, config.Cfg.Http.ProxyUrl), nil
+		return sdk.NewClient(ctx, GetCorpCode(ctx, corp), model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, &model.PresetConfig.IsSupportStream, config.Cfg.Http.ProxyUrl), nil
 	}
 
-	return sdk.NewClient(ctx, GetCorpCode(ctx, corp), model.Model, key, baseURL, path, nil, config.Cfg.Http.ProxyUrl), nil
+	return sdk.NewClient(ctx, GetCorpCode(ctx, corp), model.Model, key, baseURL, path, nil, nil, config.Cfg.Http.ProxyUrl), nil
 }
 
 func NewGoogleClient(ctx context.Context, model *model.Model, key, baseURL, path string) (*google.Client, error) {
 
 	if model.IsEnablePresetConfig {
-		return google.NewClient(ctx, model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, config.Cfg.Http.ProxyUrl), nil
+		return google.NewClient(ctx, model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, &model.PresetConfig.IsSupportStream, config.Cfg.Http.ProxyUrl), nil
 	}
 
-	return google.NewClient(ctx, model.Model, key, baseURL, path, nil, config.Cfg.Http.ProxyUrl), nil
+	return google.NewClient(ctx, model.Model, key, baseURL, path, nil, nil, config.Cfg.Http.ProxyUrl), nil
 }
 
 func NewAnthropicClient(ctx context.Context, model *model.Model, key, baseURL, path string) (*anthropic.Client, error) {
 
 	if model.IsEnablePresetConfig {
-		return anthropic.NewClient(ctx, model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, config.Cfg.Http.ProxyUrl), nil
+		return anthropic.NewClient(ctx, model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, &model.PresetConfig.IsSupportStream, config.Cfg.Http.ProxyUrl), nil
 	}
 
 	isSupportSystemRole := true
+	isSupportStream := true
 
-	return anthropic.NewClient(ctx, model.Model, key, baseURL, path, &isSupportSystemRole, config.Cfg.Http.ProxyUrl), nil
+	return anthropic.NewClient(ctx, model.Model, key, baseURL, path, &isSupportSystemRole, &isSupportStream, config.Cfg.Http.ProxyUrl), nil
 }
 
 func NewRealtimeClient(ctx context.Context, model *model.Model, key, baseURL, path string) (*sdk.RealtimeClient, error) {
@@ -52,12 +53,13 @@ func NewOpenAIClient(ctx context.Context, model *model.Model, key, baseURL, path
 	}
 
 	if model.IsEnablePresetConfig {
-		return openai.NewClient(ctx, model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, config.Cfg.Http.ProxyUrl), nil
+		return openai.NewClient(ctx, model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, &model.PresetConfig.IsSupportStream, config.Cfg.Http.ProxyUrl), nil
 	}
 
 	isSupportSystemRole := true
+	isSupportStream := true
 
-	return openai.NewClient(ctx, model.Model, key, baseURL, path, &isSupportSystemRole, config.Cfg.Http.ProxyUrl), nil
+	return openai.NewClient(ctx, model.Model, key, baseURL, path, &isSupportSystemRole, &isSupportStream, config.Cfg.Http.ProxyUrl), nil
 }
 
 func GetCorpCode(ctx context.Context, corpId string) string {
