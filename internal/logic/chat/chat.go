@@ -271,15 +271,16 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 					EnterTime:    enterTime,
 				}
 
-				if response.Usage.PromptTokensDetails.CachedTokens != 0 {
-					response.Usage.CacheCreationInputTokens = response.Usage.PromptTokensDetails.CachedTokens
-				}
-
-				if response.Usage.CompletionTokensDetails.CachedTokens != 0 {
-					response.Usage.CacheReadInputTokens = response.Usage.CompletionTokensDetails.CachedTokens
-				}
-
 				if retryInfo == nil && response.Usage != nil {
+
+					if response.Usage.PromptTokensDetails.CachedTokens != 0 {
+						response.Usage.CacheCreationInputTokens = response.Usage.PromptTokensDetails.CachedTokens
+					}
+
+					if response.Usage.CompletionTokensDetails.CachedTokens != 0 {
+						response.Usage.CacheReadInputTokens = response.Usage.CompletionTokensDetails.CachedTokens
+					}
+
 					completionsRes.Usage = *response.Usage
 					completionsRes.Usage.TotalTokens = totalTokens
 				}
@@ -695,15 +696,16 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 						EnterTime:    enterTime,
 					}
 
-					if usage.PromptTokensDetails.CachedTokens != 0 {
-						usage.CacheCreationInputTokens = usage.PromptTokensDetails.CachedTokens
-					}
-
-					if usage.CompletionTokensDetails.CachedTokens != 0 {
-						usage.CacheReadInputTokens = usage.CompletionTokensDetails.CachedTokens
-					}
-
 					if usage != nil {
+
+						if usage.PromptTokensDetails.CachedTokens != 0 {
+							usage.CacheCreationInputTokens = usage.PromptTokensDetails.CachedTokens
+						}
+
+						if usage.CompletionTokensDetails.CachedTokens != 0 {
+							usage.CacheReadInputTokens = usage.CompletionTokensDetails.CachedTokens
+						}
+
 						completionsRes.Usage = *usage
 						completionsRes.Usage.TotalTokens = totalTokens
 					}
