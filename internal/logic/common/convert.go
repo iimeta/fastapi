@@ -162,6 +162,14 @@ func ConvResponsesStreamToChatCompletionsResponse(ctx context.Context, res sdkm.
 		Error:         responsesStreamRes.Err,
 	}
 
+	if chatCompletionResponse.ID == "" {
+		chatCompletionResponse.ID = responsesStreamRes.Item.Id
+	}
+
+	if chatCompletionResponse.ID == "" {
+		chatCompletionResponse.ID = responsesStreamRes.ItemId
+	}
+
 	chatCompletionChoice := sdkm.ChatCompletionChoice{
 		Delta: &sdkm.ChatCompletionStreamChoiceDelta{
 			Content: responsesStreamRes.Delta,
