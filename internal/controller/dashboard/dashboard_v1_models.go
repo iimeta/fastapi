@@ -87,8 +87,6 @@ func (c *ControllerV1) Models(ctx context.Context, req *v1.ModelsReq) (res *v1.M
 						Code:                 corp.Code,
 						Model:                m.Model,
 						Type:                 m.Type,
-						BaseUrl:              m.BaseUrl,
-						Path:                 m.Path,
 						TextQuota:            m.TextQuota,
 						ImageQuota:           m.ImageQuota,
 						AudioQuota:           m.AudioQuota,
