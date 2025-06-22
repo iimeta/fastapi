@@ -98,6 +98,8 @@ github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aN
 github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/grokify/html-strip-tags-go v0.1.0 h1:03UrQLjAny8xci+R+qjCce/MYnpNXCtgzltlQbOBae4=
 github.com/grokify/html-strip-tags-go v0.1.0/go.mod h1:ZdzgfHEzAfz9X6Xe5eBLVblWIxXfYSQ40S/VKrAOGpc=
+github.com/iimeta/fastapi-sdk v1.6.0 h1:p8ZC3kQTk2FnMml/inDbCS/X5yet7HmUa0cbS5wXBRI=
+github.com/iimeta/fastapi-sdk v1.6.0/go.mod h1:lqxWrR9vsilMBnn1KVy6sSi/AUuNG8xmB9Sk1a/3dFc=
 github.com/iimeta/go-openai v0.0.0-20250528155556-3b1f184b87fc h1:05QZFLYY5p1jRG2Z+zjJ5fvVnIIq4MQyp9uK4Axeu28=
 github.com/iimeta/go-openai v0.0.0-20250528155556-3b1f184b87fc/go.mod h1:/NJ3wqMqdk+CEvlXv5qQwSRWCVD9YabCt+dEhV8iG9E=
 github.com/iimeta/tiktoken-go v0.0.0-20240913023457-97a6b8dfb0c7 h1:80FpohrW5LMz0a9OFvE5mF9ASuarzXnCg24dw2xHf3g=

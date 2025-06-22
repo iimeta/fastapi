@@ -2,8 +2,6 @@ module github.com/iimeta/fastapi
 
 go 1.24
 
-replace github.com/iimeta/fastapi-sdk => ../fastapi-sdk
-
 require (
 	cloud.google.com/go/iam v1.5.2
 	github.com/bwmarrin/snowflake v0.3.0
