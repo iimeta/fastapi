@@ -101,7 +101,8 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 						response.Usage.PromptTokens = textTokens + imageTokens
 					} else {
 						if response.Usage.PromptTokens == 0 {
-							response.Usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
+							textTokens = common.GetPromptTokens(ctx, model, params.Messages)
+							response.Usage.PromptTokens = textTokens
 						}
 					}
 
@@ -517,9 +518,10 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 						textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, mak.ReqModel)
 						usage.PromptTokens = textTokens + imageTokens
 					} else {
-						if usage.PromptTokens == 0 {
+						if usage.PromptTokens == 0 || mak.ReqModel.MultimodalQuota.BillingRule == 2 {
 							usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
 						}
+						textTokens = usage.PromptTokens
 					}
 				}
 
