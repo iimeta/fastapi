@@ -594,7 +594,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 					totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
 				}
 
-				if err := grpool.Add(ctx, func(ctx context.Context) {
+				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 					if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
 						logger.Error(ctx, err)
 						panic(err)
@@ -605,7 +605,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 			}
 
 			if mak.ReqModel != nil && mak.RealModel != nil {
-				if err := grpool.Add(ctx, func(ctx context.Context) {
+				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 					completionsRes := &model.CompletionsRes{
 						Completion:   completion,
