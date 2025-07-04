@@ -7,6 +7,7 @@ import (
 	"github.com/gogf/gf/v2/util/gconv"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/utility/logger"
+	"github.com/iimeta/go-openai"
 )
 
 func ConvResponsesToChatCompletionsRequest(request *ghttp.Request, isChatCompletions bool) sdkm.ChatCompletionRequest {
@@ -128,6 +129,13 @@ func ConvResponsesToChatCompletionsResponse(ctx context.Context, res sdkm.OpenAI
 			PromptTokens:     responsesRes.Usage.InputTokens,
 			CompletionTokens: responsesRes.Usage.OutputTokens,
 			TotalTokens:      responsesRes.Usage.TotalTokens,
+			PromptTokensDetails: openai.PromptTokensDetails{
+				CachedTokens: responsesRes.Usage.InputTokensDetails.CachedTokens,
+				TextTokens:   responsesRes.Usage.InputTokensDetails.TextTokens,
+			},
+			CompletionTokensDetails: openai.CompletionTokensDetails{
+				ReasoningTokens: responsesRes.Usage.OutputTokensDetails.ReasoningTokens,
+			},
 		}
 	}
 
@@ -187,6 +195,13 @@ func ConvResponsesStreamToChatCompletionsResponse(ctx context.Context, res sdkm.
 			PromptTokens:     responsesStreamRes.Response.Usage.InputTokens,
 			CompletionTokens: responsesStreamRes.Response.Usage.OutputTokens,
 			TotalTokens:      responsesStreamRes.Response.Usage.TotalTokens,
+			PromptTokensDetails: openai.PromptTokensDetails{
+				CachedTokens: responsesStreamRes.Response.Usage.InputTokensDetails.CachedTokens,
+				TextTokens:   responsesStreamRes.Response.Usage.InputTokensDetails.TextTokens,
+			},
+			CompletionTokensDetails: openai.CompletionTokensDetails{
+				ReasoningTokens: responsesStreamRes.Response.Usage.OutputTokensDetails.ReasoningTokens,
+			},
 		}
 	}
 
