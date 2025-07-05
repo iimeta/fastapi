@@ -13,11 +13,11 @@ require (
 	github.com/iimeta/fastapi-sdk v1.6.0
 	github.com/iimeta/go-openai v0.0.0-20250528155556-3b1f184b87fc
 	github.com/iimeta/tiktoken-go v0.0.0-20240913023457-97a6b8dfb0c7
-	github.com/redis/go-redis/v9 v9.10.0
+	github.com/redis/go-redis/v9 v9.11.0
 	github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300
 	github.com/tjfoc/gmsm v1.4.1
 	go.mongodb.org/mongo-driver v1.17.4
-	google.golang.org/api v0.238.0
+	google.golang.org/api v0.240.0
 )
 
 require (
@@ -30,7 +30,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.70 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.36 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.36 // indirect
-	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.30.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.31.0 // indirect
 	github.com/aws/smithy-go v1.22.4 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect
