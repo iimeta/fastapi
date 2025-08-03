@@ -59,19 +59,10 @@
 
 ## 公益站点
 
-### 社区版
-
-- 用户端: <https://free.fastapi.ai/login>
-- 代理商: <https://free.fastapi.ai/reseller>
-- API接口: <https://api.free.fastapi.ai>
-
-### 专业版
-
 - 用户端: <https://free.fastapi.pro/login>
 - 代理商: <https://free.fastapi.pro/reseller>
 - API接口: <https://api.free.fastapi.pro>
-
-#### 社区版和专业版数据互通, 可根据自己喜好选择, 支持注册代理商, 社区版用户注册送10万刀额度, 专业版用户注册送100万刀额度
+- 支持注册代理商, 注册就送1,000,000刀额度
 
 ## 项目截图
 
@@ -148,6 +139,6 @@ curl --location 'https://api.fastapi.ai/v1/chat/completions' \
 
 ## 交流群
 
-<img src="https://iim.ai/public/images/WeChatGroup.jpg?t=20250727" width="320" alt="交流群"/>
+<img src="https://iim.ai/public/images/WeChatGroup.jpg?t=20250803" width="320" alt="交流群"/>
 
 ![Star History Chart](https://api.star-history.com/svg?repos=iimeta/fastapi&type=Date)
