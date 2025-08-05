@@ -201,9 +201,9 @@ func middleware(r *ghttp.Request) {
 
 	if config.Cfg.Debug.Open {
 		if gstr.HasPrefix(r.GetHeader("Content-Type"), "application/json") {
-			logger.Debugf(r.GetCtx(), "url: %s, request body: %s", r.GetUrl(), r.GetBodyString())
+			logger.Debugf(r.GetCtx(), "middleware url: %s, request body: %s", r.GetUrl(), r.GetBodyString())
 		} else {
-			logger.Debugf(r.GetCtx(), "url: %s, Content-Type: %s", r.GetUrl(), r.GetHeader("Content-Type"))
+			logger.Debugf(r.GetCtx(), "middleware url: %s, Content-Type: %s", r.GetUrl(), r.GetHeader("Content-Type"))
 		}
 	}
 
@@ -222,6 +222,11 @@ func middlewareHandlerResponse(r *ghttp.Request) {
 
 	// There's custom buffer content, it then exits current handler.
 	if r.Response.BufferLength() > 0 {
+		if config.Cfg.Debug.Open {
+			if gstr.HasPrefix(r.Response.Header().Get("Content-Type"), "application/json") {
+				logger.Debugf(r.GetCtx(), "middlewareHandlerResponse url: %s, response: %s", r.GetUrl(), r.Response.BufferString())
+			}
+		}
 		return
 	}
 
@@ -270,17 +275,32 @@ func middlewareHandlerResponse(r *ghttp.Request) {
 	}
 
 	if err != nil {
+
 		err := errors.Error(r.GetCtx(), err)
+
+		if config.Cfg.Debug.Open {
+			logger.Debugf(r.GetCtx(), "middlewareHandlerResponse url: %s, response: %s", r.GetUrl(), gjson.MustEncodeString(err))
+		}
+
 		r.Response.Header().Set("Content-Type", "application/json")
 		r.Response.WriteStatus(err.Status(), gjson.MustEncodeString(err))
+
 	} else {
+
 		stream := r.GetCtxVar("stream")
 		if stream == nil || !stream.Bool() {
-			r.Response.WriteJson(defaultHandlerResponse{
+
+			content := defaultHandlerResponse{
 				Code:    code.ErrCode(),
 				Message: msg,
 				Data:    res,
-			})
+			}
+
+			if config.Cfg.Debug.Open {
+				logger.Debugf(r.GetCtx(), "middlewareHandlerResponse url: %s, response: %s", r.GetUrl(), gjson.MustEncodeString(content))
+			}
+
+			r.Response.WriteJson(content)
 		}
 	}
 }
