@@ -33,7 +33,25 @@
 | 豆包         | ✔️         |       |       |           |          |           |            |
 | 火山引擎     | ✔️         |       |       |           |          |           |            |
 
-## 项目预览
+## API接口
+
+### 同OpenAI接口
+
+```bash
+curl --location 'https://api.fastapi.ai/v1/chat/completions' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer sk-FastAPI1YzE0kXf0zNb0ldX1nBLDm1Bh0SoSK0G0PzR1tNxW' \
+--data '{
+    "model": "gpt-5",
+    "stream": true,
+    "messages": [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "hi"}
+    ]
+}'
+```
+
+## 社区版预览
 
 - 管理端: <https://demo.fastapi.ai/admin>
 - 用户端: <https://demo.fastapi.ai/login>
@@ -49,20 +67,20 @@
 
 ## 部署支持
 
+✔️ [Docker部署](https://www.fastapi.ai/guide/#docker%E9%83%A8%E7%BD%B2%E6%95%99%E7%A8%8B)  
 ✔️ 集群部署  
 ✔️ 多地部署  
-✔️ 跨区部署
 
 ## 部署教程
 
-### [传送门](https://www.fastapi.ai/guide/)
+### [快速开始](https://www.fastapi.ai/guide/)
 
 ## 公益站点
 
 - 用户端: <https://free.fastapi.pro/login>
 - 代理商: <https://free.fastapi.pro/reseller>
 - API接口: <https://api.free.fastapi.pro>
-- 支持注册代理商, 注册就送1,000,000刀额度
+- 注册就送 **$1,000,000** 额度, 支持注册代理商
 
 ## 项目截图
 
@@ -108,24 +126,6 @@
 ![deal_record](https://github.com/user-attachments/assets/dfe29b40-a055-4ce6-94e6-ed35f5d41cb7)
 ![chat](https://github.com/user-attachments/assets/a00b0f6d-44de-4841-a84c-a1e9ba54aade)
 
-## API接口
-
-### 同OpenAI接口
-
-```bash
-curl --location 'https://api.fastapi.ai/v1/chat/completions' \
---header 'Content-Type: application/json' \
---header 'Authorization: Bearer sk-FastAPI1YzE0kXf0zNb0ldX1nBLDm1Bh0SoSK0G0PzR1tNxW' \
---data '{
-    "model": "gpt-3.5-turbo",
-    "stream": true,
-    "messages": [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "hi"}
-    ]
-}'
-```
-
 ## 开源地址
 
 | 仓库 | API                                          | Web                                                  | Admin                                                    | SDK                                                  |
@@ -139,6 +139,6 @@ curl --location 'https://api.fastapi.ai/v1/chat/completions' \
 
 ## 交流群
 
-<img src="https://iim.ai/public/images/WeChatGroup.jpg?t=20250803" width="320" alt="交流群"/>
+<img src="https://iim.ai/public/images/WeChatGroup.jpg?t=20250810" width="320" alt="交流群"/>
 
 ![Star History Chart](https://api.star-history.com/svg?repos=iimeta/fastapi&type=Date)
