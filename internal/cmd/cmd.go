@@ -2,6 +2,10 @@ package cmd
 
 import (
 	"context"
+	"net/http"
+	"runtime"
+	"strings"
+
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
@@ -25,8 +29,6 @@ import (
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
-	"net/http"
-	"strings"
 )
 
 var (
@@ -36,11 +38,13 @@ var (
 		Brief: "start http server",
 		Func: func(ctx context.Context, parser *gcmd.Parser) (err error) {
 
-			//runtime.SetMutexProfileFraction(1) // (非必需)开启对锁调用的跟踪
-			//runtime.SetBlockProfileRate(1)     // (非必需)开启对阻塞操作的跟踪
-
 			s := g.Server()
-			//s.EnablePProf()
+
+			if config.Cfg.Debug.Open {
+				runtime.SetMutexProfileFraction(1) // (非必需)开启对锁调用的跟踪
+				runtime.SetBlockProfileRate(1)     // (非必需)开启对阻塞操作的跟踪
+				s.EnablePProf()
+			}
 
 			s.BindHookHandler("/*", ghttp.HookBeforeServe, beforeServeHook)
 
