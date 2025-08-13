@@ -2,6 +2,10 @@ package embedding
 
 import (
 	"context"
+	"math"
+	"slices"
+	"time"
+
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
@@ -20,9 +24,6 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
 	"github.com/iimeta/go-openai"
-	"math"
-	"slices"
-	"time"
 )
 
 type sEmbedding struct{}
@@ -53,7 +54,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client      sdk.Client
+		adapter     sdk.Adapter
 		retryInfo   *mcommon.Retry
 		totalTokens int
 	)
@@ -148,12 +149,12 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 		}
 	}
 
-	if client, err = common.NewClient(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
+	if adapter, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
-	response, err = client.Embeddings(ctx, request)
+	response, err = adapter.TextEmbeddings(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
 

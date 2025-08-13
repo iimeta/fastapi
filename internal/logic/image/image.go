@@ -3,6 +3,10 @@ package image
 import (
 	"context"
 	"fmt"
+	"math"
+	"slices"
+	"time"
+
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
@@ -20,9 +24,6 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
 	"github.com/iimeta/go-openai"
-	"math"
-	"slices"
-	"time"
 )
 
 type sImage struct{}
@@ -49,7 +50,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageGenerationReq
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client          sdk.Client
+		adapter         sdk.Adapter
 		generationQuota mcommon.GenerationQuota
 		retryInfo       *mcommon.Retry
 	)
@@ -162,12 +163,12 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageGenerationReq
 		}
 	}
 
-	if client, err = common.NewClient(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
+	if adapter, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
-	response, err = client.ImageGeneration(ctx, request)
+	response, err = adapter.ImageGenerations(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -249,7 +250,7 @@ func (s *sImage) Edits(ctx context.Context, params model.ImageEditRequest, fallb
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client          sdk.Client
+		adapter         sdk.Adapter
 		generationQuota mcommon.GenerationQuota
 		retryInfo       *mcommon.Retry
 	)
@@ -390,12 +391,12 @@ func (s *sImage) Edits(ctx context.Context, params model.ImageEditRequest, fallb
 		}
 	}
 
-	if client, err = common.NewClient(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
+	if adapter, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
-	response, err = client.ImageEdit(ctx, request)
+	response, err = adapter.ImageEdits(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
 

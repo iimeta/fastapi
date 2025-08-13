@@ -2,6 +2,10 @@ package audio
 
 import (
 	"context"
+	"math"
+	"slices"
+	"time"
+
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
@@ -20,9 +24,6 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
 	"github.com/iimeta/go-openai"
-	"math"
-	"slices"
-	"time"
 )
 
 type sAudio struct{}
@@ -49,7 +50,7 @@ func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallback
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client      sdk.Client
+		adapter     sdk.Adapter
 		retryInfo   *mcommon.Retry
 		totalTokens int
 	)
@@ -137,12 +138,12 @@ func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallback
 		}
 	}
 
-	if client, err = common.NewClient(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
+	if adapter, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
-	response, err = client.Speech(ctx, request)
+	response, err = adapter.AudioSpeech(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -224,7 +225,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client      sdk.Client
+		adapter     sdk.Adapter
 		retryInfo   *mcommon.Retry
 		minute      float64
 		totalTokens int
@@ -322,12 +323,12 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 		}
 	}
 
-	if client, err = common.NewClient(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
+	if adapter, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
-	response, err = client.Transcription(ctx, request.AudioRequest)
+	response, err = adapter.AudioTranscriptions(ctx, request.AudioRequest)
 	if err != nil {
 		logger.Error(ctx, err)
 

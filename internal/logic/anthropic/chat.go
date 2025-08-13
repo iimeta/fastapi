@@ -3,6 +3,10 @@ package anthropic
 import (
 	"context"
 	"fmt"
+	"io"
+	"math"
+	"slices"
+
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
@@ -22,9 +26,6 @@ import (
 	"github.com/iimeta/fastapi/utility/util"
 	"github.com/iimeta/go-openai"
 	"github.com/iimeta/tiktoken-go"
-	"io"
-	"math"
-	"slices"
 )
 
 type sAnthropic struct{}
@@ -53,7 +54,7 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client      *anthropic.Client
+		adapter     *anthropic.Anthropic
 		res         sdkm.AnthropicChatCompletionRes
 		retryInfo   *mcommon.Retry
 		textTokens  int
@@ -325,12 +326,12 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 	//	}
 	//}
 
-	if client, err = common.NewAnthropicClient(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
+	if adapter, err = common.NewAnthropicAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
-	res, err = client.ChatCompletionOfficial(ctx, request.GetBody())
+	res, err = adapter.ChatCompletionOfficial(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -416,7 +417,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client      *anthropic.Client
+		adapter     *anthropic.Anthropic
 		completion  string
 		connTime    int64
 		duration    int64
@@ -675,12 +676,12 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 	//	}
 	//}
 
-	if client, err = common.NewAnthropicClient(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
+	if adapter, err = common.NewAnthropicAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
 
-	response, err := client.ChatCompletionStreamOfficial(ctx, request.GetBody())
+	response, err := adapter.ChatCompletionStreamOfficial(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
 

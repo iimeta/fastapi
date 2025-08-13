@@ -3,6 +3,10 @@ package openai
 import (
 	"context"
 	"fmt"
+	"io"
+	"math"
+	"slices"
+
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
@@ -22,9 +26,6 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
 	"github.com/iimeta/tiktoken-go"
-	"io"
-	"math"
-	"slices"
 )
 
 type sOpenAI struct{}
@@ -52,7 +53,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client      *openai.Client
+		adapter     *openai.OpenAI
 		retryInfo   *mcommon.Retry
 		textTokens  int
 		imageTokens int
@@ -332,7 +333,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 		return response, err
 	}
 
-	if client, err = common.NewOpenAIClient(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
+	if adapter, err = common.NewOpenAIAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
@@ -343,7 +344,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 		data = gjson.MustEncode(common.ConvChatCompletionsToResponsesRequest(request))
 	}
 
-	response, err = client.Responses(ctx, data)
+	response, err = adapter.Responses(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -427,7 +428,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client      *openai.Client
+		adapter     *openai.OpenAI
 		completion  string
 		connTime    int64
 		duration    int64
@@ -732,7 +733,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 	//	}
 	//}
 
-	if client, err = common.NewOpenAIClient(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
+	if adapter, err = common.NewOpenAIAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
@@ -743,7 +744,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 		data = gjson.MustEncode(common.ConvChatCompletionsToResponsesRequest(request))
 	}
 
-	response, err := client.ResponsesStream(ctx, data)
+	response, err := adapter.ResponsesStream(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 

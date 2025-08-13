@@ -2,6 +2,12 @@ package realtime
 
 import (
 	"context"
+	"io"
+	"math"
+	"net/http"
+	"slices"
+	"time"
+
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
@@ -25,11 +31,6 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
 	"github.com/iimeta/go-openai"
-	"io"
-	"math"
-	"net/http"
-	"slices"
-	"time"
 )
 
 type sRealtime struct {
@@ -136,7 +137,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 		return err
 	}
 
-	if client, err = common.NewRealtimeClient(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
+	if client, err = common.NewRealtimeAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}

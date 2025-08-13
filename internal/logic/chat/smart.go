@@ -2,6 +2,9 @@ package chat
 
 import (
 	"context"
+	"math"
+
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
@@ -16,7 +19,6 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/tiktoken-go"
-	"math"
 )
 
 // SmartCompletions
@@ -35,7 +37,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client      sdk.Client
+		adapter     sdk.Adapter
 		retryInfo   *mcommon.Retry
 		textTokens  int
 		imageTokens int
@@ -189,12 +191,12 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		}
 	}
 
-	if client, err = common.NewClient(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
+	if adapter, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
-	response, err = client.ChatCompletion(ctx, params)
+	response, err = adapter.ChatCompletions(ctx, gjson.MustEncode(params))
 	if err != nil {
 		logger.Error(ctx, err)
 

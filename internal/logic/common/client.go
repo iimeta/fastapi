@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+
 	"github.com/iimeta/fastapi-sdk"
 	"github.com/iimeta/fastapi-sdk/anthropic"
 	"github.com/iimeta/fastapi-sdk/google"
@@ -12,54 +13,54 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 )
 
-func NewClient(ctx context.Context, corp string, model *model.Model, key, baseURL, path string) (sdk.Client, error) {
+func NewAdapter(ctx context.Context, corp string, model *model.Model, key, baseURL, path string) (sdk.Adapter, error) {
 
 	if model.IsEnablePresetConfig {
-		return sdk.NewClient(ctx, GetCorpCode(ctx, corp), model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, &model.PresetConfig.IsSupportStream, config.Cfg.Http.ProxyUrl), nil
+		return sdk.NewAdapter(ctx, GetCorpCode(ctx, corp), model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, &model.PresetConfig.IsSupportStream, config.Cfg.Http.ProxyUrl), nil
 	}
 
-	return sdk.NewClient(ctx, GetCorpCode(ctx, corp), model.Model, key, baseURL, path, nil, nil, config.Cfg.Http.ProxyUrl), nil
+	return sdk.NewAdapter(ctx, GetCorpCode(ctx, corp), model.Model, key, baseURL, path, nil, nil, config.Cfg.Http.ProxyUrl), nil
 }
 
-func NewGoogleClient(ctx context.Context, model *model.Model, key, baseURL, path string) (*google.Client, error) {
+func NewGoogleAdapter(ctx context.Context, model *model.Model, key, baseURL, path string) (*google.Google, error) {
 
 	if model.IsEnablePresetConfig {
-		return google.NewClient(ctx, model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, &model.PresetConfig.IsSupportStream, config.Cfg.Http.ProxyUrl), nil
+		return google.NewAdapter(ctx, model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, &model.PresetConfig.IsSupportStream, config.Cfg.Http.ProxyUrl), nil
 	}
 
-	return google.NewClient(ctx, model.Model, key, baseURL, path, nil, nil, config.Cfg.Http.ProxyUrl), nil
+	return google.NewAdapter(ctx, model.Model, key, baseURL, path, nil, nil, config.Cfg.Http.ProxyUrl), nil
 }
 
-func NewAnthropicClient(ctx context.Context, model *model.Model, key, baseURL, path string) (*anthropic.Client, error) {
+func NewAnthropicAdapter(ctx context.Context, model *model.Model, key, baseURL, path string) (*anthropic.Anthropic, error) {
 
 	if model.IsEnablePresetConfig {
-		return anthropic.NewClient(ctx, model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, &model.PresetConfig.IsSupportStream, config.Cfg.Http.ProxyUrl), nil
+		return anthropic.NewAdapter(ctx, model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, &model.PresetConfig.IsSupportStream, config.Cfg.Http.ProxyUrl), nil
 	}
 
 	isSupportSystemRole := true
 	isSupportStream := true
 
-	return anthropic.NewClient(ctx, model.Model, key, baseURL, path, &isSupportSystemRole, &isSupportStream, config.Cfg.Http.ProxyUrl), nil
+	return anthropic.NewAdapter(ctx, model.Model, key, baseURL, path, &isSupportSystemRole, &isSupportStream, config.Cfg.Http.ProxyUrl), nil
 }
 
-func NewRealtimeClient(ctx context.Context, model *model.Model, key, baseURL, path string) (*sdk.RealtimeClient, error) {
+func NewRealtimeAdapter(ctx context.Context, model *model.Model, key, baseURL, path string) (*sdk.RealtimeClient, error) {
 	return sdk.NewRealtimeClient(ctx, model.Model, key, baseURL, path, config.Cfg.Http.ProxyUrl), nil
 }
 
-func NewOpenAIClient(ctx context.Context, model *model.Model, key, baseURL, path string) (*openai.Client, error) {
+func NewOpenAIAdapter(ctx context.Context, model *model.Model, key, baseURL, path string) (*openai.OpenAI, error) {
 
 	if path == "" {
 		path = "/responses"
 	}
 
 	if model.IsEnablePresetConfig {
-		return openai.NewClient(ctx, model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, &model.PresetConfig.IsSupportStream, config.Cfg.Http.ProxyUrl), nil
+		return openai.NewAdapter(ctx, model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, &model.PresetConfig.IsSupportStream, config.Cfg.Http.ProxyUrl), nil
 	}
 
 	isSupportSystemRole := true
 	isSupportStream := true
 
-	return openai.NewClient(ctx, model.Model, key, baseURL, path, &isSupportSystemRole, &isSupportStream, config.Cfg.Http.ProxyUrl), nil
+	return openai.NewAdapter(ctx, model.Model, key, baseURL, path, &isSupportSystemRole, &isSupportStream, config.Cfg.Http.ProxyUrl), nil
 }
 
 func GetCorpCode(ctx context.Context, corpId string) string {

@@ -3,6 +3,10 @@ package google
 import (
 	"context"
 	"fmt"
+	"io"
+	"math"
+	"slices"
+
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
@@ -23,9 +27,6 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
 	"github.com/iimeta/tiktoken-go"
-	"io"
-	"math"
-	"slices"
 )
 
 type sGoogle struct{}
@@ -54,7 +55,7 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client      *google.Client
+		adapter     *google.Google
 		res         sdkm.GoogleChatCompletionRes
 		retryInfo   *mcommon.Retry
 		textTokens  int
@@ -329,12 +330,12 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 	//	}
 	//}
 
-	if client, err = common.NewGoogleClient(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
+	if adapter, err = common.NewGoogleAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
-	res, err = client.ChatCompletionOfficial(ctx, request.GetBody())
+	res, err = adapter.ChatCompletionOfficial(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -420,7 +421,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client      *google.Client
+		adapter     *google.Google
 		completion  string
 		connTime    int64
 		duration    int64
@@ -685,12 +686,12 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 	//	}
 	//}
 
-	if client, err = common.NewGoogleClient(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
+	if adapter, err = common.NewGoogleAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
 
-	response, err := client.ChatCompletionStreamOfficial(ctx, request.GetBody())
+	response, err := adapter.ChatCompletionStreamOfficial(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
 

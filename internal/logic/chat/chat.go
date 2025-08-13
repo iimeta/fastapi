@@ -3,6 +3,11 @@ package chat
 import (
 	"context"
 	"fmt"
+	"io"
+	"math"
+	"slices"
+	"time"
+
 	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
@@ -26,10 +31,6 @@ import (
 	"github.com/iimeta/fastapi/utility/util"
 	"github.com/iimeta/go-openai"
 	"github.com/iimeta/tiktoken-go"
-	"io"
-	"math"
-	"slices"
-	"time"
 )
 
 type sChat struct{}
@@ -64,7 +65,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client      sdk.Client
+		adapter     sdk.Adapter
 		retryInfo   *mcommon.Retry
 		textTokens  int
 		imageTokens int
@@ -385,12 +386,12 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		}
 	}
 
-	if client, err = common.NewClient(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
+	if adapter, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
-	response, err = client.ChatCompletion(ctx, request)
+	response, err = adapter.ChatCompletions(ctx, gjson.MustEncode(request))
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -480,7 +481,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client      sdk.Client
+		adapter     sdk.Adapter
 		completion  string
 		connTime    int64
 		duration    int64
@@ -786,12 +787,12 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		}
 	}
 
-	if client, err = common.NewClient(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
+	if adapter, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
 
-	response, err := client.ChatCompletionStream(ctx, request)
+	response, err := adapter.ChatCompletionsStream(ctx, gjson.MustEncode(request))
 	if err != nil {
 		logger.Error(ctx, err)
 
