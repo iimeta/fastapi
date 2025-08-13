@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/service"
@@ -19,12 +20,12 @@ func (c *ControllerV1) Completions(ctx context.Context, req *v1.CompletionsReq) 
 
 	if !req.IsToResponses {
 		if req.Stream {
-			if err = service.Chat().CompletionsStream(ctx, req.ChatCompletionRequest, nil, nil); err != nil {
+			if err = service.Chat().CompletionsStream(ctx, g.RequestFromCtx(ctx).GetBody(), nil, nil); err != nil {
 				return nil, err
 			}
 			g.RequestFromCtx(ctx).SetCtxVar("stream", req.Stream)
 		} else {
-			response, err := service.Chat().Completions(ctx, req.ChatCompletionRequest, nil, nil)
+			response, err := service.Chat().Completions(ctx, g.RequestFromCtx(ctx).GetBody(), nil, nil)
 			if err != nil {
 				return nil, err
 			}

@@ -44,12 +44,18 @@ func New() service.IChat {
 }
 
 // Completions
-func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.ChatCompletionResponse, err error) {
+func (s *sChat) Completions(ctx context.Context, data []byte, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.ChatCompletionResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "sChat Completions time: %d", gtime.TimestampMilli()-now)
 	}()
+
+	params, err := sdk.NewConverter(ctx, consts.CORP_OPENAI).ConvChatCompletionsRequest(ctx, data)
+	if err != nil {
+		logger.Errorf(ctx, "sChat Completions ConvChatCompletionsRequest error: %v", err)
+		return response, err
+	}
 
 	if len(params.Functions) == 0 {
 		params.Messages = common.HandleMessages(params.Messages)
@@ -391,7 +397,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		return response, err
 	}
 
-	response, err = adapter.ChatCompletions(ctx, gjson.MustEncode(request))
+	response, err = adapter.ChatCompletions(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -425,7 +431,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Completions(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
+							return s.Completions(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel)
 						}
 					}
 
@@ -436,7 +442,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Completions(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
+							return s.Completions(g.RequestFromCtx(ctx).GetCtx(), data, nil, fallbackModel)
 						}
 					}
 				}
@@ -450,7 +456,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 				ErrMsg:     err.Error(),
 			}
 
-			return s.Completions(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+			return s.Completions(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
 		return response, err
@@ -460,12 +466,18 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 }
 
 // CompletionsStream
-func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletionRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (err error) {
+func (s *sChat) CompletionsStream(ctx context.Context, data []byte, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "sChat CompletionsStream time: %d", gtime.TimestampMilli()-now)
 	}()
+
+	params, err := sdk.NewConverter(ctx, consts.CORP_OPENAI).ConvChatCompletionsRequest(ctx, data)
+	if err != nil {
+		logger.Errorf(ctx, "sChat CompletionsStream ConvChatCompletionsRequest error: %v", err)
+		return err
+	}
 
 	if len(params.Functions) == 0 {
 		params.Messages = common.HandleMessages(params.Messages)
@@ -792,7 +804,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		return err
 	}
 
-	response, err := adapter.ChatCompletionsStream(ctx, gjson.MustEncode(request))
+	response, err := adapter.ChatCompletionsStream(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -826,7 +838,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
+							return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel)
 						}
 					}
 
@@ -837,7 +849,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
+							return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), data, nil, fallbackModel)
 						}
 					}
 				}
@@ -851,7 +863,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 				ErrMsg:     err.Error(),
 			}
 
-			return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+			return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
 		return err
@@ -935,7 +947,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
-								return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
+								return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel)
 							}
 						}
 
@@ -946,7 +958,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
-								return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
+								return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), data, nil, fallbackModel)
 							}
 						}
 					}
@@ -960,7 +972,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					ErrMsg:     err.Error(),
 				}
 
-				return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+				return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 			}
 
 			return err
