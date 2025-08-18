@@ -63,6 +63,10 @@ func NewOpenAIAdapter(ctx context.Context, model *model.Model, key, baseURL, pat
 	return openai.NewAdapter(ctx, model.Model, key, baseURL, path, &isSupportSystemRole, &isSupportStream, config.Cfg.Http.ProxyUrl), nil
 }
 
+func NewModerationClient(ctx context.Context, corp string, model *model.Model, key, baseURL, path string) (*sdk.ModerationClient, error) {
+	return sdk.NewModerationClient(ctx, model.Model, key, baseURL, path, config.Cfg.Http.ProxyUrl), nil
+}
+
 func GetCorpCode(ctx context.Context, corpId string) string {
 
 	corp, err := service.Corp().GetCacheCorp(ctx, corpId)

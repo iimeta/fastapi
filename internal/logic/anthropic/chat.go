@@ -979,7 +979,7 @@ func convToChatCompletionResponse(ctx context.Context, res sdkm.AnthropicChatCom
 	}
 
 	chatCompletionResponse := sdkm.ChatCompletionResponse{
-		ID:            consts.COMPLETION_ID_PREFIX + anthropicChatCompletionRes.Id,
+		Id:            consts.COMPLETION_ID_PREFIX + anthropicChatCompletionRes.Id,
 		Object:        consts.COMPLETION_OBJECT,
 		Created:       gtime.Timestamp(),
 		Model:         anthropicChatCompletionRes.Model,

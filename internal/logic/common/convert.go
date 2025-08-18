@@ -2,12 +2,12 @@ package common
 
 import (
 	"context"
+
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/util/gconv"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/utility/logger"
-	"github.com/iimeta/go-openai"
 )
 
 func ConvResponsesToChatCompletionsRequest(request *ghttp.Request, isChatCompletions bool) sdkm.ChatCompletionRequest {
@@ -91,7 +91,7 @@ func ConvResponsesToChatCompletionsResponse(ctx context.Context, res sdkm.OpenAI
 	}
 
 	chatCompletionResponse := sdkm.ChatCompletionResponse{
-		ID:            responsesRes.Id,
+		Id:            responsesRes.Id,
 		Object:        responsesRes.Object,
 		Created:       responsesRes.CreatedAt,
 		Model:         responsesRes.Model,
@@ -129,11 +129,11 @@ func ConvResponsesToChatCompletionsResponse(ctx context.Context, res sdkm.OpenAI
 			PromptTokens:     responsesRes.Usage.InputTokens,
 			CompletionTokens: responsesRes.Usage.OutputTokens,
 			TotalTokens:      responsesRes.Usage.TotalTokens,
-			PromptTokensDetails: openai.PromptTokensDetails{
+			PromptTokensDetails: sdkm.PromptTokensDetails{
 				CachedTokens: responsesRes.Usage.InputTokensDetails.CachedTokens,
 				TextTokens:   responsesRes.Usage.InputTokensDetails.TextTokens,
 			},
-			CompletionTokensDetails: openai.CompletionTokensDetails{
+			CompletionTokensDetails: sdkm.CompletionTokensDetails{
 				ReasoningTokens: responsesRes.Usage.OutputTokensDetails.ReasoningTokens,
 			},
 		}
@@ -159,7 +159,7 @@ func ConvResponsesStreamToChatCompletionsResponse(ctx context.Context, res sdkm.
 	}
 
 	chatCompletionResponse := sdkm.ChatCompletionResponse{
-		ID:            responsesStreamRes.Response.Id,
+		Id:            responsesStreamRes.Response.Id,
 		Object:        responsesStreamRes.Response.Object,
 		Created:       responsesStreamRes.Response.CreatedAt,
 		Model:         responsesStreamRes.Response.Model,
@@ -170,12 +170,12 @@ func ConvResponsesStreamToChatCompletionsResponse(ctx context.Context, res sdkm.
 		Error:         responsesStreamRes.Err,
 	}
 
-	if chatCompletionResponse.ID == "" {
-		chatCompletionResponse.ID = responsesStreamRes.Item.Id
+	if chatCompletionResponse.Id == "" {
+		chatCompletionResponse.Id = responsesStreamRes.Item.Id
 	}
 
-	if chatCompletionResponse.ID == "" {
-		chatCompletionResponse.ID = responsesStreamRes.ItemId
+	if chatCompletionResponse.Id == "" {
+		chatCompletionResponse.Id = responsesStreamRes.ItemId
 	}
 
 	chatCompletionChoice := sdkm.ChatCompletionChoice{
@@ -195,11 +195,11 @@ func ConvResponsesStreamToChatCompletionsResponse(ctx context.Context, res sdkm.
 			PromptTokens:     responsesStreamRes.Response.Usage.InputTokens,
 			CompletionTokens: responsesStreamRes.Response.Usage.OutputTokens,
 			TotalTokens:      responsesStreamRes.Response.Usage.TotalTokens,
-			PromptTokensDetails: openai.PromptTokensDetails{
+			PromptTokensDetails: sdkm.PromptTokensDetails{
 				CachedTokens: responsesStreamRes.Response.Usage.InputTokensDetails.CachedTokens,
 				TextTokens:   responsesStreamRes.Response.Usage.InputTokensDetails.TextTokens,
 			},
-			CompletionTokensDetails: openai.CompletionTokensDetails{
+			CompletionTokensDetails: sdkm.CompletionTokensDetails{
 				ReasoningTokens: responsesStreamRes.Response.Usage.OutputTokensDetails.ReasoningTokens,
 			},
 		}

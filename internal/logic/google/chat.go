@@ -977,7 +977,7 @@ func convToChatCompletionResponse(ctx context.Context, res sdkm.GoogleChatComple
 	}
 
 	chatCompletionResponse := sdkm.ChatCompletionResponse{
-		ID:            consts.COMPLETION_ID_PREFIX + grand.S(29),
+		Id:            consts.COMPLETION_ID_PREFIX + grand.S(29),
 		Object:        consts.COMPLETION_OBJECT,
 		Created:       gtime.Timestamp(),
 		Model:         googleChatCompletionRes.ModelVersion,

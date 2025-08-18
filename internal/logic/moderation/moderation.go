@@ -11,7 +11,6 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
-	"github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/dao"
@@ -50,7 +49,6 @@ func (s *sModeration) Moderations(ctx context.Context, params sdkm.ModerationReq
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		adapter     sdk.Adapter
 		retryInfo   *mcommon.Retry
 		totalTokens int
 	)
@@ -146,12 +144,13 @@ func (s *sModeration) Moderations(ctx context.Context, params sdkm.ModerationReq
 		}
 	}
 
-	if adapter, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
+	client, err := common.NewModerationClient(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path)
+	if err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
-	response, err = adapter.TextModerations(ctx, request)
+	response, err = client.TextModerations(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
 
