@@ -2,6 +2,7 @@ package embedding
 
 import (
 	"context"
+
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/service"
@@ -17,7 +18,7 @@ func (c *ControllerV1) Embeddings(ctx context.Context, req *v1.EmbeddingsReq) (r
 		logger.Debugf(ctx, "Controller Embeddings time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	response, err := service.Embedding().Embeddings(ctx, req.EmbeddingRequest, nil, nil)
+	response, err := service.Embedding().Embeddings(ctx, g.RequestFromCtx(ctx).GetBody(), nil, nil)
 	if err != nil {
 		return nil, err
 	}

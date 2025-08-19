@@ -14,6 +14,8 @@ import (
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
+	"github.com/iimeta/fastapi-sdk/sdkerr"
+	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
@@ -23,7 +25,6 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
-	"github.com/iimeta/go-openai"
 )
 
 type sImage struct{}
@@ -37,12 +38,18 @@ func New() service.IImage {
 }
 
 // Generations
-func (s *sImage) Generations(ctx context.Context, params sdkm.ImageGenerationRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.ImageResponse, err error) {
+func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.ImageResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "sImage Generations time: %d", gtime.TimestampMilli()-now)
 	}()
+
+	params, err := sdk.NewConverter(ctx, consts.CORP_OPENAI).ConvImageGenerationsRequest(ctx, data)
+	if err != nil {
+		logger.Errorf(ctx, "sImage Generations ConvImageGenerationsRequest error: %v", err)
+		return response, err
+	}
 
 	var (
 		mak = &common.MAK{
@@ -168,7 +175,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageGenerationReq
 		return response, err
 	}
 
-	response, err = adapter.ImageGenerations(ctx, request)
+	response, err = adapter.ImageGenerations(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -202,7 +209,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageGenerationReq
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Generations(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
+							return s.Generations(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel)
 						}
 					}
 
@@ -213,7 +220,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageGenerationReq
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Generations(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
+							return s.Generations(g.RequestFromCtx(ctx).GetCtx(), data, nil, fallbackModel)
 						}
 					}
 				}
@@ -227,7 +234,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageGenerationReq
 				ErrMsg:     err.Error(),
 			}
 
-			return s.Generations(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+			return s.Generations(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
 		return response, err
@@ -237,7 +244,7 @@ func (s *sImage) Generations(ctx context.Context, params sdkm.ImageGenerationReq
 }
 
 // Edits
-func (s *sImage) Edits(ctx context.Context, params model.ImageEditRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.ImageResponse, err error) {
+func (s *sImage) Edits(ctx context.Context, params sdkm.ImageEditRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.ImageResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -357,35 +364,16 @@ func (s *sImage) Edits(ctx context.Context, params model.ImageEditRequest, fallb
 		params.Size = fmt.Sprintf("%dx%d", generationQuota.Width, generationQuota.Height)
 	}
 
-	request := sdkm.ImageEditRequest{
-		Prompt:         params.Prompt,
-		Background:     params.Background,
-		Model:          params.Model,
-		N:              params.N,
-		Quality:        params.Quality,
-		ResponseFormat: params.ResponseFormat,
-		Size:           params.Size,
-		User:           params.User,
-	}
-
-	for _, image := range params.Image {
-		request.Image = append(request.Image, image.FileHeader)
-	}
-
-	if params.Mask != nil {
-		request.Mask = params.Mask.FileHeader
-	}
-
 	if !gstr.Contains(mak.RealModel.Model, "*") {
-		request.Model = mak.RealModel.Model
+		params.Model = mak.RealModel.Model
 	}
 
 	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
 		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
-			if replaceModel == request.Model {
-				logger.Infof(ctx, "sImage Edits request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
-				request.Model = mak.ModelAgent.TargetModels[i]
-				mak.RealModel.Model = request.Model
+			if replaceModel == params.Model {
+				logger.Infof(ctx, "sImage Edits request.Model: %s replaced %s", params.Model, mak.ModelAgent.TargetModels[i])
+				params.Model = mak.ModelAgent.TargetModels[i]
+				mak.RealModel.Model = params.Model
 				break
 			}
 		}
@@ -396,7 +384,7 @@ func (s *sImage) Edits(ctx context.Context, params model.ImageEditRequest, fallb
 		return response, err
 	}
 
-	response, err = adapter.ImageEdits(ctx, request)
+	response, err = adapter.ImageEdits(ctx, params)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -581,7 +569,7 @@ func (s *sImage) SaveLog(ctx context.Context, imageLog model.ImageLog, retry ...
 	if imageLog.ImageRes.Error != nil {
 
 		image.ErrMsg = imageLog.ImageRes.Error.Error()
-		openaiApiError := &openai.APIError{}
+		openaiApiError := &sdkerr.ApiError{}
 		if errors.As(imageLog.ImageRes.Error, &openaiApiError) {
 			image.ErrMsg = openaiApiError.Message
 		}

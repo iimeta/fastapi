@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi-sdk/sdkerr"
 	"github.com/iimeta/fastapi/internal/config"
-	"github.com/iimeta/go-openai"
 )
 
 type IFastApiError interface {
@@ -144,12 +144,12 @@ func Error(ctx context.Context, err error) (iFastApiError IFastApiError) {
 
 				e := ERR_UNKNOWN.(IFastApiError)
 
-				openaiApiError := &openai.APIError{}
+				openaiApiError := &sdkerr.ApiError{}
 				if As(err, &openaiApiError) {
 					if _, ok := openaiApiError.Code.(string); ok {
 						openaiApiError.Code = e.ErrCode()
 					}
-					return NewErrorf(openaiApiError.HTTPStatusCode, openaiApiError.Code, gstr.Split(gstr.Split(openaiApiError.Message, " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", e.ErrType(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
+					return NewErrorf(openaiApiError.HttpStatusCode, openaiApiError.Code, gstr.Split(gstr.Split(openaiApiError.Message, " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", e.ErrType(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
 				}
 
 				return NewErrorf(e.Status(), e.ErrCode(), gstr.Split(gstr.Split(err.Error(), " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", e.ErrType(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)

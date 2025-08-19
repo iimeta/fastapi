@@ -24,7 +24,6 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
-	"github.com/iimeta/go-openai"
 	"github.com/iimeta/tiktoken-go"
 )
 
@@ -995,8 +994,8 @@ func convToChatCompletionResponse(ctx context.Context, res sdkm.AnthropicChatCom
 			chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, sdkm.ChatCompletionChoice{
 				Delta: &sdkm.ChatCompletionStreamChoiceDelta{
 					Role: consts.ROLE_ASSISTANT,
-					ToolCalls: []openai.ToolCall{{
-						Function: openai.FunctionCall{
+					ToolCalls: []sdkm.ToolCall{{
+						Function: sdkm.FunctionCall{
 							Arguments: anthropicChatCompletionRes.Delta.PartialJson,
 						},
 					}},
@@ -1016,8 +1015,8 @@ func convToChatCompletionResponse(ctx context.Context, res sdkm.AnthropicChatCom
 				chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, sdkm.ChatCompletionChoice{
 					Delta: &sdkm.ChatCompletionStreamChoiceDelta{
 						Role: consts.ROLE_ASSISTANT,
-						ToolCalls: []openai.ToolCall{{
-							Function: openai.FunctionCall{
+						ToolCalls: []sdkm.ToolCall{{
+							Function: sdkm.FunctionCall{
 								Arguments: content.PartialJson,
 							},
 						}},

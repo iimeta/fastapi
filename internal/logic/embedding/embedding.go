@@ -13,7 +13,9 @@ import (
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
+	"github.com/iimeta/fastapi-sdk/sdkerr"
 	"github.com/iimeta/fastapi/internal/config"
+	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
@@ -23,7 +25,6 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
-	"github.com/iimeta/go-openai"
 )
 
 type sEmbedding struct{}
@@ -37,12 +38,18 @@ func New() service.IEmbedding {
 }
 
 // Embeddings
-func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.EmbeddingResponse, err error) {
+func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.EmbeddingResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "sEmbedding Embeddings time: %d", gtime.TimestampMilli()-now)
 	}()
+
+	params, err := sdk.NewConverter(ctx, consts.CORP_OPENAI).ConvTextEmbeddingsRequest(ctx, data)
+	if err != nil {
+		logger.Errorf(ctx, "sEmbedding Embeddings ConvTextEmbeddingsRequest error: %v", err)
+		return response, err
+	}
 
 	if params.Input == nil || len(gconv.SliceAny(params.Input)) == 0 {
 		return response, errors.ERR_INVALID_PARAMETER
@@ -76,7 +83,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 
 			// 替换成调用的模型
 			if mak.ReqModel.IsEnableForward {
-				response.Model = openai.EmbeddingModel(mak.ReqModel.Model)
+				response.Model = mak.ReqModel.Model
 			}
 
 			// 分组折扣
@@ -141,9 +148,9 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 
 	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
 		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
-			if openai.EmbeddingModel(replaceModel) == request.Model {
+			if replaceModel == request.Model {
 				logger.Infof(ctx, "sEmbedding Embeddings request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
-				request.Model = openai.EmbeddingModel(mak.ModelAgent.TargetModels[i])
+				request.Model = mak.ModelAgent.TargetModels[i]
 				break
 			}
 		}
@@ -154,7 +161,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 		return response, err
 	}
 
-	response, err = adapter.TextEmbeddings(ctx, request)
+	response, err = adapter.TextEmbeddings(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -188,7 +195,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Embeddings(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
+							return s.Embeddings(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel)
 						}
 					}
 
@@ -199,7 +206,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Embeddings(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
+							return s.Embeddings(g.RequestFromCtx(ctx).GetCtx(), data, nil, fallbackModel)
 						}
 					}
 				}
@@ -213,7 +220,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, params sdkm.EmbeddingReques
 				ErrMsg:     err.Error(),
 			}
 
-			return s.Embeddings(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+			return s.Embeddings(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
 		return response, err
@@ -334,7 +341,7 @@ func (s *sEmbedding) SaveLog(ctx context.Context, chatLog model.ChatLog, retry .
 	if chatLog.CompletionsRes.Error != nil {
 
 		chat.ErrMsg = chatLog.CompletionsRes.Error.Error()
-		openaiApiError := &openai.APIError{}
+		openaiApiError := &sdkerr.ApiError{}
 		if errors.As(chatLog.CompletionsRes.Error, &openaiApiError) {
 			chat.ErrMsg = openaiApiError.Message
 		}

@@ -13,7 +13,9 @@ import (
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
+	"github.com/iimeta/fastapi-sdk/sdkerr"
 	"github.com/iimeta/fastapi/api/audio/v1"
+	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
@@ -23,7 +25,6 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
-	"github.com/iimeta/go-openai"
 )
 
 type sAudio struct{}
@@ -37,12 +38,18 @@ func New() service.IAudio {
 }
 
 // Speech
-func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.SpeechResponse, err error) {
+func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.SpeechResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "sAudio Speech time: %d", gtime.TimestampMilli()-now)
 	}()
+
+	params, err := sdk.NewConverter(ctx, consts.CORP_OPENAI).ConvAudioSpeechRequest(ctx, data)
+	if err != nil {
+		logger.Errorf(ctx, "sAudio Speech ConvAudioSpeechRequest error: %v", err)
+		return response, err
+	}
 
 	var (
 		mak = &common.MAK{
@@ -130,9 +137,9 @@ func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallback
 
 	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
 		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
-			if openai.SpeechModel(replaceModel) == request.Model {
+			if replaceModel == request.Model {
 				logger.Infof(ctx, "sAudio Speech request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
-				request.Model = openai.SpeechModel(mak.ModelAgent.TargetModels[i])
+				request.Model = mak.ModelAgent.TargetModels[i]
 				break
 			}
 		}
@@ -143,7 +150,7 @@ func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallback
 		return response, err
 	}
 
-	response, err = adapter.AudioSpeech(ctx, request)
+	response, err = adapter.AudioSpeech(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -177,7 +184,7 @@ func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallback
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Speech(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
+							return s.Speech(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel)
 						}
 					}
 
@@ -188,7 +195,7 @@ func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallback
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Speech(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
+							return s.Speech(g.RequestFromCtx(ctx).GetCtx(), data, nil, fallbackModel)
 						}
 					}
 				}
@@ -202,7 +209,7 @@ func (s *sAudio) Speech(ctx context.Context, params sdkm.SpeechRequest, fallback
 				ErrMsg:     err.Error(),
 			}
 
-			return s.Speech(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+			return s.Speech(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
 		return response, err
@@ -270,7 +277,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				audioReq := &model.AudioReq{
-					FilePath: params.FilePath,
+					//FilePath: params.FilePath,
 				}
 
 				audioRes := &model.AudioRes{
@@ -499,7 +506,7 @@ func (s *sAudio) SaveLog(ctx context.Context, audioLog model.AudioLog, retry ...
 	if audioLog.AudioRes.Error != nil {
 
 		audio.ErrMsg = audioLog.AudioRes.Error.Error()
-		openaiApiError := &openai.APIError{}
+		openaiApiError := &sdkerr.ApiError{}
 		if errors.As(audioLog.AudioRes.Error, &openaiApiError) {
 			audio.ErrMsg = openaiApiError.Message
 		}
