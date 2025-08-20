@@ -100,7 +100,7 @@ type FallbackConfig struct {
 type Message struct {
 	Role         string             `bson:"role,omitempty"          json:"role,omitempty"`    // 角色
 	Content      string             `bson:"content,omitempty"       json:"content,omitempty"` // 内容
-	Refusal      string             `bson:"refusal,omitempty"       json:"refusal,omitempty"`
+	Refusal      *string            `bson:"refusal,omitempty"       json:"refusal,omitempty"`
 	Name         string             `bson:"name,omitempty"          json:"name,omitempty"`
 	FunctionCall *sdkm.FunctionCall `bson:"function_call,omitempty" json:"function_call,omitempty"`
 	ToolCalls    any                `bson:"tool_calls,omitempty"    json:"tool_calls,omitempty"`
