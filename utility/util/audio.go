@@ -2,31 +2,27 @@ package util
 
 import (
 	"encoding/binary"
+	"mime/multipart"
+	"time"
+
 	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/tcolgate/mp3"
-	"os"
-	"time"
 )
 
-func GetAudioDuration(filePath string) (time.Duration, error) {
+func GetAudioDuration(file multipart.File, fileName string) (time.Duration, error) {
 
-	switch gstr.ToLower(gfile.Ext(filePath)) {
+	switch gstr.ToLower(gfile.Ext(fileName)) {
 	case ".wav":
-		return getWavDuration(filePath)
+		return getWavDuration(file)
 	case ".mp3":
-		return getMp3Duration(filePath)
+		return getMp3Duration(file)
 	}
 
 	return time.Duration(0), nil
 }
 
-func getWavDuration(filePath string) (time.Duration, error) {
-
-	file, err := os.Open(filePath)
-	if err != nil {
-		return 0, err
-	}
+func getWavDuration(file multipart.File) (time.Duration, error) {
 
 	defer func() {
 		_ = file.Close()
@@ -66,13 +62,7 @@ func getWavDuration(filePath string) (time.Duration, error) {
 	return duration, nil
 }
 
-func getMp3Duration(filePath string) (time.Duration, error) {
-
-	// 打开 MP3 文件
-	file, err := os.Open(filePath)
-	if err != nil {
-		return 0, err
-	}
+func getMp3Duration(file multipart.File) (time.Duration, error) {
 
 	defer func() {
 		_ = file.Close()
