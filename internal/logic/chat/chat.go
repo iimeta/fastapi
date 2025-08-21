@@ -1340,7 +1340,7 @@ func (s *sChat) SaveLog(ctx context.Context, chatLog model.ChatLog, retry ...int
 				Name:         message.Name,
 				FunctionCall: message.FunctionCall,
 				ToolCalls:    message.ToolCalls,
-				ToolCallId:   message.ToolCallID,
+				ToolCallId:   message.ToolCallId,
 				Audio:        message.Audio,
 			})
 		}

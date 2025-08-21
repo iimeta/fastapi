@@ -2,69 +2,101 @@ package common
 
 import (
 	"context"
+	"time"
 
 	"github.com/iimeta/fastapi-sdk"
 	"github.com/iimeta/fastapi-sdk/anthropic"
 	"github.com/iimeta/fastapi-sdk/google"
 	"github.com/iimeta/fastapi-sdk/openai"
+	"github.com/iimeta/fastapi-sdk/options"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 )
 
-func NewAdapter(ctx context.Context, corp string, model *model.Model, key, baseURL, path string) (sdk.Adapter, error) {
+func NewAdapter(ctx context.Context, corp string, model *model.Model, key, baseUrl, path string) (sdk.Adapter, error) {
 
-	if model.IsEnablePresetConfig {
-		return sdk.NewAdapter(ctx, GetCorpCode(ctx, corp), model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, &model.PresetConfig.IsSupportStream, config.Cfg.Http.ProxyUrl), nil
+	options := &options.AdapterOptions{
+		Corp:     GetCorpCode(ctx, corp),
+		Model:    model.Model,
+		Key:      key,
+		BaseUrl:  baseUrl,
+		Path:     path,
+		Timeout:  config.Cfg.Http.Timeout * time.Second,
+		ProxyUrl: config.Cfg.Http.ProxyUrl,
 	}
 
-	return sdk.NewAdapter(ctx, GetCorpCode(ctx, corp), model.Model, key, baseURL, path, nil, nil, config.Cfg.Http.ProxyUrl), nil
-}
-
-func NewGoogleAdapter(ctx context.Context, model *model.Model, key, baseURL, path string) (*google.Google, error) {
-
 	if model.IsEnablePresetConfig {
-		return google.NewAdapter(ctx, model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, &model.PresetConfig.IsSupportStream, config.Cfg.Http.ProxyUrl), nil
+		options.IsSupportSystemRole = &model.PresetConfig.IsSupportSystemRole
+		options.IsSupportStream = &model.PresetConfig.IsSupportStream
 	}
 
-	return google.NewAdapter(ctx, model.Model, key, baseURL, path, nil, nil, config.Cfg.Http.ProxyUrl), nil
+	return sdk.NewAdapter(ctx, options), nil
 }
 
-func NewAnthropicAdapter(ctx context.Context, model *model.Model, key, baseURL, path string) (*anthropic.Anthropic, error) {
+func NewGoogleAdapter(ctx context.Context, model *model.Model, key, baseUrl, path string) (*google.Google, error) {
 
-	if model.IsEnablePresetConfig {
-		return anthropic.NewAdapter(ctx, model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, &model.PresetConfig.IsSupportStream, config.Cfg.Http.ProxyUrl), nil
+	options := &options.AdapterOptions{
+		Model:    model.Model,
+		Key:      key,
+		BaseUrl:  baseUrl,
+		Path:     path,
+		Timeout:  config.Cfg.Http.Timeout * time.Second,
+		ProxyUrl: config.Cfg.Http.ProxyUrl,
 	}
 
-	isSupportSystemRole := true
-	isSupportStream := true
+	if model.IsEnablePresetConfig {
+		options.IsSupportSystemRole = &model.PresetConfig.IsSupportSystemRole
+		options.IsSupportStream = &model.PresetConfig.IsSupportStream
+	}
 
-	return anthropic.NewAdapter(ctx, model.Model, key, baseURL, path, &isSupportSystemRole, &isSupportStream, config.Cfg.Http.ProxyUrl), nil
+	return google.NewAdapter(ctx, options), nil
 }
 
-func NewRealtimeAdapter(ctx context.Context, model *model.Model, key, baseURL, path string) (*sdk.RealtimeClient, error) {
-	return sdk.NewRealtimeClient(ctx, model.Model, key, baseURL, path, config.Cfg.Http.ProxyUrl), nil
+func NewAnthropicAdapter(ctx context.Context, model *model.Model, key, baseUrl, path string) (*anthropic.Anthropic, error) {
+
+	options := &options.AdapterOptions{
+		Model:    model.Model,
+		Key:      key,
+		BaseUrl:  baseUrl,
+		Path:     path,
+		Timeout:  config.Cfg.Http.Timeout * time.Second,
+		ProxyUrl: config.Cfg.Http.ProxyUrl,
+	}
+
+	if model.IsEnablePresetConfig {
+		options.IsSupportSystemRole = &model.PresetConfig.IsSupportSystemRole
+		options.IsSupportStream = &model.PresetConfig.IsSupportStream
+	}
+
+	return anthropic.NewAdapter(ctx, options), nil
 }
 
-func NewOpenAIAdapter(ctx context.Context, model *model.Model, key, baseURL, path string) (*openai.OpenAI, error) {
+func NewRealtimeAdapter(ctx context.Context, model *model.Model, key, baseUrl, path string) (*sdk.RealtimeClient, error) {
+	return sdk.NewRealtimeClient(ctx, model.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl), nil
+}
+
+func NewOpenAIAdapter(ctx context.Context, model *model.Model, key, baseUrl, path string) (*openai.OpenAI, error) {
 
 	if path == "" {
 		path = "/responses"
 	}
 
-	if model.IsEnablePresetConfig {
-		return openai.NewAdapter(ctx, model.Model, key, baseURL, path, &model.PresetConfig.IsSupportSystemRole, &model.PresetConfig.IsSupportStream, config.Cfg.Http.ProxyUrl), nil
+	options := &options.AdapterOptions{
+		Model:    model.Model,
+		Key:      key,
+		BaseUrl:  baseUrl,
+		Path:     path,
+		Timeout:  config.Cfg.Http.Timeout * time.Second,
+		ProxyUrl: config.Cfg.Http.ProxyUrl,
 	}
 
-	isSupportSystemRole := true
-	isSupportStream := true
-
-	return openai.NewAdapter(ctx, model.Model, key, baseURL, path, &isSupportSystemRole, &isSupportStream, config.Cfg.Http.ProxyUrl), nil
+	return openai.NewAdapter(ctx, options), nil
 }
 
-func NewModerationClient(ctx context.Context, corp string, model *model.Model, key, baseURL, path string) (*sdk.ModerationClient, error) {
-	return sdk.NewModerationClient(ctx, model.Model, key, baseURL, path, config.Cfg.Http.ProxyUrl), nil
+func NewModerationClient(ctx context.Context, model *model.Model, key, baseUrl, path string) (*sdk.ModerationClient, error) {
+	return sdk.NewModerationClient(ctx, model.Model, key, baseUrl, path, config.Cfg.Http.Timeout, config.Cfg.Http.ProxyUrl), nil
 }
 
 func GetCorpCode(ctx context.Context, corpId string) string {

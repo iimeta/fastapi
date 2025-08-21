@@ -9,7 +9,7 @@ type Core struct {
 }
 
 type Http struct {
-	Timeout  time.Duration `bson:"timeout"   json:"timeout"`   // 超时时间
+	Timeout  time.Duration `bson:"timeout"   json:"timeout"`   // 超时时间, 单位: 秒
 	ProxyUrl string        `bson:"proxy_url" json:"proxy_url"` // 代理地址
 }
 

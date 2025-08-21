@@ -3,6 +3,9 @@ package util
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
@@ -10,8 +13,6 @@ import (
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/utility/logger"
-	"net/http"
-	"time"
 )
 
 func HttpPost(ctx context.Context, url string, header map[string]string, data, result interface{}, proxyURL string) error {

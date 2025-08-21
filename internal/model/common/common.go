@@ -115,8 +115,8 @@ type Retry struct {
 }
 
 type ImageData struct {
-	URL           string `bson:"url,omitempty"`
-	B64JSON       string `bson:"b64_json,omitempty"`
+	Url           string `bson:"url,omitempty"`
+	B64Json       string `bson:"b64_json,omitempty"`
 	RevisedPrompt string `bson:"revised_prompt,omitempty"`
 }
 

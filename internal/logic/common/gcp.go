@@ -1,10 +1,12 @@
 package common
 
 import (
-	credentials "cloud.google.com/go/iam/credentials/apiv1"
-	"cloud.google.com/go/iam/credentials/apiv1/credentialspb"
 	"context"
 	"fmt"
+	"time"
+
+	credentials "cloud.google.com/go/iam/credentials/apiv1"
+	"cloud.google.com/go/iam/credentials/apiv1/credentialspb"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
@@ -19,7 +21,6 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
 	"google.golang.org/api/option"
-	"time"
 )
 
 var gcpCache = cache.New() // [key]Token
@@ -38,7 +39,7 @@ type ApplicationDefaultCredentials struct {
 	UniverseDomain          string `json:"universe_domain"`
 }
 
-func getGcpToken(ctx context.Context, key *model.Key, proxyURL string) (string, string, error) {
+func getGcpToken(ctx context.Context, key *model.Key, proxyUrl string) (string, string, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {

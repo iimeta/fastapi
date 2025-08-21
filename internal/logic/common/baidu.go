@@ -3,6 +3,9 @@ package common
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"time"
+
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
@@ -12,13 +15,11 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
 	"github.com/iimeta/fastapi/utility/util"
-	"net/url"
-	"time"
 )
 
 var baiduCache = cache.New() // [key]AccessToken
 
-func getBaiduToken(ctx context.Context, key, baseURL, proxyURL string) string {
+func getBaiduToken(ctx context.Context, key, baseUrl, proxyUrl string) string {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -51,16 +52,16 @@ func getBaiduToken(ctx context.Context, key, baseURL, proxyURL string) string {
 		"grant_type":    "client_credentials",
 	}
 
-	parse, err := url.Parse(baseURL)
+	parse, err := url.Parse(baseUrl)
 	if err != nil {
-		logger.Errorf(ctx, "getBaiduToken url.Parse baseURL: %s, error: %s", baseURL, err)
+		logger.Errorf(ctx, "getBaiduToken url.Parse baseUrl: %s, error: %s", baseUrl, err)
 		return ""
 	}
 
 	url := fmt.Sprintf("%s://%s/oauth/2.0/token", parse.Scheme, parse.Host)
 
 	getBaiduTokenRes := new(model.GetBaiduTokenRes)
-	if err = util.HttpPost(ctx, url, nil, data, &getBaiduTokenRes, proxyURL); err != nil {
+	if err = util.HttpPost(ctx, url, nil, data, &getBaiduTokenRes, proxyUrl); err != nil {
 		logger.Errorf(ctx, "getBaiduToken key: %s, error: %v", key, err)
 		return ""
 	}

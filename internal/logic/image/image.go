@@ -506,8 +506,8 @@ func (s *sImage) SaveLog(ctx context.Context, imageLog model.ImageLog, retry ...
 
 	for _, data := range imageLog.ImageRes.Data {
 		image.ImageData = append(image.ImageData, mcommon.ImageData{
-			URL: data.URL,
-			//B64JSON:       data.B64JSON, // 太大了, 不存
+			Url: data.Url,
+			//B64Json:       data.B64Json, // todo 太大了, 不存
 			RevisedPrompt: data.RevisedPrompt,
 		})
 	}

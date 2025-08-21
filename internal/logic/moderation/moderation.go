@@ -144,7 +144,7 @@ func (s *sModeration) Moderations(ctx context.Context, params sdkm.ModerationReq
 		}
 	}
 
-	client, err := common.NewModerationClient(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path)
+	client, err := common.NewModerationClient(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path)
 	if err != nil {
 		logger.Error(ctx, err)
 		return response, err
