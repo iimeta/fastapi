@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net"
+	"strings"
+
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
@@ -17,8 +20,6 @@ import (
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
-	"net"
-	"strings"
 )
 
 type sCommon struct{}
@@ -80,6 +81,7 @@ func (s *sCommon) RecordError(ctx context.Context, model *model.Model, key *mode
 
 func IsAborted(err error) bool {
 	return errors.Is(err, context.Canceled) ||
+		gstr.Contains(err.Error(), "context deadline exceeded") ||
 		gstr.Contains(err.Error(), "broken pipe") ||
 		gstr.Contains(err.Error(), "aborted")
 }

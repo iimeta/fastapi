@@ -30,7 +30,7 @@ func (c *ControllerV1) Transcriptions(ctx context.Context, req *v1.Transcription
 
 	req.File = fileHeader
 
-	if req.Format != "verbose_json" {
+	if req.ResponseFormat != "verbose_json" {
 
 		duration, err := util.GetAudioDuration(file, fileHeader.Filename)
 		if err != nil {
@@ -52,7 +52,7 @@ func (c *ControllerV1) Transcriptions(ctx context.Context, req *v1.Transcription
 		return nil, err
 	}
 
-	if req.Format == "" || req.Format == "json" || req.Format == "verbose_json" {
+	if req.ResponseFormat == "" || req.ResponseFormat == "json" || req.ResponseFormat == "verbose_json" {
 		g.RequestFromCtx(ctx).Response.WriteJson(response)
 	} else {
 		g.RequestFromCtx(ctx).Response.Write(response.Text)
