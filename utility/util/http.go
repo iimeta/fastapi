@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/gogf/gf/v2/encoding/gjson"
-	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/iimeta/fastapi/internal/config"
@@ -63,7 +62,7 @@ func SSEServer(ctx context.Context, data string) error {
 	flusher, ok := rw.(http.Flusher)
 	if !ok {
 		http.Error(rw, "Streaming unsupported", http.StatusInternalServerError)
-		return gerror.New("Streaming unsupported")
+		return errors.New("Streaming unsupported")
 	}
 
 	r.Response.Header().Set("Trace-Id", gctx.CtxId(ctx))

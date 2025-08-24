@@ -5,11 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
-	"github.com/iimeta/fastapi-sdk/sdkerr"
+	sdkerr "github.com/iimeta/fastapi-sdk/errors"
 	"github.com/iimeta/fastapi/internal/config"
 )
 
@@ -65,22 +64,6 @@ var (
 	ERR_KEY_QUOTA_EXPIRED             = NewError(429, "key_quota_expired", "You key quota has expired.", "fastapi_request_error")
 	ERR_GROUP_INSUFFICIENT_QUOTA      = NewError(429, "group_insufficient_quota", "Group exceeded current quota.", "fastapi_request_error")
 )
-
-func New(text string) error {
-	return errors.New(text)
-}
-
-func Newf(format string, args ...interface{}) error {
-	return gerror.Newf(format, args...)
-}
-
-func Is(err, target error) bool {
-	return errors.Is(err, target)
-}
-
-func As(err error, target any) bool {
-	return errors.As(err, target)
-}
 
 func NewError(status int, code any, message, typ string) error {
 	return &FastApiError{
@@ -185,4 +168,20 @@ func (e *FastApiError) ErrMessage() string {
 
 func (e *FastApiError) ErrType() string {
 	return e.Err.Type
+}
+
+func New(text string) error {
+	return errors.New(text)
+}
+
+func Newf(format string, args ...interface{}) error {
+	return errors.New(fmt.Sprintf(format, args...))
+}
+
+func Is(err, target error) bool {
+	return errors.Is(err, target)
+}
+
+func As(err error, target any) bool {
+	return errors.As(err, target)
 }
