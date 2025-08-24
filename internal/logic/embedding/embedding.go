@@ -61,7 +61,6 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		adapter     sdk.Adapter
 		retryInfo   *mcommon.Retry
 		totalTokens int
 	)
@@ -156,12 +155,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 		}
 	}
 
-	if adapter, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
-		logger.Error(ctx, err)
-		return response, err
-	}
-
-	response, err = adapter.TextEmbeddings(ctx, data)
+	response, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).TextEmbeddings(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 

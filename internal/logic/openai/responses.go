@@ -16,7 +16,6 @@ import (
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi-sdk/openai"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
@@ -53,7 +52,6 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		adapter     *openai.OpenAI
 		retryInfo   *mcommon.Retry
 		textTokens  int
 		imageTokens int
@@ -333,18 +331,13 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 		return response, err
 	}
 
-	if adapter, err = common.NewOpenAIAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
-		logger.Error(ctx, err)
-		return response, err
-	}
-
 	data := request.GetBody()
 
 	if isChatCompletions {
 		data = gjson.MustEncode(common.ConvChatCompletionsToResponsesRequest(request))
 	}
 
-	response, err = adapter.Responses(ctx, data)
+	response, err = common.NewOpenAIAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).Responses(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -428,7 +421,6 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		adapter     *openai.OpenAI
 		completion  string
 		connTime    int64
 		duration    int64
@@ -733,18 +725,13 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 	//	}
 	//}
 
-	if adapter, err = common.NewOpenAIAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
-		logger.Error(ctx, err)
-		return err
-	}
-
 	data := request.GetBody()
 
 	if isChatCompletions {
 		data = gjson.MustEncode(common.ConvChatCompletionsToResponsesRequest(request))
 	}
 
-	response, err := adapter.ResponsesStream(ctx, data)
+	response, err := common.NewOpenAIAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).ResponsesStream(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 

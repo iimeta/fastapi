@@ -57,7 +57,6 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		adapter         sdk.Adapter
 		generationQuota mcommon.GenerationQuota
 		retryInfo       *mcommon.Retry
 	)
@@ -170,12 +169,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 		}
 	}
 
-	if adapter, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
-		logger.Error(ctx, err)
-		return response, err
-	}
-
-	response, err = adapter.ImageGenerations(ctx, data)
+	response, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).ImageGenerations(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -257,7 +251,6 @@ func (s *sImage) Edits(ctx context.Context, params sdkm.ImageEditRequest, fallba
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		adapter         sdk.Adapter
 		generationQuota mcommon.GenerationQuota
 		retryInfo       *mcommon.Retry
 	)
@@ -379,12 +372,7 @@ func (s *sImage) Edits(ctx context.Context, params sdkm.ImageEditRequest, fallba
 		}
 	}
 
-	if adapter, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
-		logger.Error(ctx, err)
-		return response, err
-	}
-
-	response, err = adapter.ImageEdits(ctx, params)
+	response, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).ImageEdits(ctx, params)
 	if err != nil {
 		logger.Error(ctx, err)
 

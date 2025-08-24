@@ -51,7 +51,7 @@ func (s *sChat) Completions(ctx context.Context, data []byte, fallbackModelAgent
 		logger.Debugf(ctx, "sChat Completions time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	params, err := sdk.NewConverter(ctx, consts.CORP_OPENAI).ConvChatCompletionsRequest(ctx, data)
+	params, err := common.NewConverter(ctx, consts.CORP_OPENAI).ConvChatCompletionsRequest(ctx, data)
 	if err != nil {
 		logger.Errorf(ctx, "sChat Completions ConvChatCompletionsRequest error: %v", err)
 		return response, err
@@ -71,7 +71,6 @@ func (s *sChat) Completions(ctx context.Context, data []byte, fallbackModelAgent
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		adapter     sdk.Adapter
 		retryInfo   *mcommon.Retry
 		textTokens  int
 		imageTokens int
@@ -392,12 +391,7 @@ func (s *sChat) Completions(ctx context.Context, data []byte, fallbackModelAgent
 		}
 	}
 
-	if adapter, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
-		logger.Error(ctx, err)
-		return response, err
-	}
-
-	response, err = adapter.ChatCompletions(ctx, data)
+	response, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).ChatCompletions(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -493,7 +487,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, data []byte, fallbackMode
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		adapter     sdk.Adapter
 		completion  string
 		connTime    int64
 		duration    int64
@@ -799,12 +792,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, data []byte, fallbackMode
 		}
 	}
 
-	if adapter, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
-		logger.Error(ctx, err)
-		return err
-	}
-
-	response, err := adapter.ChatCompletionsStream(ctx, data)
+	response, err := common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).ChatCompletionsStream(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 

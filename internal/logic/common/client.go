@@ -15,7 +15,7 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 )
 
-func NewAdapter(ctx context.Context, corp string, model *model.Model, key, baseUrl, path string) (sdk.Adapter, error) {
+func NewAdapter(ctx context.Context, corp string, model *model.Model, key, baseUrl, path string) sdk.Adapter {
 
 	options := &options.AdapterOptions{
 		Corp:     GetCorpCode(ctx, corp),
@@ -32,10 +32,10 @@ func NewAdapter(ctx context.Context, corp string, model *model.Model, key, baseU
 		options.IsSupportStream = &model.PresetConfig.IsSupportStream
 	}
 
-	return sdk.NewAdapter(ctx, options), nil
+	return sdk.NewAdapter(ctx, corp, options)
 }
 
-func NewGoogleAdapter(ctx context.Context, model *model.Model, key, baseUrl, path string) (*google.Google, error) {
+func NewGoogleAdapter(ctx context.Context, model *model.Model, key, baseUrl, path string) *google.Google {
 
 	options := &options.AdapterOptions{
 		Model:    model.Model,
@@ -51,10 +51,10 @@ func NewGoogleAdapter(ctx context.Context, model *model.Model, key, baseUrl, pat
 		options.IsSupportStream = &model.PresetConfig.IsSupportStream
 	}
 
-	return google.NewAdapter(ctx, options), nil
+	return google.NewAdapter(ctx, options)
 }
 
-func NewAnthropicAdapter(ctx context.Context, model *model.Model, key, baseUrl, path string) (*anthropic.Anthropic, error) {
+func NewAnthropicAdapter(ctx context.Context, model *model.Model, key, baseUrl, path string) *anthropic.Anthropic {
 
 	options := &options.AdapterOptions{
 		Model:    model.Model,
@@ -70,14 +70,14 @@ func NewAnthropicAdapter(ctx context.Context, model *model.Model, key, baseUrl, 
 		options.IsSupportStream = &model.PresetConfig.IsSupportStream
 	}
 
-	return anthropic.NewAdapter(ctx, options), nil
+	return anthropic.NewAdapter(ctx, options)
 }
 
-func NewRealtimeAdapter(ctx context.Context, model *model.Model, key, baseUrl, path string) (*sdk.RealtimeClient, error) {
-	return sdk.NewRealtimeClient(ctx, model.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl), nil
+func NewRealtimeAdapter(ctx context.Context, model *model.Model, key, baseUrl, path string) *sdk.RealtimeClient {
+	return sdk.NewRealtimeClient(ctx, model.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
 }
 
-func NewOpenAIAdapter(ctx context.Context, model *model.Model, key, baseUrl, path string) (*openai.OpenAI, error) {
+func NewOpenAIAdapter(ctx context.Context, model *model.Model, key, baseUrl, path string) *openai.OpenAI {
 
 	if path == "" {
 		path = "/responses"
@@ -92,11 +92,15 @@ func NewOpenAIAdapter(ctx context.Context, model *model.Model, key, baseUrl, pat
 		ProxyUrl: config.Cfg.Http.ProxyUrl,
 	}
 
-	return openai.NewAdapter(ctx, options), nil
+	return openai.NewAdapter(ctx, options)
 }
 
-func NewModerationClient(ctx context.Context, model *model.Model, key, baseUrl, path string) (*sdk.ModerationClient, error) {
-	return sdk.NewModerationClient(ctx, model.Model, key, baseUrl, path, config.Cfg.Http.Timeout, config.Cfg.Http.ProxyUrl), nil
+func NewModerationClient(ctx context.Context, model *model.Model, key, baseUrl, path string) *sdk.ModerationClient {
+	return sdk.NewModerationClient(ctx, model.Model, key, baseUrl, path, config.Cfg.Http.Timeout, config.Cfg.Http.ProxyUrl)
+}
+
+func NewConverter(ctx context.Context, corp string) sdk.Converter {
+	return sdk.NewConverter(ctx, corp)
 }
 
 func GetCorpCode(ctx context.Context, corpId string) string {

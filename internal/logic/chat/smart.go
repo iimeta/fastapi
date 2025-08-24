@@ -10,7 +10,6 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
-	"github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/logic/common"
@@ -37,7 +36,6 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		adapter     sdk.Adapter
 		retryInfo   *mcommon.Retry
 		textTokens  int
 		imageTokens int
@@ -191,12 +189,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		}
 	}
 
-	if adapter, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
-		logger.Error(ctx, err)
-		return response, err
-	}
-
-	response, err = adapter.ChatCompletions(ctx, gjson.MustEncode(params))
+	response, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).ChatCompletions(ctx, gjson.MustEncode(params))
 	if err != nil {
 		logger.Error(ctx, err)
 

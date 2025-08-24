@@ -57,7 +57,6 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		adapter     sdk.Adapter
 		retryInfo   *mcommon.Retry
 		totalTokens int
 	)
@@ -145,12 +144,7 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 		}
 	}
 
-	if adapter, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
-		logger.Error(ctx, err)
-		return response, err
-	}
-
-	response, err = adapter.AudioSpeech(ctx, data)
+	response, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).AudioSpeech(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -232,7 +226,6 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		adapter     sdk.Adapter
 		retryInfo   *mcommon.Retry
 		minute      float64
 		totalTokens int
@@ -330,12 +323,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 		}
 	}
 
-	if adapter, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
-		logger.Error(ctx, err)
-		return response, err
-	}
-
-	response, err = adapter.AudioTranscriptions(ctx, request.AudioRequest)
+	response, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).AudioTranscriptions(ctx, request.AudioRequest)
 	if err != nil {
 		logger.Error(ctx, err)
 

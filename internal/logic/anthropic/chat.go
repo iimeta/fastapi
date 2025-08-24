@@ -14,7 +14,6 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
-	"github.com/iimeta/fastapi-sdk/anthropic"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/errors"
@@ -53,7 +52,6 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		adapter     *anthropic.Anthropic
 		res         sdkm.AnthropicChatCompletionRes
 		retryInfo   *mcommon.Retry
 		textTokens  int
@@ -325,12 +323,7 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 	//	}
 	//}
 
-	if adapter, err = common.NewAnthropicAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
-		logger.Error(ctx, err)
-		return response, err
-	}
-
-	res, err = adapter.ChatCompletionOfficial(ctx, request.GetBody())
+	res, err = common.NewAnthropicAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).ChatCompletionOfficial(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -416,7 +409,6 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		adapter     *anthropic.Anthropic
 		completion  string
 		connTime    int64
 		duration    int64
@@ -675,12 +667,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 	//	}
 	//}
 
-	if adapter, err = common.NewAnthropicAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
-		logger.Error(ctx, err)
-		return err
-	}
-
-	response, err := adapter.ChatCompletionStreamOfficial(ctx, request.GetBody())
+	response, err := common.NewAnthropicAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).ChatCompletionStreamOfficial(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
 

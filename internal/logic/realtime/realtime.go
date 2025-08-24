@@ -17,7 +17,6 @@ import (
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/gorilla/websocket"
-	sdk "github.com/iimeta/fastapi-sdk"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi-sdk/sdkerr"
 	"github.com/iimeta/fastapi/internal/config"
@@ -89,7 +88,6 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		client    *sdk.RealtimeClient
 		connTime  int64
 		duration  int64
 		totalTime int64
@@ -137,14 +135,9 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 		return err
 	}
 
-	if client, err = common.NewRealtimeAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
-		logger.Error(ctx, err)
-		return err
-	}
-
 	requestChan := make(chan *sdkm.RealtimeRequest)
 
-	response, err := client.Realtime(ctx, requestChan)
+	response, err := common.NewRealtimeAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).Realtime(ctx, requestChan)
 	if err != nil {
 		logger.Error(ctx, err)
 

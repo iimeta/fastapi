@@ -30,10 +30,12 @@ type Statistics struct {
 }
 
 type Base struct {
-	ErrRetry                int   `bson:"err_retry"                   json:"err_retry"`                   // 错误重试次数
-	ModelKeyErrDisable      int64 `bson:"model_key_err_disable"       json:"model_key_err_disable"`       // 模型密钥禁用次数
-	ModelAgentErrDisable    int64 `bson:"model_agent_err_disable"     json:"model_agent_err_disable"`     // 模型代理禁用次数
-	ModelAgentKeyErrDisable int64 `bson:"model_agent_key_err_disable" json:"model_agent_key_err_disable"` // 模型代理密钥禁用次数
+	ErrRetry                int           `bson:"err_retry"                   json:"err_retry"`                   // 错误重试次数
+	ModelKeyErrDisable      int64         `bson:"model_key_err_disable"       json:"model_key_err_disable"`       // 模型密钥禁用次数
+	ModelAgentErrDisable    int64         `bson:"model_agent_err_disable"     json:"model_agent_err_disable"`     // 模型代理禁用次数
+	ModelAgentKeyErrDisable int64         `bson:"model_agent_key_err_disable" json:"model_agent_key_err_disable"` // 模型代理密钥禁用次数
+	ShortTimeout            time.Duration `bson:"short_timeout"               json:"short_timeout"`               // 短连接超时时间, 单位: 秒
+	LongTimeout             time.Duration `bson:"long_timeout"                json:"long_timeout"`                // 长连接超时时间, 单位: 秒
 }
 
 type Midjourney struct {

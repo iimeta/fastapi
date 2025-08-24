@@ -16,7 +16,6 @@ import (
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/gogf/gf/v2/util/grand"
-	"github.com/iimeta/fastapi-sdk/google"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/errors"
@@ -55,7 +54,6 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		adapter     *google.Google
 		res         sdkm.GoogleChatCompletionRes
 		retryInfo   *mcommon.Retry
 		textTokens  int
@@ -330,12 +328,7 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 	//	}
 	//}
 
-	if adapter, err = common.NewGoogleAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
-		logger.Error(ctx, err)
-		return response, err
-	}
-
-	res, err = adapter.ChatCompletionOfficial(ctx, request.GetBody())
+	res, err = common.NewGoogleAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).ChatCompletionOfficial(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -421,7 +414,6 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		adapter     *google.Google
 		completion  string
 		connTime    int64
 		duration    int64
@@ -686,12 +678,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 	//	}
 	//}
 
-	if adapter, err = common.NewGoogleAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path); err != nil {
-		logger.Error(ctx, err)
-		return err
-	}
-
-	response, err := adapter.ChatCompletionStreamOfficial(ctx, request.GetBody())
+	response, err := common.NewGoogleAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).ChatCompletionStreamOfficial(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
 
