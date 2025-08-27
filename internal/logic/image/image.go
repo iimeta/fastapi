@@ -169,7 +169,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 		}
 	}
 
-	response, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).ImageGenerations(ctx, data)
+	response, err = common.NewAdapter(ctx, mak, false).ImageGenerations(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -372,7 +372,7 @@ func (s *sImage) Edits(ctx context.Context, params sdkm.ImageEditRequest, fallba
 		}
 	}
 
-	response, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).ImageEdits(ctx, params)
+	response, err = common.NewAdapter(ctx, mak, false).ImageEdits(ctx, params)
 	if err != nil {
 		logger.Error(ctx, err)
 

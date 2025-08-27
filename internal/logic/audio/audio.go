@@ -144,7 +144,7 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 		}
 	}
 
-	response, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).AudioSpeech(ctx, data)
+	response, err = common.NewAdapter(ctx, mak, false).AudioSpeech(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -323,7 +323,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 		}
 	}
 
-	response, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).AudioTranscriptions(ctx, request.AudioRequest)
+	response, err = common.NewAdapter(ctx, mak, false).AudioTranscriptions(ctx, request.AudioRequest)
 	if err != nil {
 		logger.Error(ctx, err)
 

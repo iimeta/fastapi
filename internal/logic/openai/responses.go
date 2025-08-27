@@ -337,7 +337,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 		data = gjson.MustEncode(common.ConvChatCompletionsToResponsesRequest(request))
 	}
 
-	response, err = common.NewOpenAIAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).Responses(ctx, data)
+	response, err = common.NewOpenAIAdapter(ctx, mak, false).Responses(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -731,7 +731,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 		data = gjson.MustEncode(common.ConvChatCompletionsToResponsesRequest(request))
 	}
 
-	response, err := common.NewOpenAIAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).ResponsesStream(ctx, data)
+	response, err := common.NewOpenAIAdapter(ctx, mak, true).ResponsesStream(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 

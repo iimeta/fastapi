@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
@@ -119,7 +120,7 @@ func GetMultimodalAudioTokens(ctx context.Context, model string, messages []sdkm
 
 	logger.Debugf(ctx, "GetMultimodalAudioTokens NumTokensFromString model: %s, len(content): %d, tokens: %d, time: %d", model, len(text), tokens, gtime.TimestampMilli()-contentTime)
 
-	return textTokens, 288
+	return textTokens, 888
 }
 
 func GetMultimodalSearchTokens(ctx context.Context, webSearchOptions any, reqModel *model.Model) (searchTokens int) {

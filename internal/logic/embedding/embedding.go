@@ -155,7 +155,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 		}
 	}
 
-	response, err = common.NewAdapter(ctx, mak.Corp, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).TextEmbeddings(ctx, data)
+	response, err = common.NewAdapter(ctx, mak, false).TextEmbeddings(ctx, data)
 	if err != nil {
 		logger.Error(ctx, err)
 

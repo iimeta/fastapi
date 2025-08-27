@@ -15,59 +15,71 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 )
 
-func NewAdapter(ctx context.Context, corp string, model *model.Model, key, baseUrl, path string) sdk.Adapter {
+func NewAdapter(ctx context.Context, mak *MAK, isLong bool) sdk.Adapter {
 
 	options := &options.AdapterOptions{
-		Corp:     GetCorpCode(ctx, corp),
-		Model:    model.Model,
-		Key:      key,
-		BaseUrl:  baseUrl,
-		Path:     path,
-		Timeout:  config.Cfg.Http.Timeout * time.Second,
+		Corp:     GetCorpCode(ctx, mak.Corp),
+		Model:    mak.RealModel.Model,
+		Key:      mak.RealKey,
+		BaseUrl:  mak.BaseUrl,
+		Path:     mak.Path,
+		Timeout:  config.Cfg.Base.ShortTimeout * time.Second,
 		ProxyUrl: config.Cfg.Http.ProxyUrl,
 	}
 
-	if model.IsEnablePresetConfig {
-		options.IsSupportSystemRole = &model.PresetConfig.IsSupportSystemRole
-		options.IsSupportStream = &model.PresetConfig.IsSupportStream
+	if isLong {
+		options.Timeout = config.Cfg.Base.LongTimeout * time.Second
 	}
 
-	return sdk.NewAdapter(ctx, corp, options)
+	if mak.RealModel.IsEnablePresetConfig {
+		options.IsSupportSystemRole = &mak.RealModel.PresetConfig.IsSupportSystemRole
+		options.IsSupportStream = &mak.RealModel.PresetConfig.IsSupportStream
+	}
+
+	return sdk.NewAdapter(ctx, options.Corp, options)
 }
 
-func NewGoogleAdapter(ctx context.Context, model *model.Model, key, baseUrl, path string) *google.Google {
+func NewGoogleAdapter(ctx context.Context, mak *MAK, isLong bool) *google.Google {
 
 	options := &options.AdapterOptions{
-		Model:    model.Model,
-		Key:      key,
-		BaseUrl:  baseUrl,
-		Path:     path,
-		Timeout:  config.Cfg.Http.Timeout * time.Second,
+		Model:    mak.RealModel.Model,
+		Key:      mak.RealKey,
+		BaseUrl:  mak.BaseUrl,
+		Path:     mak.Path,
+		Timeout:  config.Cfg.Base.ShortTimeout * time.Second,
 		ProxyUrl: config.Cfg.Http.ProxyUrl,
 	}
 
-	if model.IsEnablePresetConfig {
-		options.IsSupportSystemRole = &model.PresetConfig.IsSupportSystemRole
-		options.IsSupportStream = &model.PresetConfig.IsSupportStream
+	if isLong {
+		options.Timeout = config.Cfg.Base.LongTimeout * time.Second
+	}
+
+	if mak.RealModel.IsEnablePresetConfig {
+		options.IsSupportSystemRole = &mak.RealModel.PresetConfig.IsSupportSystemRole
+		options.IsSupportStream = &mak.RealModel.PresetConfig.IsSupportStream
 	}
 
 	return google.NewAdapter(ctx, options)
 }
 
-func NewAnthropicAdapter(ctx context.Context, model *model.Model, key, baseUrl, path string) *anthropic.Anthropic {
+func NewAnthropicAdapter(ctx context.Context, mak *MAK, isLong bool) *anthropic.Anthropic {
 
 	options := &options.AdapterOptions{
-		Model:    model.Model,
-		Key:      key,
-		BaseUrl:  baseUrl,
-		Path:     path,
-		Timeout:  config.Cfg.Http.Timeout * time.Second,
+		Model:    mak.RealModel.Model,
+		Key:      mak.RealKey,
+		BaseUrl:  mak.BaseUrl,
+		Path:     mak.Path,
+		Timeout:  config.Cfg.Base.ShortTimeout * time.Second,
 		ProxyUrl: config.Cfg.Http.ProxyUrl,
 	}
 
-	if model.IsEnablePresetConfig {
-		options.IsSupportSystemRole = &model.PresetConfig.IsSupportSystemRole
-		options.IsSupportStream = &model.PresetConfig.IsSupportStream
+	if isLong {
+		options.Timeout = config.Cfg.Base.LongTimeout * time.Second
+	}
+
+	if mak.RealModel.IsEnablePresetConfig {
+		options.IsSupportSystemRole = &mak.RealModel.PresetConfig.IsSupportSystemRole
+		options.IsSupportStream = &mak.RealModel.PresetConfig.IsSupportStream
 	}
 
 	return anthropic.NewAdapter(ctx, options)
@@ -77,26 +89,30 @@ func NewRealtimeAdapter(ctx context.Context, model *model.Model, key, baseUrl, p
 	return sdk.NewRealtimeClient(ctx, model.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
 }
 
-func NewOpenAIAdapter(ctx context.Context, model *model.Model, key, baseUrl, path string) *openai.OpenAI {
+func NewOpenAIAdapter(ctx context.Context, mak *MAK, isLong bool) *openai.OpenAI {
 
-	if path == "" {
-		path = "/responses"
+	if mak.Path == "" {
+		mak.Path = "/responses"
 	}
 
 	options := &options.AdapterOptions{
-		Model:    model.Model,
-		Key:      key,
-		BaseUrl:  baseUrl,
-		Path:     path,
-		Timeout:  config.Cfg.Http.Timeout * time.Second,
+		Model:    mak.RealModel.Model,
+		Key:      mak.RealKey,
+		BaseUrl:  mak.BaseUrl,
+		Path:     mak.Path,
+		Timeout:  config.Cfg.Base.ShortTimeout * time.Second,
 		ProxyUrl: config.Cfg.Http.ProxyUrl,
+	}
+
+	if isLong {
+		options.Timeout = config.Cfg.Base.LongTimeout * time.Second
 	}
 
 	return openai.NewAdapter(ctx, options)
 }
 
 func NewModerationClient(ctx context.Context, model *model.Model, key, baseUrl, path string) *sdk.ModerationClient {
-	return sdk.NewModerationClient(ctx, model.Model, key, baseUrl, path, config.Cfg.Http.Timeout, config.Cfg.Http.ProxyUrl)
+	return sdk.NewModerationClient(ctx, model.Model, key, baseUrl, path, config.Cfg.Base.ShortTimeout, config.Cfg.Http.ProxyUrl)
 }
 
 func NewConverter(ctx context.Context, corp string) sdk.Converter {
