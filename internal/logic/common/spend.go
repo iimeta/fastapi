@@ -3,6 +3,8 @@ package common
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
@@ -10,7 +12,6 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
-	"time"
 )
 
 // 记录使用额度

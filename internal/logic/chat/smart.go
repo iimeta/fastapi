@@ -34,9 +34,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo *mcommon.Retry
-		//textTokens  int
-		//imageTokens int
+		retryInfo   *mcommon.Retry
 		totalTokens int
 	)
 
@@ -44,62 +42,6 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-
-		//if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.RealModel != nil {
-		//
-		//	model := mak.RealModel.Model
-		//	if !tiktoken.IsEncodingForModel(model) {
-		//		model = consts.DEFAULT_MODEL
-		//	}
-		//
-		//	if mak.RealModel.Type == 100 { // 多模态
-		//		if response.Usage == nil {
-		//
-		//			response.Usage = new(sdkm.Usage)
-		//
-		//			if content, ok := params.Messages[len(params.Messages)-1].Content.([]interface{}); ok {
-		//				textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, mak.RealModel)
-		//				response.Usage.PromptTokens = textTokens + imageTokens
-		//			} else {
-		//				if response.Usage.PromptTokens == 0 {
-		//					response.Usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
-		//				}
-		//			}
-		//
-		//			if response.Usage.CompletionTokens == 0 && len(response.Choices) > 0 && response.Choices[0].Message != nil {
-		//				response.Usage.CompletionTokens = common.GetCompletionTokens(ctx, model, gconv.String(response.Choices[0].Message.Content))
-		//			}
-		//
-		//			response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
-		//			totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*mak.RealModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*mak.RealModel.MultimodalQuota.TextQuota.CompletionRatio))
-		//
-		//		} else {
-		//			totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*mak.RealModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(response.Usage.CompletionTokens)*mak.RealModel.MultimodalQuota.TextQuota.CompletionRatio))
-		//		}
-		//
-		//	} else if response.Usage == nil || response.Usage.TotalTokens == 0 {
-		//
-		//		response.Usage = new(sdkm.Usage)
-		//
-		//		response.Usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
-		//
-		//		if len(response.Choices) > 0 && response.Choices[0].Message != nil {
-		//			response.Usage.CompletionTokens = common.GetCompletionTokens(ctx, model, gconv.String(response.Choices[0].Message.Content))
-		//		}
-		//
-		//		response.Usage.TotalTokens = response.Usage.PromptTokens + response.Usage.CompletionTokens
-		//	}
-		//}
-		//
-		//if mak.RealModel != nil && response.Usage != nil {
-		//	if mak.RealModel.Type != 100 {
-		//		if mak.RealModel.TextQuota.BillingMethod == 1 {
-		//			totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*mak.RealModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*mak.RealModel.TextQuota.CompletionRatio))
-		//		} else {
-		//			totalTokens = mak.RealModel.TextQuota.FixedQuota
-		//		}
-		//	}
-		//}
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
