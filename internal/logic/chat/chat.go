@@ -1058,16 +1058,40 @@ func (s *sChat) SaveLog(ctx context.Context, chatLog model.ChatLog, retry ...int
 
 		if chatLog.ReqModel.Type == 102 {
 
-			if multiContent, ok := prompt.([]interface{}); ok {
-				for _, value := range multiContent {
-					if content, ok := value.(map[string]interface{}); ok {
-						if content["type"] == "text" {
-							chat.Prompt = gconv.String(content["text"])
-						}
-					}
-				}
-			} else {
+			if slices.Contains(config.Cfg.Log.ChatRecords, "audio") {
 				chat.Prompt = gconv.String(prompt)
+			} else {
+				if multiContent, ok := prompt.([]interface{}); ok {
+
+					multiContents := make([]interface{}, 0)
+
+					for _, value := range multiContent {
+
+						if content, ok := value.(map[string]interface{}); ok {
+
+							if content["type"] == "input_audio" {
+
+								if inputAudio, ok := content["input_audio"].(map[string]interface{}); ok {
+
+									inputAudio = gmap.NewStrAnyMapFrom(inputAudio).MapCopy()
+									inputAudio["data"] = "[BASE64音频数据]"
+
+									content = gmap.NewStrAnyMapFrom(content).MapCopy()
+									content["input_audio"] = inputAudio
+								}
+							}
+
+							value = content
+						}
+
+						multiContents = append(multiContents, value)
+					}
+
+					chat.Prompt = gconv.String(multiContents)
+
+				} else {
+					chat.Prompt = gconv.String(prompt)
+				}
 			}
 
 		} else {
@@ -1261,7 +1285,7 @@ func (s *sChat) SaveLog(ctx context.Context, chatLog model.ChatLog, retry ...int
 						multiContents = append(multiContents, value)
 					}
 
-					content = gconv.String(multiContents)
+					content = multiContents
 
 				} else if multiContent, ok := content.([]sdkm.OpenAIResponsesContent); ok {
 
@@ -1274,7 +1298,39 @@ func (s *sChat) SaveLog(ctx context.Context, chatLog model.ChatLog, retry ...int
 						multiContents = append(multiContents, value)
 					}
 
-					content = gconv.String(multiContents)
+					content = multiContents
+				}
+			}
+
+			if !slices.Contains(config.Cfg.Log.ChatRecords, "audio") {
+
+				if multiContent, ok := content.([]interface{}); ok {
+
+					multiContents := make([]interface{}, 0)
+
+					for _, value := range multiContent {
+
+						if content, ok := value.(map[string]interface{}); ok {
+
+							if content["type"] == "input_audio" {
+
+								if inputAudio, ok := content["input_audio"].(map[string]interface{}); ok {
+
+									inputAudio = gmap.NewStrAnyMapFrom(inputAudio).MapCopy()
+									inputAudio["data"] = "[BASE64音频数据]"
+
+									content = gmap.NewStrAnyMapFrom(content).MapCopy()
+									content["input_audio"] = inputAudio
+								}
+							}
+
+							value = content
+						}
+
+						multiContents = append(multiContents, value)
+					}
+
+					content = multiContents
 				}
 			}
 
