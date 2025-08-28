@@ -13,10 +13,8 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
-	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
@@ -24,7 +22,6 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
-	"github.com/iimeta/tiktoken-go"
 )
 
 type sOpenAI struct{}
@@ -53,10 +50,10 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo   *mcommon.Retry
-		textTokens  int
-		imageTokens int
-		audioTokens int
+		retryInfo *mcommon.Retry
+		//textTokens  int
+		//imageTokens int
+		//audioTokens int
 		totalTokens int
 	)
 
@@ -70,172 +67,182 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 			response.ResponseBytes = gjson.MustEncode(chatCompletionResponse)
 		}
 
+		//if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
+		//
+		//	// 替换成调用的模型
+		//	if mak.ReqModel.IsEnableForward {
+		//		chatCompletionResponse.Model = mak.ReqModel.Model
+		//	}
+		//
+		//	model := mak.ReqModel.Model
+		//
+		//	if !tiktoken.IsEncodingForModel(model) {
+		//		model = consts.DEFAULT_MODEL
+		//	}
+		//
+		//	if mak.ReqModel.Type == 100 { // 多模态
+		//
+		//		if chatCompletionResponse.Usage == nil || mak.ReqModel.MultimodalQuota.BillingRule == 2 {
+		//
+		//			chatCompletionResponse.Usage = new(sdkm.Usage)
+		//
+		//			if content, ok := params.Messages[len(params.Messages)-1].Content.([]interface{}); ok {
+		//				textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, mak.ReqModel)
+		//				chatCompletionResponse.Usage.PromptTokens = textTokens + imageTokens
+		//			} else {
+		//				if chatCompletionResponse.Usage.PromptTokens == 0 {
+		//					chatCompletionResponse.Usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
+		//				}
+		//			}
+		//
+		//			if chatCompletionResponse.Usage.CompletionTokens == 0 && len(chatCompletionResponse.Choices) > 0 && chatCompletionResponse.Choices[0].Message != nil {
+		//				for _, choice := range chatCompletionResponse.Choices {
+		//					chatCompletionResponse.Usage.CompletionTokens += common.GetCompletionTokens(ctx, model, gconv.String(choice.Message.Content))
+		//				}
+		//			}
+		//
+		//			chatCompletionResponse.Usage.TotalTokens = chatCompletionResponse.Usage.PromptTokens + chatCompletionResponse.Usage.CompletionTokens
+		//			totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
+		//
+		//		} else {
+		//			totalTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
+		//		}
+		//
+		//		if params.Tools != nil {
+		//			if tools := gconv.String(params.Tools); gstr.Contains(tools, "google_search") || gstr.Contains(tools, "googleSearch") {
+		//				totalTokens += mak.ReqModel.MultimodalQuota.SearchQuota
+		//				chatCompletionResponse.Usage.SearchTokens = mak.ReqModel.MultimodalQuota.SearchQuota
+		//			}
+		//		}
+		//
+		//		if params.WebSearchOptions != nil {
+		//			searchTokens := common.GetMultimodalSearchTokens(ctx, params.WebSearchOptions, mak.ReqModel)
+		//			totalTokens += searchTokens
+		//			chatCompletionResponse.Usage.SearchTokens = searchTokens
+		//		}
+		//
+		//		if chatCompletionResponse.Usage.CacheCreationInputTokens != 0 {
+		//			totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CacheCreationInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio * 1.25))
+		//		}
+		//
+		//		if chatCompletionResponse.Usage.CacheReadInputTokens != 0 {
+		//			totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CacheReadInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio * 0.1))
+		//		}
+		//
+		//		if chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens != 0 {
+		//			totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CachedRatio))
+		//		}
+		//
+		//		if chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens != 0 {
+		//			totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CachedRatio))
+		//		}
+		//
+		//	} else if mak.ReqModel.Type == 102 { // 多模态语音
+		//
+		//		if chatCompletionResponse.Usage == nil {
+		//
+		//			chatCompletionResponse.Usage = new(sdkm.Usage)
+		//
+		//			textTokens, audioTokens = common.GetMultimodalAudioTokens(ctx, model, params.Messages, mak.ReqModel)
+		//			chatCompletionResponse.Usage.PromptTokens = textTokens + audioTokens
+		//
+		//			if len(chatCompletionResponse.Choices) > 0 && chatCompletionResponse.Choices[0].Message != nil && chatCompletionResponse.Choices[0].Message.Audio != nil {
+		//				for _, choice := range chatCompletionResponse.Choices {
+		//					chatCompletionResponse.Usage.CompletionTokens += common.GetCompletionTokens(ctx, model, choice.Message.Audio.Transcript) + 388
+		//				}
+		//			}
+		//		}
+		//
+		//		chatCompletionResponse.Usage.TotalTokens = chatCompletionResponse.Usage.PromptTokens + chatCompletionResponse.Usage.CompletionTokens
+		//		totalTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
+		//
+		//		if chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens != 0 {
+		//			totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.CachedRatio))
+		//		}
+		//
+		//		if chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens != 0 {
+		//			totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.CachedRatio))
+		//		}
+		//
+		//	} else if chatCompletionResponse.Usage == nil || chatCompletionResponse.Usage.TotalTokens == 0 {
+		//
+		//		chatCompletionResponse.Usage = new(sdkm.Usage)
+		//
+		//		chatCompletionResponse.Usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
+		//
+		//		if len(chatCompletionResponse.Choices) > 0 && chatCompletionResponse.Choices[0].Message != nil {
+		//			for _, choice := range chatCompletionResponse.Choices {
+		//				chatCompletionResponse.Usage.CompletionTokens += common.GetCompletionTokens(ctx, model, gconv.String(choice.Message.Content))
+		//			}
+		//		}
+		//
+		//		chatCompletionResponse.Usage.TotalTokens = chatCompletionResponse.Usage.PromptTokens + chatCompletionResponse.Usage.CompletionTokens
+		//	}
+		//}
+		//
+		//if mak.ReqModel != nil && chatCompletionResponse.Usage != nil {
+		//	if mak.ReqModel.Type == 102 {
+		//
+		//		if chatCompletionResponse.Usage.PromptTokensDetails.TextTokens > 0 {
+		//			textTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokensDetails.TextTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.PromptRatio))
+		//		}
+		//
+		//		if chatCompletionResponse.Usage.PromptTokensDetails.AudioTokens > 0 {
+		//			audioTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokensDetails.AudioTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio))
+		//		} else {
+		//			audioTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio))
+		//		}
+		//
+		//		if chatCompletionResponse.Usage.CompletionTokensDetails.TextTokens > 0 {
+		//			textTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokensDetails.TextTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.CompletionRatio))
+		//		}
+		//
+		//		if chatCompletionResponse.Usage.CompletionTokensDetails.AudioTokens > 0 {
+		//			audioTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokensDetails.AudioTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
+		//		} else {
+		//			audioTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
+		//		}
+		//
+		//		totalTokens = textTokens + audioTokens
+		//
+		//		if chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens != 0 {
+		//			totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CachedRatio))
+		//		}
+		//
+		//		if chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens != 0 {
+		//			totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CachedRatio))
+		//		}
+		//
+		//	} else if mak.ReqModel.Type != 100 {
+		//		if mak.ReqModel.TextQuota.BillingMethod == 1 {
+		//
+		//			totalTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokens)*mak.ReqModel.TextQuota.PromptRatio + float64(chatCompletionResponse.Usage.CompletionTokens)*mak.ReqModel.TextQuota.CompletionRatio))
+		//
+		//			if chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens != 0 {
+		//				totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.TextQuota.CachedRatio))
+		//			}
+		//
+		//			if chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens != 0 {
+		//				totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.TextQuota.CachedRatio))
+		//			}
+		//
+		//		} else {
+		//			totalTokens = mak.ReqModel.TextQuota.FixedQuota
+		//		}
+		//	}
+		//}
+
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
-			// 替换成调用的模型
-			if mak.ReqModel.IsEnableForward {
-				chatCompletionResponse.Model = mak.ReqModel.Model
-			}
-
-			model := mak.ReqModel.Model
-
-			if !tiktoken.IsEncodingForModel(model) {
-				model = consts.DEFAULT_MODEL
-			}
-
-			if mak.ReqModel.Type == 100 { // 多模态
-
-				if chatCompletionResponse.Usage == nil || mak.ReqModel.MultimodalQuota.BillingRule == 2 {
-
-					chatCompletionResponse.Usage = new(sdkm.Usage)
-
-					if content, ok := params.Messages[len(params.Messages)-1].Content.([]interface{}); ok {
-						textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, mak.ReqModel)
-						chatCompletionResponse.Usage.PromptTokens = textTokens + imageTokens
-					} else {
-						if chatCompletionResponse.Usage.PromptTokens == 0 {
-							chatCompletionResponse.Usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
-						}
-					}
-
-					if chatCompletionResponse.Usage.CompletionTokens == 0 && len(chatCompletionResponse.Choices) > 0 && chatCompletionResponse.Choices[0].Message != nil {
-						for _, choice := range chatCompletionResponse.Choices {
-							chatCompletionResponse.Usage.CompletionTokens += common.GetCompletionTokens(ctx, model, gconv.String(choice.Message.Content))
-						}
-					}
-
-					chatCompletionResponse.Usage.TotalTokens = chatCompletionResponse.Usage.PromptTokens + chatCompletionResponse.Usage.CompletionTokens
-					totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
-
-				} else {
-					totalTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
-				}
-
-				if params.Tools != nil {
-					if tools := gconv.String(params.Tools); gstr.Contains(tools, "google_search") || gstr.Contains(tools, "googleSearch") {
-						totalTokens += mak.ReqModel.MultimodalQuota.SearchQuota
-						chatCompletionResponse.Usage.SearchTokens = mak.ReqModel.MultimodalQuota.SearchQuota
-					}
-				}
-
-				if params.WebSearchOptions != nil {
-					searchTokens := common.GetMultimodalSearchTokens(ctx, params.WebSearchOptions, mak.ReqModel)
-					totalTokens += searchTokens
-					chatCompletionResponse.Usage.SearchTokens = searchTokens
-				}
-
-				if chatCompletionResponse.Usage.CacheCreationInputTokens != 0 {
-					totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CacheCreationInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio * 1.25))
-				}
-
-				if chatCompletionResponse.Usage.CacheReadInputTokens != 0 {
-					totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CacheReadInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio * 0.1))
-				}
-
-				if chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens != 0 {
-					totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CachedRatio))
-				}
-
-				if chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens != 0 {
-					totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CachedRatio))
-				}
-
-			} else if mak.ReqModel.Type == 102 { // 多模态语音
-
-				if chatCompletionResponse.Usage == nil {
-
-					chatCompletionResponse.Usage = new(sdkm.Usage)
-
-					textTokens, audioTokens = common.GetMultimodalAudioTokens(ctx, model, params.Messages, mak.ReqModel)
-					chatCompletionResponse.Usage.PromptTokens = textTokens + audioTokens
-
-					if len(chatCompletionResponse.Choices) > 0 && chatCompletionResponse.Choices[0].Message != nil && chatCompletionResponse.Choices[0].Message.Audio != nil {
-						for _, choice := range chatCompletionResponse.Choices {
-							chatCompletionResponse.Usage.CompletionTokens += common.GetCompletionTokens(ctx, model, choice.Message.Audio.Transcript) + 388
-						}
-					}
-				}
-
-				chatCompletionResponse.Usage.TotalTokens = chatCompletionResponse.Usage.PromptTokens + chatCompletionResponse.Usage.CompletionTokens
-				totalTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
-
-				if chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens != 0 {
-					totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.CachedRatio))
-				}
-
-				if chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens != 0 {
-					totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.CachedRatio))
-				}
-
-			} else if chatCompletionResponse.Usage == nil || chatCompletionResponse.Usage.TotalTokens == 0 {
-
-				chatCompletionResponse.Usage = new(sdkm.Usage)
-
-				chatCompletionResponse.Usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
-
-				if len(chatCompletionResponse.Choices) > 0 && chatCompletionResponse.Choices[0].Message != nil {
-					for _, choice := range chatCompletionResponse.Choices {
-						chatCompletionResponse.Usage.CompletionTokens += common.GetCompletionTokens(ctx, model, gconv.String(choice.Message.Content))
-					}
-				}
-
-				chatCompletionResponse.Usage.TotalTokens = chatCompletionResponse.Usage.PromptTokens + chatCompletionResponse.Usage.CompletionTokens
-			}
-		}
-
-		if mak.ReqModel != nil && chatCompletionResponse.Usage != nil {
-			if mak.ReqModel.Type == 102 {
-
-				if chatCompletionResponse.Usage.PromptTokensDetails.TextTokens > 0 {
-					textTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokensDetails.TextTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.PromptRatio))
-				}
-
-				if chatCompletionResponse.Usage.PromptTokensDetails.AudioTokens > 0 {
-					audioTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokensDetails.AudioTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio))
-				} else {
-					audioTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio))
-				}
-
-				if chatCompletionResponse.Usage.CompletionTokensDetails.TextTokens > 0 {
-					textTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokensDetails.TextTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.CompletionRatio))
-				}
-
-				if chatCompletionResponse.Usage.CompletionTokensDetails.AudioTokens > 0 {
-					audioTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokensDetails.AudioTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
-				} else {
-					audioTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
-				}
-
-				totalTokens = textTokens + audioTokens
-
-				if chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens != 0 {
-					totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CachedRatio))
-				}
-
-				if chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens != 0 {
-					totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CachedRatio))
-				}
-
-			} else if mak.ReqModel.Type != 100 {
-				if mak.ReqModel.TextQuota.BillingMethod == 1 {
-
-					totalTokens = int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokens)*mak.ReqModel.TextQuota.PromptRatio + float64(chatCompletionResponse.Usage.CompletionTokens)*mak.ReqModel.TextQuota.CompletionRatio))
-
-					if chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens != 0 {
-						totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.TextQuota.CachedRatio))
-					}
-
-					if chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens != 0 {
-						totalTokens += int(math.Ceil(float64(chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.TextQuota.CachedRatio))
-					}
-
-				} else {
-					totalTokens = mak.ReqModel.TextQuota.FixedQuota
+			completion := ""
+			if len(chatCompletionResponse.Choices) > 0 && chatCompletionResponse.Choices[0].Message != nil {
+				for _, choice := range chatCompletionResponse.Choices {
+					completion += gconv.String(choice.Message.Content)
 				}
 			}
-		}
 
-		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
+			usageSpend := common.ChatUsageSpend(ctx, params, completion, chatCompletionResponse.Usage, mak)
+			totalTokens = usageSpend.TotalTokens
 
 			// 分组折扣
 			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
@@ -422,13 +429,13 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		completion  string
-		connTime    int64
-		duration    int64
-		totalTime   int64
-		textTokens  int
-		imageTokens int
-		audioTokens int
+		completion string
+		connTime   int64
+		duration   int64
+		totalTime  int64
+		//textTokens  int
+		//imageTokens int
+		//audioTokens int
 		totalTokens int
 		usage       *sdkm.Usage
 		retryInfo   *mcommon.Retry
@@ -440,175 +447,178 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 
 		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-			if retryInfo == nil && completion != "" && mak.ReqModel != nil && (usage == nil || usage.PromptTokens == 0 || usage.CompletionTokens == 0 || (mak.ReqModel.Type == 100 && mak.ReqModel.MultimodalQuota.BillingRule == 2)) {
-
-				if usage == nil {
-					usage = new(sdkm.Usage)
-				}
-
-				model := mak.ReqModel.Model
-				if !tiktoken.IsEncodingForModel(model) {
-					model = consts.DEFAULT_MODEL
-				}
-
-				if mak.ReqModel.Type == 102 { // 多模态语音
-					textTokens, audioTokens = common.GetMultimodalAudioTokens(ctx, model, params.Messages, mak.ReqModel)
-					usage.PromptTokens = textTokens + audioTokens
-				} else {
-					if content, ok := params.Messages[len(params.Messages)-1].Content.([]interface{}); ok {
-						textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, mak.ReqModel)
-						usage.PromptTokens = textTokens + imageTokens
-					} else {
-						if usage.PromptTokens == 0 {
-							usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
-						}
-					}
-				}
-
-				if usage.CompletionTokens == 0 {
-					usage.CompletionTokens = common.GetCompletionTokens(ctx, model, completion)
-					if mak.ReqModel.Type == 102 { // 多模态语音
-						usage.CompletionTokens += 388
-					}
-				}
-
-				if mak.ReqModel.Type == 100 { // 多模态
-
-					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-					totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
-
-					if params.Tools != nil {
-						if tools := gconv.String(params.Tools); gstr.Contains(tools, "google_search") || gstr.Contains(tools, "googleSearch") {
-							totalTokens += mak.ReqModel.MultimodalQuota.SearchQuota
-							usage.SearchTokens = mak.ReqModel.MultimodalQuota.SearchQuota
-						}
-					}
-
-					if params.WebSearchOptions != nil {
-						searchTokens := common.GetMultimodalSearchTokens(ctx, params.WebSearchOptions, mak.ReqModel)
-						totalTokens += searchTokens
-						usage.SearchTokens = searchTokens
-					}
-
-					if usage.CacheCreationInputTokens != 0 {
-						totalTokens += int(math.Ceil(float64(usage.CacheCreationInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio * 1.25))
-					}
-
-					if usage.CacheReadInputTokens != 0 {
-						totalTokens += int(math.Ceil(float64(usage.CacheReadInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio * 0.1))
-					}
-
-					if usage.PromptTokensDetails.CachedTokens != 0 {
-						totalTokens += int(math.Ceil(float64(usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CachedRatio))
-					}
-
-					if usage.CompletionTokensDetails.CachedTokens != 0 {
-						totalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CachedRatio))
-					}
-
-				} else if mak.ReqModel.Type == 102 { // 多模态语音
-
-					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
-
-					if usage.PromptTokensDetails.CachedTokens != 0 {
-						totalTokens += int(math.Ceil(float64(usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.CachedRatio))
-					}
-
-					if usage.CompletionTokensDetails.CachedTokens != 0 {
-						totalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.CachedRatio))
-					}
-
-				} else {
-					if mak.ReqModel.TextQuota.BillingMethod == 1 {
-
-						usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-						totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.TextQuota.PromptRatio + float64(usage.CompletionTokens)*mak.ReqModel.TextQuota.CompletionRatio))
-
-						if usage.PromptTokensDetails.CachedTokens != 0 {
-							totalTokens += int(math.Ceil(float64(usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.TextQuota.CachedRatio))
-						}
-
-						if usage.CompletionTokensDetails.CachedTokens != 0 {
-							totalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.TextQuota.CachedRatio))
-						}
-
-					} else {
-						usage.TotalTokens = mak.ReqModel.TextQuota.FixedQuota
-						totalTokens = mak.ReqModel.TextQuota.FixedQuota
-					}
-				}
-
-			} else if retryInfo == nil && usage != nil && mak.ReqModel != nil {
-
-				if mak.ReqModel.Type == 100 { // 多模态
-
-					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
-
-					if params.Tools != nil {
-						if tools := gconv.String(params.Tools); gstr.Contains(tools, "google_search") || gstr.Contains(tools, "googleSearch") {
-							totalTokens += mak.ReqModel.MultimodalQuota.SearchQuota
-							usage.SearchTokens = mak.ReqModel.MultimodalQuota.SearchQuota
-						}
-					}
-
-					if params.WebSearchOptions != nil {
-						searchTokens := common.GetMultimodalSearchTokens(ctx, params.WebSearchOptions, mak.ReqModel)
-						totalTokens += searchTokens
-						usage.SearchTokens = searchTokens
-					}
-
-					if usage.CacheCreationInputTokens != 0 {
-						totalTokens += int(math.Ceil(float64(usage.CacheCreationInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio * 1.25))
-					}
-
-					if usage.CacheReadInputTokens != 0 {
-						totalTokens += int(math.Ceil(float64(usage.CacheReadInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio * 0.1))
-					}
-
-					if usage.PromptTokensDetails.CachedTokens != 0 {
-						totalTokens += int(math.Ceil(float64(usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CachedRatio))
-					}
-
-					if usage.CompletionTokensDetails.CachedTokens != 0 {
-						totalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CachedRatio))
-					}
-
-				} else if mak.ReqModel.Type == 102 { // 多模态语音
-
-					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
-
-					if usage.PromptTokensDetails.CachedTokens != 0 {
-						totalTokens += int(math.Ceil(float64(usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CachedRatio))
-					}
-
-					if usage.CompletionTokensDetails.CachedTokens != 0 {
-						totalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CachedRatio))
-					}
-
-				} else {
-					if mak.ReqModel.TextQuota.BillingMethod == 1 {
-
-						usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-						totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.TextQuota.PromptRatio + float64(usage.CompletionTokens)*mak.ReqModel.TextQuota.CompletionRatio))
-
-						if usage.PromptTokensDetails.CachedTokens != 0 {
-							totalTokens += int(math.Ceil(float64(usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.TextQuota.CachedRatio))
-						}
-
-						if usage.CompletionTokensDetails.CachedTokens != 0 {
-							totalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.TextQuota.CachedRatio))
-						}
-
-					} else {
-						usage.TotalTokens = mak.ReqModel.TextQuota.FixedQuota
-						totalTokens = mak.ReqModel.TextQuota.FixedQuota
-					}
-				}
-			}
+			//if retryInfo == nil && completion != "" && mak.ReqModel != nil && (usage == nil || usage.PromptTokens == 0 || usage.CompletionTokens == 0 || (mak.ReqModel.Type == 100 && mak.ReqModel.MultimodalQuota.BillingRule == 2)) {
+			//
+			//	if usage == nil {
+			//		usage = new(sdkm.Usage)
+			//	}
+			//
+			//	model := mak.ReqModel.Model
+			//	if !tiktoken.IsEncodingForModel(model) {
+			//		model = consts.DEFAULT_MODEL
+			//	}
+			//
+			//	if mak.ReqModel.Type == 102 { // 多模态语音
+			//		textTokens, audioTokens = common.GetMultimodalAudioTokens(ctx, model, params.Messages, mak.ReqModel)
+			//		usage.PromptTokens = textTokens + audioTokens
+			//	} else {
+			//		if content, ok := params.Messages[len(params.Messages)-1].Content.([]interface{}); ok {
+			//			textTokens, imageTokens = common.GetMultimodalTokens(ctx, model, content, mak.ReqModel)
+			//			usage.PromptTokens = textTokens + imageTokens
+			//		} else {
+			//			if usage.PromptTokens == 0 {
+			//				usage.PromptTokens = common.GetPromptTokens(ctx, model, params.Messages)
+			//			}
+			//		}
+			//	}
+			//
+			//	if usage.CompletionTokens == 0 {
+			//		usage.CompletionTokens = common.GetCompletionTokens(ctx, model, completion)
+			//		if mak.ReqModel.Type == 102 { // 多模态语音
+			//			usage.CompletionTokens += 388
+			//		}
+			//	}
+			//
+			//	if mak.ReqModel.Type == 100 { // 多模态
+			//
+			//		usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+			//		totalTokens = imageTokens + int(math.Ceil(float64(textTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
+			//
+			//		if params.Tools != nil {
+			//			if tools := gconv.String(params.Tools); gstr.Contains(tools, "google_search") || gstr.Contains(tools, "googleSearch") {
+			//				totalTokens += mak.ReqModel.MultimodalQuota.SearchQuota
+			//				usage.SearchTokens = mak.ReqModel.MultimodalQuota.SearchQuota
+			//			}
+			//		}
+			//
+			//		if params.WebSearchOptions != nil {
+			//			searchTokens := common.GetMultimodalSearchTokens(ctx, params.WebSearchOptions, mak.ReqModel)
+			//			totalTokens += searchTokens
+			//			usage.SearchTokens = searchTokens
+			//		}
+			//
+			//		if usage.CacheCreationInputTokens != 0 {
+			//			totalTokens += int(math.Ceil(float64(usage.CacheCreationInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio * 1.25))
+			//		}
+			//
+			//		if usage.CacheReadInputTokens != 0 {
+			//			totalTokens += int(math.Ceil(float64(usage.CacheReadInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio * 0.1))
+			//		}
+			//
+			//		if usage.PromptTokensDetails.CachedTokens != 0 {
+			//			totalTokens += int(math.Ceil(float64(usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CachedRatio))
+			//		}
+			//
+			//		if usage.CompletionTokensDetails.CachedTokens != 0 {
+			//			totalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CachedRatio))
+			//		}
+			//
+			//	} else if mak.ReqModel.Type == 102 { // 多模态语音
+			//
+			//		totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
+			//
+			//		if usage.PromptTokensDetails.CachedTokens != 0 {
+			//			totalTokens += int(math.Ceil(float64(usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.CachedRatio))
+			//		}
+			//
+			//		if usage.CompletionTokensDetails.CachedTokens != 0 {
+			//			totalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.TextQuota.CachedRatio))
+			//		}
+			//
+			//	} else {
+			//		if mak.ReqModel.TextQuota.BillingMethod == 1 {
+			//
+			//			usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+			//			totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.TextQuota.PromptRatio + float64(usage.CompletionTokens)*mak.ReqModel.TextQuota.CompletionRatio))
+			//
+			//			if usage.PromptTokensDetails.CachedTokens != 0 {
+			//				totalTokens += int(math.Ceil(float64(usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.TextQuota.CachedRatio))
+			//			}
+			//
+			//			if usage.CompletionTokensDetails.CachedTokens != 0 {
+			//				totalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.TextQuota.CachedRatio))
+			//			}
+			//
+			//		} else {
+			//			usage.TotalTokens = mak.ReqModel.TextQuota.FixedQuota
+			//			totalTokens = mak.ReqModel.TextQuota.FixedQuota
+			//		}
+			//	}
+			//
+			//} else if retryInfo == nil && usage != nil && mak.ReqModel != nil {
+			//
+			//	if mak.ReqModel.Type == 100 { // 多模态
+			//
+			//		usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+			//		totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio))
+			//
+			//		if params.Tools != nil {
+			//			if tools := gconv.String(params.Tools); gstr.Contains(tools, "google_search") || gstr.Contains(tools, "googleSearch") {
+			//				totalTokens += mak.ReqModel.MultimodalQuota.SearchQuota
+			//				usage.SearchTokens = mak.ReqModel.MultimodalQuota.SearchQuota
+			//			}
+			//		}
+			//
+			//		if params.WebSearchOptions != nil {
+			//			searchTokens := common.GetMultimodalSearchTokens(ctx, params.WebSearchOptions, mak.ReqModel)
+			//			totalTokens += searchTokens
+			//			usage.SearchTokens = searchTokens
+			//		}
+			//
+			//		if usage.CacheCreationInputTokens != 0 {
+			//			totalTokens += int(math.Ceil(float64(usage.CacheCreationInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.PromptRatio * 1.25))
+			//		}
+			//
+			//		if usage.CacheReadInputTokens != 0 {
+			//			totalTokens += int(math.Ceil(float64(usage.CacheReadInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio * 0.1))
+			//		}
+			//
+			//		if usage.PromptTokensDetails.CachedTokens != 0 {
+			//			totalTokens += int(math.Ceil(float64(usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CachedRatio))
+			//		}
+			//
+			//		if usage.CompletionTokensDetails.CachedTokens != 0 {
+			//			totalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CachedRatio))
+			//		}
+			//
+			//	} else if mak.ReqModel.Type == 102 { // 多模态语音
+			//
+			//		usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+			//		totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio))
+			//
+			//		if usage.PromptTokensDetails.CachedTokens != 0 {
+			//			totalTokens += int(math.Ceil(float64(usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CachedRatio))
+			//		}
+			//
+			//		if usage.CompletionTokensDetails.CachedTokens != 0 {
+			//			totalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CachedRatio))
+			//		}
+			//
+			//	} else {
+			//		if mak.ReqModel.TextQuota.BillingMethod == 1 {
+			//
+			//			usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+			//			totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.TextQuota.PromptRatio + float64(usage.CompletionTokens)*mak.ReqModel.TextQuota.CompletionRatio))
+			//
+			//			if usage.PromptTokensDetails.CachedTokens != 0 {
+			//				totalTokens += int(math.Ceil(float64(usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.TextQuota.CachedRatio))
+			//			}
+			//
+			//			if usage.CompletionTokensDetails.CachedTokens != 0 {
+			//				totalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.TextQuota.CachedRatio))
+			//			}
+			//
+			//		} else {
+			//			usage.TotalTokens = mak.ReqModel.TextQuota.FixedQuota
+			//			totalTokens = mak.ReqModel.TextQuota.FixedQuota
+			//		}
+			//	}
+			//}
 
 			if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
+
+				usageSpend := common.ChatUsageSpend(ctx, params, completion, usage, mak)
+				totalTokens = usageSpend.TotalTokens
 
 				// 分组折扣
 				if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
