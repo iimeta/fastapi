@@ -49,6 +49,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 		params = common.ConvResponsesToChatCompletionsRequest(request, isChatCompletions)
 		mak    = &common.MAK{
 			Model:              params.Model,
+			Messages:           params.Messages,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
