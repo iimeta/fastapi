@@ -88,6 +88,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 			usageSpend := common.ChatUsageSpend(ctx, params, completion, response.Usage, mak)
 			totalTokens = usageSpend.TotalTokens
+			response.Usage = usageSpend.Usage
 
 			// 分组折扣
 			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
@@ -338,6 +339,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 				usageSpend := common.ChatUsageSpend(ctx, params, completion, usage, mak)
 				totalTokens = usageSpend.TotalTokens
+				usage = usageSpend.Usage
 
 				// 分组折扣
 				if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {

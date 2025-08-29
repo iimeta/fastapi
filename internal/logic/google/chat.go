@@ -78,6 +78,7 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 
 			usageSpend := common.ChatUsageSpend(ctx, params, completion, response.Usage, mak)
 			totalTokens = usageSpend.TotalTokens
+			response.Usage = usageSpend.Usage
 
 			// 分组折扣
 			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
@@ -288,6 +289,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 
 				usageSpend := common.ChatUsageSpend(ctx, params, completion, usage, mak)
 				totalTokens = usageSpend.TotalTokens
+				usage = usageSpend.Usage
 
 				// 分组折扣
 				if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {

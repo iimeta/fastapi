@@ -1,4 +1,4 @@
-package openai
+package general
 
 import (
 	"context"
@@ -13,8 +13,10 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	sdkm "github.com/iimeta/fastapi-sdk/model"
+	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
@@ -24,27 +26,32 @@ import (
 	"github.com/iimeta/fastapi/utility/util"
 )
 
-type sOpenAI struct{}
+type sGeneral struct{}
 
 func init() {
-	service.RegisterOpenAI(New())
+	service.RegisterGeneral(New())
 }
 
-func New() service.IOpenAI {
-	return &sOpenAI{}
+func New() service.IGeneral {
+	return &sGeneral{}
 }
 
-// Responses
-func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatCompletions bool, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.OpenAIResponsesRes, err error) {
+// General
+func (s *sGeneral) General(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.ChatCompletionResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sOpenAI Responses time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sGeneral General time: %d", gtime.TimestampMilli()-now)
 	}()
 
+	params, err := common.NewConverter(ctx, consts.CORP_OPENAI).ConvChatCompletionsRequest(ctx, request.GetBody())
+	if err != nil {
+		logger.Errorf(ctx, "sGeneral General ConvChatCompletionsRequest error: %v", err)
+		return response, err
+	}
+
 	var (
-		params = common.ConvResponsesToChatCompletionsRequest(request, isChatCompletions)
-		mak    = &common.MAK{
+		mak = &common.MAK{
 			Model:              params.Model,
 			Messages:           params.Messages,
 			FallbackModelAgent: fallbackModelAgent,
@@ -58,29 +65,19 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		chatCompletionResponse := common.ConvResponsesToChatCompletionsResponse(ctx, response)
-
-		if isChatCompletions {
-			response.ResponseBytes = gjson.MustEncode(chatCompletionResponse)
-		}
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
-			// 替换成调用的模型
-			if mak.ReqModel.IsEnableForward {
-				chatCompletionResponse.Model = mak.ReqModel.Model
-			}
-
 			completion := ""
-			if len(chatCompletionResponse.Choices) > 0 && chatCompletionResponse.Choices[0].Message != nil {
-				for _, choice := range chatCompletionResponse.Choices {
+			if len(response.Choices) > 0 && response.Choices[0].Message != nil {
+				for _, choice := range response.Choices {
 					completion += gconv.String(choice.Message.Content)
 				}
 			}
 
-			usageSpend := common.ChatUsageSpend(ctx, params, completion, chatCompletionResponse.Usage, mak)
+			usageSpend := common.ChatUsageSpend(ctx, params, completion, response.Usage, mak)
 			totalTokens = usageSpend.TotalTokens
-			chatCompletionResponse.Usage = usageSpend.Usage
+			response.Usage = usageSpend.Usage
 
 			// 分组折扣
 			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
@@ -102,33 +99,33 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 
 				completionsRes := &model.CompletionsRes{
 					Error:        err,
-					ConnTime:     chatCompletionResponse.ConnTime,
-					Duration:     chatCompletionResponse.Duration,
-					TotalTime:    chatCompletionResponse.TotalTime,
+					ConnTime:     response.ConnTime,
+					Duration:     response.Duration,
+					TotalTime:    response.TotalTime,
 					InternalTime: internalTime,
 					EnterTime:    enterTime,
 				}
 
-				if retryInfo == nil && chatCompletionResponse.Usage != nil {
+				if retryInfo == nil && response.Usage != nil {
 
-					if chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens != 0 {
-						chatCompletionResponse.Usage.CacheCreationInputTokens = response.Usage.PromptTokensDetails.CachedTokens
+					if response.Usage.PromptTokensDetails.CachedTokens != 0 {
+						response.Usage.CacheCreationInputTokens = response.Usage.PromptTokensDetails.CachedTokens
 					}
 
-					if chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens != 0 {
-						chatCompletionResponse.Usage.CacheReadInputTokens = response.Usage.CompletionTokensDetails.CachedTokens
+					if response.Usage.CompletionTokensDetails.CachedTokens != 0 {
+						response.Usage.CacheReadInputTokens = response.Usage.CompletionTokensDetails.CachedTokens
 					}
 
-					completionsRes.Usage = *chatCompletionResponse.Usage
+					completionsRes.Usage = *response.Usage
 					completionsRes.Usage.TotalTokens = totalTokens
 				}
 
-				if retryInfo == nil && len(chatCompletionResponse.Choices) > 0 && chatCompletionResponse.Choices[0].Message != nil {
-					if mak.RealModel.Type == 102 && chatCompletionResponse.Choices[0].Message.Audio != nil {
-						completionsRes.Completion = chatCompletionResponse.Choices[0].Message.Audio.Transcript
+				if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
+					if mak.RealModel.Type == 102 && response.Choices[0].Message.Audio != nil {
+						completionsRes.Completion = response.Choices[0].Message.Audio.Transcript
 					} else {
-						if len(chatCompletionResponse.Choices) > 1 {
-							for i, choice := range chatCompletionResponse.Choices {
+						if len(response.Choices) > 1 {
+							for i, choice := range response.Choices {
 
 								if choice.Message.Content != nil {
 									completionsRes.Completion += fmt.Sprintf("index: %d\ncontent: %s\n\n", i, gconv.String(choice.Message.Content))
@@ -140,14 +137,14 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 							}
 						} else {
 
-							if chatCompletionResponse.Choices[0].Message.ReasoningContent != nil {
-								completionsRes.Completion = gconv.String(chatCompletionResponse.Choices[0].Message.ReasoningContent)
+							if response.Choices[0].Message.ReasoningContent != nil {
+								completionsRes.Completion = gconv.String(response.Choices[0].Message.ReasoningContent)
 							}
 
-							completionsRes.Completion += gconv.String(chatCompletionResponse.Choices[0].Message.Content)
+							completionsRes.Completion += gconv.String(response.Choices[0].Message.Content)
 
-							if chatCompletionResponse.Choices[0].Message.ToolCalls != nil {
-								completionsRes.Completion += fmt.Sprintf("\ntool_calls: %s", gconv.String(chatCompletionResponse.Choices[0].Message.ToolCalls))
+							if response.Choices[0].Message.ToolCalls != nil {
+								completionsRes.Completion += fmt.Sprintf("\ntool_calls: %s", gconv.String(response.Choices[0].Message.ToolCalls))
 							}
 						}
 					}
@@ -177,13 +174,14 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 		return response, err
 	}
 
-	data := request.GetBody()
-
-	if isChatCompletions {
-		data = gjson.MustEncode(common.ConvChatCompletionsToResponsesRequest(request))
+	if mak.Path == "" {
+		mak.Path = request.RequestURI
+		if gstr.HasSuffix(mak.BaseUrl, "/v1") {
+			mak.Path = mak.Path[3:]
+		}
 	}
 
-	response, err = common.NewOpenAIAdapter(ctx, mak, false).Responses(ctx, data)
+	response, err = common.NewAdapter(ctx, mak, false).ChatCompletions(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -217,7 +215,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Responses(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel)
+							return s.General(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
 						}
 					}
 
@@ -228,7 +226,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.Responses(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, nil, fallbackModel)
+							return s.General(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
 						}
 					}
 				}
@@ -242,7 +240,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 				ErrMsg:     err.Error(),
 			}
 
-			return s.Responses(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+			return s.General(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
 		return response, err
@@ -251,17 +249,22 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 	return response, nil
 }
 
-// ResponsesStream
-func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, isChatCompletions bool, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (err error) {
+// GeneralStream
+func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sOpenAI ResponsesStream time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sGeneral GeneralStream time: %d", gtime.TimestampMilli()-now)
 	}()
 
+	params, err := common.NewConverter(ctx, consts.CORP_OPENAI).ConvChatCompletionsRequest(ctx, request.GetBody())
+	if err != nil {
+		logger.Errorf(ctx, "sGeneral GeneralStream ConvChatCompletionsRequest error: %v", err)
+		return err
+	}
+
 	var (
-		params = common.ConvResponsesToChatCompletionsRequest(request, isChatCompletions)
-		mak    = &common.MAK{
+		mak = &common.MAK{
 			Model:              params.Model,
 			Messages:           params.Messages,
 			FallbackModelAgent: fallbackModelAgent,
@@ -359,58 +362,14 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 		return err
 	}
 
-	//request := params
-	//
-	//if !gstr.Contains(mak.RealModel.Model, "*") {
-	//	request.Model = mak.RealModel.Model
-	//}
-	//
-	//// 预设配置
-	//if mak.RealModel.IsEnablePresetConfig {
-	//
-	//	// 替换预设提示词
-	//	if mak.RealModel.PresetConfig.IsSupportSystemRole && mak.RealModel.PresetConfig.SystemRolePrompt != "" {
-	//		if request.Messages[0].Role == consts.ROLE_SYSTEM {
-	//			request.Messages = append([]sdkm.ChatCompletionMessage{{
-	//				Role:    consts.ROLE_SYSTEM,
-	//				Content: mak.RealModel.PresetConfig.SystemRolePrompt,
-	//			}}, request.Messages[1:]...)
-	//		} else {
-	//			request.Messages = append([]sdkm.ChatCompletionMessage{{
-	//				Role:    consts.ROLE_SYSTEM,
-	//				Content: mak.RealModel.PresetConfig.SystemRolePrompt,
-	//			}}, request.Messages...)
-	//		}
-	//	}
-	//
-	//	// 检查MaxTokens取值范围
-	//	if request.MaxTokens != 0 {
-	//		if mak.RealModel.PresetConfig.MinTokens != 0 && request.MaxTokens < mak.RealModel.PresetConfig.MinTokens {
-	//			request.MaxTokens = mak.RealModel.PresetConfig.MinTokens
-	//		} else if mak.RealModel.PresetConfig.MaxTokens != 0 && request.MaxTokens > mak.RealModel.PresetConfig.MaxTokens {
-	//			request.MaxTokens = mak.RealModel.PresetConfig.MaxTokens
-	//		}
-	//	}
-	//}
-	//
-	//if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
-	//	for i, replaceModel := range mak.ModelAgent.ReplaceModels {
-	//		if replaceModel == request.Model {
-	//			logger.Infof(ctx, "sOpenAI ResponsesStream request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
-	//			request.Model = mak.ModelAgent.TargetModels[i]
-	//			mak.RealModel.Model = request.Model
-	//			break
-	//		}
-	//	}
-	//}
-
-	data := request.GetBody()
-
-	if isChatCompletions {
-		data = gjson.MustEncode(common.ConvChatCompletionsToResponsesRequest(request))
+	if mak.Path == "" {
+		mak.Path = request.RequestURI
+		if gstr.HasSuffix(mak.BaseUrl, "/v1") {
+			mak.Path = mak.Path[3:]
+		}
 	}
 
-	response, err := common.NewOpenAIAdapter(ctx, mak, true).ResponsesStream(ctx, data)
+	response, err := common.NewAdapter(ctx, mak, true).ChatCompletionsStream(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -444,7 +403,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel)
+							return s.GeneralStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
 						}
 					}
 
@@ -455,7 +414,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 								RetryCount: len(retry),
 								ErrMsg:     err.Error(),
 							}
-							return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, nil, fallbackModel)
+							return s.GeneralStream(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
 						}
 					}
 				}
@@ -469,7 +428,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 				ErrMsg:     err.Error(),
 			}
 
-			return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+			return s.GeneralStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
 		return err
@@ -479,9 +438,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 
 	for {
 
-		res := <-response
-
-		response := common.ConvResponsesStreamToChatCompletionsResponse(ctx, *res)
+		response := <-response
 
 		connTime = response.ConnTime
 		duration = response.Duration
@@ -528,9 +485,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 			// 记录错误次数和禁用
 			service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
 
-			isRetry, isDisabled := common.IsNeedRetry(err)
-
-			if isDisabled {
+			if _, isDisabled := common.IsNeedRetry(err); isDisabled {
 				if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 					if mak.RealModel.IsEnableModelAgent {
 						service.ModelAgent().DisabledModelAgentKey(ctx, mak.Key, err.Error())
@@ -540,47 +495,6 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 				}, nil); err != nil {
 					logger.Error(ctx, err)
 				}
-			}
-
-			if isRetry {
-
-				if common.IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
-
-					if mak.RealModel.IsEnableFallback {
-
-						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
-							if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, mak.RealModel); fallbackModelAgent != nil {
-								retryInfo = &mcommon.Retry{
-									IsRetry:    true,
-									RetryCount: len(retry),
-									ErrMsg:     err.Error(),
-								}
-								return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel)
-							}
-						}
-
-						if mak.RealModel.FallbackConfig.Model != "" {
-							if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
-								retryInfo = &mcommon.Retry{
-									IsRetry:    true,
-									RetryCount: len(retry),
-									ErrMsg:     err.Error(),
-								}
-								return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, nil, fallbackModel)
-							}
-						}
-					}
-
-					return err
-				}
-
-				retryInfo = &mcommon.Retry{
-					IsRetry:    true,
-					RetryCount: len(retry),
-					ErrMsg:     err.Error(),
-				}
-
-				return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 			}
 
 			return err
@@ -631,43 +545,16 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 			}
 		}
 
-		// 替换成调用的模型
-		//if mak.ReqModel.IsEnableForward {
-		//	response.Model = mak.ReqModel.Model
-		//}
-
-		// OpenAI官方格式
-		//if len(res.ResponseBytes) > 0 {
-		//
-		//	data := make(map[string]interface{})
-		//	if err = gjson.Unmarshal(res.ResponseBytes, &data); err != nil {
-		//		logger.Error(ctx, err)
-		//		return err
-		//	}
-		//
-		//	// 替换成调用的模型
-		//	if mak.ReqModel.IsEnableForward {
-		//		if _, ok := data["model"]; ok {
-		//			data["model"] = mak.ReqModel.Model
-		//		}
-		//	}
-		//
-		//	if err = util.SSEServer(ctx, gjson.MustEncodeString(data)); err != nil {
-		//		logger.Error(ctx, err)
-		//		return err
-		//	}
-		//
-		//} else {
-
-		data := res.ResponseBytes
-		if isChatCompletions {
-			data = gjson.MustEncode(response)
+		if len(response.ResponseBytes) > 0 {
+			if err = util.SSEServer(ctx, string(response.ResponseBytes)); err != nil {
+				logger.Error(ctx, err)
+				return err
+			}
+		} else {
+			if err = util.SSEServer(ctx, gjson.MustEncodeString(response)); err != nil {
+				logger.Error(ctx, err)
+				return err
+			}
 		}
-
-		if err = util.SSEServer(ctx, string(data)); err != nil {
-			logger.Error(ctx, err)
-			return err
-		}
-		//}
 	}
 }

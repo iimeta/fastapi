@@ -132,4 +132,5 @@ type UsageSpend struct {
 	AudioTokens  int
 	SearchTokens int
 	TotalTokens  int
+	Usage        *sdkm.Usage
 }

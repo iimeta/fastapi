@@ -19,6 +19,7 @@ import (
 	"github.com/iimeta/fastapi/internal/controller/dashboard"
 	"github.com/iimeta/fastapi/internal/controller/embedding"
 	"github.com/iimeta/fastapi/internal/controller/file"
+	"github.com/iimeta/fastapi/internal/controller/general"
 	"github.com/iimeta/fastapi/internal/controller/google"
 	"github.com/iimeta/fastapi/internal/controller/health"
 	"github.com/iimeta/fastapi/internal/controller/image"
@@ -87,6 +88,7 @@ var (
 						file.NewV1(),
 						anthropic.NewV1(),
 						openai.NewV1(),
+						general.NewV1(),
 					)
 				})
 

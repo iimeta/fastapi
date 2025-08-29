@@ -54,6 +54,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 			usageSpend := common.ChatUsageSpend(ctx, params, completion, response.Usage, mak)
 			totalTokens = usageSpend.TotalTokens
+			response.Usage = usageSpend.Usage
 		}
 
 		if mak.RealModel != nil {

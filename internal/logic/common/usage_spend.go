@@ -91,6 +91,8 @@ func MultimodalTokens(ctx context.Context, request sdkm.ChatCompletionRequest, c
 		usageSpend.TotalTokens += int(math.Ceil(float64(usage.CacheReadInputTokens) * mak.ReqModel.MultimodalQuota.TextQuota.CompletionRatio * 0.1))
 	}
 
+	usageSpend.Usage = usage
+
 	return
 }
 
@@ -143,6 +145,8 @@ func MultimodalAudioTokens(ctx context.Context, request sdkm.ChatCompletionReque
 		usageSpend.TotalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.MultimodalAudioQuota.AudioQuota.CachedRatio))
 	}
 
+	usageSpend.Usage = usage
+
 	return
 }
 
@@ -182,6 +186,8 @@ func TextTokens(ctx context.Context, request sdkm.ChatCompletionRequest, complet
 	if usage.CompletionTokensDetails.CachedTokens > 0 {
 		usageSpend.TotalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.TextQuota.CachedRatio))
 	}
+
+	usageSpend.Usage = usage
 
 	return
 }
