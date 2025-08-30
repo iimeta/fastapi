@@ -28,6 +28,7 @@ var (
 	ERR_NIL                           = NewError(500, -1, "", "fastapi_error")
 	ERR_UNKNOWN                       = NewError(500, -1, "Unknown Error.", "fastapi_error")
 	ERR_INTERNAL_ERROR                = NewError(500, 500, "Internal Error.", "fastapi_error")
+	ERR_SERVICE_UNAVAILABLE           = NewError(503, 503, "Service Unavailable.", "fastapi_error")
 	ERR_NO_AVAILABLE_KEY              = NewError(500, "fastapi_error", "No available key.", "fastapi_error")
 	ERR_ALL_KEY                       = NewError(500, "fastapi_error", "All key error.", "fastapi_error")
 	ERR_NO_AVAILABLE_MODEL_AGENT      = NewError(500, "fastapi_error", "No available model agent.", "fastapi_error")

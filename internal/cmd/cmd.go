@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"runtime"
+	"slices"
 	"strings"
 
 	"github.com/gogf/gf/v2/encoding/gjson"
@@ -150,6 +151,14 @@ func beforeServeHook(r *ghttp.Request) {
 }
 
 func middleware(r *ghttp.Request) {
+
+	if config.Cfg.ServiceUnavailable.Open && !slices.Contains(config.Cfg.ServiceUnavailable.IpWhitelist, r.GetClientIp()) {
+		err := errors.Error(r.GetCtx(), errors.ERR_SERVICE_UNAVAILABLE)
+		r.Response.Header().Set("Content-Type", "application/json")
+		r.Response.WriteStatus(err.Status(), gjson.MustEncodeString(err))
+		r.Exit()
+		return
+	}
 
 	logger.Debugf(r.GetCtx(), "r.Header: %v", r.Header)
 

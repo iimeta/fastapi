@@ -14,12 +14,13 @@ type Http struct {
 }
 
 type Email struct {
-	Open     bool   `bson:"open"      json:"open"`      // 开关
-	Host     string `bson:"host"      json:"host"`      // smtp.xxx.com
-	Port     int    `bson:"port"      json:"port"`      // 端口号
-	UserName string `bson:"user_name" json:"user_name"` // 登录账号
-	Password string `bson:"password"  json:"password"`  // 登录密码
-	FromName string `bson:"from_name" json:"from_name"` // 发送人名称
+	Open     bool          `bson:"open"      json:"open"`      // 开关
+	Host     string        `bson:"host"      json:"host"`      // smtp.xxx.com
+	Port     int           `bson:"port"      json:"port"`      // 端口号
+	UserName string        `bson:"user_name" json:"user_name"` // 登录账号
+	Password string        `bson:"password"  json:"password"`  // 登录密码
+	FromName string        `bson:"from_name" json:"from_name"` // 发送人名称
+	Interval time.Duration `bson:"interval"  json:"interval"`  // 发信间隔时间, 单位: 毫秒
 }
 
 type Statistics struct {
@@ -109,6 +110,11 @@ type QuotaWarning struct {
 	ExpireWarning    bool          `bson:"expire_warning"    json:"expire_warning"`    // 额度过期预警开关
 	ExpireThreshold  time.Duration `bson:"expire_threshold"  json:"expire_threshold"`  // 额度过期预警阈值, 单位: 天
 	ExpireNotice     bool          `bson:"expire_notice"     json:"expire_notice"`     // 额度过期通知开关
+}
+
+type ServiceUnavailable struct {
+	Open        bool     `bson:"open"         json:"open"`         // 开关
+	IpWhitelist []string `bson:"ip_whitelist" json:"ip_whitelist"` // IP白名单
 }
 
 type Debug struct {
