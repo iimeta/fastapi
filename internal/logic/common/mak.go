@@ -3,6 +3,8 @@ package common
 import (
 	"context"
 	"fmt"
+	"slices"
+
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
@@ -13,7 +15,6 @@ import (
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
-	"slices"
 )
 
 type MAK struct {
@@ -41,6 +42,10 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 
 	if mak.RealModel == nil {
 		mak.RealModel = new(model.Model)
+	}
+
+	if mak.Key == nil {
+		mak.Key = new(model.Key)
 	}
 
 	if mak.User == nil {
