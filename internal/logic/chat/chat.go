@@ -633,33 +633,37 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 			}
 		}
 
-		// 替换成调用的模型
-		if mak.ReqModel.IsEnableForward {
-			response.Model = mak.ReqModel.Model
-		}
+		// 官方格式
+		if mak.ReqModel.DataFormat == 2 && response.ResponseBytes != nil {
 
-		// OpenAI官方格式
-		if len(response.ResponseBytes) > 0 {
-
-			data := make(map[string]interface{})
-			if err = gjson.Unmarshal(response.ResponseBytes, &data); err != nil {
-				logger.Error(ctx, err)
-				return err
-			}
-
-			// 替换成调用的模型
 			if mak.ReqModel.IsEnableForward {
+
+				data := make(map[string]interface{})
+				if err = gjson.Unmarshal(response.ResponseBytes, &data); err != nil {
+					logger.Error(ctx, err)
+					return err
+				}
+
+				// 替换成调用的模型
 				if _, ok := data["model"]; ok {
 					data["model"] = mak.ReqModel.Model
 				}
+
+				response.ResponseBytes = gjson.MustEncode(data)
 			}
 
-			if err = util.SSEServer(ctx, gjson.MustEncodeString(data)); err != nil {
+			if err = util.SSEServer(ctx, string(response.ResponseBytes)); err != nil {
 				logger.Error(ctx, err)
 				return err
 			}
 
 		} else {
+
+			// 替换成调用的模型
+			if mak.ReqModel.IsEnableForward {
+				response.Model = mak.ReqModel.Model
+			}
+
 			if err = util.SSEServer(ctx, gjson.MustEncodeString(response)); err != nil {
 				logger.Error(ctx, err)
 				return err

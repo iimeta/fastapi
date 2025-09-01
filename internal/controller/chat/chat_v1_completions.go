@@ -20,16 +20,27 @@ func (c *ControllerV1) Completions(ctx context.Context, req *v1.CompletionsReq) 
 
 	if !req.IsToResponses {
 		if req.Stream {
+
 			if err = service.Chat().CompletionsStream(ctx, req.ChatCompletionRequest, nil, nil); err != nil {
 				return nil, err
 			}
+
 			g.RequestFromCtx(ctx).SetCtxVar("stream", req.Stream)
+
 		} else {
+
 			response, err := service.Chat().Completions(ctx, req.ChatCompletionRequest, nil, nil)
 			if err != nil {
 				return nil, err
 			}
-			g.RequestFromCtx(ctx).Response.WriteJson(response)
+
+			isOfficial := g.RequestFromCtx(ctx).GetCtxVar("is_official")
+
+			if isOfficial == nil || !isOfficial.Bool() || response.ResponseBytes == nil {
+				g.RequestFromCtx(ctx).Response.WriteJson(response)
+			} else {
+				g.RequestFromCtx(ctx).Response.WriteJson(response.ResponseBytes)
+			}
 		}
 	} else {
 		if req.Stream {

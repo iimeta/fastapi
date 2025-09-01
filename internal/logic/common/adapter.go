@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/iimeta/fastapi-sdk"
 	"github.com/iimeta/fastapi-sdk/anthropic"
 	"github.com/iimeta/fastapi-sdk/google"
@@ -25,7 +26,7 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool) sdk.Adapter {
 		Path:       mak.Path,
 		Timeout:    config.Cfg.Base.ShortTimeout * time.Second,
 		ProxyUrl:   config.Cfg.Http.ProxyUrl,
-		IsOfficial: mak.RealModel.DataFormat == 2,
+		IsOfficial: mak.ReqModel.DataFormat == 2,
 	}
 
 	if isLong {
@@ -36,6 +37,8 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool) sdk.Adapter {
 		options.IsSupportSystemRole = &mak.RealModel.PresetConfig.IsSupportSystemRole
 		options.IsSupportStream = &mak.RealModel.PresetConfig.IsSupportStream
 	}
+
+	g.RequestFromCtx(ctx).SetCtxVar("is_official", options.IsOfficial)
 
 	return sdk.NewAdapter(ctx, options.Corp, options)
 }
