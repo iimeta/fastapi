@@ -3,7 +3,6 @@ package chat
 import (
 	"context"
 
-	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
@@ -143,7 +142,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 		}
 	}
 
-	response, err = common.NewAdapter(ctx, mak, false).ChatCompletions(ctx, gjson.MustEncode(params))
+	response, err = common.NewAdapter(ctx, mak, false).ChatCompletions(ctx, params)
 	if err != nil {
 		logger.Error(ctx, err)
 

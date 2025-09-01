@@ -18,13 +18,14 @@ import (
 func NewAdapter(ctx context.Context, mak *MAK, isLong bool) sdk.Adapter {
 
 	options := &options.AdapterOptions{
-		Corp:     GetCorpCode(ctx, mak.Corp),
-		Model:    mak.RealModel.Model,
-		Key:      mak.RealKey,
-		BaseUrl:  mak.BaseUrl,
-		Path:     mak.Path,
-		Timeout:  config.Cfg.Base.ShortTimeout * time.Second,
-		ProxyUrl: config.Cfg.Http.ProxyUrl,
+		Corp:       GetCorpCode(ctx, mak.Corp),
+		Model:      mak.RealModel.Model,
+		Key:        mak.RealKey,
+		BaseUrl:    mak.BaseUrl,
+		Path:       mak.Path,
+		Timeout:    config.Cfg.Base.ShortTimeout * time.Second,
+		ProxyUrl:   config.Cfg.Http.ProxyUrl,
+		IsOfficial: mak.RealModel.DataFormat == 2,
 	}
 
 	if isLong {

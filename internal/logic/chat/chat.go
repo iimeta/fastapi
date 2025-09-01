@@ -230,7 +230,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 		}
 	}
 
-	response, err = common.NewAdapter(ctx, mak, false).ChatCompletions(ctx, gjson.MustEncode(request))
+	response, err = common.NewAdapter(ctx, mak, false).ChatCompletions(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -457,7 +457,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		}
 	}
 
-	response, err := common.NewAdapter(ctx, mak, true).ChatCompletionsStream(ctx, gjson.MustEncode(request))
+	response, err := common.NewAdapter(ctx, mak, true).ChatCompletionsStream(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
 
