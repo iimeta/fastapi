@@ -51,7 +51,6 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		res         sdkm.AnthropicChatCompletionRes
 		retryInfo   *mcommon.Retry
 		totalTokens int
 	)
@@ -183,7 +182,7 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 	//	}
 	//}
 
-	res, err = common.NewAnthropicAdapter(ctx, mak, false).ChatCompletionOfficial(ctx, request.GetBody())
+	response, err = common.NewAnthropicAdapter(ctx, mak, false).ChatCompletions(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -247,8 +246,6 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 
 		return response, err
 	}
-
-	response = convToChatCompletionResponse(g.RequestFromCtx(ctx).GetCtx(), res, false)
 
 	return response, nil
 }
@@ -386,7 +383,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 	//	}
 	//}
 
-	response, err := common.NewAnthropicAdapter(ctx, mak, true).ChatCompletionStreamOfficial(ctx, request.GetBody())
+	response, err := common.NewAnthropicAdapter(ctx, mak, true).ChatCompletionsStream(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -455,9 +452,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 
 	for {
 
-		res := <-response
-
-		response := convToChatCompletionResponse(g.RequestFromCtx(ctx).GetCtx(), *res, true)
+		response := <-response
 
 		connTime = response.ConnTime
 		duration = response.Duration

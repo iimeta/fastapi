@@ -52,7 +52,6 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		res         sdkm.GoogleChatCompletionRes
 		retryInfo   *mcommon.Retry
 		totalTokens int
 	)
@@ -184,7 +183,7 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 	//	}
 	//}
 
-	res, err = common.NewGoogleAdapter(ctx, mak, false).ChatCompletionOfficial(ctx, request.GetBody())
+	response, err = common.NewGoogleAdapter(ctx, mak, false).ChatCompletions(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -248,8 +247,6 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 
 		return response, err
 	}
-
-	response = convToChatCompletionResponse(g.RequestFromCtx(ctx).GetCtx(), res, false)
 
 	return response, nil
 }
@@ -387,7 +384,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 	//	}
 	//}
 
-	response, err := common.NewGoogleAdapter(ctx, mak, true).ChatCompletionStreamOfficial(ctx, request.GetBody())
+	response, err := common.NewGoogleAdapter(ctx, mak, true).ChatCompletionsStream(ctx, request.GetBody())
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -456,9 +453,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 
 	for {
 
-		res := <-response
-
-		response := convToChatCompletionResponse(g.RequestFromCtx(ctx).GetCtx(), *res, true)
+		response := <-response
 
 		connTime = response.ConnTime
 		duration = response.Duration

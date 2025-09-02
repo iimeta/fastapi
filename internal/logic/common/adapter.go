@@ -46,12 +46,13 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool) sdk.Adapter {
 func NewGoogleAdapter(ctx context.Context, mak *MAK, isLong bool) *google.Google {
 
 	options := &options.AdapterOptions{
-		Model:    mak.RealModel.Model,
-		Key:      mak.RealKey,
-		BaseUrl:  mak.BaseUrl,
-		Path:     mak.Path,
-		Timeout:  config.Cfg.Base.ShortTimeout * time.Second,
-		ProxyUrl: config.Cfg.Http.ProxyUrl,
+		Model:                   mak.RealModel.Model,
+		Key:                     mak.RealKey,
+		BaseUrl:                 mak.BaseUrl,
+		Path:                    mak.Path,
+		Timeout:                 config.Cfg.Base.ShortTimeout * time.Second,
+		ProxyUrl:                config.Cfg.Http.ProxyUrl,
+		IsOfficialFormatRequest: true,
 	}
 
 	if isLong {
@@ -62,6 +63,8 @@ func NewGoogleAdapter(ctx context.Context, mak *MAK, isLong bool) *google.Google
 		options.IsSupportSystemRole = &mak.RealModel.PresetConfig.IsSupportSystemRole
 		options.IsSupportStream = &mak.RealModel.PresetConfig.IsSupportStream
 	}
+
+	g.RequestFromCtx(ctx).SetCtxVar("is_official_format_response", true)
 
 	return google.NewAdapter(ctx, options)
 }
@@ -69,12 +72,13 @@ func NewGoogleAdapter(ctx context.Context, mak *MAK, isLong bool) *google.Google
 func NewAnthropicAdapter(ctx context.Context, mak *MAK, isLong bool) *anthropic.Anthropic {
 
 	options := &options.AdapterOptions{
-		Model:    mak.RealModel.Model,
-		Key:      mak.RealKey,
-		BaseUrl:  mak.BaseUrl,
-		Path:     mak.Path,
-		Timeout:  config.Cfg.Base.ShortTimeout * time.Second,
-		ProxyUrl: config.Cfg.Http.ProxyUrl,
+		Model:                   mak.RealModel.Model,
+		Key:                     mak.RealKey,
+		BaseUrl:                 mak.BaseUrl,
+		Path:                    mak.Path,
+		Timeout:                 config.Cfg.Base.ShortTimeout * time.Second,
+		ProxyUrl:                config.Cfg.Http.ProxyUrl,
+		IsOfficialFormatRequest: true,
 	}
 
 	if isLong {
@@ -85,6 +89,8 @@ func NewAnthropicAdapter(ctx context.Context, mak *MAK, isLong bool) *anthropic.
 		options.IsSupportSystemRole = &mak.RealModel.PresetConfig.IsSupportSystemRole
 		options.IsSupportStream = &mak.RealModel.PresetConfig.IsSupportStream
 	}
+
+	g.RequestFromCtx(ctx).SetCtxVar("is_official_format_response", true)
 
 	return anthropic.NewAdapter(ctx, options)
 }
