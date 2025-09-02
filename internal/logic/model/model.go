@@ -3,6 +3,9 @@ package model
 import (
 	"context"
 	"fmt"
+	"slices"
+	"strconv"
+
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gregex"
@@ -18,8 +21,6 @@ import (
 	"github.com/iimeta/fastapi/utility/cache"
 	"github.com/iimeta/fastapi/utility/logger"
 	"go.mongodb.org/mongo-driver/bson"
-	"slices"
-	"strconv"
 )
 
 type sModel struct {
@@ -67,7 +68,8 @@ func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 		RealtimeQuota:        result.RealtimeQuota,
 		MultimodalAudioQuota: result.MultimodalAudioQuota,
 		MidjourneyQuotas:     result.MidjourneyQuotas,
-		DataFormat:           result.DataFormat,
+		RequestDataFormat:    result.RequestDataFormat,
+		ResponseDataFormat:   result.ResponseDataFormat,
 		IsPublic:             result.IsPublic,
 		IsEnableModelAgent:   result.IsEnableModelAgent,
 		LbStrategy:           result.LbStrategy,
@@ -112,7 +114,8 @@ func (s *sModel) GetModelById(ctx context.Context, id string) (*model.Model, err
 		RealtimeQuota:        result.RealtimeQuota,
 		MultimodalAudioQuota: result.MultimodalAudioQuota,
 		MidjourneyQuotas:     result.MidjourneyQuotas,
-		DataFormat:           result.DataFormat,
+		RequestDataFormat:    result.RequestDataFormat,
+		ResponseDataFormat:   result.ResponseDataFormat,
 		IsPublic:             result.IsPublic,
 		IsEnableModelAgent:   result.IsEnableModelAgent,
 		LbStrategy:           result.LbStrategy,
@@ -635,7 +638,8 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 			RealtimeQuota:        result.RealtimeQuota,
 			MultimodalAudioQuota: result.MultimodalAudioQuota,
 			MidjourneyQuotas:     result.MidjourneyQuotas,
-			DataFormat:           result.DataFormat,
+			RequestDataFormat:    result.RequestDataFormat,
+			ResponseDataFormat:   result.ResponseDataFormat,
 			IsPublic:             result.IsPublic,
 			IsEnableModelAgent:   result.IsEnableModelAgent,
 			LbStrategy:           result.LbStrategy,
@@ -688,7 +692,8 @@ func (s *sModel) ListAll(ctx context.Context) ([]*model.Model, error) {
 			RealtimeQuota:        result.RealtimeQuota,
 			MultimodalAudioQuota: result.MultimodalAudioQuota,
 			MidjourneyQuotas:     result.MidjourneyQuotas,
-			DataFormat:           result.DataFormat,
+			RequestDataFormat:    result.RequestDataFormat,
+			ResponseDataFormat:   result.ResponseDataFormat,
 			IsPublic:             result.IsPublic,
 			IsEnableModelAgent:   result.IsEnableModelAgent,
 			LbStrategy:           result.LbStrategy,
@@ -903,7 +908,8 @@ func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, ne
 		RealtimeQuota:        newData.RealtimeQuota,
 		MultimodalAudioQuota: newData.MultimodalAudioQuota,
 		MidjourneyQuotas:     newData.MidjourneyQuotas,
-		DataFormat:           newData.DataFormat,
+		RequestDataFormat:    newData.RequestDataFormat,
+		ResponseDataFormat:   newData.ResponseDataFormat,
 		IsPublic:             newData.IsPublic,
 		IsEnableModelAgent:   newData.IsEnableModelAgent,
 		LbStrategy:           newData.LbStrategy,

@@ -19,14 +19,14 @@ import (
 func NewAdapter(ctx context.Context, mak *MAK, isLong bool) sdk.Adapter {
 
 	options := &options.AdapterOptions{
-		Corp:       GetCorpCode(ctx, mak.Corp),
-		Model:      mak.RealModel.Model,
-		Key:        mak.RealKey,
-		BaseUrl:    mak.BaseUrl,
-		Path:       mak.Path,
-		Timeout:    config.Cfg.Base.ShortTimeout * time.Second,
-		ProxyUrl:   config.Cfg.Http.ProxyUrl,
-		IsOfficial: mak.ReqModel.DataFormat == 2,
+		Corp:                    GetCorpCode(ctx, mak.Corp),
+		Model:                   mak.RealModel.Model,
+		Key:                     mak.RealKey,
+		BaseUrl:                 mak.BaseUrl,
+		Path:                    mak.Path,
+		Timeout:                 config.Cfg.Base.ShortTimeout * time.Second,
+		ProxyUrl:                config.Cfg.Http.ProxyUrl,
+		IsOfficialFormatRequest: mak.ReqModel.RequestDataFormat == 2,
 	}
 
 	if isLong {
@@ -38,7 +38,7 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool) sdk.Adapter {
 		options.IsSupportStream = &mak.RealModel.PresetConfig.IsSupportStream
 	}
 
-	g.RequestFromCtx(ctx).SetCtxVar("is_official", options.IsOfficial)
+	g.RequestFromCtx(ctx).SetCtxVar("is_official_format_response", mak.ReqModel.ResponseDataFormat == 2)
 
 	return sdk.NewAdapter(ctx, options.Corp, options)
 }

@@ -634,7 +634,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		}
 
 		// 官方格式
-		if mak.ReqModel.DataFormat == 2 && response.ResponseBytes != nil {
+		if mak.ReqModel.ResponseDataFormat == 2 && response.ResponseBytes != nil {
 
 			if mak.ReqModel.IsEnableForward {
 
@@ -644,7 +644,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 					return err
 				}
 
-				// 替换成调用的模型
 				if _, ok := data["model"]; ok {
 					data["model"] = mak.ReqModel.Model
 				}
@@ -659,7 +658,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 		} else {
 
-			// 替换成调用的模型
 			if mak.ReqModel.IsEnableForward {
 				response.Model = mak.ReqModel.Model
 			}

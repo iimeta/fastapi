@@ -34,9 +34,9 @@ func (c *ControllerV1) Completions(ctx context.Context, req *v1.CompletionsReq) 
 				return nil, err
 			}
 
-			isOfficial := g.RequestFromCtx(ctx).GetCtxVar("is_official")
+			isOfficialFormatResponse := g.RequestFromCtx(ctx).GetCtxVar("is_official_format_response")
 
-			if isOfficial == nil || !isOfficial.Bool() || response.ResponseBytes == nil {
+			if isOfficialFormatResponse == nil || !isOfficialFormatResponse.Bool() || response.ResponseBytes == nil {
 				g.RequestFromCtx(ctx).Response.WriteJson(response)
 			} else {
 				g.RequestFromCtx(ctx).Response.WriteJson(response.ResponseBytes)

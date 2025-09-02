@@ -19,7 +19,8 @@ type Model struct {
 	RealtimeQuota        common.RealtimeQuota        `json:"realtime_quota,omitempty"`          // 多模态实时额度
 	MultimodalAudioQuota common.MultimodalAudioQuota `json:"multimodal_audio_quota,omitempty"`  // 多模态语音额度
 	MidjourneyQuotas     []common.MidjourneyQuota    `json:"midjourney_quotas,omitempty"`       // Midjourney额度
-	DataFormat           int                         `json:"data_format,omitempty"`             // 数据格式[1:统一格式, 2:官方格式]
+	RequestDataFormat    int                         `json:"request_data_format,omitempty"`     // 请求数据格式[1:统一格式, 2:官方格式]
+	ResponseDataFormat   int                         `json:"response_data_format,omitempty"`    // 响应数据格式[1:统一格式, 2:官方格式]
 	IsPublic             bool                        `json:"is_public,omitempty"`               // 是否公开
 	IsEnableModelAgent   bool                        `json:"is_enable_model_agent,omitempty"`   // 是否启用模型代理
 	LbStrategy           int                         `json:"lb_strategy,omitempty"`             // 代理负载均衡策略[1:轮询, 2:权重]
