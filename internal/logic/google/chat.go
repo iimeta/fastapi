@@ -2,6 +2,7 @@ package google
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math"
@@ -183,7 +184,34 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 	//	}
 	//}
 
-	response, err = common.NewGoogleAdapter(ctx, mak, false).ChatCompletions(ctx, request.GetBody())
+	body := request.GetBody()
+
+	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
+		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
+			if replaceModel == params.Model {
+				logger.Infof(ctx, "sGoogle Completions params.Model: %s replaced %s", params.Model, mak.ModelAgent.TargetModels[i])
+
+				params.Model = mak.ModelAgent.TargetModels[i]
+				mak.RealModel.Model = params.Model
+
+				data := make(map[string]interface{})
+				if err = json.Unmarshal(body, &data); err != nil {
+					logger.Error(ctx, err)
+					return response, err
+				}
+
+				if _, ok := data["model"]; ok {
+					data["model"] = mak.RealModel.Model
+				}
+
+				body = gjson.MustEncode(data)
+
+				break
+			}
+		}
+	}
+
+	response, err = common.NewGoogleAdapter(ctx, mak, false).ChatCompletions(ctx, body)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -384,7 +412,34 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 	//	}
 	//}
 
-	response, err := common.NewGoogleAdapter(ctx, mak, true).ChatCompletionsStream(ctx, request.GetBody())
+	body := request.GetBody()
+
+	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
+		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
+			if replaceModel == params.Model {
+				logger.Infof(ctx, "sGoogle CompletionsStream params.Model: %s replaced %s", params.Model, mak.ModelAgent.TargetModels[i])
+
+				params.Model = mak.ModelAgent.TargetModels[i]
+				mak.RealModel.Model = params.Model
+
+				data := make(map[string]interface{})
+				if err = json.Unmarshal(body, &data); err != nil {
+					logger.Error(ctx, err)
+					return err
+				}
+
+				if _, ok := data["model"]; ok {
+					data["model"] = mak.RealModel.Model
+				}
+
+				body = gjson.MustEncode(data)
+
+				break
+			}
+		}
+	}
+
+	response, err := common.NewGoogleAdapter(ctx, mak, true).ChatCompletionsStream(ctx, body)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -462,24 +517,6 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 		if response.Error != nil {
 
 			if errors.Is(response.Error, io.EOF) {
-
-				if response.Usage != nil {
-					if usage == nil {
-						usage = response.Usage
-					} else {
-						if response.Usage.PromptTokens != 0 {
-							usage.PromptTokens = response.Usage.PromptTokens
-						}
-						if response.Usage.CompletionTokens != 0 {
-							usage.CompletionTokens = response.Usage.CompletionTokens
-						}
-						if response.Usage.TotalTokens != 0 {
-							usage.TotalTokens = response.Usage.TotalTokens
-						} else {
-							usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-						}
-					}
-				}
 
 				if err = util.SSEServer(ctx, "[DONE]"); err != nil {
 					logger.Error(ctx, err)
@@ -584,6 +621,12 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 					usage.TotalTokens = response.Usage.TotalTokens
 				} else {
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+				}
+				if response.Usage.CacheCreationInputTokens != 0 {
+					usage.CacheCreationInputTokens = response.Usage.CacheCreationInputTokens
+				}
+				if response.Usage.CacheReadInputTokens != 0 {
+					usage.CacheReadInputTokens = response.Usage.CacheReadInputTokens
 				}
 			}
 		}

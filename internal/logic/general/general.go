@@ -448,30 +448,6 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 
 			if errors.Is(response.Error, io.EOF) {
 
-				if response.Usage != nil {
-					if usage == nil {
-						usage = response.Usage
-					} else {
-						if response.Usage.PromptTokens != 0 {
-							usage.PromptTokens = response.Usage.PromptTokens
-						}
-						if response.Usage.CompletionTokens != 0 {
-							usage.CompletionTokens = response.Usage.CompletionTokens
-						}
-						if response.Usage.TotalTokens != 0 {
-							usage.TotalTokens = response.Usage.TotalTokens
-						} else {
-							usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-						}
-						if response.Usage.CacheCreationInputTokens != 0 {
-							usage.CacheCreationInputTokens = response.Usage.CacheCreationInputTokens
-						}
-						if response.Usage.CacheReadInputTokens != 0 {
-							usage.CacheReadInputTokens = response.Usage.CacheReadInputTokens
-						}
-					}
-				}
-
 				if err = util.SSEServer(ctx, "[DONE]"); err != nil {
 					logger.Error(ctx, err)
 					return err

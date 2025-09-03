@@ -6,7 +6,6 @@ import (
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/iimeta/fastapi-sdk"
-	"github.com/iimeta/fastapi-sdk/anthropic"
 	"github.com/iimeta/fastapi-sdk/google"
 	"github.com/iimeta/fastapi-sdk/openai"
 	"github.com/iimeta/fastapi-sdk/options"
@@ -69,9 +68,10 @@ func NewGoogleAdapter(ctx context.Context, mak *MAK, isLong bool) *google.Google
 	return google.NewAdapter(ctx, options)
 }
 
-func NewAnthropicAdapter(ctx context.Context, mak *MAK, isLong bool) *anthropic.Anthropic {
+func NewAnthropicAdapter(ctx context.Context, mak *MAK, isLong bool) sdk.Adapter {
 
 	options := &options.AdapterOptions{
+		Corp:                    GetCorpCode(ctx, mak.Corp),
 		Model:                   mak.RealModel.Model,
 		Key:                     mak.RealKey,
 		BaseUrl:                 mak.BaseUrl,
@@ -92,7 +92,7 @@ func NewAnthropicAdapter(ctx context.Context, mak *MAK, isLong bool) *anthropic.
 
 	g.RequestFromCtx(ctx).SetCtxVar("is_official_format_response", true)
 
-	return anthropic.NewAdapter(ctx, options)
+	return sdk.NewAdapter(ctx, options.Corp, options)
 }
 
 func NewRealtimeAdapter(ctx context.Context, model *model.Model, key, baseUrl, path string) *sdk.RealtimeClient {
