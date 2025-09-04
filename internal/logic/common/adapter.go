@@ -6,7 +6,6 @@ import (
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/iimeta/fastapi-sdk"
-	"github.com/iimeta/fastapi-sdk/google"
 	"github.com/iimeta/fastapi-sdk/openai"
 	"github.com/iimeta/fastapi-sdk/options"
 	"github.com/iimeta/fastapi/internal/config"
@@ -15,7 +14,7 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 )
 
-func NewAdapter(ctx context.Context, mak *MAK, isLong bool) sdk.Adapter {
+func NewAdapter(ctx context.Context, mak *MAK, isLong bool, isOfficialFormat ...bool) sdk.Adapter {
 
 	options := &options.AdapterOptions{
 		Corp:                    GetCorpCode(ctx, mak.Corp),
@@ -25,7 +24,7 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool) sdk.Adapter {
 		Path:                    mak.Path,
 		Timeout:                 config.Cfg.Base.ShortTimeout * time.Second,
 		ProxyUrl:                config.Cfg.Http.ProxyUrl,
-		IsOfficialFormatRequest: mak.ReqModel.RequestDataFormat == 2,
+		IsOfficialFormatRequest: (len(isOfficialFormat) > 0 && isOfficialFormat[0]) || mak.ReqModel.RequestDataFormat == 2,
 	}
 
 	if isLong {
@@ -37,66 +36,9 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool) sdk.Adapter {
 		options.IsSupportStream = &mak.RealModel.PresetConfig.IsSupportStream
 	}
 
-	g.RequestFromCtx(ctx).SetCtxVar("is_official_format_response", mak.ReqModel.ResponseDataFormat == 2)
+	g.RequestFromCtx(ctx).SetCtxVar("is_official_format_response", (len(isOfficialFormat) > 0 && isOfficialFormat[0]) || mak.ReqModel.ResponseDataFormat == 2)
 
 	return sdk.NewAdapter(ctx, options.Corp, options)
-}
-
-func NewGoogleAdapter(ctx context.Context, mak *MAK, isLong bool) *google.Google {
-
-	options := &options.AdapterOptions{
-		Model:                   mak.RealModel.Model,
-		Key:                     mak.RealKey,
-		BaseUrl:                 mak.BaseUrl,
-		Path:                    mak.Path,
-		Timeout:                 config.Cfg.Base.ShortTimeout * time.Second,
-		ProxyUrl:                config.Cfg.Http.ProxyUrl,
-		IsOfficialFormatRequest: true,
-	}
-
-	if isLong {
-		options.Timeout = config.Cfg.Base.LongTimeout * time.Second
-	}
-
-	if mak.RealModel.IsEnablePresetConfig {
-		options.IsSupportSystemRole = &mak.RealModel.PresetConfig.IsSupportSystemRole
-		options.IsSupportStream = &mak.RealModel.PresetConfig.IsSupportStream
-	}
-
-	g.RequestFromCtx(ctx).SetCtxVar("is_official_format_response", true)
-
-	return google.NewAdapter(ctx, options)
-}
-
-func NewAnthropicAdapter(ctx context.Context, mak *MAK, isLong bool) sdk.Adapter {
-
-	options := &options.AdapterOptions{
-		Corp:                    GetCorpCode(ctx, mak.Corp),
-		Model:                   mak.RealModel.Model,
-		Key:                     mak.RealKey,
-		BaseUrl:                 mak.BaseUrl,
-		Path:                    mak.Path,
-		Timeout:                 config.Cfg.Base.ShortTimeout * time.Second,
-		ProxyUrl:                config.Cfg.Http.ProxyUrl,
-		IsOfficialFormatRequest: true,
-	}
-
-	if isLong {
-		options.Timeout = config.Cfg.Base.LongTimeout * time.Second
-	}
-
-	if mak.RealModel.IsEnablePresetConfig {
-		options.IsSupportSystemRole = &mak.RealModel.PresetConfig.IsSupportSystemRole
-		options.IsSupportStream = &mak.RealModel.PresetConfig.IsSupportStream
-	}
-
-	g.RequestFromCtx(ctx).SetCtxVar("is_official_format_response", true)
-
-	return sdk.NewAdapter(ctx, options.Corp, options)
-}
-
-func NewRealtimeAdapter(ctx context.Context, model *model.Model, key, baseUrl, path string) *sdk.RealtimeClient {
-	return sdk.NewRealtimeClient(ctx, model.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
 }
 
 func NewOpenAIAdapter(ctx context.Context, mak *MAK, isLong bool) *openai.OpenAI {
@@ -106,19 +48,32 @@ func NewOpenAIAdapter(ctx context.Context, mak *MAK, isLong bool) *openai.OpenAI
 	}
 
 	options := &options.AdapterOptions{
-		Model:    mak.RealModel.Model,
-		Key:      mak.RealKey,
-		BaseUrl:  mak.BaseUrl,
-		Path:     mak.Path,
-		Timeout:  config.Cfg.Base.ShortTimeout * time.Second,
-		ProxyUrl: config.Cfg.Http.ProxyUrl,
+		Corp:                    GetCorpCode(ctx, mak.Corp),
+		Model:                   mak.RealModel.Model,
+		Key:                     mak.RealKey,
+		BaseUrl:                 mak.BaseUrl,
+		Path:                    mak.Path,
+		Timeout:                 config.Cfg.Base.ShortTimeout * time.Second,
+		ProxyUrl:                config.Cfg.Http.ProxyUrl,
+		IsOfficialFormatRequest: true,
 	}
 
 	if isLong {
 		options.Timeout = config.Cfg.Base.LongTimeout * time.Second
 	}
 
+	if mak.RealModel.IsEnablePresetConfig {
+		options.IsSupportSystemRole = &mak.RealModel.PresetConfig.IsSupportSystemRole
+		options.IsSupportStream = &mak.RealModel.PresetConfig.IsSupportStream
+	}
+
+	g.RequestFromCtx(ctx).SetCtxVar("is_official_format_response", true)
+
 	return openai.NewAdapter(ctx, options)
+}
+
+func NewRealtimeAdapter(ctx context.Context, model *model.Model, key, baseUrl, path string) *sdk.RealtimeClient {
+	return sdk.NewRealtimeClient(ctx, model.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
 }
 
 func NewModerationClient(ctx context.Context, model *model.Model, key, baseUrl, path string) *sdk.ModerationClient {

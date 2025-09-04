@@ -210,7 +210,7 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 		}
 	}
 
-	response, err = common.NewAnthropicAdapter(ctx, mak, false).ChatCompletions(ctx, body)
+	response, err = common.NewAdapter(ctx, mak, false, true).ChatCompletions(ctx, body)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -438,7 +438,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 		}
 	}
 
-	response, err := common.NewAnthropicAdapter(ctx, mak, true).ChatCompletionsStream(ctx, body)
+	response, err := common.NewAdapter(ctx, mak, true, true).ChatCompletionsStream(ctx, body)
 	if err != nil {
 		logger.Error(ctx, err)
 
