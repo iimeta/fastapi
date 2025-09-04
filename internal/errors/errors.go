@@ -116,11 +116,6 @@ func Error(ctx context.Context, err error) (iFastApiError IFastApiError) {
 		return NewErrorf(e.Status(), e.ErrCode(), e.ErrMessage()+" TraceId: %s Timestamp: %d", e.ErrType(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
 	}
 
-	apiError := &sdkerr.ApiError{}
-	if As(err, &apiError) && apiError.HttpStatusCode != 500 && !Is(apiError, sdkerr.ERR_INSUFFICIENT_QUOTA) {
-		return NewError(apiError.HttpStatusCode, apiError.Code, apiError.Message, apiError.Type).(IFastApiError)
-	}
-
 	// 不屏蔽错误
 	if config.Cfg.NotShieldError.Open && len(config.Cfg.NotShieldError.Errors) > 0 {
 		for _, notShieldError := range config.Cfg.NotShieldError.Errors {
@@ -128,12 +123,14 @@ func Error(ctx context.Context, err error) (iFastApiError IFastApiError) {
 
 				e := ERR_UNKNOWN.(IFastApiError)
 
-				openaiApiError := &sdkerr.ApiError{}
-				if As(err, &openaiApiError) {
-					if _, ok := openaiApiError.Code.(string); ok {
-						openaiApiError.Code = e.ErrCode()
-					}
-					return NewErrorf(openaiApiError.HttpStatusCode, openaiApiError.Code, gstr.Split(gstr.Split(openaiApiError.Message, " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", e.ErrType(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
+				requestError := &sdkerr.RequestError{}
+				if As(err, &requestError) {
+					return NewErrorf(requestError.HttpStatusCode, e.ErrCode(), gstr.Split(gstr.Split(requestError.Err.Error(), " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", e.ErrType(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
+				}
+
+				apiError := &sdkerr.ApiError{}
+				if As(err, &apiError) {
+					return NewErrorf(apiError.HttpStatusCode, apiError.Code, gstr.Split(gstr.Split(apiError.Message, " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", apiError.Type, gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
 				}
 
 				return NewErrorf(e.Status(), e.ErrCode(), gstr.Split(gstr.Split(err.Error(), " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", e.ErrType(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)

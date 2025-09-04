@@ -208,11 +208,11 @@ func ConvResponsesStreamToChatCompletionsResponse(ctx context.Context, res sdkm.
 	return chatCompletionResponse
 }
 
-func ConvChatCompletionsToResponsesRequest(request *ghttp.Request) sdkm.OpenAIResponsesReq {
+func ConvChatCompletionsToResponsesRequest(ctx context.Context, body []byte) sdkm.OpenAIResponsesReq {
 
 	chatCompletionRequest := sdkm.ChatCompletionRequest{}
-	if err := gjson.Unmarshal(request.GetBody(), &chatCompletionRequest); err != nil {
-		logger.Error(request.GetCtx(), err)
+	if err := gjson.Unmarshal(body, &chatCompletionRequest); err != nil {
+		logger.Error(ctx, err)
 		return sdkm.OpenAIResponsesReq{}
 	}
 

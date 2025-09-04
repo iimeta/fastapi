@@ -2,6 +2,7 @@ package openai
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math"
@@ -177,13 +178,38 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 		return response, err
 	}
 
-	data := request.GetBody()
+	body := request.GetBody()
 
-	if isChatCompletions {
-		data = gjson.MustEncode(common.ConvChatCompletionsToResponsesRequest(request))
+	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
+		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
+			if replaceModel == params.Model {
+				logger.Infof(ctx, "sOpenAI Responses params.Model: %s replaced %s", params.Model, mak.ModelAgent.TargetModels[i])
+
+				params.Model = mak.ModelAgent.TargetModels[i]
+				mak.RealModel.Model = params.Model
+
+				data := make(map[string]interface{})
+				if err = json.Unmarshal(body, &data); err != nil {
+					logger.Error(ctx, err)
+					return response, err
+				}
+
+				if _, ok := data["model"]; ok {
+					data["model"] = mak.RealModel.Model
+				}
+
+				body = gjson.MustEncode(data)
+
+				break
+			}
+		}
 	}
 
-	response, err = common.NewOpenAIAdapter(ctx, mak, false).Responses(ctx, data)
+	if isChatCompletions {
+		body = gjson.MustEncode(common.ConvChatCompletionsToResponsesRequest(ctx, body))
+	}
+
+	response, err = common.NewOpenAIAdapter(ctx, mak, false).Responses(ctx, body)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -404,13 +430,38 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 	//	}
 	//}
 
-	data := request.GetBody()
+	body := request.GetBody()
 
-	if isChatCompletions {
-		data = gjson.MustEncode(common.ConvChatCompletionsToResponsesRequest(request))
+	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
+		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
+			if replaceModel == params.Model {
+				logger.Infof(ctx, "sOpenAI ResponsesStream params.Model: %s replaced %s", params.Model, mak.ModelAgent.TargetModels[i])
+
+				params.Model = mak.ModelAgent.TargetModels[i]
+				mak.RealModel.Model = params.Model
+
+				data := make(map[string]interface{})
+				if err = json.Unmarshal(body, &data); err != nil {
+					logger.Error(ctx, err)
+					return err
+				}
+
+				if _, ok := data["model"]; ok {
+					data["model"] = mak.RealModel.Model
+				}
+
+				body = gjson.MustEncode(data)
+
+				break
+			}
+		}
 	}
 
-	response, err := common.NewOpenAIAdapter(ctx, mak, true).ResponsesStream(ctx, data)
+	if isChatCompletions {
+		body = gjson.MustEncode(common.ConvChatCompletionsToResponsesRequest(ctx, body))
+	}
+
+	response, err := common.NewOpenAIAdapter(ctx, mak, true).ResponsesStream(ctx, body)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -631,34 +682,6 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 			}
 		}
 
-		// 替换成调用的模型
-		//if mak.ReqModel.IsEnableForward {
-		//	response.Model = mak.ReqModel.Model
-		//}
-
-		// OpenAI官方格式
-		//if len(res.ResponseBytes) > 0 {
-		//
-		//	data := make(map[string]interface{})
-		//	if err = gjson.Unmarshal(res.ResponseBytes, &data); err != nil {
-		//		logger.Error(ctx, err)
-		//		return err
-		//	}
-		//
-		//	// 替换成调用的模型
-		//	if mak.ReqModel.IsEnableForward {
-		//		if _, ok := data["model"]; ok {
-		//			data["model"] = mak.ReqModel.Model
-		//		}
-		//	}
-		//
-		//	if err = util.SSEServer(ctx, gjson.MustEncodeString(data)); err != nil {
-		//		logger.Error(ctx, err)
-		//		return err
-		//	}
-		//
-		//} else {
-
 		data := res.ResponseBytes
 		if isChatCompletions {
 			data = gjson.MustEncode(response)
@@ -668,6 +691,5 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 			logger.Error(ctx, err)
 			return err
 		}
-		//}
 	}
 }
