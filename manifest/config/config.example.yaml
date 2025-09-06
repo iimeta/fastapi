@@ -1,34 +1,41 @@
-api_server_address: ":8000"
-
+# 服务配置
 server:
-  clientMaxBodySize: 15m
+  address: ":8000"
+  clientMaxBodySize: 20m
 
-# Redis 配置
+# Redis配置
 redis:
   default:
-    address: 127.0.0.1:6379
-    db: 1
-    pass: fastapi666
-#    masterName: mymaster  # 哨兵模式必填
-    minIdle: 20
-    maxIdle: 100
-    maxActive: 100
-    waitTimeout: 60
-    dialTimeout: 60
-    readTimeout: 60
-    writeTimeout: 60
-#  slave:
-#    address: 127.0.0.1:6379
-#    db: 1
-#    pass: fastapi666
-#    minIdle: 20
-#    maxIdle: 100
-#    maxActive: 100
-#    waitTimeout: 60
-#    dialTimeout: 60
-#    readTimeout: 60
-#    writeTimeout: 60
+    address: 127.0.0.1:6379  # 格式：地址:端口，支持单实例、主从和集群模式配置，使用','分割多个地址。如：10.0.0.1:6379,10.0.0.2:6379
+    db: 1                    # 数据库
+    user:                    # 用户名, 可选
+    pass: fastapi666         # 密码
+#    masterName: mymaster    # 哨兵模式必填
+    maxActive: 0             # 最大连接数(0为不限制)
+    maxConnLifetime: 60s     # 连接最长存活时间，使用时间字符串，如: 30s/1m/1d
+    minIdle: 10              # 最小空闲连接数
+    maxIdle: 100             # 最大空闲连接数(0为不限制)
+    idleTimeout: 60s         # 连接最大空闲时间，使用时间字符串，如: 30s/1m/1d
+    waitTimeout: 60s         # 等待连接池连接超时时间，使用时间字符串，如: 30s/1m/1d
+    dialTimeout: 60s         # 连接超时时间，使用时间字符串，如: 30s/1m/1d
+    readTimeout: 60s         # 读操作超时时间，使用时间字符串，如: 30s/1m/1d
+    writeTimeout: 60s        # 写操作超时时间，使用时间字符串，如: 30s/1m/1d
+#  slave:                     # 从节点配置
+#    address: 127.0.0.1:6379  # 格式：地址:端口
+#    db: 1                    # 数据库
+#    user:                    # 用户名, 可选
+#    pass: fastapi666         # 密码
+#    maxActive: 0             # 最大连接数(0为不限制)
+#    maxConnLifetime: 60s     # 连接最长存活时间，使用时间字符串，如: 30s/1m/1d
+#    minIdle: 10              # 最小空闲连接数
+#    maxIdle: 100             # 最大空闲连接数(0为不限制)
+#    idleTimeout: 60s         # 连接最大空闲时间，使用时间字符串，如: 30s/1m/1d
+#    waitTimeout: 60s         # 等待连接池连接超时时间，使用时间字符串，如: 30s/1m/1d
+#    dialTimeout: 60s         # 连接超时时间，使用时间字符串，如: 30s/1m/1d
+#    readTimeout: 60s         # 读操作超时时间，使用时间字符串，如: 30s/1m/1d
+#    writeTimeout: 60s        # 写操作超时时间，使用时间字符串，如: 30s/1m/1d
 
+# 数据库配置
 mongodb:
   uri: mongodb://admin:fastapi666@127.0.0.1:27017/?authSource=admin
   database: fastapi
@@ -38,7 +45,8 @@ logger:
   path: "./log/"                                  # 日志文件路径。默认为空，表示关闭，仅输出到终端
   file: "{Ymd_H}.log"                             # 日志文件格式。默认为"{Y-m-d}.log"
   prefix: ""                                      # 日志内容输出前缀。默认为空
-  level: "debug"                                  # 日志输出级别, debug, info, error, all
+  level: "debug"                                  # 日志输出级别[debug，info，notice，warning，error，critical]
+  timeFormat: "2006-01-02 15:04:05.000"           # 自定义日志输出的时间格式，使用Golang标准的时间格式配置
   ctxKeys: [ "host", "user_id", "app_id", "sk" ]  # 自定义Context上下文变量名称，自动打印Context的变量到日志中。默认为空
   header: true                                    # 是否打印日志的头信息。默认true
   stdout: true                                    # 日志是否同时输出到终端。默认true
