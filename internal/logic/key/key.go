@@ -3,6 +3,8 @@ package key
 import (
 	"context"
 	"fmt"
+	"slices"
+
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/config"
@@ -17,7 +19,6 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
 	"go.mongodb.org/mongo-driver/bson"
-	"slices"
 )
 
 type sKey struct {

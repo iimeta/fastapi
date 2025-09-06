@@ -2,9 +2,10 @@ package cache
 
 import (
 	"context"
+	"time"
+
 	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/os/gcache"
-	"time"
 )
 
 type Cache struct {

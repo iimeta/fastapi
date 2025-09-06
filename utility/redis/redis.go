@@ -3,6 +3,8 @@ package redis
 import (
 	"context"
 	"fmt"
+	"time"
+
 	_ "github.com/gogf/gf/contrib/nosql/redis/v2"
 	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/database/gredis"
@@ -13,7 +15,6 @@ import (
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/redis/go-redis/v9"
-	"time"
 )
 
 var (

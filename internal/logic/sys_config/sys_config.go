@@ -2,6 +2,8 @@ package sys_config
 
 import (
 	"context"
+	"time"
+
 	"github.com/gogf/gf/v2/os/gcron"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
@@ -14,7 +16,6 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
 	"go.mongodb.org/mongo-driver/bson"
-	"time"
 )
 
 type sSysConfig struct{}

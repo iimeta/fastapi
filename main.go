@@ -1,13 +1,10 @@
 package main
 
 import (
-	_ "github.com/iimeta/fastapi/internal/logic"
-
-	_ "github.com/iimeta/fastapi/internal/packed"
-
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/cmd"
+	_ "github.com/iimeta/fastapi/internal/logic"
 )
 
 func main() {

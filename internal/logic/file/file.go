@@ -4,13 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/gogf/gf/v2/os/gfile"
-	"github.com/gogf/gf/v2/os/gtime"
-	"github.com/iimeta/fastapi/internal/config"
-	"github.com/iimeta/fastapi/internal/logic/common"
-	"github.com/iimeta/fastapi/internal/model"
-	"github.com/iimeta/fastapi/internal/service"
-	"github.com/iimeta/fastapi/utility/logger"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -18,6 +11,14 @@ import (
 	"net/url"
 	"os"
 	"time"
+
+	"github.com/gogf/gf/v2/os/gfile"
+	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/iimeta/fastapi/internal/config"
+	"github.com/iimeta/fastapi/internal/logic/common"
+	"github.com/iimeta/fastapi/internal/model"
+	"github.com/iimeta/fastapi/internal/service"
+	"github.com/iimeta/fastapi/utility/logger"
 )
 
 type sFile struct{}

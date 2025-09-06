@@ -2,12 +2,13 @@ package dashboard
 
 import (
 	"context"
+	"math"
+
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
-	"math"
 )
 
 type sDashboard struct{}

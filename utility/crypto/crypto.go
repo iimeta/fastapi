@@ -2,6 +2,7 @@ package crypto
 
 import (
 	"encoding/hex"
+
 	"github.com/tjfoc/gmsm/sm3"
 )
 

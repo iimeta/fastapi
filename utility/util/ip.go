@@ -1,13 +1,14 @@
 package util
 
 import (
+	"time"
+
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/gipv4"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/utility/logger"
-	"time"
 )
 
 var localIp = "127.0.0.1"

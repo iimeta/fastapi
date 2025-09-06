@@ -2,12 +2,12 @@ package openai
 
 import (
 	"context"
+
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/iimeta/fastapi/api/openai/v1"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
-
-	"github.com/iimeta/fastapi/api/openai/v1"
 )
 
 func (c *ControllerV1) ResponsesChatCompletions(ctx context.Context, req *v1.ResponsesChatCompletionsReq) (res *v1.ResponsesChatCompletionsRes, err error) {

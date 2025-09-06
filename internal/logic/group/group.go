@@ -2,6 +2,8 @@ package group
 
 import (
 	"context"
+	"slices"
+
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/internal/consts"
@@ -13,7 +15,6 @@ import (
 	"github.com/iimeta/fastapi/utility/cache"
 	"github.com/iimeta/fastapi/utility/logger"
 	"go.mongodb.org/mongo-driver/bson"
-	"slices"
 )
 
 type sGroup struct {

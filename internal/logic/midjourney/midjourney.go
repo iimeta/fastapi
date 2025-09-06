@@ -3,6 +3,11 @@ package midjourney
 import (
 	"context"
 	"fmt"
+	"math"
+	"net/http"
+	"slices"
+	"time"
+
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
@@ -22,10 +27,6 @@ import (
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
-	"math"
-	"net/http"
-	"slices"
-	"time"
 )
 
 type sMidjourney struct{}

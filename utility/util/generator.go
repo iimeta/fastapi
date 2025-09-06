@@ -1,8 +1,9 @@
 package util
 
 import (
-	"github.com/bwmarrin/snowflake"
 	"math/rand"
+
+	"github.com/bwmarrin/snowflake"
 )
 
 var node *snowflake.Node

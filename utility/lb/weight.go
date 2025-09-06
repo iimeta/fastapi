@@ -1,8 +1,9 @@
 package lb
 
 import (
-	"github.com/iimeta/fastapi/internal/model"
 	"sync"
+
+	"github.com/iimeta/fastapi/internal/model"
 )
 
 type Weight struct {
