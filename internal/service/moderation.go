@@ -8,14 +8,14 @@ package service
 import (
 	"context"
 
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/model"
 )
 
 type (
 	IModeration interface {
 		// Moderations
-		Moderations(ctx context.Context, params sdkm.ModerationRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.ModerationResponse, err error)
+		Moderations(ctx context.Context, params smodel.ModerationRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.ModerationResponse, err error)
 		// 保存日志
 		SaveLog(ctx context.Context, chatLog model.ChatLog, retry ...int)
 	}

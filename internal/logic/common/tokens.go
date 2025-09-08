@@ -6,7 +6,7 @@ import (
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi-sdk/tiktoken"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/model"
@@ -14,7 +14,7 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 )
 
-func GetPromptTokens(ctx context.Context, model string, messages []sdkm.ChatCompletionMessage) int {
+func GetPromptTokens(ctx context.Context, model string, messages []smodel.ChatCompletionMessage) int {
 
 	promptTime := gtime.TimestampMilli()
 
@@ -88,7 +88,7 @@ func GetMultimodalTokens(ctx context.Context, model string, multiContent []inter
 	return textTokens, imageTokens
 }
 
-func GetMultimodalAudioTokens(ctx context.Context, model string, messages []sdkm.ChatCompletionMessage, reqModel *model.Model) (textTokens, audioTokens int) {
+func GetMultimodalAudioTokens(ctx context.Context, model string, messages []smodel.ChatCompletionMessage, reqModel *model.Model) (textTokens, audioTokens int) {
 
 	var text string
 

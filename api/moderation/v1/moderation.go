@@ -2,13 +2,13 @@ package v1
 
 import (
 	"github.com/gogf/gf/v2/frame/g"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 )
 
 // Moderations接口请求参数
 type ModerationsReq struct {
 	g.Meta `path:"/moderations" tags:"moderation" method:"post" summary:"moderations接口"`
-	sdkm.ModerationRequest
+	smodel.ModerationRequest
 }
 
 // Moderations接口响应参数

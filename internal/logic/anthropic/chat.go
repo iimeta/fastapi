@@ -15,7 +15,8 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	sconsts "github.com/iimeta/fastapi-sdk/consts"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
@@ -37,7 +38,7 @@ func New() service.IAnthropic {
 }
 
 // Completions
-func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.ChatCompletionResponse, err error) {
+func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.ChatCompletionResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -161,12 +162,12 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 	//	// 替换预设提示词
 	//	if mak.RealModel.PresetConfig.IsSupportSystemRole && mak.RealModel.PresetConfig.SystemRolePrompt != "" {
 	//		if request.Messages[0].Role == consts.ROLE_SYSTEM {
-	//			request.Messages = append([]sdkm.ChatCompletionMessage{{
+	//			request.Messages = append([]smodel.ChatCompletionMessage{{
 	//				Role:    consts.ROLE_SYSTEM,
 	//				Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 	//			}}, request.Messages[1:]...)
 	//		} else {
-	//			request.Messages = append([]sdkm.ChatCompletionMessage{{
+	//			request.Messages = append([]smodel.ChatCompletionMessage{{
 	//				Role:    consts.ROLE_SYSTEM,
 	//				Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 	//			}}, request.Messages...)
@@ -299,7 +300,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 		duration    int64
 		totalTime   int64
 		totalTokens int
-		usage       *sdkm.Usage
+		usage       *smodel.Usage
 		retryInfo   *mcommon.Retry
 	)
 
@@ -389,12 +390,12 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 	//	// 替换预设提示词
 	//	if mak.RealModel.PresetConfig.IsSupportSystemRole && mak.RealModel.PresetConfig.SystemRolePrompt != "" {
 	//		if request.Messages[0].Role == consts.ROLE_SYSTEM {
-	//			request.Messages = append([]sdkm.ChatCompletionMessage{{
+	//			request.Messages = append([]smodel.ChatCompletionMessage{{
 	//				Role:    consts.ROLE_SYSTEM,
 	//				Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 	//			}}, request.Messages[1:]...)
 	//		} else {
-	//			request.Messages = append([]sdkm.ChatCompletionMessage{{
+	//			request.Messages = append([]smodel.ChatCompletionMessage{{
 	//				Role:    consts.ROLE_SYSTEM,
 	//				Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 	//			}}, request.Messages...)
@@ -637,15 +638,15 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 	}
 }
 
-func convToChatCompletionRequest(request *ghttp.Request) sdkm.ChatCompletionRequest {
+func convToChatCompletionRequest(request *ghttp.Request) smodel.ChatCompletionRequest {
 
-	anthropicChatCompletionReq := sdkm.AnthropicChatCompletionReq{}
+	anthropicChatCompletionReq := smodel.AnthropicChatCompletionReq{}
 	if err := gjson.Unmarshal(request.GetBody(), &anthropicChatCompletionReq); err != nil {
 		logger.Error(request.GetCtx(), err)
-		return sdkm.ChatCompletionRequest{}
+		return smodel.ChatCompletionRequest{}
 	}
 
-	messages := make([]sdkm.ChatCompletionMessage, 0)
+	messages := make([]smodel.ChatCompletionMessage, 0)
 	for _, message := range anthropicChatCompletionReq.Messages {
 
 		if contents, ok := message.Content.([]interface{}); ok {
@@ -666,8 +667,8 @@ func convToChatCompletionRequest(request *ghttp.Request) sdkm.ChatCompletionRequ
 				}
 			}
 
-			messages = append(messages, sdkm.ChatCompletionMessage{
-				Role:    consts.ROLE_USER,
+			messages = append(messages, smodel.ChatCompletionMessage{
+				Role:    sconsts.ROLE_USER,
 				Content: contents,
 			})
 
@@ -677,13 +678,13 @@ func convToChatCompletionRequest(request *ghttp.Request) sdkm.ChatCompletionRequ
 	}
 
 	if anthropicChatCompletionReq.System != nil {
-		messages = append([]sdkm.ChatCompletionMessage{{
-			Role:    consts.ROLE_SYSTEM,
+		messages = append([]smodel.ChatCompletionMessage{{
+			Role:    sconsts.ROLE_SYSTEM,
 			Content: anthropicChatCompletionReq.System,
 		}}, messages...)
 	}
 
-	return sdkm.ChatCompletionRequest{
+	return smodel.ChatCompletionRequest{
 		Model:       anthropicChatCompletionReq.Model,
 		Messages:    messages,
 		MaxTokens:   anthropicChatCompletionReq.MaxTokens,
@@ -696,9 +697,9 @@ func convToChatCompletionRequest(request *ghttp.Request) sdkm.ChatCompletionRequ
 	}
 }
 
-func convToChatCompletionResponse(ctx context.Context, res sdkm.AnthropicChatCompletionRes, stream bool) sdkm.ChatCompletionResponse {
+func convToChatCompletionResponse(ctx context.Context, res smodel.AnthropicChatCompletionRes, stream bool) smodel.ChatCompletionResponse {
 
-	anthropicChatCompletionRes := sdkm.AnthropicChatCompletionRes{
+	anthropicChatCompletionRes := smodel.AnthropicChatCompletionRes{
 		ResponseBytes: res.ResponseBytes,
 		Err:           res.Err,
 	}
@@ -709,7 +710,7 @@ func convToChatCompletionResponse(ctx context.Context, res sdkm.AnthropicChatCom
 		}
 	}
 
-	chatCompletionResponse := sdkm.ChatCompletionResponse{
+	chatCompletionResponse := smodel.ChatCompletionResponse{
 		Id:            consts.COMPLETION_ID_PREFIX + anthropicChatCompletionRes.Id,
 		Object:        consts.COMPLETION_OBJECT,
 		Created:       gtime.Timestamp(),
@@ -723,20 +724,20 @@ func convToChatCompletionResponse(ctx context.Context, res sdkm.AnthropicChatCom
 
 	if stream {
 		if anthropicChatCompletionRes.Delta.Type == consts.DELTA_TYPE_INPUT_JSON {
-			chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, sdkm.ChatCompletionChoice{
-				Delta: &sdkm.ChatCompletionStreamChoiceDelta{
-					Role: consts.ROLE_ASSISTANT,
-					ToolCalls: []sdkm.ToolCall{{
-						Function: sdkm.FunctionCall{
+			chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, smodel.ChatCompletionChoice{
+				Delta: &smodel.ChatCompletionStreamChoiceDelta{
+					Role: sconsts.ROLE_ASSISTANT,
+					ToolCalls: []smodel.ToolCall{{
+						Function: smodel.FunctionCall{
 							Arguments: anthropicChatCompletionRes.Delta.PartialJson,
 						},
 					}},
 				},
 			})
 		} else {
-			chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, sdkm.ChatCompletionChoice{
-				Delta: &sdkm.ChatCompletionStreamChoiceDelta{
-					Role:    consts.ROLE_ASSISTANT,
+			chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, smodel.ChatCompletionChoice{
+				Delta: &smodel.ChatCompletionStreamChoiceDelta{
+					Role:    sconsts.ROLE_ASSISTANT,
 					Content: anthropicChatCompletionRes.Delta.Text,
 				},
 			})
@@ -744,19 +745,19 @@ func convToChatCompletionResponse(ctx context.Context, res sdkm.AnthropicChatCom
 	} else if len(anthropicChatCompletionRes.Content) > 0 {
 		for _, content := range anthropicChatCompletionRes.Content {
 			if content.Type == consts.DELTA_TYPE_INPUT_JSON {
-				chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, sdkm.ChatCompletionChoice{
-					Delta: &sdkm.ChatCompletionStreamChoiceDelta{
-						Role: consts.ROLE_ASSISTANT,
-						ToolCalls: []sdkm.ToolCall{{
-							Function: sdkm.FunctionCall{
+				chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, smodel.ChatCompletionChoice{
+					Delta: &smodel.ChatCompletionStreamChoiceDelta{
+						Role: sconsts.ROLE_ASSISTANT,
+						ToolCalls: []smodel.ToolCall{{
+							Function: smodel.FunctionCall{
 								Arguments: content.PartialJson,
 							},
 						}},
 					},
 				})
 			} else {
-				chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, sdkm.ChatCompletionChoice{
-					Message: &sdkm.ChatCompletionMessage{
+				chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, smodel.ChatCompletionChoice{
+					Message: &smodel.ChatCompletionMessage{
 						Role:    anthropicChatCompletionRes.Role,
 						Content: content.Text,
 					},
@@ -767,7 +768,7 @@ func convToChatCompletionResponse(ctx context.Context, res sdkm.AnthropicChatCom
 	}
 
 	if anthropicChatCompletionRes.Message.Usage != nil {
-		chatCompletionResponse.Usage = &sdkm.Usage{
+		chatCompletionResponse.Usage = &smodel.Usage{
 			PromptTokens:             anthropicChatCompletionRes.Message.Usage.InputTokens,
 			CompletionTokens:         anthropicChatCompletionRes.Message.Usage.OutputTokens,
 			TotalTokens:              anthropicChatCompletionRes.Message.Usage.InputTokens + anthropicChatCompletionRes.Message.Usage.OutputTokens,
@@ -777,7 +778,7 @@ func convToChatCompletionResponse(ctx context.Context, res sdkm.AnthropicChatCom
 	}
 
 	if anthropicChatCompletionRes.Usage != nil {
-		chatCompletionResponse.Usage = &sdkm.Usage{
+		chatCompletionResponse.Usage = &smodel.Usage{
 			PromptTokens:             anthropicChatCompletionRes.Usage.InputTokens,
 			CompletionTokens:         anthropicChatCompletionRes.Usage.OutputTokens,
 			TotalTokens:              anthropicChatCompletionRes.Usage.InputTokens + anthropicChatCompletionRes.Usage.OutputTokens,

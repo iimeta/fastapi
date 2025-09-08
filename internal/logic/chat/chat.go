@@ -16,10 +16,10 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
-	sdkerr "github.com/iimeta/fastapi-sdk/errors"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	sconsts "github.com/iimeta/fastapi-sdk/consts"
+	serrors "github.com/iimeta/fastapi-sdk/errors"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/config"
-	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
@@ -42,7 +42,7 @@ func New() service.IChat {
 }
 
 // Completions
-func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.ChatCompletionResponse, err error) {
+func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.ChatCompletionResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -196,14 +196,14 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 
 		// 替换预设提示词
 		if mak.RealModel.PresetConfig.IsSupportSystemRole && mak.RealModel.PresetConfig.SystemRolePrompt != "" {
-			if request.Messages[0].Role == consts.ROLE_SYSTEM {
-				request.Messages = append([]sdkm.ChatCompletionMessage{{
-					Role:    consts.ROLE_SYSTEM,
+			if request.Messages[0].Role == sconsts.ROLE_SYSTEM {
+				request.Messages = append([]smodel.ChatCompletionMessage{{
+					Role:    sconsts.ROLE_SYSTEM,
 					Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 				}}, request.Messages[1:]...)
 			} else {
-				request.Messages = append([]sdkm.ChatCompletionMessage{{
-					Role:    consts.ROLE_SYSTEM,
+				request.Messages = append([]smodel.ChatCompletionMessage{{
+					Role:    sconsts.ROLE_SYSTEM,
 					Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 				}}, request.Messages...)
 			}
@@ -299,7 +299,7 @@ func (s *sChat) Completions(ctx context.Context, params sdkm.ChatCompletionReque
 }
 
 // CompletionsStream
-func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletionRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (err error) {
+func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatCompletionRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -325,7 +325,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 		duration    int64
 		totalTime   int64
 		totalTokens int
-		usage       *sdkm.Usage
+		usage       *smodel.Usage
 		retryInfo   *mcommon.Retry
 	)
 
@@ -423,14 +423,14 @@ func (s *sChat) CompletionsStream(ctx context.Context, params sdkm.ChatCompletio
 
 		// 替换预设提示词
 		if mak.RealModel.PresetConfig.IsSupportSystemRole && mak.RealModel.PresetConfig.SystemRolePrompt != "" {
-			if request.Messages[0].Role == consts.ROLE_SYSTEM {
-				request.Messages = append([]sdkm.ChatCompletionMessage{{
-					Role:    consts.ROLE_SYSTEM,
+			if request.Messages[0].Role == sconsts.ROLE_SYSTEM {
+				request.Messages = append([]smodel.ChatCompletionMessage{{
+					Role:    sconsts.ROLE_SYSTEM,
 					Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 				}}, request.Messages[1:]...)
 			} else {
-				request.Messages = append([]sdkm.ChatCompletionMessage{{
-					Role:    consts.ROLE_SYSTEM,
+				request.Messages = append([]smodel.ChatCompletionMessage{{
+					Role:    sconsts.ROLE_SYSTEM,
 					Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 				}}, request.Messages...)
 			}
@@ -767,7 +767,7 @@ func (s *sChat) SaveLog(ctx context.Context, chatLog model.ChatLog, retry ...int
 							}
 
 							if content["type"] == "image" {
-								if source, ok := content["source"].(sdkm.Source); ok {
+								if source, ok := content["source"].(smodel.Source); ok {
 									source.Data = "[BASE64图像数据]"
 									content = gmap.NewStrAnyMapFrom(content).MapCopy()
 									content["source"] = source
@@ -782,9 +782,9 @@ func (s *sChat) SaveLog(ctx context.Context, chatLog model.ChatLog, retry ...int
 
 					chat.Prompt = gconv.String(multiContents)
 
-				} else if multiContent, ok := prompt.([]sdkm.OpenAIResponsesContent); ok {
+				} else if multiContent, ok := prompt.([]smodel.OpenAIResponsesContent); ok {
 
-					multiContents := make([]sdkm.OpenAIResponsesContent, 0)
+					multiContents := make([]smodel.OpenAIResponsesContent, 0)
 
 					for _, value := range multiContent {
 						if value.Type == "input_image" && !gstr.HasPrefix(value.ImageUrl, "http") {
@@ -873,7 +873,7 @@ func (s *sChat) SaveLog(ctx context.Context, chatLog model.ChatLog, retry ...int
 	if chatLog.CompletionsRes.Error != nil {
 
 		chat.ErrMsg = chatLog.CompletionsRes.Error.Error()
-		openaiApiError := &sdkerr.ApiError{}
+		openaiApiError := &serrors.ApiError{}
 		if errors.As(chatLog.CompletionsRes.Error, &openaiApiError) {
 			chat.ErrMsg = openaiApiError.Message
 		}
@@ -916,7 +916,7 @@ func (s *sChat) SaveLog(ctx context.Context, chatLog model.ChatLog, retry ...int
 							}
 
 							if content["type"] == "image" {
-								if source, ok := content["source"].(sdkm.Source); ok {
+								if source, ok := content["source"].(smodel.Source); ok {
 									source.Data = "[BASE64图像数据]"
 									content = gmap.NewStrAnyMapFrom(content).MapCopy()
 									content["source"] = source
@@ -931,9 +931,9 @@ func (s *sChat) SaveLog(ctx context.Context, chatLog model.ChatLog, retry ...int
 
 					content = multiContents
 
-				} else if multiContent, ok := content.([]sdkm.OpenAIResponsesContent); ok {
+				} else if multiContent, ok := content.([]smodel.OpenAIResponsesContent); ok {
 
-					multiContents := make([]sdkm.OpenAIResponsesContent, 0)
+					multiContents := make([]smodel.OpenAIResponsesContent, 0)
 
 					for _, value := range multiContent {
 						if value.Type == "input_image" && !gstr.HasPrefix(value.ImageUrl, "http") {
@@ -1010,8 +1010,8 @@ func (s *sChat) SaveLog(ctx context.Context, chatLog model.ChatLog, retry ...int
 		logger.Errorf(ctx, "sChat SaveLog error: %v", err)
 
 		if err.Error() == "an inserted document is too large" {
-			chatLog.CompletionsReq.Messages = []sdkm.ChatCompletionMessage{{
-				Role:    consts.ROLE_SYSTEM,
+			chatLog.CompletionsReq.Messages = []smodel.ChatCompletionMessage{{
+				Role:    sconsts.ROLE_SYSTEM,
 				Content: err.Error(),
 			}}
 		}

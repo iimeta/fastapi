@@ -8,7 +8,7 @@ package service
 import (
 	"context"
 
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/model/entity"
 )
@@ -46,9 +46,9 @@ type (
 		// 移除缓存中的模型列表
 		RemoveCacheModel(ctx context.Context, id string)
 		// 获取目标模型
-		GetTargetModel(ctx context.Context, model *model.Model, messages []sdkm.ChatCompletionMessage) (targetModel *model.Model, err error)
+		GetTargetModel(ctx context.Context, model *model.Model, messages []smodel.ChatCompletionMessage) (targetModel *model.Model, err error)
 		// 获取分组目标模型
-		GetGroupTargetModel(ctx context.Context, group *model.Group, model *model.Model, messages []sdkm.ChatCompletionMessage) (targetModel *model.Model, err error)
+		GetGroupTargetModel(ctx context.Context, group *model.Group, model *model.Model, messages []smodel.ChatCompletionMessage) (targetModel *model.Model, err error)
 		// 获取后备模型
 		GetFallbackModel(ctx context.Context, model *model.Model) (fallbackModel *model.Model, err error)
 		// 变更订阅

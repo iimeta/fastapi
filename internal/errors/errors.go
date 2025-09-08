@@ -8,7 +8,7 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
-	sdkerr "github.com/iimeta/fastapi-sdk/errors"
+	serrors "github.com/iimeta/fastapi-sdk/errors"
 	"github.com/iimeta/fastapi/internal/config"
 )
 
@@ -21,7 +21,7 @@ type IFastApiError interface {
 }
 
 type FastApiError struct {
-	Err *sdkerr.ApiError `json:"error,omitempty"`
+	Err *serrors.ApiError `json:"error,omitempty"`
 }
 
 var (
@@ -68,7 +68,7 @@ var (
 
 func NewError(status int, code any, message, typ string) error {
 	return &FastApiError{
-		Err: &sdkerr.ApiError{
+		Err: &serrors.ApiError{
 			HttpStatusCode: status,
 			Code:           code,
 			Message:        message,
@@ -79,7 +79,7 @@ func NewError(status int, code any, message, typ string) error {
 
 func NewErrorf(status int, code any, message, typ string, args ...interface{}) error {
 	return &FastApiError{
-		Err: &sdkerr.ApiError{
+		Err: &serrors.ApiError{
 			HttpStatusCode: status,
 			Code:           code,
 			Message:        fmt.Sprintf(message, args...),
@@ -123,12 +123,12 @@ func Error(ctx context.Context, err error) (iFastApiError IFastApiError) {
 
 				e := ERR_UNKNOWN.(IFastApiError)
 
-				requestError := &sdkerr.RequestError{}
+				requestError := &serrors.RequestError{}
 				if As(err, &requestError) {
 					return NewErrorf(requestError.HttpStatusCode, e.ErrCode(), gstr.Split(gstr.Split(requestError.Err.Error(), " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", e.ErrType(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
 				}
 
-				apiError := &sdkerr.ApiError{}
+				apiError := &serrors.ApiError{}
 				if As(err, &apiError) {
 					return NewErrorf(apiError.HttpStatusCode, apiError.Code, gstr.Split(gstr.Split(apiError.Message, " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", apiError.Type, gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
 				}

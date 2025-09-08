@@ -11,11 +11,10 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
-	"github.com/iimeta/fastapi-sdk"
-	sdkerr "github.com/iimeta/fastapi-sdk/errors"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	sconsts "github.com/iimeta/fastapi-sdk/consts"
+	serrors "github.com/iimeta/fastapi-sdk/errors"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/config"
-	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
@@ -38,14 +37,14 @@ func New() service.IEmbedding {
 }
 
 // Embeddings
-func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.EmbeddingResponse, err error) {
+func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.EmbeddingResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "sEmbedding Embeddings time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	params, err := sdk.NewConverter(ctx, consts.CORP_OPENAI).ConvTextEmbeddingsRequest(ctx, data)
+	params, err := common.NewConverter(ctx, sconsts.PROVIDER_OPENAI).ConvTextEmbeddingsRequest(ctx, data)
 	if err != nil {
 		logger.Errorf(ctx, "sEmbedding Embeddings ConvTextEmbeddingsRequest error: %v", err)
 		return response, err
@@ -335,7 +334,7 @@ func (s *sEmbedding) SaveLog(ctx context.Context, chatLog model.ChatLog, retry .
 	if chatLog.CompletionsRes.Error != nil {
 
 		chat.ErrMsg = chatLog.CompletionsRes.Error.Error()
-		openaiApiError := &sdkerr.ApiError{}
+		openaiApiError := &serrors.ApiError{}
 		if errors.As(chatLog.CompletionsRes.Error, &openaiApiError) {
 			chat.ErrMsg = openaiApiError.Message
 		}

@@ -11,8 +11,8 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
-	sdkerr "github.com/iimeta/fastapi-sdk/errors"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	serrors "github.com/iimeta/fastapi-sdk/errors"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
@@ -36,7 +36,7 @@ func New() service.IModeration {
 }
 
 // Moderations
-func (s *sModeration) Moderations(ctx context.Context, params sdkm.ModerationRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.ModerationResponse, err error) {
+func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.ModerationResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -324,7 +324,7 @@ func (s *sModeration) SaveLog(ctx context.Context, chatLog model.ChatLog, retry 
 	if chatLog.CompletionsRes.Error != nil {
 
 		chat.ErrMsg = chatLog.CompletionsRes.Error.Error()
-		openaiApiError := &sdkerr.ApiError{}
+		openaiApiError := &serrors.ApiError{}
 		if errors.As(chatLog.CompletionsRes.Error, &openaiApiError) {
 			chat.ErrMsg = openaiApiError.Message
 		}

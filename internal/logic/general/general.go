@@ -15,8 +15,8 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi/internal/consts"
+	sconsts "github.com/iimeta/fastapi-sdk/consts"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
@@ -37,14 +37,14 @@ func New() service.IGeneral {
 }
 
 // General
-func (s *sGeneral) General(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.ChatCompletionResponse, err error) {
+func (s *sGeneral) General(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.ChatCompletionResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "sGeneral General time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	params, err := common.NewConverter(ctx, consts.CORP_OPENAI).ConvChatCompletionsRequest(ctx, request.GetBody())
+	params, err := common.NewConverter(ctx, sconsts.PROVIDER_OPENAI).ConvChatCompletionsRequest(ctx, request.GetBody())
 	if err != nil {
 		logger.Errorf(ctx, "sGeneral General ConvChatCompletionsRequest error: %v", err)
 		return response, err
@@ -257,7 +257,7 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 		logger.Debugf(ctx, "sGeneral GeneralStream time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	params, err := common.NewConverter(ctx, consts.CORP_OPENAI).ConvChatCompletionsRequest(ctx, request.GetBody())
+	params, err := common.NewConverter(ctx, sconsts.PROVIDER_OPENAI).ConvChatCompletionsRequest(ctx, request.GetBody())
 	if err != nil {
 		logger.Errorf(ctx, "sGeneral GeneralStream ConvChatCompletionsRequest error: %v", err)
 		return err
@@ -275,7 +275,7 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 		duration    int64
 		totalTime   int64
 		totalTokens int
-		usage       *sdkm.Usage
+		usage       *smodel.Usage
 		retryInfo   *mcommon.Retry
 	)
 

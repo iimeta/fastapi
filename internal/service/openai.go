@@ -9,14 +9,14 @@ import (
 	"context"
 
 	"github.com/gogf/gf/v2/net/ghttp"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/model"
 )
 
 type (
 	IOpenAI interface {
 		// Responses
-		Responses(ctx context.Context, request *ghttp.Request, isChatCompletions bool, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.OpenAIResponsesRes, err error)
+		Responses(ctx context.Context, request *ghttp.Request, isChatCompletions bool, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.OpenAIResponsesRes, err error)
 		// ResponsesStream
 		ResponsesStream(ctx context.Context, request *ghttp.Request, isChatCompletions bool, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (err error)
 	}

@@ -11,7 +11,8 @@ import (
 	"github.com/gogf/gf/v2/text/gregex"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	sconsts "github.com/iimeta/fastapi-sdk/consts"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
@@ -938,7 +939,7 @@ func (s *sModel) RemoveCacheModel(ctx context.Context, id string) {
 }
 
 // 获取目标模型
-func (s *sModel) GetTargetModel(ctx context.Context, model *model.Model, messages []sdkm.ChatCompletionMessage) (targetModel *model.Model, err error) {
+func (s *sModel) GetTargetModel(ctx context.Context, model *model.Model, messages []smodel.ChatCompletionMessage) (targetModel *model.Model, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -1032,15 +1033,15 @@ func (s *sModel) GetTargetModel(ctx context.Context, model *model.Model, message
 			systemPrompt = fmt.Sprintf(systemPrompt, systemEnum)
 			decisionPrompt = fmt.Sprintf(decisionPrompt, systemEnum, decisionEnum, prompt)
 
-			messages := []sdkm.ChatCompletionMessage{{
-				Role:    consts.ROLE_SYSTEM,
+			messages := []smodel.ChatCompletionMessage{{
+				Role:    sconsts.ROLE_SYSTEM,
 				Content: systemPrompt,
 			}, {
-				Role:    consts.ROLE_USER,
+				Role:    sconsts.ROLE_USER,
 				Content: decisionPrompt,
 			}}
 
-			response, err := service.Chat().SmartCompletions(ctx, sdkm.ChatCompletionRequest{
+			response, err := service.Chat().SmartCompletions(ctx, smodel.ChatCompletionRequest{
 				Model:    decisionModel.Model,
 				Messages: messages,
 			}, decisionModel, nil, nil)
@@ -1080,7 +1081,7 @@ func (s *sModel) GetTargetModel(ctx context.Context, model *model.Model, message
 }
 
 // 获取分组目标模型
-func (s *sModel) GetGroupTargetModel(ctx context.Context, group *model.Group, model *model.Model, messages []sdkm.ChatCompletionMessage) (targetModel *model.Model, err error) {
+func (s *sModel) GetGroupTargetModel(ctx context.Context, group *model.Group, model *model.Model, messages []smodel.ChatCompletionMessage) (targetModel *model.Model, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -1187,15 +1188,15 @@ func (s *sModel) GetGroupTargetModel(ctx context.Context, group *model.Group, mo
 			systemPrompt = fmt.Sprintf(systemPrompt, systemEnum)
 			decisionPrompt = fmt.Sprintf(decisionPrompt, systemEnum, decisionEnum, prompt)
 
-			messages := []sdkm.ChatCompletionMessage{{
-				Role:    consts.ROLE_SYSTEM,
+			messages := []smodel.ChatCompletionMessage{{
+				Role:    sconsts.ROLE_SYSTEM,
 				Content: systemPrompt,
 			}, {
-				Role:    consts.ROLE_USER,
+				Role:    sconsts.ROLE_USER,
 				Content: decisionPrompt,
 			}}
 
-			response, err := service.Chat().SmartCompletions(ctx, sdkm.ChatCompletionRequest{
+			response, err := service.Chat().SmartCompletions(ctx, smodel.ChatCompletionRequest{
 				Model:    decisionModel.Model,
 				Messages: messages,
 			}, decisionModel, nil, nil)

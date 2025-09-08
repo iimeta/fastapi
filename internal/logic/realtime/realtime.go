@@ -17,10 +17,10 @@ import (
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/gorilla/websocket"
-	sdkerr "github.com/iimeta/fastapi-sdk/errors"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	sconsts "github.com/iimeta/fastapi-sdk/consts"
+	serrors "github.com/iimeta/fastapi-sdk/errors"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/config"
-	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
@@ -119,7 +119,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 					FallbackModelAgent: fallbackModelAgent,
 					FallbackModel:      fallbackModel,
 					Key:                mak.Key,
-					CompletionsReq:     &sdkm.ChatCompletionRequest{Stream: true},
+					CompletionsReq:     &smodel.ChatCompletionRequest{Stream: true},
 					CompletionsRes:     completionsRes,
 					RetryInfo:          retryInfo,
 				})
@@ -135,7 +135,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 		return err
 	}
 
-	requestChan := make(chan *sdkm.RealtimeRequest)
+	requestChan := make(chan *smodel.RealtimeRequest)
 
 	response, err := common.NewRealtimeAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).Realtime(ctx, requestChan)
 	if err != nil {
@@ -255,7 +255,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 						FallbackModelAgent: fallbackModelAgent,
 						FallbackModel:      fallbackModel,
 						Key:                mak.Key,
-						CompletionsReq:     &sdkm.ChatCompletionRequest{Stream: true},
+						CompletionsReq:     &smodel.ChatCompletionRequest{Stream: true},
 						CompletionsRes:     completionsRes,
 						RetryInfo:          retryInfo,
 					})
@@ -316,7 +316,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 
 			if realtimeResponse.Response.Usage.TotalTokens != 0 {
 
-				usage := &sdkm.Usage{
+				usage := &smodel.Usage{
 					PromptTokens:     realtimeResponse.Response.Usage.InputTokens,
 					CompletionTokens: realtimeResponse.Response.Usage.OutputTokens,
 					TotalTokens:      realtimeResponse.Response.Usage.TotalTokens,
@@ -391,7 +391,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 						FallbackModelAgent: fallbackModelAgent,
 						FallbackModel:      fallbackModel,
 						Key:                mak.Key,
-						CompletionsReq:     &sdkm.ChatCompletionRequest{Stream: true, Messages: []sdkm.ChatCompletionMessage{{Content: message}}},
+						CompletionsReq:     &smodel.ChatCompletionRequest{Stream: true, Messages: []smodel.ChatCompletionMessage{{Content: message}}},
 						CompletionsRes:     completionsRes,
 						RetryInfo:          retryInfo,
 					})
@@ -452,7 +452,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 			return err
 		}
 
-		requestChan <- &sdkm.RealtimeRequest{
+		requestChan <- &smodel.RealtimeRequest{
 			MessageType: messageType,
 			Message:     message,
 		}
@@ -580,7 +580,7 @@ func (s *sRealtime) SaveLog(ctx context.Context, chatLog model.ChatLog, retry ..
 	if chatLog.CompletionsRes.Error != nil {
 
 		chat.ErrMsg = chatLog.CompletionsRes.Error.Error()
-		openaiApiError := &sdkerr.ApiError{}
+		openaiApiError := &serrors.ApiError{}
 		if errors.As(chatLog.CompletionsRes.Error, &openaiApiError) {
 			chat.ErrMsg = openaiApiError.Message
 		}
@@ -620,8 +620,8 @@ func (s *sRealtime) SaveLog(ctx context.Context, chatLog model.ChatLog, retry ..
 		logger.Errorf(ctx, "sRealtime SaveLog error: %v", err)
 
 		if err.Error() == "an inserted document is too large" {
-			chatLog.CompletionsReq.Messages = []sdkm.ChatCompletionMessage{{
-				Role:    consts.ROLE_SYSTEM,
+			chatLog.CompletionsReq.Messages = []smodel.ChatCompletionMessage{{
+				Role:    sconsts.ROLE_SYSTEM,
 				Content: err.Error(),
 			}}
 		}

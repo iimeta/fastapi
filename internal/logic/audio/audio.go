@@ -11,11 +11,10 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
-	"github.com/iimeta/fastapi-sdk"
-	sdkerr "github.com/iimeta/fastapi-sdk/errors"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi/api/audio/v1"
-	"github.com/iimeta/fastapi/internal/consts"
+	sconsts "github.com/iimeta/fastapi-sdk/consts"
+	serrors "github.com/iimeta/fastapi-sdk/errors"
+	smodel "github.com/iimeta/fastapi-sdk/model"
+	v1 "github.com/iimeta/fastapi/api/audio/v1"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
@@ -38,14 +37,14 @@ func New() service.IAudio {
 }
 
 // Speech
-func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.SpeechResponse, err error) {
+func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.SpeechResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "sAudio Speech time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	params, err := sdk.NewConverter(ctx, consts.CORP_OPENAI).ConvAudioSpeechRequest(ctx, data)
+	params, err := common.NewConverter(ctx, sconsts.PROVIDER_OPENAI).ConvAudioSpeechRequest(ctx, data)
 	if err != nil {
 		logger.Errorf(ctx, "sAudio Speech ConvAudioSpeechRequest error: %v", err)
 		return response, err
@@ -213,7 +212,7 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 }
 
 // Transcriptions
-func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.AudioResponse, err error) {
+func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.AudioResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -494,7 +493,7 @@ func (s *sAudio) SaveLog(ctx context.Context, audioLog model.AudioLog, retry ...
 	if audioLog.AudioRes.Error != nil {
 
 		audio.ErrMsg = audioLog.AudioRes.Error.Error()
-		openaiApiError := &sdkerr.ApiError{}
+		openaiApiError := &serrors.ApiError{}
 		if errors.As(audioLog.AudioRes.Error, &openaiApiError) {
 			audio.ErrMsg = openaiApiError.Message
 		}

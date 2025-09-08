@@ -1,7 +1,7 @@
 package model
 
 import (
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	mcommon "github.com/iimeta/fastapi/internal/model/common"
 )
 
@@ -13,9 +13,9 @@ type ChatLog struct {
 	FallbackModelAgent *ModelAgent
 	FallbackModel      *Model
 	Key                *Key
-	CompletionsReq     *sdkm.ChatCompletionRequest
-	EmbeddingReq       *sdkm.EmbeddingRequest
-	ModerationReq      *sdkm.ModerationRequest
+	CompletionsReq     *smodel.ChatCompletionRequest
+	EmbeddingReq       *smodel.EmbeddingRequest
+	ModerationReq      *smodel.ModerationRequest
 	CompletionsRes     *CompletionsRes
 	RetryInfo          *mcommon.Retry
 	IsSmartMatch       bool
@@ -29,7 +29,7 @@ type ImageLog struct {
 	FallbackModelAgent *ModelAgent
 	FallbackModel      *Model
 	Key                *Key
-	ImageReq           *sdkm.ImageGenerationRequest
+	ImageReq           *smodel.ImageGenerationRequest
 	ImageRes           *ImageRes
 	RetryInfo          *mcommon.Retry
 }

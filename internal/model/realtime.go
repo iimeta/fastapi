@@ -1,12 +1,12 @@
 package model
 
 import (
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 )
 
 type RealtimeRequest struct {
-	Model    string                       `json:"model"`
-	Messages []sdkm.ChatCompletionMessage `json:"messages"`
+	Model    string                         `json:"model"`
+	Messages []smodel.ChatCompletionMessage `json:"messages"`
 }
 
 type RealtimeResponse struct {

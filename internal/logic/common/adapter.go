@@ -17,7 +17,7 @@ import (
 func NewAdapter(ctx context.Context, mak *MAK, isLong bool, isOfficialFormat ...bool) sdk.Adapter {
 
 	options := &options.AdapterOptions{
-		Corp:                    GetCorpCode(ctx, mak.Corp),
+		Provider:                GetCorpCode(ctx, mak.Corp),
 		Model:                   mak.RealModel.Model,
 		Key:                     mak.RealKey,
 		BaseUrl:                 mak.BaseUrl,
@@ -38,7 +38,7 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool, isOfficialFormat ...
 
 	g.RequestFromCtx(ctx).SetCtxVar("is_official_format_response", (len(isOfficialFormat) > 0 && isOfficialFormat[0]) || mak.ReqModel.ResponseDataFormat == 2)
 
-	return sdk.NewAdapter(ctx, options.Corp, options)
+	return sdk.NewAdapter(ctx, options)
 }
 
 func NewOpenAIAdapter(ctx context.Context, mak *MAK, isLong bool) *openai.OpenAI {
@@ -48,7 +48,7 @@ func NewOpenAIAdapter(ctx context.Context, mak *MAK, isLong bool) *openai.OpenAI
 	}
 
 	options := &options.AdapterOptions{
-		Corp:                    GetCorpCode(ctx, mak.Corp),
+		Provider:                GetCorpCode(ctx, mak.Corp),
 		Model:                   mak.RealModel.Model,
 		Key:                     mak.RealKey,
 		BaseUrl:                 mak.BaseUrl,
@@ -81,7 +81,7 @@ func NewModerationClient(ctx context.Context, model *model.Model, key, baseUrl, 
 }
 
 func NewConverter(ctx context.Context, corp string) sdk.Converter {
-	return sdk.NewConverter(ctx, corp)
+	return sdk.NewConverter(ctx, &options.AdapterOptions{Provider: GetCorpCode(ctx, corp)})
 }
 
 func GetCorpCode(ctx context.Context, corpId string) string {

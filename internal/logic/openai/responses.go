@@ -15,7 +15,7 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
@@ -36,7 +36,7 @@ func New() service.IOpenAI {
 }
 
 // Responses
-func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatCompletions bool, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.OpenAIResponsesRes, err error) {
+func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatCompletions bool, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.OpenAIResponsesRes, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -298,7 +298,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 		duration    int64
 		totalTime   int64
 		totalTokens int
-		usage       *sdkm.Usage
+		usage       *smodel.Usage
 		retryInfo   *mcommon.Retry
 	)
 
@@ -397,12 +397,12 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 	//	// 替换预设提示词
 	//	if mak.RealModel.PresetConfig.IsSupportSystemRole && mak.RealModel.PresetConfig.SystemRolePrompt != "" {
 	//		if request.Messages[0].Role == consts.ROLE_SYSTEM {
-	//			request.Messages = append([]sdkm.ChatCompletionMessage{{
+	//			request.Messages = append([]smodel.ChatCompletionMessage{{
 	//				Role:    consts.ROLE_SYSTEM,
 	//				Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 	//			}}, request.Messages[1:]...)
 	//		} else {
-	//			request.Messages = append([]sdkm.ChatCompletionMessage{{
+	//			request.Messages = append([]smodel.ChatCompletionMessage{{
 	//				Role:    consts.ROLE_SYSTEM,
 	//				Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 	//			}}, request.Messages...)

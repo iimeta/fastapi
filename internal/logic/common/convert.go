@@ -6,28 +6,28 @@ import (
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/util/gconv"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/utility/logger"
 )
 
-func ConvResponsesToChatCompletionsRequest(request *ghttp.Request, isChatCompletions bool) sdkm.ChatCompletionRequest {
+func ConvResponsesToChatCompletionsRequest(request *ghttp.Request, isChatCompletions bool) smodel.ChatCompletionRequest {
 
 	if isChatCompletions {
-		chatCompletionRequest := sdkm.ChatCompletionRequest{}
+		chatCompletionRequest := smodel.ChatCompletionRequest{}
 		if err := gjson.Unmarshal(request.GetBody(), &chatCompletionRequest); err != nil {
 			logger.Error(request.GetCtx(), err)
-			return sdkm.ChatCompletionRequest{}
+			return smodel.ChatCompletionRequest{}
 		}
 		return chatCompletionRequest
 	}
 
-	responsesReq := sdkm.OpenAIResponsesReq{}
+	responsesReq := smodel.OpenAIResponsesReq{}
 	if err := gjson.Unmarshal(request.GetBody(), &responsesReq); err != nil {
 		logger.Error(request.GetCtx(), err)
-		return sdkm.ChatCompletionRequest{}
+		return smodel.ChatCompletionRequest{}
 	}
 
-	chatCompletionRequest := sdkm.ChatCompletionRequest{
+	chatCompletionRequest := smodel.ChatCompletionRequest{
 		Model:               responsesReq.Model,
 		MaxCompletionTokens: responsesReq.MaxOutputTokens,
 		Temperature:         responsesReq.Temperature,
@@ -44,21 +44,21 @@ func ConvResponsesToChatCompletionsRequest(request *ghttp.Request, isChatComplet
 	if responsesReq.Input != nil {
 		if value, ok := responsesReq.Input.([]interface{}); ok {
 
-			inputs := make([]sdkm.OpenAIResponsesInput, 0)
+			inputs := make([]smodel.OpenAIResponsesInput, 0)
 			if err := gjson.Unmarshal(gjson.MustEncode(value), &inputs); err != nil {
 				logger.Error(request.GetCtx(), err)
 				return chatCompletionRequest
 			}
 
 			for _, input := range inputs {
-				chatCompletionRequest.Messages = append(chatCompletionRequest.Messages, sdkm.ChatCompletionMessage{
+				chatCompletionRequest.Messages = append(chatCompletionRequest.Messages, smodel.ChatCompletionMessage{
 					Role:    input.Role,
 					Content: input.Content,
 				})
 			}
 
 		} else {
-			chatCompletionRequest.Messages = []sdkm.ChatCompletionMessage{{
+			chatCompletionRequest.Messages = []smodel.ChatCompletionMessage{{
 				Role:    "user",
 				Content: responsesReq.Input,
 			}}
@@ -72,9 +72,9 @@ func ConvResponsesToChatCompletionsRequest(request *ghttp.Request, isChatComplet
 	return chatCompletionRequest
 }
 
-func ConvResponsesToChatCompletionsResponse(ctx context.Context, res sdkm.OpenAIResponsesRes) sdkm.ChatCompletionResponse {
+func ConvResponsesToChatCompletionsResponse(ctx context.Context, res smodel.OpenAIResponsesRes) smodel.ChatCompletionResponse {
 
-	responsesRes := sdkm.OpenAIResponsesRes{
+	responsesRes := smodel.OpenAIResponsesRes{
 		Model:         res.Model,
 		Usage:         res.Usage,
 		ResponseBytes: res.ResponseBytes,
@@ -90,7 +90,7 @@ func ConvResponsesToChatCompletionsResponse(ctx context.Context, res sdkm.OpenAI
 		}
 	}
 
-	chatCompletionResponse := sdkm.ChatCompletionResponse{
+	chatCompletionResponse := smodel.ChatCompletionResponse{
 		Id:            responsesRes.Id,
 		Object:        responsesRes.Object,
 		Created:       responsesRes.CreatedAt,
@@ -104,8 +104,8 @@ func ConvResponsesToChatCompletionsResponse(ctx context.Context, res sdkm.OpenAI
 
 	for _, output := range responsesRes.Output {
 		if len(output.Content) > 0 {
-			chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, sdkm.ChatCompletionChoice{
-				Message: &sdkm.ChatCompletionMessage{
+			chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, smodel.ChatCompletionChoice{
+				Message: &smodel.ChatCompletionMessage{
 					Role:    output.Role,
 					Content: output.Content[0].Text,
 				},
@@ -115,8 +115,8 @@ func ConvResponsesToChatCompletionsResponse(ctx context.Context, res sdkm.OpenAI
 	}
 
 	if responsesRes.Tools != nil && len(gconv.Interfaces(responsesRes.Tools)) > 0 {
-		chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, sdkm.ChatCompletionChoice{
-			Message: &sdkm.ChatCompletionMessage{
+		chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, smodel.ChatCompletionChoice{
+			Message: &smodel.ChatCompletionMessage{
 				Role:      "assistant",
 				ToolCalls: responsesRes.Tools,
 			},
@@ -125,15 +125,15 @@ func ConvResponsesToChatCompletionsResponse(ctx context.Context, res sdkm.OpenAI
 	}
 
 	if responsesRes.Usage != nil {
-		chatCompletionResponse.Usage = &sdkm.Usage{
+		chatCompletionResponse.Usage = &smodel.Usage{
 			PromptTokens:     responsesRes.Usage.InputTokens,
 			CompletionTokens: responsesRes.Usage.OutputTokens,
 			TotalTokens:      responsesRes.Usage.TotalTokens,
-			PromptTokensDetails: sdkm.PromptTokensDetails{
+			PromptTokensDetails: smodel.PromptTokensDetails{
 				CachedTokens: responsesRes.Usage.InputTokensDetails.CachedTokens,
 				TextTokens:   responsesRes.Usage.InputTokensDetails.TextTokens,
 			},
-			CompletionTokensDetails: sdkm.CompletionTokensDetails{
+			CompletionTokensDetails: smodel.CompletionTokensDetails{
 				ReasoningTokens: responsesRes.Usage.OutputTokensDetails.ReasoningTokens,
 			},
 		}
@@ -142,9 +142,9 @@ func ConvResponsesToChatCompletionsResponse(ctx context.Context, res sdkm.OpenAI
 	return chatCompletionResponse
 }
 
-func ConvResponsesStreamToChatCompletionsResponse(ctx context.Context, res sdkm.OpenAIResponsesStreamRes) sdkm.ChatCompletionResponse {
+func ConvResponsesStreamToChatCompletionsResponse(ctx context.Context, res smodel.OpenAIResponsesStreamRes) smodel.ChatCompletionResponse {
 
-	responsesStreamRes := sdkm.OpenAIResponsesStreamRes{
+	responsesStreamRes := smodel.OpenAIResponsesStreamRes{
 		ResponseBytes: res.ResponseBytes,
 		ConnTime:      res.ConnTime,
 		Duration:      res.Duration,
@@ -158,7 +158,7 @@ func ConvResponsesStreamToChatCompletionsResponse(ctx context.Context, res sdkm.
 		}
 	}
 
-	chatCompletionResponse := sdkm.ChatCompletionResponse{
+	chatCompletionResponse := smodel.ChatCompletionResponse{
 		Id:            responsesStreamRes.Response.Id,
 		Object:        responsesStreamRes.Response.Object,
 		Created:       responsesStreamRes.Response.CreatedAt,
@@ -178,8 +178,8 @@ func ConvResponsesStreamToChatCompletionsResponse(ctx context.Context, res sdkm.
 		chatCompletionResponse.Id = responsesStreamRes.ItemId
 	}
 
-	chatCompletionChoice := sdkm.ChatCompletionChoice{
-		Delta: &sdkm.ChatCompletionStreamChoiceDelta{
+	chatCompletionChoice := smodel.ChatCompletionChoice{
+		Delta: &smodel.ChatCompletionStreamChoiceDelta{
 			Content: responsesStreamRes.Delta,
 		},
 	}
@@ -191,15 +191,15 @@ func ConvResponsesStreamToChatCompletionsResponse(ctx context.Context, res sdkm.
 	chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, chatCompletionChoice)
 
 	if responsesStreamRes.Response.Usage != nil {
-		chatCompletionResponse.Usage = &sdkm.Usage{
+		chatCompletionResponse.Usage = &smodel.Usage{
 			PromptTokens:     responsesStreamRes.Response.Usage.InputTokens,
 			CompletionTokens: responsesStreamRes.Response.Usage.OutputTokens,
 			TotalTokens:      responsesStreamRes.Response.Usage.TotalTokens,
-			PromptTokensDetails: sdkm.PromptTokensDetails{
+			PromptTokensDetails: smodel.PromptTokensDetails{
 				CachedTokens: responsesStreamRes.Response.Usage.InputTokensDetails.CachedTokens,
 				TextTokens:   responsesStreamRes.Response.Usage.InputTokensDetails.TextTokens,
 			},
-			CompletionTokensDetails: sdkm.CompletionTokensDetails{
+			CompletionTokensDetails: smodel.CompletionTokensDetails{
 				ReasoningTokens: responsesStreamRes.Response.Usage.OutputTokensDetails.ReasoningTokens,
 			},
 		}
@@ -208,15 +208,15 @@ func ConvResponsesStreamToChatCompletionsResponse(ctx context.Context, res sdkm.
 	return chatCompletionResponse
 }
 
-func ConvChatCompletionsToResponsesRequest(ctx context.Context, body []byte) sdkm.OpenAIResponsesReq {
+func ConvChatCompletionsToResponsesRequest(ctx context.Context, body []byte) smodel.OpenAIResponsesReq {
 
-	chatCompletionRequest := sdkm.ChatCompletionRequest{}
+	chatCompletionRequest := smodel.ChatCompletionRequest{}
 	if err := gjson.Unmarshal(body, &chatCompletionRequest); err != nil {
 		logger.Error(ctx, err)
-		return sdkm.OpenAIResponsesReq{}
+		return smodel.OpenAIResponsesReq{}
 	}
 
-	responsesReq := sdkm.OpenAIResponsesReq{
+	responsesReq := smodel.OpenAIResponsesReq{
 		Model:             chatCompletionRequest.Model,
 		Stream:            chatCompletionRequest.Stream,
 		MaxOutputTokens:   chatCompletionRequest.MaxTokens,
@@ -230,24 +230,24 @@ func ConvChatCompletionsToResponsesRequest(ctx context.Context, body []byte) sdk
 		User:              chatCompletionRequest.User,
 	}
 
-	input := make([]sdkm.OpenAIResponsesInput, 0)
+	input := make([]smodel.OpenAIResponsesInput, 0)
 
 	for _, message := range chatCompletionRequest.Messages {
 
-		responsesContent := make([]sdkm.OpenAIResponsesContent, 0)
+		responsesContent := make([]smodel.OpenAIResponsesContent, 0)
 
 		if multiContent, ok := message.Content.([]interface{}); ok {
 			for _, value := range multiContent {
 				if content, ok := value.(map[string]interface{}); ok {
 
 					if content["type"] == "text" {
-						responsesContent = append(responsesContent, sdkm.OpenAIResponsesContent{
+						responsesContent = append(responsesContent, smodel.OpenAIResponsesContent{
 							Type: "input_text",
 							Text: gconv.String(content["text"]),
 						})
 					} else if content["type"] == "image_url" {
 
-						imageContent := sdkm.OpenAIResponsesContent{
+						imageContent := smodel.OpenAIResponsesContent{
 							Type: "input_image",
 						}
 
@@ -260,13 +260,13 @@ func ConvChatCompletionsToResponsesRequest(ctx context.Context, body []byte) sdk
 				}
 			}
 		} else {
-			responsesContent = append(responsesContent, sdkm.OpenAIResponsesContent{
+			responsesContent = append(responsesContent, smodel.OpenAIResponsesContent{
 				Type: "input_text",
 				Text: gconv.String(message.Content),
 			})
 		}
 
-		input = append(input, sdkm.OpenAIResponsesInput{
+		input = append(input, smodel.OpenAIResponsesInput{
 			Role:    message.Role,
 			Content: responsesContent,
 		})
@@ -275,7 +275,7 @@ func ConvChatCompletionsToResponsesRequest(ctx context.Context, body []byte) sdk
 	responsesReq.Input = input
 
 	if chatCompletionRequest.ReasoningEffort != "" {
-		responsesReq.Reasoning = &sdkm.OpenAIResponsesReasoning{
+		responsesReq.Reasoning = &smodel.OpenAIResponsesReasoning{
 			Effort: chatCompletionRequest.ReasoningEffort,
 		}
 	}

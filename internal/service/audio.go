@@ -8,7 +8,7 @@ package service
 import (
 	"context"
 
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	v1 "github.com/iimeta/fastapi/api/audio/v1"
 	"github.com/iimeta/fastapi/internal/model"
 )
@@ -16,9 +16,9 @@ import (
 type (
 	IAudio interface {
 		// Speech
-		Speech(ctx context.Context, data []byte, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.SpeechResponse, err error)
+		Speech(ctx context.Context, data []byte, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.SpeechResponse, err error)
 		// Transcriptions
-		Transcriptions(ctx context.Context, params *v1.TranscriptionsReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.AudioResponse, err error)
+		Transcriptions(ctx context.Context, params *v1.TranscriptionsReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.AudioResponse, err error)
 		// 保存日志
 		SaveLog(ctx context.Context, audioLog model.AudioLog, retry ...int)
 	}

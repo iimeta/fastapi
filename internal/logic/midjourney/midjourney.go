@@ -16,7 +16,7 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi-sdk"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
@@ -40,7 +40,7 @@ func New() service.IMidjourney {
 }
 
 // 任务提交
-func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.MidjourneyResponse, err error) {
+func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.MidjourneyResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -73,7 +73,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		usage := &sdkm.Usage{
+		usage := &smodel.Usage{
 			TotalTokens: midjourneyQuota.FixedQuota,
 		}
 
@@ -219,7 +219,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 }
 
 // 任务查询
-func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.MidjourneyResponse, err error) {
+func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.MidjourneyResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -251,7 +251,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		usage := &sdkm.Usage{
+		usage := &smodel.Usage{
 			TotalTokens: midjourneyQuota.FixedQuota,
 		}
 
@@ -276,7 +276,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				midjourneyResponse := model.MidjourneyResponse{
-					MidjourneyResponse: sdkm.MidjourneyResponse{
+					MidjourneyResponse: smodel.MidjourneyResponse{
 						Response: []byte(fmt.Sprintf("taskId: %s\nimageUrl: %s", taskId, imageUrl)),
 					},
 					TotalTime:    response.TotalTime,

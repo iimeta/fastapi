@@ -6,13 +6,13 @@ import (
 
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/model/common"
 	"github.com/iimeta/tiktoken-go"
 )
 
-func ChatUsageSpend(ctx context.Context, request sdkm.ChatCompletionRequest, completion string, usage *sdkm.Usage, mak *MAK) (usageSpend common.UsageSpend) {
+func ChatUsageSpend(ctx context.Context, request smodel.ChatCompletionRequest, completion string, usage *smodel.Usage, mak *MAK) (usageSpend common.UsageSpend) {
 
 	switch mak.ReqModel.Type {
 	case 100: // 多模态
@@ -27,7 +27,7 @@ func ChatUsageSpend(ctx context.Context, request sdkm.ChatCompletionRequest, com
 }
 
 // 多模态
-func MultimodalTokens(ctx context.Context, request sdkm.ChatCompletionRequest, completion string, usage *sdkm.Usage, mak *MAK) (usageSpend common.UsageSpend) {
+func MultimodalTokens(ctx context.Context, request smodel.ChatCompletionRequest, completion string, usage *smodel.Usage, mak *MAK) (usageSpend common.UsageSpend) {
 
 	model := mak.ReqModel.Model
 	if !tiktoken.IsEncodingForModel(model) {
@@ -36,7 +36,7 @@ func MultimodalTokens(ctx context.Context, request sdkm.ChatCompletionRequest, c
 
 	if usage == nil || mak.ReqModel.MultimodalQuota.BillingRule == 2 {
 
-		usage = new(sdkm.Usage)
+		usage = new(smodel.Usage)
 
 		if content, ok := request.Messages[len(request.Messages)-1].Content.([]interface{}); ok {
 			usageSpend.TextTokens, usageSpend.ImageTokens = GetMultimodalTokens(ctx, model, content, mak.ReqModel)
@@ -97,7 +97,7 @@ func MultimodalTokens(ctx context.Context, request sdkm.ChatCompletionRequest, c
 }
 
 // 多模态语音
-func MultimodalAudioTokens(ctx context.Context, request sdkm.ChatCompletionRequest, completion string, usage *sdkm.Usage, mak *MAK) (usageSpend common.UsageSpend) {
+func MultimodalAudioTokens(ctx context.Context, request smodel.ChatCompletionRequest, completion string, usage *smodel.Usage, mak *MAK) (usageSpend common.UsageSpend) {
 
 	model := mak.ReqModel.Model
 	if !tiktoken.IsEncodingForModel(model) {
@@ -106,7 +106,7 @@ func MultimodalAudioTokens(ctx context.Context, request sdkm.ChatCompletionReque
 
 	if usage == nil {
 
-		usage = new(sdkm.Usage)
+		usage = new(smodel.Usage)
 
 		usageSpend.TextTokens, usageSpend.AudioTokens = GetMultimodalAudioTokens(ctx, model, request.Messages, mak.ReqModel)
 
@@ -151,7 +151,7 @@ func MultimodalAudioTokens(ctx context.Context, request sdkm.ChatCompletionReque
 }
 
 // 文生文
-func TextTokens(ctx context.Context, request sdkm.ChatCompletionRequest, completion string, usage *sdkm.Usage, mak *MAK) (usageSpend common.UsageSpend) {
+func TextTokens(ctx context.Context, request smodel.ChatCompletionRequest, completion string, usage *smodel.Usage, mak *MAK) (usageSpend common.UsageSpend) {
 
 	model := mak.ReqModel.Model
 	if !tiktoken.IsEncodingForModel(model) {
@@ -160,7 +160,7 @@ func TextTokens(ctx context.Context, request sdkm.ChatCompletionRequest, complet
 
 	if usage == nil || usage.TotalTokens == 0 {
 
-		usage = new(sdkm.Usage)
+		usage = new(smodel.Usage)
 
 		usage.PromptTokens = GetPromptTokens(ctx, model, request.Messages)
 

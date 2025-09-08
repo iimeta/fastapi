@@ -13,8 +13,8 @@ import (
 	"github.com/gogf/gf/v2/text/gregex"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
-	"github.com/iimeta/fastapi-sdk/consts"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	sconsts "github.com/iimeta/fastapi-sdk/consts"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
@@ -132,14 +132,14 @@ func IsMaxRetry(isEnableModelAgent bool, agentTotal, keyTotal, retry int) bool {
 	return false
 }
 
-func HandleMessages(messages []sdkm.ChatCompletionMessage) []sdkm.ChatCompletionMessage {
+func HandleMessages(messages []smodel.ChatCompletionMessage) []smodel.ChatCompletionMessage {
 
 	var (
-		newMessages = make([]sdkm.ChatCompletionMessage, 0)
+		newMessages = make([]smodel.ChatCompletionMessage, 0)
 	)
 
 	for _, message := range messages {
-		if message.Content != "" || message.Role != consts.ROLE_USER {
+		if message.Content != "" || message.Role != sconsts.ROLE_USER {
 			newMessages = append(newMessages, message)
 		}
 	}

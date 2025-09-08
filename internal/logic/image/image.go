@@ -12,10 +12,9 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
-	"github.com/iimeta/fastapi-sdk"
-	sdkerr "github.com/iimeta/fastapi-sdk/errors"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi/internal/consts"
+	sconsts "github.com/iimeta/fastapi-sdk/consts"
+	serrors "github.com/iimeta/fastapi-sdk/errors"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
@@ -38,14 +37,14 @@ func New() service.IImage {
 }
 
 // Generations
-func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.ImageResponse, err error) {
+func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.ImageResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "sImage Generations time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	params, err := sdk.NewConverter(ctx, consts.CORP_OPENAI).ConvImageGenerationsRequest(ctx, data)
+	params, err := common.NewConverter(ctx, sconsts.PROVIDER_OPENAI).ConvImageGenerationsRequest(ctx, data)
 	if err != nil {
 		logger.Errorf(ctx, "sImage Generations ConvImageGenerationsRequest error: %v", err)
 		return response, err
@@ -238,7 +237,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 }
 
 // Edits
-func (s *sImage) Edits(ctx context.Context, params sdkm.ImageEditRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.ImageResponse, err error) {
+func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.ImageResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -316,7 +315,7 @@ func (s *sImage) Edits(ctx context.Context, params sdkm.ImageEditRequest, fallba
 					imageRes.Usage = usage
 				}
 
-				imageReq := &sdkm.ImageGenerationRequest{
+				imageReq := &smodel.ImageGenerationRequest{
 					Prompt:         params.Prompt,
 					Background:     params.Background,
 					Model:          params.Model,
@@ -557,7 +556,7 @@ func (s *sImage) SaveLog(ctx context.Context, imageLog model.ImageLog, retry ...
 	if imageLog.ImageRes.Error != nil {
 
 		image.ErrMsg = imageLog.ImageRes.Error.Error()
-		openaiApiError := &sdkerr.ApiError{}
+		openaiApiError := &serrors.ApiError{}
 		if errors.As(imageLog.ImageRes.Error, &openaiApiError) {
 			image.ErrMsg = openaiApiError.Message
 		}

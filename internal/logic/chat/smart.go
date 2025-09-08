@@ -8,8 +8,8 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi/internal/consts"
+	sconsts "github.com/iimeta/fastapi-sdk/consts"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
 	mcommon "github.com/iimeta/fastapi/internal/model/common"
@@ -18,7 +18,7 @@ import (
 )
 
 // SmartCompletions
-func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletionRequest, reqModel *model.Model, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.ChatCompletionResponse, err error) {
+func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompletionRequest, reqModel *model.Model, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.ChatCompletionResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -109,14 +109,14 @@ func (s *sChat) SmartCompletions(ctx context.Context, params sdkm.ChatCompletion
 
 		// 替换预设提示词
 		if mak.RealModel.PresetConfig.IsSupportSystemRole && mak.RealModel.PresetConfig.SystemRolePrompt != "" {
-			if params.Messages[0].Role == consts.ROLE_SYSTEM {
-				params.Messages = append([]sdkm.ChatCompletionMessage{{
-					Role:    consts.ROLE_SYSTEM,
+			if params.Messages[0].Role == sconsts.ROLE_SYSTEM {
+				params.Messages = append([]smodel.ChatCompletionMessage{{
+					Role:    sconsts.ROLE_SYSTEM,
 					Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 				}}, params.Messages[1:]...)
 			} else {
-				params.Messages = append([]sdkm.ChatCompletionMessage{{
-					Role:    consts.ROLE_SYSTEM,
+				params.Messages = append([]smodel.ChatCompletionMessage{{
+					Role:    sconsts.ROLE_SYSTEM,
 					Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 				}}, params.Messages...)
 			}

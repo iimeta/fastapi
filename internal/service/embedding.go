@@ -8,14 +8,14 @@ package service
 import (
 	"context"
 
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/model"
 )
 
 type (
 	IEmbedding interface {
 		// Embeddings
-		Embeddings(ctx context.Context, data []byte, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.EmbeddingResponse, err error)
+		Embeddings(ctx context.Context, data []byte, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.EmbeddingResponse, err error)
 		// 保存日志
 		SaveLog(ctx context.Context, chatLog model.ChatLog, retry ...int)
 	}

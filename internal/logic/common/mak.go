@@ -8,9 +8,9 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	sconsts "github.com/iimeta/fastapi-sdk/consts"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/config"
-	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
@@ -20,7 +20,7 @@ import (
 type MAK struct {
 	Corp               string
 	Model              string
-	Messages           []sdkm.ChatCompletionMessage
+	Messages           []smodel.ChatCompletionMessage
 	ReqModel           *model.Model
 	RealModel          *model.Model
 	ModelAgent         *model.ModelAgent
@@ -325,7 +325,7 @@ func getRealKey(ctx context.Context, mak *MAK) error {
 
 	corpCode := GetCorpCode(ctx, corp)
 
-	if corpCode == consts.CORP_GCP_CLAUDE || corpCode == consts.CORP_GCP_GEMINI {
+	if corpCode == sconsts.PROVIDER_GCP_CLAUDE || corpCode == sconsts.PROVIDER_GCP_GEMINI {
 
 		projectId, key, err := getGcpToken(ctx, mak.Key, config.Cfg.Http.ProxyUrl)
 		if err != nil {
@@ -347,7 +347,7 @@ func getRealKey(ctx context.Context, mak *MAK) error {
 
 		mak.Path = fmt.Sprintf(mak.Path, projectId, mak.RealModel.Model)
 
-	} else if corpCode == consts.CORP_BAIDU {
+	} else if corpCode == sconsts.PROVIDER_BAIDU {
 		mak.RealKey = getBaiduToken(ctx, mak.Key.Key, mak.BaseUrl, config.Cfg.Http.ProxyUrl)
 	} else {
 		mak.RealKey = mak.Key.Key

@@ -16,7 +16,8 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/gogf/gf/v2/util/grand"
-	sdkm "github.com/iimeta/fastapi-sdk/model"
+	sconsts "github.com/iimeta/fastapi-sdk/consts"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
@@ -38,7 +39,7 @@ func New() service.IGoogle {
 }
 
 // Completions
-func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response sdkm.ChatCompletionResponse, err error) {
+func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.ChatCompletionResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -162,12 +163,12 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 	//	// 替换预设提示词
 	//	if mak.RealModel.PresetConfig.IsSupportSystemRole && mak.RealModel.PresetConfig.SystemRolePrompt != "" {
 	//		if request.Messages[0].Role == consts.ROLE_SYSTEM {
-	//			request.Messages = append([]sdkm.ChatCompletionMessage{{
+	//			request.Messages = append([]smodel.ChatCompletionMessage{{
 	//				Role:    consts.ROLE_SYSTEM,
 	//				Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 	//			}}, request.Messages[1:]...)
 	//		} else {
-	//			request.Messages = append([]sdkm.ChatCompletionMessage{{
+	//			request.Messages = append([]smodel.ChatCompletionMessage{{
 	//				Role:    consts.ROLE_SYSTEM,
 	//				Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 	//			}}, request.Messages...)
@@ -300,7 +301,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 		duration    int64
 		totalTime   int64
 		totalTokens int
-		usage       *sdkm.Usage
+		usage       *smodel.Usage
 		retryInfo   *mcommon.Retry
 	)
 
@@ -390,12 +391,12 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 	//	// 替换预设提示词
 	//	if mak.RealModel.PresetConfig.IsSupportSystemRole && mak.RealModel.PresetConfig.SystemRolePrompt != "" {
 	//		if request.Messages[0].Role == consts.ROLE_SYSTEM {
-	//			request.Messages = append([]sdkm.ChatCompletionMessage{{
+	//			request.Messages = append([]smodel.ChatCompletionMessage{{
 	//				Role:    consts.ROLE_SYSTEM,
 	//				Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 	//			}}, request.Messages[1:]...)
 	//		} else {
-	//			request.Messages = append([]sdkm.ChatCompletionMessage{{
+	//			request.Messages = append([]smodel.ChatCompletionMessage{{
 	//				Role:    consts.ROLE_SYSTEM,
 	//				Content: mak.RealModel.PresetConfig.SystemRolePrompt,
 	//			}}, request.Messages...)
@@ -644,15 +645,15 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 	}
 }
 
-func convToChatCompletionRequest(request *ghttp.Request) sdkm.ChatCompletionRequest {
+func convToChatCompletionRequest(request *ghttp.Request) smodel.ChatCompletionRequest {
 
-	googleChatCompletionReq := sdkm.GoogleChatCompletionReq{}
+	googleChatCompletionReq := smodel.GoogleChatCompletionReq{}
 	if err := gjson.Unmarshal(request.GetBody(), &googleChatCompletionReq); err != nil {
 		logger.Error(request.GetCtx(), err)
-		return sdkm.ChatCompletionRequest{}
+		return smodel.ChatCompletionRequest{}
 	}
 
-	messages := make([]sdkm.ChatCompletionMessage, 0)
+	messages := make([]smodel.ChatCompletionMessage, 0)
 	for _, content := range googleChatCompletionReq.Contents {
 
 		contents := make([]interface{}, 0)
@@ -677,17 +678,17 @@ func convToChatCompletionRequest(request *ghttp.Request) sdkm.ChatCompletionRequ
 
 		role := content.Role
 
-		if role == consts.ROLE_MODEL {
-			role = consts.ROLE_ASSISTANT
+		if role == sconsts.ROLE_MODEL {
+			role = sconsts.ROLE_ASSISTANT
 		}
 
-		messages = append(messages, sdkm.ChatCompletionMessage{
+		messages = append(messages, smodel.ChatCompletionMessage{
 			Role:    role,
 			Content: contents,
 		})
 	}
 
-	return sdkm.ChatCompletionRequest{
+	return smodel.ChatCompletionRequest{
 		Model:       request.GetRouterMap()["model"],
 		Messages:    messages,
 		MaxTokens:   googleChatCompletionReq.GenerationConfig.MaxOutputTokens,
@@ -696,9 +697,9 @@ func convToChatCompletionRequest(request *ghttp.Request) sdkm.ChatCompletionRequ
 	}
 }
 
-func convToChatCompletionResponse(ctx context.Context, res sdkm.GoogleChatCompletionRes, stream bool) sdkm.ChatCompletionResponse {
+func convToChatCompletionResponse(ctx context.Context, res smodel.GoogleChatCompletionRes, stream bool) smodel.ChatCompletionResponse {
 
-	googleChatCompletionRes := sdkm.GoogleChatCompletionRes{
+	googleChatCompletionRes := smodel.GoogleChatCompletionRes{
 		ResponseBytes: res.ResponseBytes,
 		UsageMetadata: res.UsageMetadata,
 		Err:           res.Err,
@@ -710,7 +711,7 @@ func convToChatCompletionResponse(ctx context.Context, res sdkm.GoogleChatComple
 		}
 	}
 
-	chatCompletionResponse := sdkm.ChatCompletionResponse{
+	chatCompletionResponse := smodel.ChatCompletionResponse{
 		Id:            consts.COMPLETION_ID_PREFIX + grand.S(29),
 		Object:        consts.COMPLETION_OBJECT,
 		Created:       gtime.Timestamp(),
@@ -725,20 +726,20 @@ func convToChatCompletionResponse(ctx context.Context, res sdkm.GoogleChatComple
 	if len(googleChatCompletionRes.Candidates) > 0 {
 		if stream {
 			for _, candidate := range googleChatCompletionRes.Candidates {
-				chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, sdkm.ChatCompletionChoice{
+				chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, smodel.ChatCompletionChoice{
 					Index: candidate.Index,
-					Delta: &sdkm.ChatCompletionStreamChoiceDelta{
-						Role:    consts.ROLE_ASSISTANT,
+					Delta: &smodel.ChatCompletionStreamChoiceDelta{
+						Role:    sconsts.ROLE_ASSISTANT,
 						Content: candidate.Content.Parts[0].Text,
 					},
 				})
 			}
 		} else {
 			for i, part := range googleChatCompletionRes.Candidates[0].Content.Parts {
-				chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, sdkm.ChatCompletionChoice{
+				chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, smodel.ChatCompletionChoice{
 					Index: i,
-					Message: &sdkm.ChatCompletionMessage{
-						Role:    consts.ROLE_ASSISTANT,
+					Message: &smodel.ChatCompletionMessage{
+						Role:    sconsts.ROLE_ASSISTANT,
 						Content: part.Text,
 					},
 					FinishReason: "stop",
@@ -748,7 +749,7 @@ func convToChatCompletionResponse(ctx context.Context, res sdkm.GoogleChatComple
 	}
 
 	if googleChatCompletionRes.UsageMetadata != nil {
-		chatCompletionResponse.Usage = &sdkm.Usage{
+		chatCompletionResponse.Usage = &smodel.Usage{
 			PromptTokens:     googleChatCompletionRes.UsageMetadata.PromptTokenCount,
 			CompletionTokens: googleChatCompletionRes.UsageMetadata.CandidatesTokenCount,
 			TotalTokens:      googleChatCompletionRes.UsageMetadata.TotalTokenCount,
