@@ -17,7 +17,7 @@ import (
 func NewAdapter(ctx context.Context, mak *MAK, isLong bool, isOfficialFormat ...bool) sdk.Adapter {
 
 	options := &options.AdapterOptions{
-		Provider:                GetCorpCode(ctx, mak.Corp),
+		Provider:                GetProviderCode(ctx, mak.Provider),
 		Model:                   mak.RealModel.Model,
 		Key:                     mak.RealKey,
 		BaseUrl:                 mak.BaseUrl,
@@ -48,7 +48,7 @@ func NewOpenAIAdapter(ctx context.Context, mak *MAK, isLong bool) *openai.OpenAI
 	}
 
 	options := &options.AdapterOptions{
-		Provider:                GetCorpCode(ctx, mak.Corp),
+		Provider:                GetProviderCode(ctx, mak.Provider),
 		Model:                   mak.RealModel.Model,
 		Key:                     mak.RealKey,
 		BaseUrl:                 mak.BaseUrl,
@@ -80,25 +80,25 @@ func NewModerationClient(ctx context.Context, model *model.Model, key, baseUrl, 
 	return sdk.NewModerationClient(ctx, model.Model, key, baseUrl, path, config.Cfg.Base.ShortTimeout, config.Cfg.Http.ProxyUrl)
 }
 
-func NewConverter(ctx context.Context, corp string) sdk.Converter {
-	return sdk.NewConverter(ctx, &options.AdapterOptions{Provider: GetCorpCode(ctx, corp)})
+func NewConverter(ctx context.Context, provider string) sdk.Converter {
+	return sdk.NewConverter(ctx, &options.AdapterOptions{Provider: GetProviderCode(ctx, provider)})
 }
 
-func GetCorpCode(ctx context.Context, corpId string) string {
+func GetProviderCode(ctx context.Context, providerId string) string {
 
-	corp, err := service.Corp().GetCacheCorp(ctx, corpId)
-	if err != nil || corp == nil {
-		corp, err = service.Corp().GetCorpAndSaveCache(ctx, corpId)
+	provider, err := service.Provider().GetCacheProvider(ctx, providerId)
+	if err != nil || provider == nil {
+		provider, err = service.Provider().GetProviderAndSaveCache(ctx, providerId)
 	}
 
 	if err != nil {
 		logger.Error(ctx, err)
-		return corpId
+		return providerId
 	}
 
-	if corp != nil {
-		return corp.Code
+	if provider != nil {
+		return provider.Code
 	}
 
-	return corpId
+	return providerId
 }

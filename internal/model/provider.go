@@ -1,6 +1,6 @@
 package model
 
-type Corp struct {
+type Provider struct {
 	Id        string `json:"id,omitempty"`         // ID
 	Name      string `json:"name,omitempty"`       // 名称
 	Code      string `json:"code,omitempty"`       // 代码

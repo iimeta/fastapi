@@ -437,11 +437,11 @@ func (s *sAudio) SaveLog(ctx context.Context, audioLog model.AudioLog, retry ...
 	}
 
 	if audioLog.ReqModel != nil {
-		audio.Corp = audioLog.ReqModel.Corp
+		audio.ProviderId = audioLog.ReqModel.ProviderId
 		audio.ModelId = audioLog.ReqModel.Id
-		audio.Name = audioLog.ReqModel.Name
+		audio.ModelName = audioLog.ReqModel.Name
 		audio.Model = audioLog.ReqModel.Model
-		audio.Type = audioLog.ReqModel.Type
+		audio.ModelType = audioLog.ReqModel.Type
 		audio.AudioQuota = audioLog.ReqModel.AudioQuota
 	}
 
@@ -459,13 +459,13 @@ func (s *sAudio) SaveLog(ctx context.Context, audioLog model.AudioLog, retry ...
 	if audio.IsEnableModelAgent && audioLog.ModelAgent != nil {
 		audio.ModelAgentId = audioLog.ModelAgent.Id
 		audio.ModelAgent = &do.ModelAgent{
-			Corp:    audioLog.ModelAgent.Corp,
-			Name:    audioLog.ModelAgent.Name,
-			BaseUrl: audioLog.ModelAgent.BaseUrl,
-			Path:    audioLog.ModelAgent.Path,
-			Weight:  audioLog.ModelAgent.Weight,
-			Remark:  audioLog.ModelAgent.Remark,
-			Status:  audioLog.ModelAgent.Status,
+			ProviderId: audioLog.ModelAgent.ProviderId,
+			Name:       audioLog.ModelAgent.Name,
+			BaseUrl:    audioLog.ModelAgent.BaseUrl,
+			Path:       audioLog.ModelAgent.Path,
+			Weight:     audioLog.ModelAgent.Weight,
+			Remark:     audioLog.ModelAgent.Remark,
+			Status:     audioLog.ModelAgent.Status,
 		}
 	}
 

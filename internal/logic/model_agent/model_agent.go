@@ -63,7 +63,7 @@ func (s *sModelAgent) GetModelAgentById(ctx context.Context, id string) (*model.
 
 	return &model.ModelAgent{
 		Id:                   modelAgent.Id,
-		Corp:                 modelAgent.Corp,
+		ProviderId:           modelAgent.ProviderId,
 		Name:                 modelAgent.Name,
 		BaseUrl:              modelAgent.BaseUrl,
 		Path:                 modelAgent.Path,
@@ -115,7 +115,7 @@ func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAge
 	for _, result := range results {
 		items = append(items, &model.ModelAgent{
 			Id:                   result.Id,
-			Corp:                 result.Corp,
+			ProviderId:           result.ProviderId,
 			Name:                 result.Name,
 			BaseUrl:              result.BaseUrl,
 			Path:                 result.Path,
@@ -166,7 +166,7 @@ func (s *sModelAgent) ListAll(ctx context.Context) ([]*model.ModelAgent, error) 
 	for _, result := range results {
 		items = append(items, &model.ModelAgent{
 			Id:                   result.Id,
-			Corp:                 result.Corp,
+			ProviderId:           result.ProviderId,
 			Name:                 result.Name,
 			BaseUrl:              result.BaseUrl,
 			Path:                 result.Path,
@@ -204,7 +204,7 @@ func (s *sModelAgent) GetModelAgentKeys(ctx context.Context, id string) ([]*mode
 			Id:             result.Id,
 			UserId:         result.UserId,
 			AppId:          result.AppId,
-			Corp:           result.Corp,
+			ProviderId:     result.ProviderId,
 			Key:            result.Key,
 			Type:           result.Type,
 			Weight:         result.Weight,
@@ -253,7 +253,7 @@ func (s *sModelAgent) GetModelAgentsAndKeys(ctx context.Context) ([]*model.Model
 			Id:             result.Id,
 			UserId:         result.UserId,
 			AppId:          result.AppId,
-			Corp:           result.Corp,
+			ProviderId:     result.ProviderId,
 			Key:            result.Key,
 			Type:           result.Type,
 			Weight:         result.Weight,
@@ -712,7 +712,7 @@ func (s *sModelAgent) DisabledModelAgentKey(ctx context.Context, key *model.Key,
 		Id:                 key.Id,
 		UserId:             key.UserId,
 		AppId:              key.AppId,
-		Corp:               key.Corp,
+		ProviderId:         key.ProviderId,
 		Key:                key.Key,
 		Type:               key.Type,
 		Weight:             key.Weight,
@@ -791,7 +791,7 @@ func (s *sModelAgent) CreateCacheModelAgent(ctx context.Context, newData *model.
 
 	if err := s.SaveCacheList(ctx, []*model.ModelAgent{{
 		Id:                   newData.Id,
-		Corp:                 newData.Corp,
+		ProviderId:           newData.ProviderId,
 		Name:                 newData.Name,
 		BaseUrl:              newData.BaseUrl,
 		Path:                 newData.Path,
@@ -827,7 +827,7 @@ func (s *sModelAgent) UpdateCacheModelAgent(ctx context.Context, oldData *model.
 
 	if err := s.SaveCacheList(ctx, []*model.ModelAgent{{
 		Id:                   newData.Id,
-		Corp:                 newData.Corp,
+		ProviderId:           newData.ProviderId,
 		Name:                 newData.Name,
 		BaseUrl:              newData.BaseUrl,
 		Path:                 newData.Path,
@@ -1035,7 +1035,7 @@ func (s *sModelAgent) CreateCacheModelAgentKey(ctx context.Context, key *entity.
 		Id:             key.Id,
 		UserId:         key.UserId,
 		AppId:          key.AppId,
-		Corp:           key.Corp,
+		ProviderId:     key.ProviderId,
 		Key:            key.Key,
 		Type:           key.Type,
 		Weight:         key.Weight,
@@ -1079,7 +1079,7 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 		Id:                 newData.Id,
 		UserId:             newData.UserId,
 		AppId:              newData.AppId,
-		Corp:               newData.Corp,
+		ProviderId:         newData.ProviderId,
 		Key:                newData.Key,
 		Type:               newData.Type,
 		Weight:             newData.Weight,

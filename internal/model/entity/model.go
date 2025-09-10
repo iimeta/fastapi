@@ -4,7 +4,7 @@ import "github.com/iimeta/fastapi/internal/model/common"
 
 type Model struct {
 	Id                   string                      `bson:"_id,omitempty"`                     // ID
-	Corp                 string                      `bson:"corp,omitempty"`                    // 公司
+	ProviderId           string                      `bson:"provider_id,omitempty"`             // 提供商ID
 	Name                 string                      `bson:"name,omitempty"`                    // 模型名称
 	Model                string                      `bson:"model,omitempty"`                   // 模型
 	Type                 int                         `bson:"type,omitempty"`                    // 模型类型[1:文生文, 2:文生图, 3:图生文, 4:图生图, 5:文生语音, 6:语音生文, 100:多模态, 101:多模态实时, 102:多模态语音]

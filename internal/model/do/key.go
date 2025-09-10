@@ -10,7 +10,7 @@ type Key struct {
 	gmeta.Meta          `collection:"key" bson:"-"`
 	UserId              int      `bson:"user_id,omitempty"`              // 用户ID
 	AppId               int      `bson:"app_id,omitempty"`               // 应用ID
-	Corp                string   `bson:"corp,omitempty"`                 // 公司
+	ProviderId          string   `bson:"provider_id,omitempty"`          // 提供商ID
 	Key                 string   `bson:"key,omitempty"`                  // 密钥
 	Type                int      `bson:"type,omitempty"`                 // 密钥类型[1:应用, 2:模型]
 	Weight              int      `bson:"weight,omitempty"`               // 权重

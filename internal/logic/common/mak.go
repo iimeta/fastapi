@@ -18,7 +18,7 @@ import (
 )
 
 type MAK struct {
-	Corp               string
+	Provider           string
 	Model              string
 	Messages           []smodel.ChatCompletionMessage
 	ReqModel           *model.Model
@@ -185,7 +185,7 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 		}
 	}
 
-	mak.Corp = mak.RealModel.Corp
+	mak.Provider = mak.RealModel.ProviderId
 	mak.BaseUrl = mak.RealModel.BaseUrl
 	mak.Path = mak.RealModel.Path
 
@@ -227,7 +227,7 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 
 	if mak.ModelAgent != nil {
 
-		mak.Corp = mak.ModelAgent.Corp
+		mak.Provider = mak.ModelAgent.ProviderId
 		mak.BaseUrl = mak.ModelAgent.BaseUrl
 		mak.Path = mak.ModelAgent.Path
 
@@ -317,15 +317,15 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 
 func getRealKey(ctx context.Context, mak *MAK) error {
 
-	corp := mak.RealModel.Corp
+	provider := mak.RealModel.ProviderId
 
 	if mak.ModelAgent != nil {
-		corp = mak.ModelAgent.Corp
+		provider = mak.ModelAgent.ProviderId
 	}
 
-	corpCode := GetCorpCode(ctx, corp)
+	providerCode := GetProviderCode(ctx, provider)
 
-	if corpCode == sconsts.PROVIDER_GCP_CLAUDE || corpCode == sconsts.PROVIDER_GCP_GEMINI {
+	if providerCode == sconsts.PROVIDER_GCP_CLAUDE || providerCode == sconsts.PROVIDER_GCP_GEMINI {
 
 		projectId, key, err := getGcpToken(ctx, mak.Key, config.Cfg.Http.ProxyUrl)
 		if err != nil {
@@ -347,7 +347,7 @@ func getRealKey(ctx context.Context, mak *MAK) error {
 
 		mak.Path = fmt.Sprintf(mak.Path, projectId, mak.RealModel.Model)
 
-	} else if corpCode == sconsts.PROVIDER_BAIDU {
+	} else if providerCode == sconsts.PROVIDER_BAIDU {
 		mak.RealKey = getBaiduToken(ctx, mak.Key.Key, mak.BaseUrl, config.Cfg.Http.ProxyUrl)
 	} else {
 		mak.RealKey = mak.Key.Key

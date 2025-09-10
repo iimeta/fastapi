@@ -3,11 +3,11 @@ package do
 import "github.com/gogf/gf/v2/util/gmeta"
 
 const (
-	CORP_COLLECTION = "corp"
+	PROVIDER_COLLECTION = "provider"
 )
 
-type Corp struct {
-	gmeta.Meta `collection:"corp" bson:"-"`
+type Provider struct {
+	gmeta.Meta `collection:"provider" bson:"-"`
 	Name       string `bson:"name,omitempty"`       // 名称
 	Code       string `bson:"code,omitempty"`       // 代码
 	Sort       int    `bson:"sort,omitempty"`       // 排序

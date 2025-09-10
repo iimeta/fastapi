@@ -458,11 +458,11 @@ func (s *sMidjourney) SaveLog(ctx context.Context, midjourneyLog model.Midjourne
 	}
 
 	if midjourneyLog.ReqModel != nil {
-		midjourney.Corp = midjourneyLog.ReqModel.Corp
+		midjourney.ProviderId = midjourneyLog.ReqModel.ProviderId
 		midjourney.ModelId = midjourneyLog.ReqModel.Id
-		midjourney.Name = midjourneyLog.ReqModel.Name
+		midjourney.ModelName = midjourneyLog.ReqModel.Name
 		midjourney.Model = midjourneyLog.ReqModel.Model
-		midjourney.Type = midjourneyLog.ReqModel.Type
+		midjourney.ModelType = midjourneyLog.ReqModel.Type
 		midjourney.MidjourneyQuotas = midjourneyLog.ReqModel.MidjourneyQuotas
 	}
 
@@ -480,13 +480,12 @@ func (s *sMidjourney) SaveLog(ctx context.Context, midjourneyLog model.Midjourne
 	if midjourney.IsEnableModelAgent && midjourneyLog.ModelAgent != nil {
 		midjourney.ModelAgentId = midjourneyLog.ModelAgent.Id
 		midjourney.ModelAgent = &do.ModelAgent{
-			Corp:    midjourneyLog.ModelAgent.Corp,
-			Name:    midjourneyLog.ModelAgent.Name,
-			BaseUrl: midjourneyLog.ModelAgent.BaseUrl,
-			Path:    midjourneyLog.ModelAgent.Path,
-			Weight:  midjourneyLog.ModelAgent.Weight,
-			Remark:  midjourneyLog.ModelAgent.Remark,
-			Status:  midjourneyLog.ModelAgent.Status,
+			ProviderId: midjourneyLog.ModelAgent.ProviderId,
+			Name:       midjourneyLog.ModelAgent.Name,
+			BaseUrl:    midjourneyLog.ModelAgent.BaseUrl,
+			Path:       midjourneyLog.ModelAgent.Path,
+			Weight:     midjourneyLog.ModelAgent.Weight,
+			Remark:     midjourneyLog.ModelAgent.Remark,
 		}
 	}
 

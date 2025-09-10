@@ -15,11 +15,11 @@ import (
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
 	_ "github.com/iimeta/fastapi/internal/logic/app"
-	_ "github.com/iimeta/fastapi/internal/logic/corp"
 	_ "github.com/iimeta/fastapi/internal/logic/group"
 	_ "github.com/iimeta/fastapi/internal/logic/key"
 	_ "github.com/iimeta/fastapi/internal/logic/model"
 	_ "github.com/iimeta/fastapi/internal/logic/model_agent"
+	_ "github.com/iimeta/fastapi/internal/logic/provider"
 	_ "github.com/iimeta/fastapi/internal/logic/reseller"
 	_ "github.com/iimeta/fastapi/internal/logic/user"
 	"github.com/iimeta/fastapi/internal/model"
@@ -68,7 +68,7 @@ func init() {
 	channels = append(channels, consts.CHANGE_CHANNEL_USER)
 	channels = append(channels, consts.CHANGE_CHANNEL_APP)
 	channels = append(channels, consts.CHANGE_CHANNEL_APP_KEY)
-	channels = append(channels, consts.CHANGE_CHANNEL_CORP)
+	channels = append(channels, consts.CHANGE_CHANNEL_PROVIDER)
 	channels = append(channels, consts.CHANGE_CHANNEL_MODEL)
 	channels = append(channels, consts.CHANGE_CHANNEL_KEY)
 	channels = append(channels, consts.CHANGE_CHANNEL_AGENT)
@@ -104,8 +104,8 @@ func init() {
 				err = service.App().Subscribe(gctx.New(), msg.Payload)
 			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_APP_KEY:
 				err = service.App().SubscribeKey(gctx.New(), msg.Payload)
-			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_CORP:
-				err = service.Corp().Subscribe(gctx.New(), msg.Payload)
+			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_PROVIDER:
+				err = service.Provider().Subscribe(gctx.New(), msg.Payload)
 			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_MODEL:
 				err = service.Model().Subscribe(gctx.New(), msg.Payload)
 			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_KEY:
@@ -265,14 +265,14 @@ func (s *sCore) Refresh(ctx context.Context) error {
 		}
 	}
 
-	corps, err := service.Corp().List(ctx)
+	providers, err := service.Provider().List(ctx)
 	if err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
 
-	if len(corps) > 0 {
-		if err = service.Corp().SaveCacheList(ctx, corps); err != nil {
+	if len(providers) > 0 {
+		if err = service.Provider().SaveCacheList(ctx, providers); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}

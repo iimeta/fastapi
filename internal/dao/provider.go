@@ -6,19 +6,19 @@ import (
 	"github.com/iimeta/fastapi/utility/db"
 )
 
-var Corp = NewCorpDao()
+var Provider = NewProviderDao()
 
-type CorpDao struct {
-	*MongoDB[entity.Corp]
+type ProviderDao struct {
+	*MongoDB[entity.Provider]
 }
 
-func NewCorpDao(database ...string) *CorpDao {
+func NewProviderDao(database ...string) *ProviderDao {
 
 	if len(database) == 0 {
 		database = append(database, db.DefaultDatabase)
 	}
 
-	return &CorpDao{
-		MongoDB: NewMongoDB[entity.Corp](database[0], do.CORP_COLLECTION),
+	return &ProviderDao{
+		MongoDB: NewMongoDB[entity.Provider](database[0], do.PROVIDER_COLLECTION),
 	}
 }

@@ -1,6 +1,6 @@
 package entity
 
-type Corp struct {
+type Provider struct {
 	Id        string `bson:"_id,omitempty"`        // ID
 	Name      string `bson:"name,omitempty"`       // 名称
 	Code      string `bson:"code,omitempty"`       // 代码

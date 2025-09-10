@@ -807,11 +807,11 @@ func (s *sChat) SaveLog(ctx context.Context, chatLog model.ChatLog, retry ...int
 	}
 
 	if chatLog.ReqModel != nil {
-		chat.Corp = chatLog.ReqModel.Corp
+		chat.ProviderId = chatLog.ReqModel.ProviderId
 		chat.ModelId = chatLog.ReqModel.Id
-		chat.Name = chatLog.ReqModel.Name
+		chat.ModelName = chatLog.ReqModel.Name
 		chat.Model = chatLog.ReqModel.Model
-		chat.Type = chatLog.ReqModel.Type
+		chat.ModelType = chatLog.ReqModel.Type
 		chat.TextQuota = chatLog.ReqModel.TextQuota
 		chat.MultimodalQuota = chatLog.ReqModel.MultimodalQuota
 		chat.MultimodalAudioQuota = chatLog.ReqModel.MultimodalAudioQuota
@@ -839,13 +839,12 @@ func (s *sChat) SaveLog(ctx context.Context, chatLog model.ChatLog, retry ...int
 		chat.IsEnableModelAgent = true
 		chat.ModelAgentId = chatLog.ModelAgent.Id
 		chat.ModelAgent = &do.ModelAgent{
-			Corp:    chatLog.ModelAgent.Corp,
-			Name:    chatLog.ModelAgent.Name,
-			BaseUrl: chatLog.ModelAgent.BaseUrl,
-			Path:    chatLog.ModelAgent.Path,
-			Weight:  chatLog.ModelAgent.Weight,
-			Remark:  chatLog.ModelAgent.Remark,
-			Status:  chatLog.ModelAgent.Status,
+			ProviderId: chatLog.ModelAgent.ProviderId,
+			Name:       chatLog.ModelAgent.Name,
+			BaseUrl:    chatLog.ModelAgent.BaseUrl,
+			Path:       chatLog.ModelAgent.Path,
+			Weight:     chatLog.ModelAgent.Weight,
+			Remark:     chatLog.ModelAgent.Remark,
 		}
 	}
 

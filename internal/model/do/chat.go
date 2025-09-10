@@ -15,14 +15,14 @@ type Chat struct {
 	TraceId              string                      `bson:"trace_id,omitempty"`                // 日志ID
 	UserId               int                         `bson:"user_id,omitempty"`                 // 用户ID
 	AppId                int                         `bson:"app_id,omitempty"`                  // 应用ID
-	Corp                 string                      `bson:"corp,omitempty"`                    // 公司
 	GroupId              string                      `bson:"group_id,omitempty"`                // 分组ID
 	GroupName            string                      `bson:"group_name,omitempty"`              // 分组名称
 	Discount             float64                     `bson:"discount,omitempty"`                // 分组折扣
+	ProviderId           string                      `bson:"provider_id,omitempty"`             // 提供商ID
 	ModelId              string                      `bson:"model_id,omitempty"`                // 模型ID
-	Name                 string                      `bson:"name,omitempty"`                    // 模型名称
+	ModelName            string                      `bson:"model_name,omitempty"`              // 模型名称
 	Model                string                      `bson:"model,omitempty"`                   // 模型
-	Type                 int                         `bson:"type,omitempty"`                    // 模型类型[1:文生文, 2:文生图, 3:图生文, 4:图生图, 5:文生语音, 6:语音生文, 100:多模态, 101:多模态实时, 102:多模态语音]
+	ModelType            int                         `bson:"model_type,omitempty"`              // 模型类型[1:文生文, 2:文生图, 3:图生文, 4:图生图, 5:文生语音, 6:语音生文, 7:文本向量化, 100:多模态, 101:多模态实时, 102:多模态语音, 103:多模态向量化]
 	Key                  string                      `bson:"key,omitempty"`                     // 密钥
 	IsEnablePresetConfig bool                        `bson:"is_enable_preset_config,omitempty"` // 是否启用预设配置
 	PresetConfig         common.PresetConfig         `bson:"preset_config,omitempty"`           // 预设配置

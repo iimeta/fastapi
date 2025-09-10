@@ -54,7 +54,7 @@ func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 
 	return &model.Model{
 		Id:                   result.Id,
-		Corp:                 result.Corp,
+		ProviderId:           result.ProviderId,
 		Name:                 result.Name,
 		Model:                result.Model,
 		Type:                 result.Type,
@@ -100,7 +100,7 @@ func (s *sModel) GetModelById(ctx context.Context, id string) (*model.Model, err
 
 	return &model.Model{
 		Id:                   result.Id,
-		Corp:                 result.Corp,
+		ProviderId:           result.ProviderId,
 		Name:                 result.Name,
 		Model:                result.Model,
 		Type:                 result.Type,
@@ -624,7 +624,7 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 	for _, result := range results {
 		items = append(items, &model.Model{
 			Id:                   result.Id,
-			Corp:                 result.Corp,
+			ProviderId:           result.ProviderId,
 			Name:                 result.Name,
 			Model:                result.Model,
 			Type:                 result.Type,
@@ -678,7 +678,7 @@ func (s *sModel) ListAll(ctx context.Context) ([]*model.Model, error) {
 	for _, result := range results {
 		items = append(items, &model.Model{
 			Id:                   result.Id,
-			Corp:                 result.Corp,
+			ProviderId:           result.ProviderId,
 			Name:                 result.Name,
 			Model:                result.Model,
 			Type:                 result.Type,
@@ -739,7 +739,7 @@ func (s *sModel) GetModelsAndKeys(ctx context.Context) ([]*model.Model, map[stri
 			Id:                  result.Id,
 			UserId:              result.UserId,
 			AppId:               result.AppId,
-			Corp:                result.Corp,
+			ProviderId:          result.ProviderId,
 			Key:                 result.Key,
 			Type:                result.Type,
 			Weight:              result.Weight,
@@ -894,7 +894,7 @@ func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, ne
 
 	if err := s.SaveCache(ctx, &model.Model{
 		Id:                   newData.Id,
-		Corp:                 newData.Corp,
+		ProviderId:           newData.ProviderId,
 		Name:                 newData.Name,
 		Model:                newData.Model,
 		Type:                 newData.Type,

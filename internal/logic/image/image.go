@@ -500,11 +500,11 @@ func (s *sImage) SaveLog(ctx context.Context, imageLog model.ImageLog, retry ...
 	}
 
 	if imageLog.ReqModel != nil {
-		image.Corp = imageLog.ReqModel.Corp
+		image.ProviderId = imageLog.ReqModel.ProviderId
 		image.ModelId = imageLog.ReqModel.Id
-		image.Name = imageLog.ReqModel.Name
+		image.ModelName = imageLog.ReqModel.Name
 		image.Model = imageLog.ReqModel.Model
-		image.Type = imageLog.ReqModel.Type
+		image.ModelType = imageLog.ReqModel.Type
 		image.ImageQuota = imageLog.ReqModel.ImageQuota
 	}
 
@@ -522,13 +522,12 @@ func (s *sImage) SaveLog(ctx context.Context, imageLog model.ImageLog, retry ...
 	if image.IsEnableModelAgent && imageLog.ModelAgent != nil {
 		image.ModelAgentId = imageLog.ModelAgent.Id
 		image.ModelAgent = &do.ModelAgent{
-			Corp:    imageLog.ModelAgent.Corp,
-			Name:    imageLog.ModelAgent.Name,
-			BaseUrl: imageLog.ModelAgent.BaseUrl,
-			Path:    imageLog.ModelAgent.Path,
-			Weight:  imageLog.ModelAgent.Weight,
-			Remark:  imageLog.ModelAgent.Remark,
-			Status:  imageLog.ModelAgent.Status,
+			ProviderId: imageLog.ModelAgent.ProviderId,
+			Name:       imageLog.ModelAgent.Name,
+			BaseUrl:    imageLog.ModelAgent.BaseUrl,
+			Path:       imageLog.ModelAgent.Path,
+			Weight:     imageLog.ModelAgent.Weight,
+			Remark:     imageLog.ModelAgent.Remark,
 		}
 	}
 

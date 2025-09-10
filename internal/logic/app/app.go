@@ -343,7 +343,7 @@ func (s *sApp) UpdateCacheAppKey(ctx context.Context, key *entity.Key) {
 		Id:                  key.Id,
 		UserId:              key.UserId,
 		AppId:               key.AppId,
-		Corp:                key.Corp,
+		ProviderId:          key.ProviderId,
 		Key:                 key.Key,
 		Type:                key.Type,
 		Models:              key.Models,

@@ -59,7 +59,7 @@ func (c *ControllerV1) Models(ctx context.Context, req *v1.ModelsReq) (res *v1.M
 
 			if m.Status == 1 && ids.AddIfNotExist(m.Model) {
 
-				corp, err := service.Corp().GetCacheCorp(ctx, m.Corp)
+				provider, err := service.Provider().GetCacheProvider(ctx, m.ProviderId)
 				if err != nil {
 					return nil, err
 				}
@@ -67,7 +67,7 @@ func (c *ControllerV1) Models(ctx context.Context, req *v1.ModelsReq) (res *v1.M
 				modelsData := model.DashboardModelsData{
 					Id:      m.Model,
 					Object:  "model",
-					OwnedBy: gstr.ToLower(corp.Code),
+					OwnedBy: gstr.ToLower(provider.Code),
 					Created: gconv.Int(m.CreatedAt / 1000),
 					Root:    m.Model,
 					Permission: []model.Permission{{
@@ -84,8 +84,8 @@ func (c *ControllerV1) Models(ctx context.Context, req *v1.ModelsReq) (res *v1.M
 
 				if req.IsFastAPI {
 					modelsData.FastAPI = &model.FastAPI{
-						Corp:                 corp.Name,
-						Code:                 corp.Code,
+						Provider:             provider.Name,
+						Code:                 provider.Code,
 						Model:                m.Model,
 						Type:                 m.Type,
 						TextQuota:            m.TextQuota,

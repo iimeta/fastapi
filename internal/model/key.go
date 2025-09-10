@@ -4,7 +4,7 @@ type Key struct {
 	Id                  string   `json:"id,omitempty"`                   // ID
 	UserId              int      `json:"user_id,omitempty"`              // 用户ID
 	AppId               int      `json:"app_id,omitempty"`               // 应用ID
-	Corp                string   `json:"corp,omitempty"`                 // 公司
+	ProviderId          string   `json:"provider_id,omitempty"`          // 提供商ID
 	Key                 string   `json:"key,omitempty"`                  // 密钥
 	Type                int      `json:"type,omitempty"`                 // 密钥类型[1:应用, 2:模型]
 	Weight              int      `json:"weight,omitempty"`               // 权重
