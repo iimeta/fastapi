@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/utility/db"
 )
@@ -19,6 +18,6 @@ func NewSysConfigDao(database ...string) *SysConfigDao {
 	}
 
 	return &SysConfigDao{
-		MongoDB: NewMongoDB[entity.SysConfig](database[0], do.SYS_CONFIG_COLLECTION),
+		MongoDB: NewMongoDB[entity.SysConfig](database[0], SYS_CONFIG),
 	}
 }

@@ -192,7 +192,7 @@ func (s *sModelAgent) GetModelAgentKeys(ctx context.Context, id string) ([]*mode
 		logger.Debugf(ctx, "sModelAgent GetModelAgentKeys time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	results, err := dao.Key.Find(ctx, bson.M{"type": 2, "model_agents": bson.M{"$in": []string{id}}}, &dao.FindOptions{SortFields: []string{"status", "-weight", "-updated_at"}})
+	results, err := dao.Key.Find(ctx, bson.M{"model_agents": bson.M{"$in": []string{id}}}, &dao.FindOptions{SortFields: []string{"status", "-weight", "-updated_at"}})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -202,23 +202,13 @@ func (s *sModelAgent) GetModelAgentKeys(ctx context.Context, id string) ([]*mode
 	for _, result := range results {
 		items = append(items, &model.Key{
 			Id:             result.Id,
-			UserId:         result.UserId,
-			AppId:          result.AppId,
 			ProviderId:     result.ProviderId,
 			Key:            result.Key,
-			Type:           result.Type,
 			Weight:         result.Weight,
 			Models:         result.Models,
 			ModelAgents:    result.ModelAgents,
 			IsNeverDisable: result.IsNeverDisable,
-			IsLimitQuota:   result.IsLimitQuota,
-			Quota:          result.Quota,
 			UsedQuota:      result.UsedQuota,
-			QuotaExpiresAt: result.QuotaExpiresAt,
-			IsBindGroup:    result.IsBindGroup,
-			Group:          result.Group,
-			IpWhitelist:    result.IpWhitelist,
-			IpBlacklist:    result.IpBlacklist,
 			Status:         result.Status,
 		})
 	}
@@ -240,7 +230,7 @@ func (s *sModelAgent) GetModelAgentsAndKeys(ctx context.Context) ([]*model.Model
 		return nil, nil, err
 	}
 
-	results, err := dao.Key.Find(ctx, bson.M{"type": 2}, &dao.FindOptions{SortFields: []string{"status", "-weight", "-updated_at"}})
+	results, err := dao.Key.Find(ctx, bson.M{}, &dao.FindOptions{SortFields: []string{"status", "-weight", "-updated_at"}})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, nil, err
@@ -251,21 +241,13 @@ func (s *sModelAgent) GetModelAgentsAndKeys(ctx context.Context) ([]*model.Model
 
 		key := &model.Key{
 			Id:             result.Id,
-			UserId:         result.UserId,
-			AppId:          result.AppId,
 			ProviderId:     result.ProviderId,
 			Key:            result.Key,
-			Type:           result.Type,
 			Weight:         result.Weight,
 			Models:         result.Models,
 			ModelAgents:    result.ModelAgents,
 			IsNeverDisable: result.IsNeverDisable,
-			IsLimitQuota:   result.IsLimitQuota,
-			Quota:          result.Quota,
 			UsedQuota:      result.UsedQuota,
-			QuotaExpiresAt: result.QuotaExpiresAt,
-			IpWhitelist:    result.IpWhitelist,
-			IpBlacklist:    result.IpBlacklist,
 			Status:         result.Status,
 		}
 
@@ -710,23 +692,13 @@ func (s *sModelAgent) DisabledModelAgentKey(ctx context.Context, key *model.Key,
 
 	s.UpdateCacheModelAgentKey(ctx, nil, &entity.Key{
 		Id:                 key.Id,
-		UserId:             key.UserId,
-		AppId:              key.AppId,
 		ProviderId:         key.ProviderId,
 		Key:                key.Key,
-		Type:               key.Type,
 		Weight:             key.Weight,
 		Models:             key.Models,
 		ModelAgents:        key.ModelAgents,
 		IsNeverDisable:     key.IsNeverDisable,
-		IsLimitQuota:       key.IsLimitQuota,
-		Quota:              key.Quota,
 		UsedQuota:          key.UsedQuota,
-		QuotaExpiresAt:     key.QuotaExpiresAt,
-		IsBindGroup:        key.IsBindGroup,
-		Group:              key.Group,
-		IpWhitelist:        key.IpWhitelist,
-		IpBlacklist:        key.IpBlacklist,
 		Status:             2,
 		IsAutoDisabled:     true,
 		AutoDisabledReason: disabledReason,
@@ -1033,23 +1005,13 @@ func (s *sModelAgent) CreateCacheModelAgentKey(ctx context.Context, key *entity.
 
 	k := &model.Key{
 		Id:             key.Id,
-		UserId:         key.UserId,
-		AppId:          key.AppId,
 		ProviderId:     key.ProviderId,
 		Key:            key.Key,
-		Type:           key.Type,
 		Weight:         key.Weight,
 		Models:         key.Models,
 		ModelAgents:    key.ModelAgents,
 		IsNeverDisable: key.IsNeverDisable,
-		IsLimitQuota:   key.IsLimitQuota,
-		Quota:          key.Quota,
 		UsedQuota:      key.UsedQuota,
-		QuotaExpiresAt: key.QuotaExpiresAt,
-		IsBindGroup:    key.IsBindGroup,
-		Group:          key.Group,
-		IpWhitelist:    key.IpWhitelist,
-		IpBlacklist:    key.IpBlacklist,
 		Status:         key.Status,
 	}
 
@@ -1077,23 +1039,13 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 
 	key := &model.Key{
 		Id:                 newData.Id,
-		UserId:             newData.UserId,
-		AppId:              newData.AppId,
 		ProviderId:         newData.ProviderId,
 		Key:                newData.Key,
-		Type:               newData.Type,
 		Weight:             newData.Weight,
 		Models:             newData.Models,
 		ModelAgents:        newData.ModelAgents,
 		IsNeverDisable:     newData.IsNeverDisable,
-		IsLimitQuota:       newData.IsLimitQuota,
-		Quota:              newData.Quota,
 		UsedQuota:          newData.UsedQuota,
-		QuotaExpiresAt:     newData.QuotaExpiresAt,
-		IsBindGroup:        newData.IsBindGroup,
-		Group:              newData.Group,
-		IpWhitelist:        newData.IpWhitelist,
-		IpBlacklist:        newData.IpBlacklist,
 		Status:             newData.Status,
 		IsAutoDisabled:     newData.IsAutoDisabled,
 		AutoDisabledReason: newData.AutoDisabledReason,

@@ -44,9 +44,9 @@ func (s *sDashboard) Subscription(ctx context.Context) (*model.DashboardSubscrip
 
 	if service.Session().GetKeyIsLimitQuota(ctx) {
 
-		key, err := service.Key().GetKey(ctx, service.Session().GetSecretKey(ctx))
+		key, err := service.AppKey().GetAppKey(ctx, service.Session().GetSecretKey(ctx))
 		if err != nil {
-			logger.Errorf(ctx, "sDashboard Subscription GetKey error: %v", err)
+			logger.Errorf(ctx, "sDashboard Subscription GetAppKey error: %v", err)
 			return nil, err
 		}
 
@@ -97,9 +97,9 @@ func (s *sDashboard) Usage(ctx context.Context) (*model.DashboardUsageRes, error
 
 	if service.Session().GetKeyIsLimitQuota(ctx) {
 
-		key, err := service.Key().GetKey(ctx, service.Session().GetSecretKey(ctx))
+		key, err := service.AppKey().GetAppKey(ctx, service.Session().GetSecretKey(ctx))
 		if err != nil {
-			logger.Errorf(ctx, "sDashboard Usage GetKey error: %v", err)
+			logger.Errorf(ctx, "sDashboard Usage GetAppKey error: %v", err)
 			return nil, err
 		}
 

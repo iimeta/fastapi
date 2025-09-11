@@ -3,7 +3,6 @@ package dao
 import (
 	"context"
 
-	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/utility/db"
 	"go.mongodb.org/mongo-driver/bson"
@@ -22,7 +21,7 @@ func NewUserDao(database ...string) *UserDao {
 	}
 
 	return &UserDao{
-		MongoDB: NewMongoDB[entity.User](database[0], do.USER_COLLECTION),
+		MongoDB: NewMongoDB[entity.User](database[0], USER),
 	}
 }
 

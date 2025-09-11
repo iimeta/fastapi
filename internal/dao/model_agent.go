@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/utility/db"
 )
@@ -19,6 +18,6 @@ func NewModelAgentDao(database ...string) *ModelAgentDao {
 	}
 
 	return &ModelAgentDao{
-		MongoDB: NewMongoDB[entity.ModelAgent](database[0], do.MODEL_AGENT_COLLECTION),
+		MongoDB: NewMongoDB[entity.ModelAgent](database[0], MODEL_AGENT),
 	}
 }

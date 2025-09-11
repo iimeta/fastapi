@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/utility/db"
 )
@@ -19,6 +18,6 @@ func NewAudioDao(database ...string) *AudioDao {
 	}
 
 	return &AudioDao{
-		MongoDB: NewMongoDB[entity.Audio](database[0], do.AUDIO_COLLECTION),
+		MongoDB: NewMongoDB[entity.Audio](database[0], AUDIO),
 	}
 }

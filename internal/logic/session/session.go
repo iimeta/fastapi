@@ -183,22 +183,22 @@ func (s *sSession) GetApp(ctx context.Context) *model.App {
 	return app.(*model.App)
 }
 
-// 保存密钥信息到会话中
-func (s *sSession) SaveKey(ctx context.Context, key *model.Key) {
+// 保存应用密钥信息到会话中
+func (s *sSession) SaveAppKey(ctx context.Context, key *model.AppKey) {
 	if r := g.RequestFromCtx(ctx); r != nil {
-		r.SetCtxVar(consts.SESSION_KEY, key)
+		r.SetCtxVar(consts.SESSION_APP_KEY, key)
 	}
 }
 
-// 获取会话中的密钥信息
-func (s *sSession) GetKey(ctx context.Context) *model.Key {
+// 获取会话中的应用密钥信息
+func (s *sSession) GetAppKey(ctx context.Context) *model.AppKey {
 
-	key := ctx.Value(consts.SESSION_KEY)
+	key := ctx.Value(consts.SESSION_APP_KEY)
 	if key == nil {
 		return nil
 	}
 
-	return key.(*model.Key)
+	return key.(*model.AppKey)
 }
 
 // 记录错误模型代理ID到会话中

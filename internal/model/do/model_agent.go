@@ -2,10 +2,6 @@ package do
 
 import "github.com/gogf/gf/v2/util/gmeta"
 
-const (
-	MODEL_AGENT_COLLECTION = "model_agent"
-)
-
 type ModelAgent struct {
 	gmeta.Meta           `collection:"model_agent" bson:"-"`
 	ProviderId           string   `bson:"provider_id,omitempty"`             // 提供商ID

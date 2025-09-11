@@ -103,7 +103,7 @@ func init() {
 			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_APP:
 				err = service.App().Subscribe(gctx.New(), msg.Payload)
 			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_APP_KEY:
-				err = service.App().SubscribeKey(gctx.New(), msg.Payload)
+				err = service.AppKey().Subscribe(gctx.New(), msg.Payload)
 			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_PROVIDER:
 				err = service.Provider().Subscribe(gctx.New(), msg.Payload)
 			case config.Cfg.Core.ChannelPrefix + consts.CHANGE_CHANNEL_MODEL:
@@ -202,21 +202,21 @@ func (s *sCore) Refresh(ctx context.Context) error {
 		userMap[user.UserId] = user
 	}
 
-	appKeys, err := service.Key().List(ctx, 1)
+	appKeys, err := service.AppKey().List(ctx)
 	if err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
 
-	appKeyMap := make(map[int][]*model.Key)
+	appKeyMap := make(map[int][]*model.AppKey)
 	for _, key := range appKeys {
 
-		if err = service.App().SaveCacheAppKey(ctx, key); err != nil {
+		if err = service.AppKey().SaveCacheAppKey(ctx, key); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
 
-		if err = service.App().SaveCacheAppKeyQuota(ctx, key.Key, key.Quota); err != nil {
+		if err = service.AppKey().SaveCacheAppKeyQuota(ctx, key.Key, key.Quota); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}

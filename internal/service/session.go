@@ -43,10 +43,10 @@ type (
 		SaveApp(ctx context.Context, app *model.App)
 		// 获取会话中的应用信息
 		GetApp(ctx context.Context) *model.App
-		// 保存密钥信息到会话中
-		SaveKey(ctx context.Context, key *model.Key)
-		// 获取会话中的密钥信息
-		GetKey(ctx context.Context) *model.Key
+		// 保存应用密钥信息到会话中
+		SaveAppKey(ctx context.Context, key *model.AppKey)
+		// 获取会话中的应用密钥信息
+		GetAppKey(ctx context.Context) *model.AppKey
 		// 记录错误模型代理ID到会话中
 		RecordErrorModelAgent(ctx context.Context, id string)
 		// 获取会话中的错误模型代理Ids

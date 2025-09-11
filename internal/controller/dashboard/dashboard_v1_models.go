@@ -32,7 +32,7 @@ func (c *ControllerV1) Models(ctx context.Context, req *v1.ModelsReq) (res *v1.M
 		if modelIds, err = service.Group().GetGroupsModelIds(ctx, app.Group); err != nil {
 			return nil, err
 		}
-	} else if appKey, err := service.App().GetCacheAppKey(ctx, service.Session().GetSecretKey(ctx)); err != nil {
+	} else if appKey, err := service.AppKey().GetCacheAppKey(ctx, service.Session().GetSecretKey(ctx)); err != nil {
 		return nil, err
 	} else if len(appKey.Models) > 0 {
 		modelIds = appKey.Models

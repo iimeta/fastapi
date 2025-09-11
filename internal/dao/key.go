@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/utility/db"
 )
@@ -19,6 +18,6 @@ func NewKeyDao(database ...string) *KeyDao {
 	}
 
 	return &KeyDao{
-		MongoDB: NewMongoDB[entity.Key](database[0], do.KEY_COLLECTION),
+		MongoDB: NewMongoDB[entity.Key](database[0], KEY),
 	}
 }

@@ -37,45 +37,6 @@ func New() service.IKey {
 	}
 }
 
-// 根据secretKey获取密钥信息
-func (s *sKey) GetKey(ctx context.Context, secretKey string) (*model.Key, error) {
-
-	now := gtime.TimestampMilli()
-	defer func() {
-		logger.Debugf(ctx, "sKey GetKey time: %d", gtime.TimestampMilli()-now)
-	}()
-
-	key, err := dao.Key.FindOne(ctx, bson.M{"key": secretKey, "status": 1})
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	return &model.Key{
-		Id:                  key.Id,
-		UserId:              key.UserId,
-		AppId:               key.AppId,
-		ProviderId:          key.ProviderId,
-		Key:                 key.Key,
-		Type:                key.Type,
-		Weight:              key.Weight,
-		Models:              key.Models,
-		ModelAgents:         key.ModelAgents,
-		IsNeverDisable:      key.IsNeverDisable,
-		IsLimitQuota:        key.IsLimitQuota,
-		Quota:               key.Quota,
-		UsedQuota:           key.UsedQuota,
-		QuotaExpiresRule:    key.QuotaExpiresRule,
-		QuotaExpiresAt:      key.QuotaExpiresAt,
-		QuotaExpiresMinutes: key.QuotaExpiresMinutes,
-		IsBindGroup:         key.IsBindGroup,
-		Group:               key.Group,
-		IpWhitelist:         key.IpWhitelist,
-		IpBlacklist:         key.IpBlacklist,
-		Status:              key.Status,
-	}, nil
-}
-
 // 根据模型ID获取密钥列表
 func (s *sKey) GetModelKeys(ctx context.Context, id string) ([]*model.Key, error) {
 
@@ -84,7 +45,7 @@ func (s *sKey) GetModelKeys(ctx context.Context, id string) ([]*model.Key, error
 		logger.Debugf(ctx, "sKey GetModelKeys time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	results, err := dao.Key.Find(ctx, bson.M{"type": 2, "is_agents_only": false, "models": bson.M{"$in": []string{id}}})
+	results, err := dao.Key.Find(ctx, bson.M{"is_agents_only": false, "models": bson.M{"$in": []string{id}}})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -93,27 +54,15 @@ func (s *sKey) GetModelKeys(ctx context.Context, id string) ([]*model.Key, error
 	items := make([]*model.Key, 0)
 	for _, result := range results {
 		items = append(items, &model.Key{
-			Id:                  result.Id,
-			UserId:              result.UserId,
-			AppId:               result.AppId,
-			ProviderId:          result.ProviderId,
-			Key:                 result.Key,
-			Type:                result.Type,
-			Weight:              result.Weight,
-			Models:              result.Models,
-			ModelAgents:         result.ModelAgents,
-			IsNeverDisable:      result.IsNeverDisable,
-			IsLimitQuota:        result.IsLimitQuota,
-			Quota:               result.Quota,
-			UsedQuota:           result.UsedQuota,
-			QuotaExpiresRule:    result.QuotaExpiresRule,
-			QuotaExpiresAt:      result.QuotaExpiresAt,
-			QuotaExpiresMinutes: result.QuotaExpiresMinutes,
-			IsBindGroup:         result.IsBindGroup,
-			Group:               result.Group,
-			IpWhitelist:         result.IpWhitelist,
-			IpBlacklist:         result.IpBlacklist,
-			Status:              result.Status,
+			Id:             result.Id,
+			ProviderId:     result.ProviderId,
+			Key:            result.Key,
+			Weight:         result.Weight,
+			Models:         result.Models,
+			ModelAgents:    result.ModelAgents,
+			IsNeverDisable: result.IsNeverDisable,
+			UsedQuota:      result.UsedQuota,
+			Status:         result.Status,
 		})
 	}
 
@@ -121,18 +70,14 @@ func (s *sKey) GetModelKeys(ctx context.Context, id string) ([]*model.Key, error
 }
 
 // 密钥列表
-func (s *sKey) List(ctx context.Context, typ int) ([]*model.Key, error) {
+func (s *sKey) List(ctx context.Context) ([]*model.Key, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
 		logger.Debugf(ctx, "sKey List time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	filter := bson.M{
-		"type": typ,
-	}
-
-	results, err := dao.Key.Find(ctx, filter, &dao.FindOptions{SortFields: []string{"status", "-weight", "-updated_at"}})
+	results, err := dao.Key.Find(ctx, bson.M{}, &dao.FindOptions{SortFields: []string{"status", "-weight", "-updated_at"}})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -141,28 +86,16 @@ func (s *sKey) List(ctx context.Context, typ int) ([]*model.Key, error) {
 	items := make([]*model.Key, 0)
 	for _, result := range results {
 		items = append(items, &model.Key{
-			Id:                  result.Id,
-			UserId:              result.UserId,
-			AppId:               result.AppId,
-			ProviderId:          result.ProviderId,
-			Key:                 result.Key,
-			Type:                result.Type,
-			Weight:              result.Weight,
-			Models:              result.Models,
-			ModelAgents:         result.ModelAgents,
-			IsNeverDisable:      result.IsNeverDisable,
-			IsLimitQuota:        result.IsLimitQuota,
-			Quota:               result.Quota,
-			UsedQuota:           result.UsedQuota,
-			QuotaExpiresRule:    result.QuotaExpiresRule,
-			QuotaExpiresAt:      result.QuotaExpiresAt,
-			QuotaExpiresMinutes: result.QuotaExpiresMinutes,
-			IsBindGroup:         result.IsBindGroup,
-			Group:               result.Group,
-			IpWhitelist:         result.IpWhitelist,
-			IpBlacklist:         result.IpBlacklist,
-			Status:              result.Status,
-			Rid:                 result.Rid,
+			Id:             result.Id,
+			ProviderId:     result.ProviderId,
+			Key:            result.Key,
+			Weight:         result.Weight,
+			Models:         result.Models,
+			ModelAgents:    result.ModelAgents,
+			IsNeverDisable: result.IsNeverDisable,
+			UsedQuota:      result.UsedQuota,
+			Status:         result.Status,
+			Rid:            result.Rid,
 		})
 	}
 
@@ -332,29 +265,17 @@ func (s *sKey) DisabledModelKey(ctx context.Context, key *model.Key, disabledRea
 	}
 
 	s.UpdateCacheModelKey(ctx, nil, &entity.Key{
-		Id:                  key.Id,
-		UserId:              key.UserId,
-		AppId:               key.AppId,
-		ProviderId:          key.ProviderId,
-		Key:                 key.Key,
-		Type:                key.Type,
-		Weight:              key.Weight,
-		Models:              key.Models,
-		ModelAgents:         key.ModelAgents,
-		IsNeverDisable:      key.IsNeverDisable,
-		IsLimitQuota:        key.IsLimitQuota,
-		Quota:               key.Quota,
-		UsedQuota:           key.UsedQuota,
-		QuotaExpiresRule:    key.QuotaExpiresRule,
-		QuotaExpiresAt:      key.QuotaExpiresAt,
-		QuotaExpiresMinutes: key.QuotaExpiresMinutes,
-		IsBindGroup:         key.IsBindGroup,
-		Group:               key.Group,
-		IpWhitelist:         key.IpWhitelist,
-		IpBlacklist:         key.IpBlacklist,
-		Status:              2,
-		IsAutoDisabled:      true,
-		AutoDisabledReason:  disabledReason,
+		Id:                 key.Id,
+		ProviderId:         key.ProviderId,
+		Key:                key.Key,
+		Weight:             key.Weight,
+		Models:             key.Models,
+		ModelAgents:        key.ModelAgents,
+		IsNeverDisable:     key.IsNeverDisable,
+		UsedQuota:          key.UsedQuota,
+		Status:             2,
+		IsAutoDisabled:     true,
+		AutoDisabledReason: disabledReason,
 	})
 
 	if err := dao.Key.UpdateById(ctx, key.Id, bson.M{
@@ -406,27 +327,15 @@ func (s *sKey) CreateCacheModelKey(ctx context.Context, key *entity.Key) {
 	}()
 
 	k := &model.Key{
-		Id:                  key.Id,
-		UserId:              key.UserId,
-		AppId:               key.AppId,
-		ProviderId:          key.ProviderId,
-		Key:                 key.Key,
-		Type:                key.Type,
-		Weight:              key.Weight,
-		Models:              key.Models,
-		ModelAgents:         key.ModelAgents,
-		IsNeverDisable:      key.IsNeverDisable,
-		IsLimitQuota:        key.IsLimitQuota,
-		Quota:               key.Quota,
-		UsedQuota:           key.UsedQuota,
-		QuotaExpiresRule:    key.QuotaExpiresRule,
-		QuotaExpiresAt:      key.QuotaExpiresAt,
-		QuotaExpiresMinutes: key.QuotaExpiresMinutes,
-		IsBindGroup:         key.IsBindGroup,
-		Group:               key.Group,
-		IpWhitelist:         key.IpWhitelist,
-		IpBlacklist:         key.IpBlacklist,
-		Status:              key.Status,
+		Id:             key.Id,
+		ProviderId:     key.ProviderId,
+		Key:            key.Key,
+		Weight:         key.Weight,
+		Models:         key.Models,
+		ModelAgents:    key.ModelAgents,
+		IsNeverDisable: key.IsNeverDisable,
+		UsedQuota:      key.UsedQuota,
+		Status:         key.Status,
 	}
 
 	for _, id := range key.Models {
@@ -452,29 +361,17 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 	}()
 
 	key := &model.Key{
-		Id:                  newData.Id,
-		UserId:              newData.UserId,
-		AppId:               newData.AppId,
-		ProviderId:          newData.ProviderId,
-		Key:                 newData.Key,
-		Type:                newData.Type,
-		Weight:              newData.Weight,
-		Models:              newData.Models,
-		ModelAgents:         newData.ModelAgents,
-		IsNeverDisable:      newData.IsNeverDisable,
-		IsLimitQuota:        newData.IsLimitQuota,
-		Quota:               newData.Quota,
-		UsedQuota:           newData.UsedQuota,
-		QuotaExpiresRule:    newData.QuotaExpiresRule,
-		QuotaExpiresAt:      newData.QuotaExpiresAt,
-		QuotaExpiresMinutes: newData.QuotaExpiresMinutes,
-		IsBindGroup:         newData.IsBindGroup,
-		Group:               newData.Group,
-		IpWhitelist:         newData.IpWhitelist,
-		IpBlacklist:         newData.IpBlacklist,
-		Status:              newData.Status,
-		IsAutoDisabled:      newData.IsAutoDisabled,
-		AutoDisabledReason:  newData.AutoDisabledReason,
+		Id:                 newData.Id,
+		ProviderId:         newData.ProviderId,
+		Key:                newData.Key,
+		Weight:             newData.Weight,
+		Models:             newData.Models,
+		ModelAgents:        newData.ModelAgents,
+		IsNeverDisable:     newData.IsNeverDisable,
+		UsedQuota:          newData.UsedQuota,
+		Status:             newData.Status,
+		IsAutoDisabled:     newData.IsAutoDisabled,
+		AutoDisabledReason: newData.AutoDisabledReason,
 	}
 
 	// 用于处理oldData时判断作用
@@ -679,15 +576,11 @@ func (s *sKey) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		if key.Type == 1 {
-			service.App().UpdateCacheAppKey(ctx, key)
+		if key.IsAgentsOnly {
+			service.ModelAgent().UpdateCacheModelAgentKey(ctx, nil, key)
 		} else {
-			if key.IsAgentsOnly {
-				service.ModelAgent().UpdateCacheModelAgentKey(ctx, nil, key)
-			} else {
-				s.UpdateCacheModelKey(ctx, nil, key)
-				service.ModelAgent().UpdateCacheModelAgentKey(ctx, nil, key)
-			}
+			s.UpdateCacheModelKey(ctx, nil, key)
+			service.ModelAgent().UpdateCacheModelAgentKey(ctx, nil, key)
 		}
 
 	case consts.ACTION_DELETE:
@@ -697,15 +590,11 @@ func (s *sKey) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		if key.Type == 1 {
-			service.App().RemoveCacheAppKey(ctx, key.Key)
+		if key.IsAgentsOnly {
+			service.ModelAgent().RemoveCacheModelAgentKey(ctx, key)
 		} else {
-			if key.IsAgentsOnly {
-				service.ModelAgent().RemoveCacheModelAgentKey(ctx, key)
-			} else {
-				s.RemoveCacheModelKey(ctx, key)
-				service.ModelAgent().RemoveCacheModelAgentKey(ctx, key)
-			}
+			s.RemoveCacheModelKey(ctx, key)
+			service.ModelAgent().RemoveCacheModelAgentKey(ctx, key)
 		}
 	}
 

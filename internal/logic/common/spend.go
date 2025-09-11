@@ -113,7 +113,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string, 
 		}
 
 		if err = mongoSpendQuota(ctx, func() error {
-			return service.App().AppKeySpendQuota(ctx, appKey, totalTokens, currentQuota)
+			return service.AppKey().AppKeySpendQuota(ctx, appKey, totalTokens, currentQuota)
 		}); err != nil {
 			logger.Error(ctx, err)
 			panic(err)
@@ -121,7 +121,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string, 
 
 	} else {
 		if err = mongoUsedQuota(ctx, func() error {
-			return service.App().AppKeyUsedQuota(ctx, appKey, totalTokens)
+			return service.AppKey().AppKeyUsedQuota(ctx, appKey, totalTokens)
 		}); err != nil {
 			logger.Error(ctx, err)
 			panic(err)

@@ -14,7 +14,7 @@ const (
 	SESSION_RESELLER           = "session_reseller"
 	SESSION_USER               = "session_user"
 	SESSION_APP                = "session_app"
-	SESSION_KEY                = "session_key"
+	SESSION_APP_KEY            = "session_app_key"
 	SESSION_ERROR_MODEL_AGENTS = "session_error_model_agents"
 	SESSION_ERROR_KEYS         = "session_error_keys"
 )

@@ -5,10 +5,6 @@ import (
 	"github.com/iimeta/fastapi/internal/model/common"
 )
 
-const (
-	MIDJOURNEY_COLLECTION = "midjourney"
-)
-
 type Midjourney struct {
 	gmeta.Meta           `collection:"midjourney" bson:"-"`
 	Id                   string                   `bson:"_id,omitempty"`                     // ID

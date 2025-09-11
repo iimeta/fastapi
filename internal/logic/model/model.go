@@ -217,7 +217,7 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		return nil, err
 	}
 
-	key, err := service.App().GetCacheAppKey(ctx, secretKey)
+	key, err := service.AppKey().GetCacheAppKey(ctx, secretKey)
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -726,7 +726,7 @@ func (s *sModel) GetModelsAndKeys(ctx context.Context) ([]*model.Model, map[stri
 		return nil, nil, err
 	}
 
-	results, err := dao.Key.Find(ctx, bson.M{"type": 2, "is_agents_only": false}, &dao.FindOptions{SortFields: []string{"status", "-weight", "-updated_at"}})
+	results, err := dao.Key.Find(ctx, bson.M{"is_agents_only": false}, &dao.FindOptions{SortFields: []string{"status", "-weight", "-updated_at"}})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, nil, err
@@ -736,24 +736,14 @@ func (s *sModel) GetModelsAndKeys(ctx context.Context) ([]*model.Model, map[stri
 	for _, result := range results {
 
 		key := &model.Key{
-			Id:                  result.Id,
-			UserId:              result.UserId,
-			AppId:               result.AppId,
-			ProviderId:          result.ProviderId,
-			Key:                 result.Key,
-			Type:                result.Type,
-			Weight:              result.Weight,
-			Models:              result.Models,
-			ModelAgents:         result.ModelAgents,
-			IsLimitQuota:        result.IsLimitQuota,
-			Quota:               result.Quota,
-			UsedQuota:           result.UsedQuota,
-			QuotaExpiresRule:    result.QuotaExpiresRule,
-			QuotaExpiresAt:      result.QuotaExpiresAt,
-			QuotaExpiresMinutes: result.QuotaExpiresMinutes,
-			IpWhitelist:         result.IpWhitelist,
-			IpBlacklist:         result.IpBlacklist,
-			Status:              result.Status,
+			Id:          result.Id,
+			ProviderId:  result.ProviderId,
+			Key:         result.Key,
+			Weight:      result.Weight,
+			Models:      result.Models,
+			ModelAgents: result.ModelAgents,
+			UsedQuota:   result.UsedQuota,
+			Status:      result.Status,
 		}
 
 		for _, modelId := range result.Models {

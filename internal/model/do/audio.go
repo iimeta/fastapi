@@ -5,10 +5,6 @@ import (
 	"github.com/iimeta/fastapi/internal/model/common"
 )
 
-const (
-	AUDIO_COLLECTION = "audio"
-)
-
 type Audio struct {
 	gmeta.Meta           `collection:"audio" bson:"-"`
 	Id                   string                 `bson:"_id,omitempty"`                     // ID

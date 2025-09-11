@@ -3,7 +3,6 @@ package dao
 import (
 	"context"
 
-	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/utility/db"
 	"go.mongodb.org/mongo-driver/bson"
@@ -22,7 +21,7 @@ func NewResellerDao(database ...string) *ResellerDao {
 	}
 
 	return &ResellerDao{
-		MongoDB: NewMongoDB[entity.Reseller](database[0], do.RESELLER_COLLECTION),
+		MongoDB: NewMongoDB[entity.Reseller](database[0], RESELLER),
 	}
 }
 

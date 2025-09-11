@@ -34,7 +34,7 @@ type MAK struct {
 	Path               string
 	User               *model.User
 	App                *model.App
-	AppKey             *model.Key
+	AppKey             *model.AppKey
 	Group              *model.Group
 }
 
@@ -63,7 +63,7 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 	}
 
 	if mak.AppKey == nil {
-		if mak.AppKey, err = service.App().GetCacheAppKey(ctx, service.Session().GetSecretKey(ctx)); err != nil {
+		if mak.AppKey, err = service.AppKey().GetCacheAppKey(ctx, service.Session().GetSecretKey(ctx)); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -150,7 +150,7 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 			err = errors.ERR_MODEL_NOT_FOUND
 			logger.Info(ctx, err)
 			return err
-		} else if appKey, err := service.App().GetCacheAppKey(ctx, service.Session().GetSecretKey(ctx)); err != nil {
+		} else if appKey, err := service.AppKey().GetCacheAppKey(ctx, service.Session().GetSecretKey(ctx)); err != nil {
 			logger.Error(ctx, err)
 			return err
 		} else if len(appKey.Models) > 0 && !slices.Contains(appKey.Models, mak.ReqModel.Id) {

@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/utility/db"
 )
@@ -19,6 +18,6 @@ func NewGroupDao(database ...string) *GroupDao {
 	}
 
 	return &GroupDao{
-		MongoDB: NewMongoDB[entity.Group](database[0], do.GROUP_COLLECTION),
+		MongoDB: NewMongoDB[entity.Group](database[0], GROUP),
 	}
 }

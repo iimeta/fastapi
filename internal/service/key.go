@@ -14,12 +14,10 @@ import (
 
 type (
 	IKey interface {
-		// 根据secretKey获取密钥信息
-		GetKey(ctx context.Context, secretKey string) (*model.Key, error)
 		// 根据模型ID获取密钥列表
 		GetModelKeys(ctx context.Context, id string) ([]*model.Key, error)
 		// 密钥列表
-		List(ctx context.Context, typ int) ([]*model.Key, error)
+		List(ctx context.Context) ([]*model.Key, error)
 		// 挑选模型密钥
 		PickModelKey(ctx context.Context, m *model.Model) (int, *model.Key, error)
 		// 移除模型密钥

@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/utility/db"
 )
@@ -19,6 +18,6 @@ func NewChatDao(database ...string) *ChatDao {
 	}
 
 	return &ChatDao{
-		MongoDB: NewMongoDB[entity.Chat](database[0], do.CHAT_COLLECTION),
+		MongoDB: NewMongoDB[entity.Chat](database[0], CHAT),
 	}
 }

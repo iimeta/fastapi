@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/model/entity"
 	"github.com/iimeta/fastapi/utility/db"
 )
@@ -19,6 +18,6 @@ func NewImageDao(database ...string) *ImageDao {
 	}
 
 	return &ImageDao{
-		MongoDB: NewMongoDB[entity.Image](database[0], do.IMAGE_COLLECTION),
+		MongoDB: NewMongoDB[entity.Image](database[0], IMAGE),
 	}
 }

@@ -5,10 +5,6 @@ import (
 	"github.com/iimeta/fastapi/internal/model/common"
 )
 
-const (
-	IMAGE_COLLECTION = "image"
-)
-
 type Image struct {
 	gmeta.Meta           `collection:"image" bson:"-"`
 	Id                   string                 `bson:"_id,omitempty"`                     // ID
