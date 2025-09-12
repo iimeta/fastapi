@@ -14,7 +14,6 @@ type Key struct {
 	Status             int      `bson:"status,omitempty"`               // 状态[1:正常, 2:禁用, -1:删除]
 	IsAutoDisabled     bool     `bson:"is_auto_disabled,omitempty"`     // 是否自动禁用
 	AutoDisabledReason string   `bson:"auto_disabled_reason,omitempty"` // 自动禁用原因
-	Rid                int      `bson:"rid,omitempty"`                  // 代理商ID
 	Creator            string   `bson:"creator,omitempty"`              // 创建人
 	Updater            string   `bson:"updater,omitempty"`              // 更新人
 	CreatedAt          int64    `bson:"created_at,omitempty"`           // 创建时间

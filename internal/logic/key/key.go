@@ -95,7 +95,6 @@ func (s *sKey) List(ctx context.Context) ([]*model.Key, error) {
 			IsNeverDisable: result.IsNeverDisable,
 			UsedQuota:      result.UsedQuota,
 			Status:         result.Status,
-			Rid:            result.Rid,
 		})
 	}
 
