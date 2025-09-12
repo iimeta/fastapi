@@ -151,12 +151,12 @@ func (s *sCore) Refresh(ctx context.Context) error {
 
 	for _, reseller := range resellers {
 
-		if err = service.Reseller().SaveCacheReseller(ctx, reseller); err != nil {
+		if err = service.Reseller().SaveCache(ctx, reseller); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
 
-		if err = service.Reseller().SaveCacheResellerQuota(ctx, reseller.UserId, reseller.Quota); err != nil {
+		if err = service.Reseller().SaveCacheQuota(ctx, reseller.UserId, reseller.Quota); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -180,12 +180,12 @@ func (s *sCore) Refresh(ctx context.Context) error {
 	userMap := make(map[int]*model.User)
 	for _, user := range users {
 
-		if err = service.User().SaveCacheUser(ctx, user); err != nil {
+		if err = service.User().SaveCache(ctx, user); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
 
-		if err = service.User().SaveCacheUserQuota(ctx, user.UserId, user.Quota); err != nil {
+		if err = service.User().SaveCacheQuota(ctx, user.UserId, user.Quota); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -211,12 +211,12 @@ func (s *sCore) Refresh(ctx context.Context) error {
 	appKeyMap := make(map[int][]*model.AppKey)
 	for _, key := range appKeys {
 
-		if err = service.AppKey().SaveCacheAppKey(ctx, key); err != nil {
+		if err = service.AppKey().SaveCache(ctx, key); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
 
-		if err = service.AppKey().SaveCacheAppKeyQuota(ctx, key.Key, key.Quota); err != nil {
+		if err = service.AppKey().SaveCacheQuota(ctx, key.Key, key.Quota); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -232,12 +232,12 @@ func (s *sCore) Refresh(ctx context.Context) error {
 
 	for _, app := range apps {
 
-		if err = service.App().SaveCacheApp(ctx, app); err != nil {
+		if err = service.App().SaveCache(ctx, app); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
 
-		if err = service.App().SaveCacheAppQuota(ctx, app.AppId, app.Quota); err != nil {
+		if err = service.App().SaveCacheQuota(ctx, app.AppId, app.Quota); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -292,7 +292,7 @@ func (s *sCore) Refresh(ctx context.Context) error {
 		}
 
 		for _, model := range models {
-			if err = service.Key().SaveCacheModelKeys(ctx, model.Id, modelKeyMap[model.Id]); err != nil {
+			if err = service.Key().SaveCache(ctx, model.Id, modelKeyMap[model.Id]); err != nil {
 				logger.Error(ctx, err)
 				return err
 			}
@@ -313,7 +313,7 @@ func (s *sCore) Refresh(ctx context.Context) error {
 		}
 
 		for _, modelAgent := range modelAgents {
-			if err = service.ModelAgent().SaveCacheModelAgentKeys(ctx, modelAgent.Id, modelAgentKeyMap[modelAgent.Id]); err != nil {
+			if err = service.ModelAgent().SaveCacheKeys(ctx, modelAgent.Id, modelAgentKeyMap[modelAgent.Id]); err != nil {
 				logger.Error(ctx, err)
 				return err
 			}
@@ -336,7 +336,7 @@ func (s *sCore) Refresh(ctx context.Context) error {
 		fields := g.Map{}
 		for _, group := range groups {
 
-			if err = service.Group().SaveCacheGroupQuota(ctx, group.Id, group.Quota); err != nil {
+			if err = service.Group().SaveCacheQuota(ctx, group.Id, group.Quota); err != nil {
 				logger.Error(ctx, err)
 				return err
 			}

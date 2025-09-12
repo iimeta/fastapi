@@ -33,11 +33,11 @@ func New() service.IApp {
 }
 
 // 根据应用ID获取应用信息
-func (s *sApp) GetApp(ctx context.Context, appId int) (*model.App, error) {
+func (s *sApp) GetByAppId(ctx context.Context, appId int) (*model.App, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sApp GetApp time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sApp GetByAppId time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	app, err := dao.App.FindOne(ctx, bson.M{"app_id": appId, "status": 1})
@@ -125,7 +125,7 @@ func (s *sApp) SpendQuota(ctx context.Context, appId, spendQuota, currentQuota i
 		return err
 	}
 
-	if err := s.SaveCacheAppQuota(ctx, appId, currentQuota); err != nil {
+	if err := s.SaveCacheQuota(ctx, appId, currentQuota); err != nil {
 		logger.Error(ctx, err)
 	}
 
@@ -153,11 +153,11 @@ func (s *sApp) UsedQuota(ctx context.Context, appId, quota int) error {
 }
 
 // 保存应用额度到缓存
-func (s *sApp) SaveCacheAppQuota(ctx context.Context, appId, quota int) error {
+func (s *sApp) SaveCacheQuota(ctx context.Context, appId, quota int) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sApp SaveCacheAppQuota time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sApp SaveCacheQuota time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if err := s.appQuotaCache.Set(ctx, appId, quota, 0); err != nil {
@@ -169,11 +169,11 @@ func (s *sApp) SaveCacheAppQuota(ctx context.Context, appId, quota int) error {
 }
 
 // 获取缓存中的应用额度
-func (s *sApp) GetCacheAppQuota(ctx context.Context, appId int) int {
+func (s *sApp) GetCacheQuota(ctx context.Context, appId int) int {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sApp GetCacheAppQuota time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sApp GetCacheQuota time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if appQuotaValue := s.appQuotaCache.GetVal(ctx, appId); appQuotaValue != nil {
@@ -184,11 +184,11 @@ func (s *sApp) GetCacheAppQuota(ctx context.Context, appId int) int {
 }
 
 // 保存应用信息到缓存
-func (s *sApp) SaveCacheApp(ctx context.Context, app *model.App) error {
+func (s *sApp) SaveCache(ctx context.Context, app *model.App) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sApp SaveCacheApp time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sApp SaveCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if app == nil {
@@ -211,11 +211,11 @@ func (s *sApp) SaveCacheApp(ctx context.Context, app *model.App) error {
 }
 
 // 获取缓存中的应用信息
-func (s *sApp) GetCacheApp(ctx context.Context, appId int) (*model.App, error) {
+func (s *sApp) GetCache(ctx context.Context, appId int) (*model.App, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sApp GetCacheApp time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sApp GetCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if app := service.Session().GetApp(ctx); app != nil {
@@ -232,14 +232,14 @@ func (s *sApp) GetCacheApp(ctx context.Context, appId int) (*model.App, error) {
 }
 
 // 更新缓存中的应用信息
-func (s *sApp) UpdateCacheApp(ctx context.Context, app *entity.App) {
+func (s *sApp) UpdateCache(ctx context.Context, app *entity.App) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sApp UpdateCacheApp time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sApp UpdateCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	if err := s.SaveCacheApp(ctx, &model.App{
+	if err := s.SaveCache(ctx, &model.App{
 		Id:             app.Id,
 		UserId:         app.UserId,
 		AppId:          app.AppId,
@@ -261,11 +261,11 @@ func (s *sApp) UpdateCacheApp(ctx context.Context, app *entity.App) {
 }
 
 // 移除缓存中的应用信息
-func (s *sApp) RemoveCacheApp(ctx context.Context, appId int) {
+func (s *sApp) RemoveCache(ctx context.Context, appId int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sApp RemoveCacheApp time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sApp RemoveCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if _, err := s.appCache.Remove(ctx, appId); err != nil {
@@ -301,7 +301,7 @@ func (s *sApp) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		s.UpdateCacheApp(ctx, app)
+		s.UpdateCache(ctx, app)
 
 	case consts.ACTION_DELETE:
 
@@ -310,7 +310,7 @@ func (s *sApp) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		s.RemoveCacheApp(ctx, app.AppId)
+		s.RemoveCache(ctx, app.AppId)
 	}
 
 	return nil

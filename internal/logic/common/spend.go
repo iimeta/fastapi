@@ -41,7 +41,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string, 
 		panic(err)
 	}
 
-	if err = service.User().SaveCacheUserQuota(ctx, userId, currentQuota); err != nil {
+	if err = service.User().SaveCacheQuota(ctx, userId, currentQuota); err != nil {
 		logger.Error(ctx, err)
 	}
 
@@ -113,7 +113,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string, 
 		}
 
 		if err = mongoSpendQuota(ctx, func() error {
-			return service.AppKey().AppKeySpendQuota(ctx, appKey, totalTokens, currentQuota)
+			return service.AppKey().SpendQuota(ctx, appKey, totalTokens, currentQuota)
 		}); err != nil {
 			logger.Error(ctx, err)
 			panic(err)
@@ -121,7 +121,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string, 
 
 	} else {
 		if err = mongoUsedQuota(ctx, func() error {
-			return service.AppKey().AppKeyUsedQuota(ctx, appKey, totalTokens)
+			return service.AppKey().UsedQuota(ctx, appKey, totalTokens)
 		}); err != nil {
 			logger.Error(ctx, err)
 			panic(err)
@@ -163,7 +163,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string, 
 
 		if group.IsEnableForward && group.ForwardConfig.ForwardRule == 4 && group.UsedQuota < group.ForwardConfig.UsedQuota {
 
-			if group, err = service.Group().GetGroup(ctx, group.Id); err != nil {
+			if group, err = service.Group().GetById(ctx, group.Id); err != nil {
 				logger.Error(ctx, err)
 				panic(err)
 			}

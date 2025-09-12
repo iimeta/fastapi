@@ -86,9 +86,9 @@ func NewConverter(ctx context.Context, provider string) sdk.Converter {
 
 func GetProviderCode(ctx context.Context, providerId string) string {
 
-	provider, err := service.Provider().GetCacheProvider(ctx, providerId)
+	provider, err := service.Provider().GetCache(ctx, providerId)
 	if err != nil || provider == nil {
-		provider, err = service.Provider().GetProviderAndSaveCache(ctx, providerId)
+		provider, err = service.Provider().GetAndSaveCache(ctx, providerId)
 	}
 
 	if err != nil {

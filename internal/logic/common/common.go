@@ -69,10 +69,10 @@ func (s *sCommon) RecordError(ctx context.Context, model *model.Model, key *mode
 
 	if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 		if model.IsEnableModelAgent {
-			service.ModelAgent().RecordErrorModelAgentKey(ctx, modelAgent, key)
-			service.ModelAgent().RecordErrorModelAgent(ctx, model, modelAgent)
+			service.ModelAgent().RecordErrorKey(ctx, modelAgent, key)
+			service.ModelAgent().RecordError(ctx, model, modelAgent)
 		} else {
-			service.Key().RecordErrorModelKey(ctx, model, key)
+			service.Key().RecordError(ctx, model, key)
 		}
 	}, nil); err != nil {
 		logger.Error(ctx, err)

@@ -138,7 +138,7 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		logger.Debugf(ctx, "sModel GetModelBySecretKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	user, err := service.User().GetCacheUser(ctx, service.Session().GetUserId(ctx))
+	user, err := service.User().GetCache(ctx, service.Session().GetUserId(ctx))
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -211,13 +211,13 @@ func (s *sModel) GetModelBySecretKey(ctx context.Context, m, secretKey string) (
 		return nil, err
 	}
 
-	app, err := service.App().GetCacheApp(ctx, service.Session().GetAppId(ctx))
+	app, err := service.App().GetCache(ctx, service.Session().GetAppId(ctx))
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
 	}
 
-	key, err := service.AppKey().GetCacheAppKey(ctx, secretKey)
+	key, err := service.AppKey().GetCache(ctx, secretKey)
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err

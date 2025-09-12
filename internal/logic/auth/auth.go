@@ -53,14 +53,14 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 	path := g.RequestFromCtx(ctx).RequestURI
 	modelsPath := "/v1/models"
 
-	key, err := service.AppKey().GetCacheAppKey(ctx, secretKey)
+	key, err := service.AppKey().GetCache(ctx, secretKey)
 	if err != nil || key == nil {
-		if key, err = service.AppKey().GetAppKey(ctx, secretKey); err != nil {
+		if key, err = service.AppKey().GetBySecretKey(ctx, secretKey); err != nil {
 			logger.Error(ctx, err)
 			return errors.ERR_INVALID_API_KEY
 		}
 
-		if err = service.AppKey().SaveCacheAppKey(ctx, key); err != nil {
+		if err = service.AppKey().SaveCache(ctx, key); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -84,7 +84,7 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 	}
 
 	if key.IsLimitQuota {
-		if path != modelsPath && service.AppKey().GetCacheAppKeyQuota(ctx, key.Key) <= 0 {
+		if path != modelsPath && service.AppKey().GetCacheQuota(ctx, key.Key) <= 0 {
 			err = errors.ERR_INSUFFICIENT_QUOTA
 			logger.Error(ctx, err)
 			return err
@@ -97,14 +97,14 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 		}
 	}
 
-	user, err := service.User().GetCacheUser(ctx, service.Session().GetUserId(ctx))
+	user, err := service.User().GetCache(ctx, service.Session().GetUserId(ctx))
 	if err != nil || user == nil {
-		if user, err = service.User().GetUser(ctx, service.Session().GetUserId(ctx)); err != nil {
+		if user, err = service.User().GetByUserId(ctx, service.Session().GetUserId(ctx)); err != nil {
 			logger.Error(ctx, err)
 			return errors.ERR_INVALID_USER
 		}
 
-		if err = service.User().SaveCacheUser(ctx, user); err != nil {
+		if err = service.User().SaveCache(ctx, user); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -122,7 +122,7 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 		return err
 	}
 
-	if path != modelsPath && service.User().GetCacheUserQuota(ctx, user.UserId) <= 0 {
+	if path != modelsPath && service.User().GetCacheQuota(ctx, user.UserId) <= 0 {
 		err = errors.ERR_INSUFFICIENT_QUOTA
 		logger.Error(ctx, err)
 		return err
@@ -136,15 +136,15 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 
 	if user.Rid != 0 {
 
-		reseller, err := service.Reseller().GetCacheReseller(ctx, user.Rid)
+		reseller, err := service.Reseller().GetCache(ctx, user.Rid)
 		if err != nil || reseller == nil {
 
-			if reseller, err = service.Reseller().GetReseller(ctx, user.Rid); err != nil {
+			if reseller, err = service.Reseller().GetByUserId(ctx, user.Rid); err != nil {
 				logger.Error(ctx, err)
 				return errors.ERR_INVALID_RESELLER
 			}
 
-			if err = service.Reseller().SaveCacheReseller(ctx, reseller); err != nil {
+			if err = service.Reseller().SaveCache(ctx, reseller); err != nil {
 				logger.Error(ctx, err)
 				return err
 			}
@@ -162,7 +162,7 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 			return err
 		}
 
-		if service.Reseller().GetCacheResellerQuota(ctx, reseller.UserId) <= 0 {
+		if service.Reseller().GetCacheQuota(ctx, reseller.UserId) <= 0 {
 			err = errors.ERR_RESELLER_INSUFFICIENT_QUOTA
 			logger.Error(ctx, err)
 			return err
@@ -178,14 +178,14 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 		service.Session().SaveReseller(ctx, reseller)
 	}
 
-	app, err := service.App().GetCacheApp(ctx, key.AppId)
+	app, err := service.App().GetCache(ctx, key.AppId)
 	if err != nil || app == nil {
-		if app, err = service.App().GetApp(ctx, key.AppId); err != nil {
+		if app, err = service.App().GetByAppId(ctx, key.AppId); err != nil {
 			logger.Error(ctx, err)
 			return errors.ERR_INVALID_APP
 		}
 
-		if err = service.App().SaveCacheApp(ctx, app); err != nil {
+		if err = service.App().SaveCache(ctx, app); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -209,7 +209,7 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 	}
 
 	if app.IsLimitQuota {
-		if path != modelsPath && service.App().GetCacheAppQuota(ctx, app.AppId) <= 0 {
+		if path != modelsPath && service.App().GetCacheQuota(ctx, app.AppId) <= 0 {
 			err = errors.ERR_INSUFFICIENT_QUOTA
 			logger.Error(ctx, err)
 			return err
@@ -226,7 +226,7 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 	service.Session().SaveIsLimitQuota(ctx, app.IsLimitQuota, key.IsLimitQuota)
 
 	if key.QuotaExpiresRule == 2 {
-		if err = service.AppKey().UpdateAppKeyQuotaExpiresAt(ctx, key); err != nil {
+		if err = service.AppKey().UpdateQuotaExpiresAt(ctx, key); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}

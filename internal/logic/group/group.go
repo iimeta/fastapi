@@ -34,11 +34,11 @@ func New() service.IGroup {
 }
 
 // 根据分组ID获取分组信息
-func (s *sGroup) GetGroup(ctx context.Context, id string) (*model.Group, error) {
+func (s *sGroup) GetById(ctx context.Context, id string) (*model.Group, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sGroup GetGroup time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sGroup GetById time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	group, err := dao.Group.FindById(ctx, id)
@@ -111,14 +111,14 @@ func (s *sGroup) List(ctx context.Context) ([]*model.Group, error) {
 }
 
 // 根据分组ID获取分组信息并保存到缓存
-func (s *sGroup) GetGroupAndSaveCache(ctx context.Context, id string) (*model.Group, error) {
+func (s *sGroup) GetAndSaveCache(ctx context.Context, id string) (*model.Group, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sGroup GetGroupAndSaveCache time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sGroup GetAndSaveCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	group, err := s.GetGroup(ctx, id)
+	group, err := s.GetById(ctx, id)
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -160,7 +160,7 @@ func (s *sGroup) SaveCacheList(ctx context.Context, groups []*model.Group) error
 			return err
 		}
 
-		if err := service.ModelAgent().SaveGroupModelAgentsCache(ctx, group); err != nil {
+		if err := service.ModelAgent().SaveGroupCache(ctx, group); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -170,11 +170,11 @@ func (s *sGroup) SaveCacheList(ctx context.Context, groups []*model.Group) error
 }
 
 // 获取缓存中的分组信息
-func (s *sGroup) GetCacheGroup(ctx context.Context, id string) (*model.Group, error) {
+func (s *sGroup) GetCache(ctx context.Context, id string) (*model.Group, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sGroup GetCacheGroup time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sGroup GetCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	groups, err := s.GetCacheList(ctx, id)
@@ -214,11 +214,11 @@ func (s *sGroup) GetCacheList(ctx context.Context, ids ...string) ([]*model.Grou
 }
 
 // 更新缓存中的分组列表
-func (s *sGroup) UpdateCacheGroup(ctx context.Context, newData *entity.Group) {
+func (s *sGroup) UpdateCache(ctx context.Context, newData *entity.Group) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sGroup UpdateCacheGroup time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sGroup UpdateCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	group := &model.Group{
@@ -245,17 +245,17 @@ func (s *sGroup) UpdateCacheGroup(ctx context.Context, newData *entity.Group) {
 		logger.Error(ctx, err)
 	}
 
-	if err := s.SaveCacheGroupQuota(ctx, group.Id, group.Quota); err != nil {
+	if err := s.SaveCacheQuota(ctx, group.Id, group.Quota); err != nil {
 		logger.Error(ctx, err)
 	}
 }
 
 // 移除缓存中的分组列表
-func (s *sGroup) RemoveCacheGroup(ctx context.Context, id string) {
+func (s *sGroup) RemoveCache(ctx context.Context, id string) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sGroup RemoveCacheGroup time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sGroup RemoveCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if _, err := s.groupCache.Remove(ctx, id); err != nil {
@@ -264,11 +264,11 @@ func (s *sGroup) RemoveCacheGroup(ctx context.Context, id string) {
 }
 
 // 根据分组Ids获取模型Ids
-func (s *sGroup) GetGroupsModelIds(ctx context.Context, ids ...string) ([]string, error) {
+func (s *sGroup) GetModelIds(ctx context.Context, ids ...string) ([]string, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sGroup GetGroupsModelIds time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sGroup GetModelIds time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	groups, err := s.GetCacheList(ctx, ids...)
@@ -286,11 +286,11 @@ func (s *sGroup) GetGroupsModelIds(ctx context.Context, ids ...string) ([]string
 }
 
 // 根据分组Ids获取默认分组
-func (s *sGroup) GetDefaultGroup(ctx context.Context, ids ...string) (*model.Group, error) {
+func (s *sGroup) GetDefault(ctx context.Context, ids ...string) (*model.Group, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sGroup GetDefaultGroup time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sGroup GetDefault time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	groups, err := s.GetCacheList(ctx, ids...)
@@ -309,11 +309,11 @@ func (s *sGroup) GetDefaultGroup(ctx context.Context, ids ...string) (*model.Gro
 }
 
 // 根据model挑选分组和模型
-func (s *sGroup) PickGroupModel(ctx context.Context, m string, ids ...string) (reqModel *model.Model, group *model.Group, err error) {
+func (s *sGroup) PickGroupAndModel(ctx context.Context, m string, ids ...string) (reqModel *model.Model, group *model.Group, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sGroup PickGroupModel time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sGroup PickGroupAndModel time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	groups, err := s.GetCacheList(ctx, ids...)
@@ -391,7 +391,7 @@ func (s *sGroup) SpendQuota(ctx context.Context, group string, spendQuota, curre
 		return err
 	}
 
-	if err := s.SaveCacheGroupQuota(ctx, group, currentQuota); err != nil {
+	if err := s.SaveCacheQuota(ctx, group, currentQuota); err != nil {
 		logger.Error(ctx, err)
 	}
 
@@ -419,11 +419,11 @@ func (s *sGroup) UsedQuota(ctx context.Context, group string, quota int) error {
 }
 
 // 保存分组额度到缓存
-func (s *sGroup) SaveCacheGroupQuota(ctx context.Context, group string, quota int) error {
+func (s *sGroup) SaveCacheQuota(ctx context.Context, group string, quota int) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sGroup SaveCacheGroupQuota time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sGroup SaveCacheQuota time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if err := s.groupQuotaCache.Set(ctx, group, quota, 0); err != nil {
@@ -435,11 +435,11 @@ func (s *sGroup) SaveCacheGroupQuota(ctx context.Context, group string, quota in
 }
 
 // 获取缓存中的分组额度
-func (s *sGroup) GetCacheGroupQuota(ctx context.Context, group string) int {
+func (s *sGroup) GetCacheQuota(ctx context.Context, group string) int {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sGroup GetCacheGroupQuota time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sGroup GetCacheQuota time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if groupQuotaValue := s.groupQuotaCache.GetVal(ctx, group); groupQuotaValue != nil {
@@ -473,7 +473,7 @@ func (s *sGroup) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		s.UpdateCacheGroup(ctx, group)
+		s.UpdateCache(ctx, group)
 
 	case consts.ACTION_DELETE:
 
@@ -482,7 +482,7 @@ func (s *sGroup) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		s.RemoveCacheGroup(ctx, group.Id)
+		s.RemoveCache(ctx, group.Id)
 	}
 
 	return nil

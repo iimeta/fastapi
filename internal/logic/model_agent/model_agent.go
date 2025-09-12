@@ -48,11 +48,11 @@ func New() service.IModelAgent {
 }
 
 // 根据模型代理ID获取模型代理信息
-func (s *sModelAgent) GetModelAgentById(ctx context.Context, id string) (*model.ModelAgent, error) {
+func (s *sModelAgent) GetById(ctx context.Context, id string) (*model.ModelAgent, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent GetModelAgentById time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent GetById time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	modelAgent, err := dao.ModelAgent.FindById(ctx, id)
@@ -185,11 +185,11 @@ func (s *sModelAgent) ListAll(ctx context.Context) ([]*model.ModelAgent, error) 
 }
 
 // 根据模型代理ID获取密钥列表
-func (s *sModelAgent) GetModelAgentKeys(ctx context.Context, id string) ([]*model.Key, error) {
+func (s *sModelAgent) GetKeys(ctx context.Context, id string) ([]*model.Key, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent GetModelAgentKeys time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent GetByModelId time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	results, err := dao.Key.Find(ctx, bson.M{"model_agents": bson.M{"$in": []string{id}}}, &dao.FindOptions{SortFields: []string{"status", "-weight", "-updated_at"}})
@@ -260,11 +260,11 @@ func (s *sModelAgent) GetModelAgentsAndKeys(ctx context.Context) ([]*model.Model
 }
 
 // 挑选模型代理
-func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (int, *model.ModelAgent, error) {
+func (s *sModelAgent) Pick(ctx context.Context, m *model.Model) (int, *model.ModelAgent, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent PickModelAgent time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent Pick time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var (
@@ -357,11 +357,11 @@ func (s *sModelAgent) PickModelAgent(ctx context.Context, m *model.Model) (int, 
 }
 
 // 根据模型挑选分组模型代理
-func (s *sModelAgent) PickGroupModelAgent(ctx context.Context, m *model.Model, group *model.Group) (int, *model.ModelAgent, error) {
+func (s *sModelAgent) PickGroup(ctx context.Context, m *model.Model, group *model.Group) (int, *model.ModelAgent, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent PickGroupModelAgent time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent PickGroup time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var (
@@ -454,11 +454,11 @@ func (s *sModelAgent) PickGroupModelAgent(ctx context.Context, m *model.Model, g
 }
 
 // 移除模型代理
-func (s *sModelAgent) RemoveModelAgent(ctx context.Context, m *model.Model, modelAgent *model.ModelAgent) {
+func (s *sModelAgent) Remove(ctx context.Context, m *model.Model, modelAgent *model.ModelAgent) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent RemoveModelAgent time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent Remove time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if modelAgentsValue := s.modelAgentsCache.GetVal(ctx, m.Id); modelAgentsValue != nil {
@@ -484,11 +484,11 @@ func (s *sModelAgent) RemoveModelAgent(ctx context.Context, m *model.Model, mode
 }
 
 // 记录错误模型代理
-func (s *sModelAgent) RecordErrorModelAgent(ctx context.Context, m *model.Model, modelAgent *model.ModelAgent) {
+func (s *sModelAgent) RecordError(ctx context.Context, m *model.Model, modelAgent *model.ModelAgent) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent RecordErrorModelAgent time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent RecordError time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	reply, err := redis.HIncrBy(ctx, fmt.Sprintf(consts.ERROR_MODEL_AGENT, m.Model), modelAgent.Id, 1)
@@ -501,16 +501,16 @@ func (s *sModelAgent) RecordErrorModelAgent(ctx context.Context, m *model.Model,
 	}
 
 	if reply >= config.Cfg.Base.ModelAgentErrDisable {
-		s.DisabledModelAgent(ctx, modelAgent, "Reached the maximum number of errors")
+		s.Disabled(ctx, modelAgent, "Reached the maximum number of errors")
 	}
 }
 
 // 禁用模型代理
-func (s *sModelAgent) DisabledModelAgent(ctx context.Context, modelAgent *model.ModelAgent, disabledReason string) {
+func (s *sModelAgent) Disabled(ctx context.Context, modelAgent *model.ModelAgent, disabledReason string) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent DisabledModelAgent time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent Disabled time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	// 永不禁用
@@ -522,7 +522,7 @@ func (s *sModelAgent) DisabledModelAgent(ctx context.Context, modelAgent *model.
 	modelAgent.IsAutoDisabled = true
 	modelAgent.AutoDisabledReason = disabledReason
 
-	s.UpdateCacheModelAgent(ctx, nil, modelAgent)
+	s.UpdateCache(ctx, nil, modelAgent)
 
 	if err := dao.ModelAgent.UpdateById(ctx, modelAgent.Id, bson.M{
 		"status":               2,
@@ -534,11 +534,11 @@ func (s *sModelAgent) DisabledModelAgent(ctx context.Context, modelAgent *model.
 }
 
 // 挑选模型代理密钥
-func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent) (int, *model.Key, error) {
+func (s *sModelAgent) PickKey(ctx context.Context, modelAgent *model.ModelAgent) (int, *model.Key, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent PickModelAgentKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent PickKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var (
@@ -553,8 +553,8 @@ func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.M
 
 	if len(keys) == 0 {
 
-		if keys, err = s.GetCacheModelAgentKeys(ctx, modelAgent.Id); err != nil {
-			if keys, err = s.GetModelAgentKeys(ctx, modelAgent.Id); err != nil {
+		if keys, err = s.GetCacheKeys(ctx, modelAgent.Id); err != nil {
+			if keys, err = s.GetKeys(ctx, modelAgent.Id); err != nil {
 				logger.Error(ctx, err)
 				return 0, nil, err
 			}
@@ -564,7 +564,7 @@ func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.M
 			return 0, nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY
 		}
 
-		if err = s.SaveCacheModelAgentKeys(ctx, modelAgent.Id, keys); err != nil {
+		if err = s.SaveCacheKeys(ctx, modelAgent.Id, keys); err != nil {
 			logger.Error(ctx, err)
 			return 0, nil, err
 		}
@@ -624,11 +624,11 @@ func (s *sModelAgent) PickModelAgentKey(ctx context.Context, modelAgent *model.M
 }
 
 // 移除模型代理密钥
-func (s *sModelAgent) RemoveModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent, key *model.Key) {
+func (s *sModelAgent) RemoveKey(ctx context.Context, modelAgent *model.ModelAgent, key *model.Key) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent RemoveModelAgentKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent RemoveKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if keysValue := s.modelAgentKeysCache.GetVal(ctx, modelAgent.Id); keysValue != nil {
@@ -656,11 +656,11 @@ func (s *sModelAgent) RemoveModelAgentKey(ctx context.Context, modelAgent *model
 }
 
 // 记录错误模型代理密钥
-func (s *sModelAgent) RecordErrorModelAgentKey(ctx context.Context, modelAgent *model.ModelAgent, key *model.Key) {
+func (s *sModelAgent) RecordErrorKey(ctx context.Context, modelAgent *model.ModelAgent, key *model.Key) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent RecordErrorModelAgentKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent RecordErrorKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	reply, err := redis.HIncrBy(ctx, fmt.Sprintf(consts.ERROR_MODEL_AGENT_KEY, modelAgent.Id), key.Key, 1)
@@ -673,16 +673,16 @@ func (s *sModelAgent) RecordErrorModelAgentKey(ctx context.Context, modelAgent *
 	}
 
 	if reply >= config.Cfg.Base.ModelAgentKeyErrDisable {
-		s.DisabledModelAgentKey(ctx, key, "Reached the maximum number of errors")
+		s.DisabledKey(ctx, key, "Reached the maximum number of errors")
 	}
 }
 
 // 禁用模型代理密钥
-func (s *sModelAgent) DisabledModelAgentKey(ctx context.Context, key *model.Key, disabledReason string) {
+func (s *sModelAgent) DisabledKey(ctx context.Context, key *model.Key, disabledReason string) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent DisabledModelAgentKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent DisabledKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	// 永不禁用
@@ -690,7 +690,7 @@ func (s *sModelAgent) DisabledModelAgentKey(ctx context.Context, key *model.Key,
 		return
 	}
 
-	s.UpdateCacheModelAgentKey(ctx, nil, &entity.Key{
+	s.UpdateCacheKey(ctx, nil, &entity.Key{
 		Id:                 key.Id,
 		ProviderId:         key.ProviderId,
 		Key:                key.Key,
@@ -753,12 +753,12 @@ func (s *sModelAgent) GetCacheList(ctx context.Context, ids ...string) ([]*model
 	return items, nil
 }
 
-// 新增模型代理到缓存列表中
-func (s *sModelAgent) CreateCacheModelAgent(ctx context.Context, newData *model.ModelAgent) {
+// 添加模型代理到缓存列表中
+func (s *sModelAgent) AddCache(ctx context.Context, newData *model.ModelAgent) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent CreateCacheModelAgent time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent AddCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if err := s.SaveCacheList(ctx, []*model.ModelAgent{{
@@ -790,11 +790,11 @@ func (s *sModelAgent) CreateCacheModelAgent(ctx context.Context, newData *model.
 }
 
 // 更新缓存中的模型代理列表
-func (s *sModelAgent) UpdateCacheModelAgent(ctx context.Context, oldData *model.ModelAgent, newData *model.ModelAgent) {
+func (s *sModelAgent) UpdateCache(ctx context.Context, oldData *model.ModelAgent, newData *model.ModelAgent) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent UpdateCacheModelAgent time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent UpdateCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if err := s.SaveCacheList(ctx, []*model.ModelAgent{{
@@ -908,11 +908,11 @@ func (s *sModelAgent) UpdateCacheModelAgent(ctx context.Context, oldData *model.
 }
 
 // 移除缓存中的模型代理
-func (s *sModelAgent) RemoveCacheModelAgent(ctx context.Context, modelAgent *model.ModelAgent) {
+func (s *sModelAgent) RemoveCache(ctx context.Context, modelAgent *model.ModelAgent) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent RemoveCacheModelAgent time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent RemoveCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	for _, id := range modelAgent.Models {
@@ -965,11 +965,11 @@ func (s *sModelAgent) RemoveCacheModelAgent(ctx context.Context, modelAgent *mod
 }
 
 // 保存模型代理密钥列表到缓存
-func (s *sModelAgent) SaveCacheModelAgentKeys(ctx context.Context, id string, keys []*model.Key) error {
+func (s *sModelAgent) SaveCacheKeys(ctx context.Context, id string, keys []*model.Key) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent SaveCacheModelAgentKeys keys: %d, time: %d", len(keys), gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent SaveCacheKeys keys: %d, time: %d", len(keys), gtime.TimestampMilli()-now)
 	}()
 
 	if err := s.modelAgentKeysCache.Set(ctx, id, keys, 0); err != nil {
@@ -981,11 +981,11 @@ func (s *sModelAgent) SaveCacheModelAgentKeys(ctx context.Context, id string, ke
 }
 
 // 获取缓存中的模型代理密钥列表
-func (s *sModelAgent) GetCacheModelAgentKeys(ctx context.Context, id string) ([]*model.Key, error) {
+func (s *sModelAgent) GetCacheKeys(ctx context.Context, id string) ([]*model.Key, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent GetCacheModelAgentKeys time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent GetCacheKeys time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if modelAgentKeysCacheValue := s.modelAgentKeysCache.GetVal(ctx, id); modelAgentKeysCacheValue != nil {
@@ -996,11 +996,11 @@ func (s *sModelAgent) GetCacheModelAgentKeys(ctx context.Context, id string) ([]
 }
 
 // 新增模型代理密钥到缓存列表中
-func (s *sModelAgent) CreateCacheModelAgentKey(ctx context.Context, key *entity.Key) {
+func (s *sModelAgent) CreateCacheKey(ctx context.Context, key *entity.Key) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent CreateCacheModelAgentKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent CreateCacheKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	k := &model.Key{
@@ -1018,11 +1018,11 @@ func (s *sModelAgent) CreateCacheModelAgentKey(ctx context.Context, key *entity.
 	for _, id := range k.ModelAgents {
 
 		if modelAgentKeysValue := s.modelAgentKeysCache.GetVal(ctx, id); modelAgentKeysValue != nil {
-			if err := s.SaveCacheModelAgentKeys(ctx, id, append(modelAgentKeysValue.([]*model.Key), k)); err != nil {
+			if err := s.SaveCacheKeys(ctx, id, append(modelAgentKeysValue.([]*model.Key), k)); err != nil {
 				logger.Error(ctx, err)
 			}
 		} else {
-			if err := s.SaveCacheModelAgentKeys(ctx, id, []*model.Key{k}); err != nil {
+			if err := s.SaveCacheKeys(ctx, id, []*model.Key{k}); err != nil {
 				logger.Error(ctx, err)
 			}
 		}
@@ -1030,11 +1030,11 @@ func (s *sModelAgent) CreateCacheModelAgentKey(ctx context.Context, key *entity.
 }
 
 // 更新缓存中的模型代理密钥
-func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *entity.Key, newData *entity.Key) {
+func (s *sModelAgent) UpdateCacheKey(ctx context.Context, oldData *entity.Key, newData *entity.Key) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent UpdateCacheModelAgentKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent UpdateCacheKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	key := &model.Key{
@@ -1058,13 +1058,13 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 
 		newModelAgentMap[id] = id
 
-		modelAgentKeys, err := s.GetCacheModelAgentKeys(ctx, id)
+		modelAgentKeys, err := s.GetCacheKeys(ctx, id)
 		if err != nil {
 			logger.Error(ctx, err)
 		}
 
 		if len(modelAgentKeys) == 0 {
-			if modelAgentKeys, err = s.GetModelAgentKeys(ctx, id); err != nil {
+			if modelAgentKeys, err = s.GetKeys(ctx, id); err != nil {
 				logger.Error(ctx, err)
 				continue
 			}
@@ -1089,7 +1089,7 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 			newModelAgentKeys = append(newModelAgentKeys, key)
 		}
 
-		if err = s.SaveCacheModelAgentKeys(ctx, id, newModelAgentKeys); err != nil {
+		if err = s.SaveCacheKeys(ctx, id, newModelAgentKeys); err != nil {
 			logger.Error(ctx, err)
 		}
 	}
@@ -1101,15 +1101,15 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 
 			if newModelAgentMap[id] == "" {
 
-				modelAgentKeys, err := s.GetCacheModelAgentKeys(ctx, id)
+				modelAgentKeys, err := s.GetCacheKeys(ctx, id)
 				if err != nil {
 					logger.Error(ctx, err)
-					if modelAgentKeys, err = s.GetModelAgentKeys(ctx, id); err != nil {
+					if modelAgentKeys, err = s.GetKeys(ctx, id); err != nil {
 						logger.Error(ctx, err)
 						continue
 					}
 				} else if len(modelAgentKeys) == 0 {
-					if modelAgentKeys, err = s.GetModelAgentKeys(ctx, id); err != nil {
+					if modelAgentKeys, err = s.GetKeys(ctx, id); err != nil {
 						logger.Error(ctx, err)
 						continue
 					}
@@ -1134,11 +1134,11 @@ func (s *sModelAgent) UpdateCacheModelAgentKey(ctx context.Context, oldData *ent
 }
 
 // 移除缓存中的模型代理密钥
-func (s *sModelAgent) RemoveCacheModelAgentKey(ctx context.Context, key *entity.Key) {
+func (s *sModelAgent) RemoveCacheKey(ctx context.Context, key *entity.Key) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent RemoveCacheModelAgentKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent RemoveCacheKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	for _, id := range key.ModelAgents {
@@ -1163,11 +1163,11 @@ func (s *sModelAgent) RemoveCacheModelAgentKey(ctx context.Context, key *entity.
 }
 
 // 获取缓存中的模型代理信息
-func (s *sModelAgent) GetCacheModelAgent(ctx context.Context, id string) (*model.ModelAgent, error) {
+func (s *sModelAgent) GetCache(ctx context.Context, id string) (*model.ModelAgent, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent GetCacheModelAgent time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent GetCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	modelAgents, err := s.GetCacheList(ctx, id)
@@ -1184,14 +1184,14 @@ func (s *sModelAgent) GetCacheModelAgent(ctx context.Context, id string) (*model
 }
 
 // 根据模型代理ID获取模型代理信息并保存到缓存
-func (s *sModelAgent) GetModelAgentAndSaveCache(ctx context.Context, id string) (*model.ModelAgent, error) {
+func (s *sModelAgent) GetAndSaveCache(ctx context.Context, id string) (*model.ModelAgent, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent GetModelAgentAndSaveCache time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent GetAndSaveCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	modelAgent, err := s.GetModelAgentById(ctx, id)
+	modelAgent, err := s.GetById(ctx, id)
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -1219,15 +1219,15 @@ func (s *sModelAgent) SaveCache(ctx context.Context, modelAgent *model.ModelAgen
 }
 
 // 获取后备模型代理
-func (s *sModelAgent) GetFallbackModelAgent(ctx context.Context, model *model.Model) (fallbackModelAgent *model.ModelAgent, err error) {
+func (s *sModelAgent) GetFallback(ctx context.Context, model *model.Model) (fallbackModelAgent *model.ModelAgent, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent GetFallbackModelAgent time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent GetFallback time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	if fallbackModelAgent, err = s.GetCacheModelAgent(ctx, model.FallbackConfig.ModelAgent); err != nil || fallbackModelAgent == nil {
-		if fallbackModelAgent, err = s.GetModelAgentAndSaveCache(ctx, model.FallbackConfig.ModelAgent); err != nil {
+	if fallbackModelAgent, err = s.GetCache(ctx, model.FallbackConfig.ModelAgent); err != nil || fallbackModelAgent == nil {
+		if fallbackModelAgent, err = s.GetAndSaveCache(ctx, model.FallbackConfig.ModelAgent); err != nil {
 			logger.Error(ctx, err)
 			return nil, err
 		}
@@ -1243,11 +1243,11 @@ func (s *sModelAgent) GetFallbackModelAgent(ctx context.Context, model *model.Mo
 }
 
 // 保存分组模型代理列表到缓存
-func (s *sModelAgent) SaveGroupModelAgentsCache(ctx context.Context, group *model.Group) error {
+func (s *sModelAgent) SaveGroupCache(ctx context.Context, group *model.Group) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sModelAgent SaveGroupModelAgentsCache time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sModelAgent SaveGroupCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if len(group.ModelAgents) == 0 {
@@ -1300,7 +1300,7 @@ func (s *sModelAgent) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		s.CreateCacheModelAgent(ctx, modelAgent)
+		s.AddCache(ctx, modelAgent)
 
 	case consts.ACTION_UPDATE:
 
@@ -1315,7 +1315,7 @@ func (s *sModelAgent) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		s.UpdateCacheModelAgent(ctx, oldData, modelAgent)
+		s.UpdateCache(ctx, oldData, modelAgent)
 
 	case consts.ACTION_STATUS:
 
@@ -1324,7 +1324,7 @@ func (s *sModelAgent) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		s.UpdateCacheModelAgent(ctx, nil, modelAgent)
+		s.UpdateCache(ctx, nil, modelAgent)
 
 	case consts.ACTION_DELETE:
 
@@ -1333,7 +1333,7 @@ func (s *sModelAgent) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		s.RemoveCacheModelAgent(ctx, modelAgent)
+		s.RemoveCache(ctx, modelAgent)
 	}
 
 	return nil

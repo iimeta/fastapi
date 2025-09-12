@@ -33,11 +33,11 @@ func New() service.IReseller {
 }
 
 // 根据用户ID获取代理商信息
-func (s *sReseller) GetReseller(ctx context.Context, userId int) (*model.Reseller, error) {
+func (s *sReseller) GetByUserId(ctx context.Context, userId int) (*model.Reseller, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sReseller GetReseller time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sReseller GetByUserId time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	reseller, err := dao.Reseller.FindResellerByUserId(ctx, userId)
@@ -117,7 +117,7 @@ func (s *sReseller) SpendQuota(ctx context.Context, userId, spendQuota, currentQ
 		return err
 	}
 
-	if err := s.SaveCacheResellerQuota(ctx, userId, currentQuota); err != nil {
+	if err := s.SaveCacheQuota(ctx, userId, currentQuota); err != nil {
 		logger.Error(ctx, err)
 	}
 
@@ -125,11 +125,11 @@ func (s *sReseller) SpendQuota(ctx context.Context, userId, spendQuota, currentQ
 }
 
 // 保存代理商信息到缓存
-func (s *sReseller) SaveCacheReseller(ctx context.Context, reseller *model.Reseller) error {
+func (s *sReseller) SaveCache(ctx context.Context, reseller *model.Reseller) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sReseller SaveCacheReseller time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sReseller SaveCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if reseller == nil {
@@ -152,11 +152,11 @@ func (s *sReseller) SaveCacheReseller(ctx context.Context, reseller *model.Resel
 }
 
 // 获取缓存中的代理商信息
-func (s *sReseller) GetCacheReseller(ctx context.Context, userId int) (*model.Reseller, error) {
+func (s *sReseller) GetCache(ctx context.Context, userId int) (*model.Reseller, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sReseller GetCacheReseller time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sReseller GetCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if reseller := service.Session().GetReseller(ctx); reseller != nil {
@@ -171,14 +171,14 @@ func (s *sReseller) GetCacheReseller(ctx context.Context, userId int) (*model.Re
 }
 
 // 更新缓存中的代理商信息
-func (s *sReseller) UpdateCacheReseller(ctx context.Context, reseller *entity.Reseller) {
+func (s *sReseller) UpdateCache(ctx context.Context, reseller *entity.Reseller) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sReseller UpdateCacheReseller time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sReseller UpdateCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	if err := s.SaveCacheReseller(ctx, &model.Reseller{
+	if err := s.SaveCache(ctx, &model.Reseller{
 		Id:             reseller.Id,
 		UserId:         reseller.UserId,
 		Name:           reseller.Name,
@@ -197,11 +197,11 @@ func (s *sReseller) UpdateCacheReseller(ctx context.Context, reseller *entity.Re
 }
 
 // 移除缓存中的代理商信息
-func (s *sReseller) RemoveCacheReseller(ctx context.Context, userId int) {
+func (s *sReseller) RemoveCache(ctx context.Context, userId int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sReseller RemoveCacheReseller time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sReseller RemoveCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if _, err := s.resellerCache.Remove(ctx, userId); err != nil {
@@ -214,11 +214,11 @@ func (s *sReseller) RemoveCacheReseller(ctx context.Context, userId int) {
 }
 
 // 保存代理商额度到缓存
-func (s *sReseller) SaveCacheResellerQuota(ctx context.Context, userId, quota int) error {
+func (s *sReseller) SaveCacheQuota(ctx context.Context, userId, quota int) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sReseller SaveCacheResellerQuota time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sReseller SaveCacheQuota time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if err := s.resellerQuotaCache.Set(ctx, userId, quota, 0); err != nil {
@@ -230,11 +230,11 @@ func (s *sReseller) SaveCacheResellerQuota(ctx context.Context, userId, quota in
 }
 
 // 获取缓存中的代理商额度
-func (s *sReseller) GetCacheResellerQuota(ctx context.Context, userId int) int {
+func (s *sReseller) GetCacheQuota(ctx context.Context, userId int) int {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sReseller GetCacheResellerQuota time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sReseller GetCacheQuota time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if resellerQuotaValue := s.resellerQuotaCache.GetVal(ctx, userId); resellerQuotaValue != nil {
@@ -268,7 +268,7 @@ func (s *sReseller) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		s.UpdateCacheReseller(ctx, reseller)
+		s.UpdateCache(ctx, reseller)
 
 	case consts.ACTION_DELETE:
 
@@ -277,7 +277,7 @@ func (s *sReseller) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		s.RemoveCacheReseller(ctx, reseller.UserId)
+		s.RemoveCache(ctx, reseller.UserId)
 	}
 
 	return nil

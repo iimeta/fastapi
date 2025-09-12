@@ -38,14 +38,14 @@ func New() service.IKey {
 }
 
 // 根据模型ID获取密钥列表
-func (s *sKey) GetModelKeys(ctx context.Context, id string) ([]*model.Key, error) {
+func (s *sKey) GetByModelId(ctx context.Context, modelId string) ([]*model.Key, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sKey GetModelKeys time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sKey GetByModelId time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	results, err := dao.Key.Find(ctx, bson.M{"is_agents_only": false, "models": bson.M{"$in": []string{id}}})
+	results, err := dao.Key.Find(ctx, bson.M{"is_agents_only": false, "models": bson.M{"$in": []string{modelId}}})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -102,11 +102,11 @@ func (s *sKey) List(ctx context.Context) ([]*model.Key, error) {
 }
 
 // 挑选模型密钥
-func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (int, *model.Key, error) {
+func (s *sKey) Pick(ctx context.Context, m *model.Model) (int, *model.Key, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sKey PickModelKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sKey Pick time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	var (
@@ -121,14 +121,14 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (int, *model.Ke
 
 	if len(modelKeys) == 0 {
 
-		if modelKeys, err = s.GetCacheModelKeys(ctx, m.Id); err != nil {
+		if modelKeys, err = s.GetCache(ctx, m.Id); err != nil {
 
-			if modelKeys, err = s.GetModelKeys(ctx, m.Id); err != nil {
+			if modelKeys, err = s.GetByModelId(ctx, m.Id); err != nil {
 				logger.Error(ctx, err)
 				return 0, nil, err
 			}
 
-			if err = s.SaveCacheModelKeys(ctx, m.Id, modelKeys); err != nil {
+			if err = s.SaveCache(ctx, m.Id, modelKeys); err != nil {
 				logger.Error(ctx, err)
 				return 0, nil, err
 			}
@@ -198,11 +198,11 @@ func (s *sKey) PickModelKey(ctx context.Context, m *model.Model) (int, *model.Ke
 }
 
 // 移除模型密钥
-func (s *sKey) RemoveModelKey(ctx context.Context, m *model.Model, key *model.Key) {
+func (s *sKey) Remove(ctx context.Context, m *model.Model, key *model.Key) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sKey RemoveModelKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sKey Remove time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	keysValue := s.modelKeysCache.GetVal(ctx, m.Id)
@@ -229,11 +229,11 @@ func (s *sKey) RemoveModelKey(ctx context.Context, m *model.Model, key *model.Ke
 }
 
 // 记录错误模型密钥
-func (s *sKey) RecordErrorModelKey(ctx context.Context, m *model.Model, key *model.Key) {
+func (s *sKey) RecordError(ctx context.Context, m *model.Model, key *model.Key) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sKey RecordErrorModelKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sKey RecordError time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	reply, err := redis.HIncrBy(ctx, fmt.Sprintf(consts.ERROR_MODEL_KEY, m.Model), key.Key, 1)
@@ -246,16 +246,16 @@ func (s *sKey) RecordErrorModelKey(ctx context.Context, m *model.Model, key *mod
 	}
 
 	if reply >= config.Cfg.Base.ModelKeyErrDisable {
-		s.DisabledModelKey(ctx, key, "Reached the maximum number of errors")
+		s.Disabled(ctx, key, "Reached the maximum number of errors")
 	}
 }
 
 // 禁用模型密钥
-func (s *sKey) DisabledModelKey(ctx context.Context, key *model.Key, disabledReason string) {
+func (s *sKey) Disabled(ctx context.Context, key *model.Key, disabledReason string) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sKey DisabledModelKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sKey Disabled time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	// 永不禁用
@@ -263,7 +263,7 @@ func (s *sKey) DisabledModelKey(ctx context.Context, key *model.Key, disabledRea
 		return
 	}
 
-	s.UpdateCacheModelKey(ctx, nil, &entity.Key{
+	s.UpdateCache(ctx, nil, &entity.Key{
 		Id:                 key.Id,
 		ProviderId:         key.ProviderId,
 		Key:                key.Key,
@@ -287,11 +287,11 @@ func (s *sKey) DisabledModelKey(ctx context.Context, key *model.Key, disabledRea
 }
 
 // 保存模型密钥列表到缓存
-func (s *sKey) SaveCacheModelKeys(ctx context.Context, id string, keys []*model.Key) error {
+func (s *sKey) SaveCache(ctx context.Context, id string, keys []*model.Key) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sKey SaveCacheModelKeys keys: %d, time: %d", len(keys), gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sKey SaveCache keys: %d, time: %d", len(keys), gtime.TimestampMilli()-now)
 	}()
 
 	if err := s.modelKeysCache.Set(ctx, id, keys, 0); err != nil {
@@ -303,11 +303,11 @@ func (s *sKey) SaveCacheModelKeys(ctx context.Context, id string, keys []*model.
 }
 
 // 获取缓存中的模型密钥列表
-func (s *sKey) GetCacheModelKeys(ctx context.Context, id string) ([]*model.Key, error) {
+func (s *sKey) GetCache(ctx context.Context, id string) ([]*model.Key, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sKey GetCacheModelKeys time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sKey GetCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if modelKeysCacheValue := s.modelKeysCache.GetVal(ctx, id); modelKeysCacheValue != nil {
@@ -317,12 +317,12 @@ func (s *sKey) GetCacheModelKeys(ctx context.Context, id string) ([]*model.Key, 
 	return nil, errors.New("modelKeys is nil")
 }
 
-// 新增模型密钥到缓存列表中
-func (s *sKey) CreateCacheModelKey(ctx context.Context, key *entity.Key) {
+// 添加模型密钥到缓存列表中
+func (s *sKey) AddCache(ctx context.Context, key *entity.Key) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sKey CreateCacheModelKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sKey AddCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	k := &model.Key{
@@ -340,11 +340,11 @@ func (s *sKey) CreateCacheModelKey(ctx context.Context, key *entity.Key) {
 	for _, id := range key.Models {
 
 		if keysValue := s.modelKeysCache.GetVal(ctx, id); keysValue != nil {
-			if err := s.SaveCacheModelKeys(ctx, id, append(keysValue.([]*model.Key), k)); err != nil {
+			if err := s.SaveCache(ctx, id, append(keysValue.([]*model.Key), k)); err != nil {
 				logger.Error(ctx, err)
 			}
 		} else {
-			if err := s.SaveCacheModelKeys(ctx, id, []*model.Key{k}); err != nil {
+			if err := s.SaveCache(ctx, id, []*model.Key{k}); err != nil {
 				logger.Error(ctx, err)
 			}
 		}
@@ -352,11 +352,11 @@ func (s *sKey) CreateCacheModelKey(ctx context.Context, key *entity.Key) {
 }
 
 // 更新缓存中的模型密钥
-func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, newData *entity.Key) {
+func (s *sKey) UpdateCache(ctx context.Context, oldData *entity.Key, newData *entity.Key) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sKey UpdateCacheModelKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sKey UpdateCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	key := &model.Key{
@@ -380,13 +380,13 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 
 		newModelMap[id] = id
 
-		modelKeys, err := s.GetCacheModelKeys(ctx, id)
+		modelKeys, err := s.GetCache(ctx, id)
 		if err != nil {
 			logger.Error(ctx, err)
 		}
 
 		if len(modelKeys) == 0 {
-			if modelKeys, err = s.GetModelKeys(ctx, id); err != nil {
+			if modelKeys, err = s.GetByModelId(ctx, id); err != nil {
 				logger.Error(ctx, err)
 				continue
 			}
@@ -412,7 +412,7 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 		}
 
 		if s.modelKeysCache.ContainsKey(ctx, id) {
-			if err = s.SaveCacheModelKeys(ctx, id, newKeys); err != nil {
+			if err = s.SaveCache(ctx, id, newKeys); err != nil {
 				logger.Error(ctx, err)
 			}
 		}
@@ -425,14 +425,14 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 
 			if newModelMap[id] == "" {
 
-				modelKeys, err := s.GetCacheModelKeys(ctx, id)
+				modelKeys, err := s.GetCache(ctx, id)
 				if err != nil {
-					if modelKeys, err = s.GetModelKeys(ctx, id); err != nil {
+					if modelKeys, err = s.GetByModelId(ctx, id); err != nil {
 						logger.Error(ctx, err)
 						continue
 					}
 				} else if len(modelKeys) == 0 {
-					if modelKeys, err = s.GetModelKeys(ctx, id); err != nil {
+					if modelKeys, err = s.GetByModelId(ctx, id); err != nil {
 						logger.Error(ctx, err)
 						continue
 					}
@@ -456,16 +456,16 @@ func (s *sKey) UpdateCacheModelKey(ctx context.Context, oldData *entity.Key, new
 	}
 
 	if len(newData.ModelAgents) > 0 || (oldData != nil && len(oldData.ModelAgents) > 0) {
-		service.ModelAgent().UpdateCacheModelAgentKey(ctx, oldData, newData)
+		service.ModelAgent().UpdateCacheKey(ctx, oldData, newData)
 	}
 }
 
 // 移除缓存中的模型密钥
-func (s *sKey) RemoveCacheModelKey(ctx context.Context, key *entity.Key) {
+func (s *sKey) RemoveCache(ctx context.Context, key *entity.Key) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sKey RemoveCacheModelKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sKey RemoveCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	for _, id := range key.Models {
@@ -534,10 +534,10 @@ func (s *sKey) Subscribe(ctx context.Context, msg string) error {
 		}
 
 		if key.IsAgentsOnly {
-			service.ModelAgent().CreateCacheModelAgentKey(ctx, key)
+			service.ModelAgent().CreateCacheKey(ctx, key)
 		} else {
-			s.CreateCacheModelKey(ctx, key)
-			service.ModelAgent().CreateCacheModelAgentKey(ctx, key)
+			s.AddCache(ctx, key)
+			service.ModelAgent().CreateCacheKey(ctx, key)
 		}
 
 	case consts.ACTION_UPDATE, consts.ACTION_MODELS:
@@ -554,18 +554,18 @@ func (s *sKey) Subscribe(ctx context.Context, msg string) error {
 		}
 
 		if !oldData.IsAgentsOnly && !key.IsAgentsOnly {
-			s.UpdateCacheModelKey(ctx, oldData, key)
+			s.UpdateCache(ctx, oldData, key)
 		} else if oldData.IsAgentsOnly && key.IsAgentsOnly {
-			service.ModelAgent().UpdateCacheModelAgentKey(ctx, oldData, key)
+			service.ModelAgent().UpdateCacheKey(ctx, oldData, key)
 		} else if oldData.IsAgentsOnly && !key.IsAgentsOnly {
-			s.CreateCacheModelKey(ctx, key)
-			service.ModelAgent().UpdateCacheModelAgentKey(ctx, oldData, key)
+			s.AddCache(ctx, key)
+			service.ModelAgent().UpdateCacheKey(ctx, oldData, key)
 		} else if !oldData.IsAgentsOnly && key.IsAgentsOnly {
-			s.RemoveCacheModelKey(ctx, oldData)
-			service.ModelAgent().UpdateCacheModelAgentKey(ctx, oldData, key)
+			s.RemoveCache(ctx, oldData)
+			service.ModelAgent().UpdateCacheKey(ctx, oldData, key)
 		} else { // 似乎永远都走不了这个
-			s.UpdateCacheModelKey(ctx, oldData, key)
-			service.ModelAgent().UpdateCacheModelAgentKey(ctx, oldData, key)
+			s.UpdateCache(ctx, oldData, key)
+			service.ModelAgent().UpdateCacheKey(ctx, oldData, key)
 		}
 
 	case consts.ACTION_STATUS:
@@ -576,10 +576,10 @@ func (s *sKey) Subscribe(ctx context.Context, msg string) error {
 		}
 
 		if key.IsAgentsOnly {
-			service.ModelAgent().UpdateCacheModelAgentKey(ctx, nil, key)
+			service.ModelAgent().UpdateCacheKey(ctx, nil, key)
 		} else {
-			s.UpdateCacheModelKey(ctx, nil, key)
-			service.ModelAgent().UpdateCacheModelAgentKey(ctx, nil, key)
+			s.UpdateCache(ctx, nil, key)
+			service.ModelAgent().UpdateCacheKey(ctx, nil, key)
 		}
 
 	case consts.ACTION_DELETE:
@@ -590,10 +590,10 @@ func (s *sKey) Subscribe(ctx context.Context, msg string) error {
 		}
 
 		if key.IsAgentsOnly {
-			service.ModelAgent().RemoveCacheModelAgentKey(ctx, key)
+			service.ModelAgent().RemoveCacheKey(ctx, key)
 		} else {
-			s.RemoveCacheModelKey(ctx, key)
-			service.ModelAgent().RemoveCacheModelAgentKey(ctx, key)
+			s.RemoveCache(ctx, key)
+			service.ModelAgent().RemoveCacheKey(ctx, key)
 		}
 	}
 

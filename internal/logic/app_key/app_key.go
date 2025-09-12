@@ -19,7 +19,7 @@ import (
 )
 
 type sAppKey struct {
-	appKeyCache      *cache.Cache // [key]Key
+	appKeyCache      *cache.Cache // [key]AppKey
 	appKeyQuotaCache *cache.Cache // [key]Quota
 }
 
@@ -34,12 +34,12 @@ func New() service.IAppKey {
 	}
 }
 
-// 根据secretKey获取密钥信息
-func (s *sAppKey) GetAppKey(ctx context.Context, secretKey string) (*model.AppKey, error) {
+// 根据secretKey获取应用密钥信息
+func (s *sAppKey) GetBySecretKey(ctx context.Context, secretKey string) (*model.AppKey, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sAppKey GetAppKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sAppKey GetBySecretKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	key, err := dao.AppKey.FindOne(ctx, bson.M{"key": secretKey, "status": 1})
@@ -109,11 +109,11 @@ func (s *sAppKey) List(ctx context.Context) ([]*model.AppKey, error) {
 }
 
 // 保存应用密钥信息到缓存
-func (s *sAppKey) SaveCacheAppKey(ctx context.Context, key *model.AppKey) error {
+func (s *sAppKey) SaveCache(ctx context.Context, key *model.AppKey) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sApp SaveCacheAppKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sAppKey SaveCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if key == nil {
@@ -136,11 +136,11 @@ func (s *sAppKey) SaveCacheAppKey(ctx context.Context, key *model.AppKey) error 
 }
 
 // 获取缓存中的应用密钥信息
-func (s *sAppKey) GetCacheAppKey(ctx context.Context, secretKey string) (*model.AppKey, error) {
+func (s *sAppKey) GetCache(ctx context.Context, secretKey string) (*model.AppKey, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sApp GetCacheAppKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sAppKey GetCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if key := service.Session().GetAppKey(ctx); key != nil {
@@ -157,14 +157,14 @@ func (s *sAppKey) GetCacheAppKey(ctx context.Context, secretKey string) (*model.
 }
 
 // 更新缓存中的应用密钥信息
-func (s *sAppKey) UpdateCacheAppKey(ctx context.Context, key *entity.AppKey) {
+func (s *sAppKey) UpdateCache(ctx context.Context, key *entity.AppKey) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sApp UpdateCacheAppKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sAppKey UpdateCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	if err := s.SaveCacheAppKey(ctx, &model.AppKey{
+	if err := s.SaveCache(ctx, &model.AppKey{
 		Id:                  key.Id,
 		UserId:              key.UserId,
 		AppId:               key.AppId,
@@ -188,11 +188,11 @@ func (s *sAppKey) UpdateCacheAppKey(ctx context.Context, key *entity.AppKey) {
 }
 
 // 移除缓存中的应用密钥信息
-func (s *sAppKey) RemoveCacheAppKey(ctx context.Context, secretKey string) {
+func (s *sAppKey) RemoveCache(ctx context.Context, secretKey string) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sApp RemoveCacheAppKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sAppKey RemoveCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if _, err := s.appKeyCache.Remove(ctx, secretKey); err != nil {
@@ -205,11 +205,11 @@ func (s *sAppKey) RemoveCacheAppKey(ctx context.Context, secretKey string) {
 }
 
 // 应用密钥花费额度
-func (s *sAppKey) AppKeySpendQuota(ctx context.Context, secretKey string, spendQuota, currentQuota int) error {
+func (s *sAppKey) SpendQuota(ctx context.Context, secretKey string, spendQuota, currentQuota int) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sApp AppKeySpendQuota time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sAppKey SpendQuota time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if err := dao.AppKey.UpdateOne(ctx, bson.M{"key": secretKey}, bson.M{
@@ -222,7 +222,7 @@ func (s *sAppKey) AppKeySpendQuota(ctx context.Context, secretKey string, spendQ
 		return err
 	}
 
-	if err := s.SaveCacheAppKeyQuota(ctx, secretKey, currentQuota); err != nil {
+	if err := s.SaveCacheQuota(ctx, secretKey, currentQuota); err != nil {
 		logger.Error(ctx, err)
 	}
 
@@ -230,11 +230,11 @@ func (s *sAppKey) AppKeySpendQuota(ctx context.Context, secretKey string, spendQ
 }
 
 // 应用密钥已用额度
-func (s *sAppKey) AppKeyUsedQuota(ctx context.Context, secretKey string, quota int) error {
+func (s *sAppKey) UsedQuota(ctx context.Context, secretKey string, quota int) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sApp AppKeyUsedQuota time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sAppKey UsedQuota time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if err := dao.AppKey.UpdateOne(ctx, bson.M{"key": secretKey}, bson.M{
@@ -250,11 +250,11 @@ func (s *sAppKey) AppKeyUsedQuota(ctx context.Context, secretKey string, quota i
 }
 
 // 保存应用密钥额度到缓存
-func (s *sAppKey) SaveCacheAppKeyQuota(ctx context.Context, secretKey string, quota int) error {
+func (s *sAppKey) SaveCacheQuota(ctx context.Context, secretKey string, quota int) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sApp SaveCacheAppKeyQuota time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sAppKey SaveCacheQuota time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if err := s.appKeyQuotaCache.Set(ctx, secretKey, quota, 0); err != nil {
@@ -266,11 +266,11 @@ func (s *sAppKey) SaveCacheAppKeyQuota(ctx context.Context, secretKey string, qu
 }
 
 // 获取缓存中的应用密钥额度
-func (s *sAppKey) GetCacheAppKeyQuota(ctx context.Context, secretKey string) int {
+func (s *sAppKey) GetCacheQuota(ctx context.Context, secretKey string) int {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sApp GetCacheAppKeyQuota time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sAppKey GetCacheQuota time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if appKeyQuotaValue := s.appKeyQuotaCache.GetVal(ctx, secretKey); appKeyQuotaValue != nil {
@@ -281,11 +281,11 @@ func (s *sAppKey) GetCacheAppKeyQuota(ctx context.Context, secretKey string) int
 }
 
 // 更新应用密钥额度过期时间
-func (s *sAppKey) UpdateAppKeyQuotaExpiresAt(ctx context.Context, key *model.AppKey) error {
+func (s *sAppKey) UpdateQuotaExpiresAt(ctx context.Context, key *model.AppKey) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sApp UpdateAppKeyQuotaExpiresAt time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sAppKey UpdateQuotaExpiresAt time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	oldData, err := dao.AppKey.FindById(ctx, key.Id)
@@ -325,7 +325,7 @@ func (s *sAppKey) Subscribe(ctx context.Context, msg string) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sApp SubscribeKey time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sAppKey SubscribeKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	message := new(model.SubMessage)
@@ -333,7 +333,7 @@ func (s *sAppKey) Subscribe(ctx context.Context, msg string) error {
 		logger.Error(ctx, err)
 		return err
 	}
-	logger.Infof(ctx, "sApp SubscribeKey: %s", gjson.MustEncodeString(message))
+	logger.Infof(ctx, "sAppKey SubscribeKey: %s", gjson.MustEncodeString(message))
 
 	var key *entity.AppKey
 	switch message.Action {
@@ -344,7 +344,7 @@ func (s *sAppKey) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		s.UpdateCacheAppKey(ctx, key)
+		s.UpdateCache(ctx, key)
 
 	case consts.ACTION_DELETE:
 
@@ -353,7 +353,7 @@ func (s *sAppKey) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		s.RemoveCacheAppKey(ctx, key.Key)
+		s.RemoveCache(ctx, key.Key)
 	}
 
 	return nil

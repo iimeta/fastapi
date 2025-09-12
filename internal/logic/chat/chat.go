@@ -242,9 +242,9 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 		if isDisabled {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 				if mak.RealModel.IsEnableModelAgent {
-					service.ModelAgent().DisabledModelAgentKey(ctx, mak.Key, err.Error())
+					service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
 				} else {
-					service.Key().DisabledModelKey(ctx, mak.Key, err.Error())
+					service.Key().Disabled(ctx, mak.Key, err.Error())
 				}
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -258,7 +258,7 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 				if mak.RealModel.IsEnableFallback {
 
 					if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, mak.RealModel); fallbackModelAgent != nil {
+						if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
 							retryInfo = &mcommon.Retry{
 								IsRetry:    true,
 								RetryCount: len(retry),
@@ -469,9 +469,9 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 		if isDisabled {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 				if mak.RealModel.IsEnableModelAgent {
-					service.ModelAgent().DisabledModelAgentKey(ctx, mak.Key, err.Error())
+					service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
 				} else {
-					service.Key().DisabledModelKey(ctx, mak.Key, err.Error())
+					service.Key().Disabled(ctx, mak.Key, err.Error())
 				}
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -485,7 +485,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 				if mak.RealModel.IsEnableFallback {
 
 					if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, mak.RealModel); fallbackModelAgent != nil {
+						if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
 							retryInfo = &mcommon.Retry{
 								IsRetry:    true,
 								RetryCount: len(retry),
@@ -552,9 +552,9 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 			if _, isDisabled := common.IsNeedRetry(err); isDisabled {
 				if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 					if mak.RealModel.IsEnableModelAgent {
-						service.ModelAgent().DisabledModelAgentKey(ctx, mak.Key, err.Error())
+						service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
 					} else {
-						service.Key().DisabledModelKey(ctx, mak.Key, err.Error())
+						service.Key().Disabled(ctx, mak.Key, err.Error())
 					}
 				}, nil); err != nil {
 					logger.Error(ctx, err)

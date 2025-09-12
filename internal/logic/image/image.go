@@ -180,9 +180,9 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 		if isDisabled {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 				if mak.RealModel.IsEnableModelAgent {
-					service.ModelAgent().DisabledModelAgentKey(ctx, mak.Key, err.Error())
+					service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
 				} else {
-					service.Key().DisabledModelKey(ctx, mak.Key, err.Error())
+					service.Key().Disabled(ctx, mak.Key, err.Error())
 				}
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -196,7 +196,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 				if mak.RealModel.IsEnableFallback {
 
 					if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, mak.RealModel); fallbackModelAgent != nil {
+						if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
 							retryInfo = &mcommon.Retry{
 								IsRetry:    true,
 								RetryCount: len(retry),
@@ -383,9 +383,9 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 		if isDisabled {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 				if mak.RealModel.IsEnableModelAgent {
-					service.ModelAgent().DisabledModelAgentKey(ctx, mak.Key, err.Error())
+					service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
 				} else {
-					service.Key().DisabledModelKey(ctx, mak.Key, err.Error())
+					service.Key().Disabled(ctx, mak.Key, err.Error())
 				}
 			}, nil); err != nil {
 				logger.Error(ctx, err)
@@ -399,7 +399,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 				if mak.RealModel.IsEnableFallback {
 
 					if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, mak.RealModel); fallbackModelAgent != nil {
+						if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
 							retryInfo = &mcommon.Retry{
 								IsRetry:    true,
 								RetryCount: len(retry),

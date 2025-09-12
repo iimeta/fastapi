@@ -33,11 +33,11 @@ func New() service.IUser {
 }
 
 // 根据用户ID获取用户信息
-func (s *sUser) GetUser(ctx context.Context, userId int) (*model.User, error) {
+func (s *sUser) GetByUserId(ctx context.Context, userId int) (*model.User, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sUser GetUser time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sUser GetByUserId time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	user, err := dao.User.FindUserByUserId(ctx, userId)
@@ -123,11 +123,11 @@ func (s *sUser) SpendQuota(ctx context.Context, userId, spendQuota, currentQuota
 }
 
 // 保存用户信息到缓存
-func (s *sUser) SaveCacheUser(ctx context.Context, user *model.User) error {
+func (s *sUser) SaveCache(ctx context.Context, user *model.User) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sUser SaveCacheUser time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sUser SaveCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if user == nil {
@@ -150,11 +150,11 @@ func (s *sUser) SaveCacheUser(ctx context.Context, user *model.User) error {
 }
 
 // 获取缓存中的用户信息
-func (s *sUser) GetCacheUser(ctx context.Context, userId int) (*model.User, error) {
+func (s *sUser) GetCache(ctx context.Context, userId int) (*model.User, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sUser GetCacheUser time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sUser GetCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if user := service.Session().GetUser(ctx); user != nil {
@@ -171,14 +171,14 @@ func (s *sUser) GetCacheUser(ctx context.Context, userId int) (*model.User, erro
 }
 
 // 更新缓存中的用户信息
-func (s *sUser) UpdateCacheUser(ctx context.Context, user *entity.User) {
+func (s *sUser) UpdateCache(ctx context.Context, user *entity.User) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sUser UpdateCacheUser time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sUser UpdateCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	if err := s.SaveCacheUser(ctx, &model.User{
+	if err := s.SaveCache(ctx, &model.User{
 		Id:             user.Id,
 		UserId:         user.UserId,
 		Name:           user.Name,
@@ -198,11 +198,11 @@ func (s *sUser) UpdateCacheUser(ctx context.Context, user *entity.User) {
 }
 
 // 移除缓存中的用户信息
-func (s *sUser) RemoveCacheUser(ctx context.Context, userId int) {
+func (s *sUser) RemoveCache(ctx context.Context, userId int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sUser RemoveCacheUser time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sUser RemoveCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if _, err := s.userCache.Remove(ctx, userId); err != nil {
@@ -215,11 +215,11 @@ func (s *sUser) RemoveCacheUser(ctx context.Context, userId int) {
 }
 
 // 保存用户额度到缓存
-func (s *sUser) SaveCacheUserQuota(ctx context.Context, userId, quota int) error {
+func (s *sUser) SaveCacheQuota(ctx context.Context, userId, quota int) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sUser SaveCacheUserQuota time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sUser SaveCacheQuota time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if err := s.userQuotaCache.Set(ctx, userId, quota, 0); err != nil {
@@ -231,11 +231,11 @@ func (s *sUser) SaveCacheUserQuota(ctx context.Context, userId, quota int) error
 }
 
 // 获取缓存中的用户额度
-func (s *sUser) GetCacheUserQuota(ctx context.Context, userId int) int {
+func (s *sUser) GetCacheQuota(ctx context.Context, userId int) int {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sUser GetCacheUserQuota time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sUser GetCacheQuota time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if userQuotaValue := s.userQuotaCache.GetVal(ctx, userId); userQuotaValue != nil {
@@ -269,7 +269,7 @@ func (s *sUser) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		s.UpdateCacheUser(ctx, user)
+		s.UpdateCache(ctx, user)
 
 	case consts.ACTION_DELETE:
 
@@ -278,7 +278,7 @@ func (s *sUser) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		s.RemoveCacheUser(ctx, user.UserId)
+		s.RemoveCache(ctx, user.UserId)
 
 	case consts.ACTION_CACHE:
 
@@ -288,7 +288,7 @@ func (s *sUser) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		if err := s.SaveCacheUserQuota(ctx, userQuota.UserId, userQuota.CurrentQuota); err != nil {
+		if err := s.SaveCacheQuota(ctx, userQuota.UserId, userQuota.CurrentQuota); err != nil {
 			logger.Error(ctx, err)
 		}
 	}

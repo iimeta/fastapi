@@ -15,23 +15,23 @@ import (
 type (
 	IUser interface {
 		// 根据用户ID获取用户信息
-		GetUser(ctx context.Context, userId int) (*model.User, error)
+		GetByUserId(ctx context.Context, userId int) (*model.User, error)
 		// 用户列表
 		List(ctx context.Context) ([]*model.User, error)
 		// 用户花费额度
 		SpendQuota(ctx context.Context, userId int, spendQuota int, currentQuota int) error
 		// 保存用户信息到缓存
-		SaveCacheUser(ctx context.Context, user *model.User) error
+		SaveCache(ctx context.Context, user *model.User) error
 		// 获取缓存中的用户信息
-		GetCacheUser(ctx context.Context, userId int) (*model.User, error)
+		GetCache(ctx context.Context, userId int) (*model.User, error)
 		// 更新缓存中的用户信息
-		UpdateCacheUser(ctx context.Context, user *entity.User)
+		UpdateCache(ctx context.Context, user *entity.User)
 		// 移除缓存中的用户信息
-		RemoveCacheUser(ctx context.Context, userId int)
+		RemoveCache(ctx context.Context, userId int)
 		// 保存用户额度到缓存
-		SaveCacheUserQuota(ctx context.Context, userId int, quota int) error
+		SaveCacheQuota(ctx context.Context, userId int, quota int) error
 		// 获取缓存中的用户额度
-		GetCacheUserQuota(ctx context.Context, userId int) int
+		GetCacheQuota(ctx context.Context, userId int) int
 		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
 	}

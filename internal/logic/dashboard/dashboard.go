@@ -33,9 +33,9 @@ func (s *sDashboard) Subscription(ctx context.Context) (*model.DashboardSubscrip
 
 	if service.Session().GetAppIsLimitQuota(ctx) {
 
-		app, err := service.App().GetApp(ctx, service.Session().GetAppId(ctx))
+		app, err := service.App().GetByAppId(ctx, service.Session().GetAppId(ctx))
 		if err != nil {
-			logger.Errorf(ctx, "sDashboard Subscription GetApp error: %v", err)
+			logger.Errorf(ctx, "sDashboard Subscription GetByAppId error: %v", err)
 			return nil, err
 		}
 
@@ -44,9 +44,9 @@ func (s *sDashboard) Subscription(ctx context.Context) (*model.DashboardSubscrip
 
 	if service.Session().GetKeyIsLimitQuota(ctx) {
 
-		key, err := service.AppKey().GetAppKey(ctx, service.Session().GetSecretKey(ctx))
+		key, err := service.AppKey().GetBySecretKey(ctx, service.Session().GetSecretKey(ctx))
 		if err != nil {
-			logger.Errorf(ctx, "sDashboard Subscription GetAppKey error: %v", err)
+			logger.Errorf(ctx, "sDashboard Subscription GetBySecretKey error: %v", err)
 			return nil, err
 		}
 
@@ -55,9 +55,9 @@ func (s *sDashboard) Subscription(ctx context.Context) (*model.DashboardSubscrip
 
 	if quota == 0 {
 
-		user, err := service.User().GetUser(ctx, service.Session().GetUserId(ctx))
+		user, err := service.User().GetByUserId(ctx, service.Session().GetUserId(ctx))
 		if err != nil {
-			logger.Errorf(ctx, "sDashboard Subscription GetUser error: %v", err)
+			logger.Errorf(ctx, "sDashboard Subscription GetByUserId error: %v", err)
 			return nil, err
 		}
 
@@ -86,9 +86,9 @@ func (s *sDashboard) Usage(ctx context.Context) (*model.DashboardUsageRes, error
 
 	if service.Session().GetAppIsLimitQuota(ctx) {
 
-		app, err := service.App().GetApp(ctx, service.Session().GetAppId(ctx))
+		app, err := service.App().GetByAppId(ctx, service.Session().GetAppId(ctx))
 		if err != nil {
-			logger.Errorf(ctx, "sDashboard Usage GetApp error: %v", err)
+			logger.Errorf(ctx, "sDashboard Usage GetByAppId error: %v", err)
 			return nil, err
 		}
 
@@ -97,9 +97,9 @@ func (s *sDashboard) Usage(ctx context.Context) (*model.DashboardUsageRes, error
 
 	if service.Session().GetKeyIsLimitQuota(ctx) {
 
-		key, err := service.AppKey().GetAppKey(ctx, service.Session().GetSecretKey(ctx))
+		key, err := service.AppKey().GetBySecretKey(ctx, service.Session().GetSecretKey(ctx))
 		if err != nil {
-			logger.Errorf(ctx, "sDashboard Usage GetAppKey error: %v", err)
+			logger.Errorf(ctx, "sDashboard Usage GetBySecretKey error: %v", err)
 			return nil, err
 		}
 
@@ -108,9 +108,9 @@ func (s *sDashboard) Usage(ctx context.Context) (*model.DashboardUsageRes, error
 
 	if usedQuota == 0 {
 
-		user, err := service.User().GetUser(ctx, service.Session().GetUserId(ctx))
+		user, err := service.User().GetByUserId(ctx, service.Session().GetUserId(ctx))
 		if err != nil {
-			logger.Errorf(ctx, "sDashboard Usage GetUser error: %v", err)
+			logger.Errorf(ctx, "sDashboard Usage GetByUserId error: %v", err)
 			return nil, err
 		}
 

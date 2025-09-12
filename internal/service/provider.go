@@ -15,23 +15,23 @@ import (
 type (
 	IProvider interface {
 		// 根据提供商ID获取提供商信息
-		GetProvider(ctx context.Context, id string) (*model.Provider, error)
+		GetById(ctx context.Context, id string) (*model.Provider, error)
 		// 提供商列表
 		List(ctx context.Context) ([]*model.Provider, error)
 		// 根据提供商ID获取提供商信息并保存到缓存
-		GetProviderAndSaveCache(ctx context.Context, id string) (*model.Provider, error)
+		GetAndSaveCache(ctx context.Context, id string) (*model.Provider, error)
 		// 保存提供商到缓存
 		SaveCache(ctx context.Context, provider *model.Provider) error
 		// 保存提供商列表到缓存
 		SaveCacheList(ctx context.Context, providers []*model.Provider) error
 		// 获取缓存中的提供商信息
-		GetCacheProvider(ctx context.Context, id string) (*model.Provider, error)
+		GetCache(ctx context.Context, id string) (*model.Provider, error)
 		// 获取缓存中的提供商列表
 		GetCacheList(ctx context.Context, ids ...string) ([]*model.Provider, error)
 		// 更新缓存中的提供商列表
-		UpdateCacheProvider(ctx context.Context, newData *entity.Provider)
+		UpdateCache(ctx context.Context, newData *entity.Provider)
 		// 移除缓存中的提供商列表
-		RemoveCacheProvider(ctx context.Context, id string)
+		RemoveCache(ctx context.Context, id string)
 		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
 	}

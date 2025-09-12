@@ -17,27 +17,27 @@ func (c *ControllerV1) Models(ctx context.Context, req *v1.ModelsReq) (res *v1.M
 	modelIds := service.Session().GetUser(ctx).Models
 
 	if len(service.Session().GetUser(ctx).Groups) > 0 {
-		ids, err := service.Group().GetGroupsModelIds(ctx, service.Session().GetUser(ctx).Groups...)
+		ids, err := service.Group().GetModelIds(ctx, service.Session().GetUser(ctx).Groups...)
 		if err != nil {
 			return nil, err
 		}
 		modelIds = append(modelIds, ids...)
 	}
 
-	if app, err := service.App().GetCacheApp(ctx, service.Session().GetAppId(ctx)); err != nil {
+	if app, err := service.App().GetCache(ctx, service.Session().GetAppId(ctx)); err != nil {
 		return nil, err
 	} else if len(app.Models) > 0 {
 		modelIds = app.Models
 	} else if app.IsBindGroup {
-		if modelIds, err = service.Group().GetGroupsModelIds(ctx, app.Group); err != nil {
+		if modelIds, err = service.Group().GetModelIds(ctx, app.Group); err != nil {
 			return nil, err
 		}
-	} else if appKey, err := service.AppKey().GetCacheAppKey(ctx, service.Session().GetSecretKey(ctx)); err != nil {
+	} else if appKey, err := service.AppKey().GetCache(ctx, service.Session().GetSecretKey(ctx)); err != nil {
 		return nil, err
 	} else if len(appKey.Models) > 0 {
 		modelIds = appKey.Models
 	} else if appKey.IsBindGroup {
-		if modelIds, err = service.Group().GetGroupsModelIds(ctx, appKey.Group); err != nil {
+		if modelIds, err = service.Group().GetModelIds(ctx, appKey.Group); err != nil {
 			return nil, err
 		}
 	}
@@ -59,7 +59,7 @@ func (c *ControllerV1) Models(ctx context.Context, req *v1.ModelsReq) (res *v1.M
 
 			if m.Status == 1 && ids.AddIfNotExist(m.Model) {
 
-				provider, err := service.Provider().GetCacheProvider(ctx, m.ProviderId)
+				provider, err := service.Provider().GetCache(ctx, m.ProviderId)
 				if err != nil {
 					return nil, err
 				}

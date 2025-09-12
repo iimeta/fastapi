@@ -31,11 +31,11 @@ func New() service.IProvider {
 }
 
 // 根据提供商ID获取提供商信息
-func (s *sProvider) GetProvider(ctx context.Context, id string) (*model.Provider, error) {
+func (s *sProvider) GetById(ctx context.Context, id string) (*model.Provider, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sProvider GetProvider time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sProvider GetById time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	provider, err := dao.Provider.FindById(ctx, id)
@@ -84,14 +84,14 @@ func (s *sProvider) List(ctx context.Context) ([]*model.Provider, error) {
 }
 
 // 根据提供商ID获取提供商信息并保存到缓存
-func (s *sProvider) GetProviderAndSaveCache(ctx context.Context, id string) (*model.Provider, error) {
+func (s *sProvider) GetAndSaveCache(ctx context.Context, id string) (*model.Provider, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sProvider GetProviderAndSaveCache time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sProvider GetAndSaveCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	provider, err := s.GetProvider(ctx, id)
+	provider, err := s.GetById(ctx, id)
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -137,11 +137,11 @@ func (s *sProvider) SaveCacheList(ctx context.Context, providers []*model.Provid
 }
 
 // 获取缓存中的提供商信息
-func (s *sProvider) GetCacheProvider(ctx context.Context, id string) (*model.Provider, error) {
+func (s *sProvider) GetCache(ctx context.Context, id string) (*model.Provider, error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sProvider GetCacheProvider time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sProvider GetCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	providers, err := s.GetCacheList(ctx, id)
@@ -180,11 +180,11 @@ func (s *sProvider) GetCacheList(ctx context.Context, ids ...string) ([]*model.P
 }
 
 // 更新缓存中的提供商列表
-func (s *sProvider) UpdateCacheProvider(ctx context.Context, newData *entity.Provider) {
+func (s *sProvider) UpdateCache(ctx context.Context, newData *entity.Provider) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sProvider UpdateCacheProvider time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sProvider UpdateCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	provider := &model.Provider{
@@ -201,11 +201,11 @@ func (s *sProvider) UpdateCacheProvider(ctx context.Context, newData *entity.Pro
 }
 
 // 移除缓存中的提供商列表
-func (s *sProvider) RemoveCacheProvider(ctx context.Context, id string) {
+func (s *sProvider) RemoveCache(ctx context.Context, id string) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sProvider RemoveCacheProvider time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sProvider RemoveCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if _, err := s.providerCache.Remove(ctx, id); err != nil {
@@ -237,7 +237,7 @@ func (s *sProvider) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		s.UpdateCacheProvider(ctx, provider)
+		s.UpdateCache(ctx, provider)
 
 	case consts.ACTION_DELETE:
 
@@ -246,7 +246,7 @@ func (s *sProvider) Subscribe(ctx context.Context, msg string) error {
 			return err
 		}
 
-		s.RemoveCacheProvider(ctx, provider.Id)
+		s.RemoveCache(ctx, provider.Id)
 	}
 
 	return nil

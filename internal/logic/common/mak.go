@@ -49,21 +49,21 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 	}
 
 	if mak.User == nil {
-		if mak.User, err = service.User().GetCacheUser(ctx, service.Session().GetUserId(ctx)); err != nil {
+		if mak.User, err = service.User().GetCache(ctx, service.Session().GetUserId(ctx)); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
 	}
 
 	if mak.App == nil {
-		if mak.App, err = service.App().GetCacheApp(ctx, service.Session().GetAppId(ctx)); err != nil {
+		if mak.App, err = service.App().GetCache(ctx, service.Session().GetAppId(ctx)); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
 	}
 
 	if mak.AppKey == nil {
-		if mak.AppKey, err = service.AppKey().GetCacheAppKey(ctx, service.Session().GetSecretKey(ctx)); err != nil {
+		if mak.AppKey, err = service.AppKey().GetCache(ctx, service.Session().GetSecretKey(ctx)); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -72,7 +72,7 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 	if mak.Group == nil {
 		if len(mak.User.Groups) > 0 && !mak.AppKey.IsBindGroup && !mak.App.IsBindGroup {
 
-			if mak.ReqModel, mak.Group, err = service.Group().PickGroupModel(ctx, mak.Model, mak.User.Groups...); err != nil {
+			if mak.ReqModel, mak.Group, err = service.Group().PickGroupAndModel(ctx, mak.Model, mak.User.Groups...); err != nil {
 				logger.Error(ctx, err)
 				return err
 			}
@@ -85,7 +85,7 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 				return err
 			}
 
-			if mak.Group, err = service.Group().GetCacheGroup(ctx, mak.AppKey.Group); err != nil {
+			if mak.Group, err = service.Group().GetCache(ctx, mak.AppKey.Group); err != nil {
 				logger.Error(ctx, err)
 				return err
 			}
@@ -98,7 +98,7 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 				return err
 			}
 
-			if mak.Group, err = service.Group().GetCacheGroup(ctx, mak.App.Group); err != nil {
+			if mak.Group, err = service.Group().GetCache(ctx, mak.App.Group); err != nil {
 				logger.Error(ctx, err)
 				return err
 			}
@@ -125,7 +125,7 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 			return err
 		}
 
-		if mak.Group.IsLimitQuota && service.Group().GetCacheGroupQuota(ctx, mak.Group.Id) <= 0 {
+		if mak.Group.IsLimitQuota && service.Group().GetCacheQuota(ctx, mak.Group.Id) <= 0 {
 			err = errors.ERR_GROUP_INSUFFICIENT_QUOTA
 			logger.Error(ctx, err)
 			return err
@@ -143,14 +143,14 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 	}
 
 	if mak.Group != nil && mak.ReqModel != nil {
-		if app, err := service.App().GetCacheApp(ctx, service.Session().GetAppId(ctx)); err != nil {
+		if app, err := service.App().GetCache(ctx, service.Session().GetAppId(ctx)); err != nil {
 			logger.Error(ctx, err)
 			return err
 		} else if len(app.Models) > 0 && !slices.Contains(app.Models, mak.ReqModel.Id) {
 			err = errors.ERR_MODEL_NOT_FOUND
 			logger.Info(ctx, err)
 			return err
-		} else if appKey, err := service.AppKey().GetCacheAppKey(ctx, service.Session().GetSecretKey(ctx)); err != nil {
+		} else if appKey, err := service.AppKey().GetCache(ctx, service.Session().GetSecretKey(ctx)); err != nil {
 			logger.Error(ctx, err)
 			return err
 		} else if len(appKey.Models) > 0 && !slices.Contains(appKey.Models, mak.ReqModel.Id) {
@@ -190,7 +190,7 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 	mak.Path = mak.RealModel.Path
 
 	if mak.Group != nil && mak.Group.IsEnableModelAgent {
-		if mak.AgentTotal, mak.ModelAgent, err = service.ModelAgent().PickGroupModelAgent(ctx, mak.RealModel, mak.Group); err != nil {
+		if mak.AgentTotal, mak.ModelAgent, err = service.ModelAgent().PickGroup(ctx, mak.RealModel, mak.Group); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -202,13 +202,13 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 			mak.RealModel.IsEnableModelAgent = true
 		} else {
 
-			if mak.AgentTotal, mak.ModelAgent, err = service.ModelAgent().PickModelAgent(ctx, mak.RealModel); err != nil {
+			if mak.AgentTotal, mak.ModelAgent, err = service.ModelAgent().Pick(ctx, mak.RealModel); err != nil {
 				logger.Error(ctx, err)
 
 				if mak.RealModel.IsEnableFallback {
 
 					if mak.RealModel.FallbackConfig.ModelAgent != "" {
-						if mak.FallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, mak.RealModel); mak.FallbackModelAgent != nil {
+						if mak.FallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); mak.FallbackModelAgent != nil {
 							return mak.InitMAK(ctx)
 						}
 					}
@@ -231,19 +231,19 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 		mak.BaseUrl = mak.ModelAgent.BaseUrl
 		mak.Path = mak.ModelAgent.Path
 
-		if mak.KeyTotal, mak.Key, err = service.ModelAgent().PickModelAgentKey(ctx, mak.ModelAgent); err != nil {
+		if mak.KeyTotal, mak.Key, err = service.ModelAgent().PickKey(ctx, mak.ModelAgent); err != nil {
 			logger.Error(ctx, err)
 
-			service.ModelAgent().RecordErrorModelAgent(ctx, mak.RealModel, mak.ModelAgent)
+			service.ModelAgent().RecordError(ctx, mak.RealModel, mak.ModelAgent)
 
 			if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY) {
-				service.ModelAgent().DisabledModelAgent(ctx, mak.ModelAgent, "No available model agent key")
+				service.ModelAgent().Disabled(ctx, mak.ModelAgent, "No available model agent key")
 			}
 
 			if mak.RealModel.IsEnableFallback {
 
 				if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
-					if mak.FallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, mak.RealModel); mak.FallbackModelAgent != nil {
+					if mak.FallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); mak.FallbackModelAgent != nil {
 						return mak.InitMAK(ctx)
 					}
 				}
@@ -260,13 +260,13 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 
 	} else {
 
-		if mak.KeyTotal, mak.Key, err = service.Key().PickModelKey(ctx, mak.RealModel); err != nil {
+		if mak.KeyTotal, mak.Key, err = service.Key().Pick(ctx, mak.RealModel); err != nil {
 			logger.Error(ctx, err)
 
 			if mak.RealModel.IsEnableFallback {
 
 				if mak.RealModel.FallbackConfig.ModelAgent != "" {
-					if mak.FallbackModelAgent, _ = service.ModelAgent().GetFallbackModelAgent(ctx, mak.RealModel); mak.FallbackModelAgent != nil {
+					if mak.FallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); mak.FallbackModelAgent != nil {
 						return mak.InitMAK(ctx)
 					}
 				}
@@ -293,9 +293,9 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 		if isDisabled {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 				if mak.RealModel.IsEnableModelAgent {
-					service.ModelAgent().DisabledModelAgentKey(ctx, mak.Key, err.Error())
+					service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
 				} else {
-					service.Key().DisabledModelKey(ctx, mak.Key, err.Error())
+					service.Key().Disabled(ctx, mak.Key, err.Error())
 				}
 			}, nil); err != nil {
 				logger.Error(ctx, err)
