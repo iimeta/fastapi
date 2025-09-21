@@ -133,12 +133,11 @@ curl --location 'https://api.fastapi.ai/v1/chat/completions' \
 | 主库 | [fastapi](https://github.com/iimeta/fastapi) | [fastapi-web](https://github.com/iimeta/fastapi-web) | [fastapi-admin](https://github.com/iimeta/fastapi-admin) | [fastapi-sdk](https://github.com/iimeta/fastapi-sdk) |
 | 码云 | [fastapi](https://gitee.com/iimeta/fastapi)  | [fastapi-web](https://gitee.com/iimeta/fastapi-web)  | [fastapi-admin](https://gitee.com/iimeta/fastapi-admin)  | [fastapi-sdk](https://gitee.com/iimeta/fastapi-sdk)  |
 
-## 作者
+## 作者 / 交流群
 
-<img src="https://iim.ai/public/images/Author.png?t=20231207" width="320" alt="作者"/>
-
-## 交流群
-
-<img src="https://iim.ai/public/images/WeChatGroup.jpg?t=20250914" width="320" alt="交流群"/>
+<center>
+  <img src="https://iim.ai/public/images/Author.png?t=20231207" width="320" alt="作者"/>
+  <img src="https://iim.ai/public/images/WeChatGroup.jpg?t=20250921" width="320" alt="交流群"/>
+</center>
 
 ![Star History Chart](https://api.star-history.com/svg?repos=iimeta/fastapi&type=Date)
