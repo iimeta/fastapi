@@ -7,11 +7,12 @@ type Model struct {
 	ProviderId           string                      `json:"provider_id,omitempty"`             // 提供商ID
 	Name                 string                      `json:"name,omitempty"`                    // 模型名称
 	Model                string                      `json:"model,omitempty"`                   // 模型
-	Type                 int                         `json:"type,omitempty"`                    // 模型类型[1:文生文, 2:文生图, 3:图生文, 4:图生图, 5:文生语音, 6:语音生文, 100:多模态, 101:多模态实时, 102:多模态语音]
+	Type                 int                         `json:"type,omitempty"`                    // 模型类型[1:文生文, 2:文生图, 3:图生文, 4:图生图, 5:文生语音, 6:语音生文, 7:文本向量化, 100:多模态, 101:多模态实时, 102:多模态语音, 103:多模态向量化]
 	BaseUrl              string                      `json:"base_url,omitempty"`                // 模型地址
 	Path                 string                      `json:"path,omitempty"`                    // 模型路径
 	IsEnablePresetConfig bool                        `json:"is_enable_preset_config,omitempty"` // 是否启用预设配置
 	PresetConfig         common.PresetConfig         `json:"preset_config,omitempty"`           // 预设配置
+	Pricing              common.Pricing              `json:"pricing,omitempty"`                 // 定价
 	TextQuota            common.TextQuota            `json:"text_quota,omitempty"`              // 文本额度
 	ImageQuota           common.ImageQuota           `json:"image_quota,omitempty"`             // 图像额度
 	AudioQuota           common.AudioQuota           `json:"audio_quota,omitempty"`             // 音频额度

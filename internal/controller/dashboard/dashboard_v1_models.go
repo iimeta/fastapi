@@ -88,6 +88,7 @@ func (c *ControllerV1) Models(ctx context.Context, req *v1.ModelsReq) (res *v1.M
 						Code:                 provider.Code,
 						Model:                m.Model,
 						Type:                 m.Type,
+						Pricing:              m.Pricing,
 						TextQuota:            m.TextQuota,
 						ImageQuota:           m.ImageQuota,
 						AudioQuota:           m.AudioQuota,
