@@ -80,25 +80,27 @@ type OncePricing struct {
 	OnceRatio float64 `bson:"once_ratio,omitempty" json:"once_ratio,omitempty"` // 一次倍率
 }
 
-type UsageSpend struct {
-	ChatCompletionRequest smodel.ChatCompletionRequest
-	Completion            string
-	Usage                 *smodel.Usage
+type SpendContent struct {
+	ChatCompletionRequest  smodel.ChatCompletionRequest
+	ImageGenerationRequest smodel.ImageGenerationRequest
+	Completion             string
+	Usage                  *smodel.Usage
 }
 
-type UsageSpendTokens struct {
-	TextTokens            int // 文本
-	TextCacheTokens       int // 文本缓存
-	TieredTextTokens      int // 阶梯文本
-	TieredTextCacheTokens int // 阶梯文本缓存
-	ImageTokens           int // 图像
-	ImageGenerationTokens int // 图像生成
-	ImageCacheTokens      int // 图像缓存
-	VisionTokens          int // 识图
-	AudioTokens           int // 音频
-	AudioCacheTokens      int // 音频缓存
-	SearchTokens          int // 搜索
-	MidjourneyTokens      int // Midjourney
-	OnceTokens            int // 一次
-	TotalTokens           int // 总
+type SpendTokens struct {
+	TextTokens             int                    // 文本
+	TextCacheTokens        int                    // 文本缓存
+	TieredTextTokens       int                    // 阶梯文本
+	TieredTextCacheTokens  int                    // 阶梯文本缓存
+	ImageTokens            int                    // 图像
+	ImageGenerationTokens  int                    // 图像生成
+	ImageGenerationPricing ImageGenerationPricing // 图像生成价格
+	ImageCacheTokens       int                    // 图像缓存
+	VisionTokens           int                    // 识图
+	AudioTokens            int                    // 音频
+	AudioCacheTokens       int                    // 音频缓存
+	SearchTokens           int                    // 搜索
+	MidjourneyTokens       int                    // Midjourney
+	OnceTokens             int                    // 一次
+	TotalTokens            int                    // 总
 }
