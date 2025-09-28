@@ -125,12 +125,3 @@ type SearchQuota struct {
 	FixedQuota        int    `bson:"fixed_quota,omitempty"         json:"fixed_quota,omitempty"`         // 固定额度
 	IsDefault         bool   `bson:"is_default,omitempty"          json:"is_default,omitempty"`          // 是否默认选项
 }
-
-type UsageSpend struct {
-	TextTokens   int
-	ImageTokens  int
-	AudioTokens  int
-	SearchTokens int
-	TotalTokens  int
-	Usage        *smodel.Usage
-}

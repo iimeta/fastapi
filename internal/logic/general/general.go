@@ -75,8 +75,14 @@ func (s *sGeneral) General(ctx context.Context, request *ghttp.Request, fallback
 				}
 			}
 
-			usageSpend := common.ChatUsageSpend(ctx, params, completion, response.Usage, mak)
-			totalTokens = usageSpend.TotalTokens
+			usageSpend := &mcommon.UsageSpend{
+				ChatCompletionRequest: params,
+				Completion:            completion,
+				Usage:                 response.Usage,
+			}
+
+			usageSpendTokens := common.ChatUsageSpend(ctx, usageSpend, mak)
+			totalTokens = usageSpendTokens.TotalTokens
 			response.Usage = usageSpend.Usage
 
 			// 分组折扣
@@ -287,8 +293,14 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 			if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
-				usageSpend := common.ChatUsageSpend(ctx, params, completion, usage, mak)
-				totalTokens = usageSpend.TotalTokens
+				usageSpend := &mcommon.UsageSpend{
+					ChatCompletionRequest: params,
+					Completion:            completion,
+					Usage:                 usage,
+				}
+
+				usageSpendTokens := common.ChatUsageSpend(ctx, usageSpend, mak)
+				totalTokens = usageSpendTokens.TotalTokens
 				usage = usageSpend.Usage
 
 				// 分组折扣
