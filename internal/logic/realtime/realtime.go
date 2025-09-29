@@ -525,15 +525,6 @@ func (s *sRealtime) SaveLog(ctx context.Context, chatLog model.ChatLog, retry ..
 		chat.ModelName = chatLog.ReqModel.Name
 		chat.Model = chatLog.ReqModel.Model
 		chat.ModelType = chatLog.ReqModel.Type
-		chat.RealtimeQuota = chatLog.ReqModel.RealtimeQuota
-		if chatLog.CompletionsRes.Type == "text" {
-			chat.TextQuota = chatLog.ReqModel.RealtimeQuota.TextQuota
-		} else {
-			chat.TextQuota.BillingMethod = chatLog.ReqModel.RealtimeQuota.AudioQuota.BillingMethod
-			chat.TextQuota.PromptRatio = chatLog.ReqModel.RealtimeQuota.AudioQuota.PromptRatio
-			chat.TextQuota.CompletionRatio = chatLog.ReqModel.RealtimeQuota.AudioQuota.CompletionRatio
-			chat.TextQuota.FixedQuota = chatLog.ReqModel.RealtimeQuota.AudioQuota.FixedQuota
-		}
 	}
 
 	if chatLog.RealModel != nil {

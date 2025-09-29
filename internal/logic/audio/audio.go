@@ -444,7 +444,6 @@ func (s *sAudio) SaveLog(ctx context.Context, audioLog model.AudioLog, retry ...
 		audio.ModelName = audioLog.ReqModel.Name
 		audio.Model = audioLog.ReqModel.Model
 		audio.ModelType = audioLog.ReqModel.Type
-		audio.AudioQuota = audioLog.ReqModel.AudioQuota
 	}
 
 	if audioLog.RealModel != nil {

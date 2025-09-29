@@ -37,7 +37,6 @@ type Audio struct {
 	Text                 string                 `bson:"text,omitempty"`                    // 输出文本
 	Characters           int                    `bson:"characters,omitempty"`              // 字符数
 	Minute               float64                `bson:"minute,omitempty"`                  // 分钟数
-	AudioQuota           common.AudioQuota      `bson:"audio_quota,omitempty"`             // 音频额度
 	FilePath             string                 `bson:"file_path,omitempty"`               // 文件路径
 	TotalTokens          int                    `bson:"total_tokens,omitempty"`            // 总令牌数
 	TotalTime            int64                  `bson:"total_time,omitempty"`              // 总时间

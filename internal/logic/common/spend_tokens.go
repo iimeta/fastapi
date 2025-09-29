@@ -11,7 +11,6 @@ import (
 	"github.com/iimeta/fastapi-sdk/tiktoken"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/model/common"
-	"github.com/iimeta/fastapi/utility/logger"
 )
 
 func SpendTokens(ctx context.Context, mak *MAK, billingData *common.BillingData, billingItems ...string) (spendTokens common.SpendTokens) {
@@ -93,42 +92,25 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData) (textT
 			if multiContent, ok := billingData.ChatCompletionRequest.Messages[len(billingData.ChatCompletionRequest.Messages)-1].Content.([]interface{}); ok {
 
 				for _, value := range multiContent {
-
 					if content, ok := value.(map[string]interface{}); ok {
-
 						if content["type"] == "text" {
-							if tokens, err := tiktoken.NumTokensFromString(model, gconv.String(content)); err != nil {
-								logger.Errorf(ctx, "SpendTokens NumTokensFromString model: %s, content: %s, error: %v", model, gconv.String(content), err)
-								if tokens, err = tiktoken.NumTokensFromString(consts.DEFAULT_MODEL, gconv.String(content)); err != nil {
-									logger.Errorf(ctx, "SpendTokens NumTokensFromString model: %s, content: %s, error: %v", consts.DEFAULT_MODEL, gconv.String(content), err)
-								}
-							} else {
-								billingData.Usage.PromptTokens += tokens
-							}
+							billingData.Usage.PromptTokens += TokensFromString(ctx, mak.ReqModel.Model, gconv.String(content))
 						}
-
 					} else {
-						if tokens, err := tiktoken.NumTokensFromString(model, gconv.String(value)); err != nil {
-							logger.Errorf(ctx, "SpendTokens NumTokensFromString model: %s, value: %s, error: %v", model, gconv.String(value), err)
-							if tokens, err = tiktoken.NumTokensFromString(consts.DEFAULT_MODEL, gconv.String(value)); err != nil {
-								logger.Errorf(ctx, "SpendTokens NumTokensFromString model: %s, value: %s, error: %v", consts.DEFAULT_MODEL, gconv.String(value), err)
-							}
-						} else {
-							billingData.Usage.PromptTokens += tokens
-						}
+						billingData.Usage.PromptTokens += TokensFromString(ctx, mak.ReqModel.Model, gconv.String(value))
 					}
 				}
 
 			} else {
-				billingData.Usage.PromptTokens = GetPromptTokens(ctx, model, billingData.ChatCompletionRequest.Messages)
+				billingData.Usage.PromptTokens = TokensFromMessages(ctx, model, billingData.ChatCompletionRequest.Messages)
 			}
 
 		} else {
-			billingData.Usage.PromptTokens = GetPromptTokens(ctx, model, billingData.ChatCompletionRequest.Messages)
+			billingData.Usage.PromptTokens = TokensFromMessages(ctx, model, billingData.ChatCompletionRequest.Messages)
 		}
 
 		if billingData.Completion != "" {
-			billingData.Usage.CompletionTokens = GetCompletionTokens(ctx, model, billingData.Completion)
+			billingData.Usage.CompletionTokens = TokensFromString(ctx, model, billingData.Completion)
 		}
 	}
 
@@ -168,14 +150,19 @@ func textCache(ctx context.Context, mak *MAK, billingData *common.BillingData) (
 // 阶梯文本
 func tieredText(ctx context.Context, mak *MAK, billingData *common.BillingData) (tieredTextTokens int) {
 
-	for _, tieredText := range mak.ReqModel.Pricing.TieredText {
+	if billingData.Usage.PromptTokens+billingData.Usage.CompletionTokens == 0 {
+		return
+	}
+
+	for i, tieredText := range mak.ReqModel.Pricing.TieredText {
 
 		if billingData.Usage.PromptTokens > tieredText.Gt && billingData.Usage.PromptTokens <= tieredText.Lte {
-			tieredTextTokens += int(math.Ceil(float64(billingData.Usage.PromptTokens) * tieredText.InputRatio))
+			tieredTextTokens = int(math.Ceil(float64(billingData.Usage.PromptTokens)*tieredText.InputRatio)) + int(math.Ceil(float64(billingData.Usage.CompletionTokens)*tieredText.OutputRatio))
+			break
 		}
 
-		if billingData.Usage.CompletionTokens > tieredText.Gt && billingData.Usage.CompletionTokens <= tieredText.Lte {
-			tieredTextTokens += int(math.Ceil(float64(billingData.Usage.CompletionTokens) * tieredText.OutputRatio))
+		if i == len(mak.ReqModel.Pricing.TieredText)-1 {
+			tieredTextTokens = int(math.Ceil(float64(billingData.Usage.PromptTokens)*tieredText.InputRatio)) + int(math.Ceil(float64(billingData.Usage.CompletionTokens)*tieredText.OutputRatio))
 		}
 	}
 
@@ -185,14 +172,18 @@ func tieredText(ctx context.Context, mak *MAK, billingData *common.BillingData) 
 // 阶梯文本缓存
 func tieredTextCache(ctx context.Context, mak *MAK, billingData *common.BillingData) (tieredTextCacheTokens int) {
 
-	for _, tieredTextCache := range mak.ReqModel.Pricing.TieredTextCache {
+	if billingData.Usage.CacheReadInputTokens+billingData.Usage.CacheCreationInputTokens == 0 {
+		return
+	}
 
-		if billingData.Usage.CacheReadInputTokens > tieredTextCache.Gt && billingData.Usage.CacheReadInputTokens <= tieredTextCache.Lte {
-			tieredTextCacheTokens += int(math.Ceil(float64(billingData.Usage.CacheReadInputTokens) * tieredTextCache.ReadRatio))
+	for i, tieredTextCache := range mak.ReqModel.Pricing.TieredTextCache {
+
+		if billingData.Usage.PromptTokens > tieredTextCache.Gt && billingData.Usage.PromptTokens <= tieredTextCache.Lte {
+			tieredTextCacheTokens = int(math.Ceil(float64(billingData.Usage.CacheReadInputTokens)*tieredTextCache.ReadRatio)) + int(math.Ceil(float64(billingData.Usage.CacheCreationInputTokens)*tieredTextCache.WriteRatio))
 		}
 
-		if billingData.Usage.CacheCreationInputTokens > tieredTextCache.Gt && billingData.Usage.CacheCreationInputTokens <= tieredTextCache.Lte {
-			tieredTextCacheTokens += int(math.Ceil(float64(billingData.Usage.CacheCreationInputTokens) * tieredTextCache.WriteRatio))
+		if i == len(mak.ReqModel.Pricing.TieredTextCache)-1 {
+			tieredTextCacheTokens = int(math.Ceil(float64(billingData.Usage.CacheReadInputTokens)*tieredTextCache.ReadRatio)) + int(math.Ceil(float64(billingData.Usage.CacheCreationInputTokens)*tieredTextCache.WriteRatio))
 		}
 	}
 

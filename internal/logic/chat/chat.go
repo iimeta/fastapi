@@ -824,16 +824,6 @@ func (s *sChat) SaveLog(ctx context.Context, chatLog model.ChatLog, retry ...int
 		chat.ModelName = chatLog.ReqModel.Name
 		chat.Model = chatLog.ReqModel.Model
 		chat.ModelType = chatLog.ReqModel.Type
-		chat.TextQuota = chatLog.ReqModel.TextQuota
-		chat.MultimodalQuota = chatLog.ReqModel.MultimodalQuota
-		chat.MultimodalAudioQuota = chatLog.ReqModel.MultimodalAudioQuota
-
-		if chatLog.ReqModel.Type == 102 {
-			chat.TextQuota.BillingMethod = chatLog.ReqModel.MultimodalAudioQuota.AudioQuota.BillingMethod
-			chat.TextQuota.PromptRatio = chatLog.ReqModel.MultimodalAudioQuota.AudioQuota.PromptRatio
-			chat.TextQuota.CompletionRatio = chatLog.ReqModel.MultimodalAudioQuota.AudioQuota.CompletionRatio
-			chat.TextQuota.FixedQuota = chatLog.ReqModel.MultimodalAudioQuota.AudioQuota.FixedQuota
-		}
 	}
 
 	if chatLog.RealModel != nil {

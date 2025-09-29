@@ -276,8 +276,6 @@ func (s *sModeration) SaveLog(ctx context.Context, chatLog model.ChatLog, retry 
 		chat.ModelName = chatLog.ReqModel.Name
 		chat.Model = chatLog.ReqModel.Model
 		chat.ModelType = chatLog.ReqModel.Type
-		chat.TextQuota = chatLog.ReqModel.TextQuota
-		chat.MultimodalQuota = chatLog.ReqModel.MultimodalQuota
 	}
 
 	if chatLog.RealModel != nil {

@@ -245,9 +245,8 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		generationQuota mcommon.GenerationQuota
-		retryInfo       *mcommon.Retry
-		totalTokens     int
+		retryInfo   *mcommon.Retry
+		totalTokens int
 	)
 
 	defer func() {
@@ -285,13 +284,12 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				imageRes := &model.ImageRes{
-					Created:         response.Created,
-					Data:            response.Data,
-					TotalTime:       response.TotalTime,
-					Error:           err,
-					InternalTime:    internalTime,
-					EnterTime:       enterTime,
-					GenerationQuota: generationQuota,
+					Created:      response.Created,
+					Data:         response.Data,
+					TotalTime:    response.TotalTime,
+					Error:        err,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
 				}
 
 				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
@@ -449,31 +447,30 @@ func (s *sImage) SaveLog(ctx context.Context, imageLog model.ImageLog, retry ...
 	}
 
 	image := do.Image{
-		TraceId:         gctx.CtxId(ctx),
-		UserId:          service.Session().GetUserId(ctx),
-		AppId:           service.Session().GetAppId(ctx),
-		Prompt:          imageLog.ImageReq.Prompt,
-		Size:            imageLog.ImageReq.Size,
-		N:               imageLog.ImageReq.N,
-		Quality:         imageLog.ImageReq.Quality,
-		Style:           imageLog.ImageReq.Style,
-		ResponseFormat:  imageLog.ImageReq.ResponseFormat,
-		GenerationQuota: imageLog.ImageRes.GenerationQuota,
-		InputTokens:     imageLog.ImageRes.Usage.InputTokens,
-		OutputTokens:    imageLog.ImageRes.Usage.OutputTokens,
-		TextTokens:      imageLog.ImageRes.Usage.InputTokensDetails.TextTokens,
-		ImageTokens:     imageLog.ImageRes.Usage.InputTokensDetails.ImageTokens,
-		TotalTokens:     imageLog.ImageRes.Usage.TotalTokens,
-		TotalTime:       imageLog.ImageRes.TotalTime,
-		InternalTime:    imageLog.ImageRes.InternalTime,
-		ReqTime:         imageLog.ImageRes.EnterTime,
-		ReqDate:         gtime.NewFromTimeStamp(imageLog.ImageRes.EnterTime).Format("Y-m-d"),
-		ClientIp:        g.RequestFromCtx(ctx).GetClientIp(),
-		RemoteIp:        g.RequestFromCtx(ctx).GetRemoteIp(),
-		LocalIp:         util.GetLocalIp(),
-		Status:          1,
-		Host:            g.RequestFromCtx(ctx).GetHost(),
-		Rid:             service.Session().GetRid(ctx),
+		TraceId:        gctx.CtxId(ctx),
+		UserId:         service.Session().GetUserId(ctx),
+		AppId:          service.Session().GetAppId(ctx),
+		Prompt:         imageLog.ImageReq.Prompt,
+		Size:           imageLog.ImageReq.Size,
+		N:              imageLog.ImageReq.N,
+		Quality:        imageLog.ImageReq.Quality,
+		Style:          imageLog.ImageReq.Style,
+		ResponseFormat: imageLog.ImageReq.ResponseFormat,
+		InputTokens:    imageLog.ImageRes.Usage.InputTokens,
+		OutputTokens:   imageLog.ImageRes.Usage.OutputTokens,
+		TextTokens:     imageLog.ImageRes.Usage.InputTokensDetails.TextTokens,
+		ImageTokens:    imageLog.ImageRes.Usage.InputTokensDetails.ImageTokens,
+		TotalTokens:    imageLog.ImageRes.Usage.TotalTokens,
+		TotalTime:      imageLog.ImageRes.TotalTime,
+		InternalTime:   imageLog.ImageRes.InternalTime,
+		ReqTime:        imageLog.ImageRes.EnterTime,
+		ReqDate:        gtime.NewFromTimeStamp(imageLog.ImageRes.EnterTime).Format("Y-m-d"),
+		ClientIp:       g.RequestFromCtx(ctx).GetClientIp(),
+		RemoteIp:       g.RequestFromCtx(ctx).GetRemoteIp(),
+		LocalIp:        util.GetLocalIp(),
+		Status:         1,
+		Host:           g.RequestFromCtx(ctx).GetHost(),
+		Rid:            service.Session().GetRid(ctx),
 	}
 
 	if imageLog.Group != nil {
@@ -496,7 +493,6 @@ func (s *sImage) SaveLog(ctx context.Context, imageLog model.ImageLog, retry ...
 		image.ModelName = imageLog.ReqModel.Name
 		image.Model = imageLog.ReqModel.Model
 		image.ModelType = imageLog.ReqModel.Type
-		image.ImageQuota = imageLog.ReqModel.ImageQuota
 	}
 
 	if imageLog.RealModel != nil {

@@ -491,7 +491,6 @@ func (s *sMidjourney) SaveLog(ctx context.Context, midjourneyLog model.Midjourne
 		midjourney.ModelName = midjourneyLog.ReqModel.Name
 		midjourney.Model = midjourneyLog.ReqModel.Model
 		midjourney.ModelType = midjourneyLog.ReqModel.Type
-		midjourney.MidjourneyQuotas = midjourneyLog.ReqModel.MidjourneyQuotas
 	}
 
 	if midjourneyLog.RealModel != nil {
