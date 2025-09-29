@@ -67,11 +67,12 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
-			if mak.ReqModel.AudioQuota.BillingMethod == 1 {
-				totalTokens = int(math.Ceil(float64(len(params.Input)) * mak.ReqModel.AudioQuota.PromptRatio))
-			} else {
-				totalTokens = mak.ReqModel.AudioQuota.FixedQuota
+			billingData := &mcommon.BillingData{
+				AudioInput: params.Input,
 			}
+
+			spendTokens := common.SpendTokens(ctx, mak, billingData)
+			totalTokens = spendTokens.TotalTokens
 
 			// 分组折扣
 			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
@@ -244,11 +245,12 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 				response.Duration = params.Duration
 			}
 
-			if mak.ReqModel.AudioQuota.BillingMethod == 1 {
-				totalTokens = int(math.Ceil(minute * 1000 * mak.ReqModel.AudioQuota.CompletionRatio))
-			} else {
-				totalTokens = mak.ReqModel.AudioQuota.FixedQuota
+			billingData := &mcommon.BillingData{
+				AudioMinute: minute,
 			}
+
+			spendTokens := common.SpendTokens(ctx, mak, billingData)
+			totalTokens = spendTokens.TotalTokens
 
 			// 分组折扣
 			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {

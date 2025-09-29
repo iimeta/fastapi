@@ -69,15 +69,20 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
-		if mak.ReqModel != nil && response.Usage != nil {
-			if mak.ReqModel.TextQuota.BillingMethod == 1 {
-				totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*mak.ReqModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*mak.ReqModel.TextQuota.CompletionRatio))
-			} else {
-				totalTokens = mak.ReqModel.TextQuota.FixedQuota
-			}
-		}
-
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
+
+			billingData := &mcommon.BillingData{
+				EmbeddingRequest: params,
+				Usage:            response.Usage,
+			}
+
+			if len(response.Data) > 0 {
+				billingData.Completion = gconv.String(response.Data[0])
+			}
+
+			spendTokens := common.SpendTokens(ctx, mak, billingData)
+			totalTokens = spendTokens.TotalTokens
+			response.Usage = billingData.Usage
 
 			// 替换成调用的模型
 			if mak.ReqModel.IsEnableForward {

@@ -27,16 +27,16 @@ type TextPricing struct {
 	InputRatio  float64 `bson:"input_ratio,omitempty"  json:"input_ratio,omitempty"`  // 输入倍率
 	OutputRatio float64 `bson:"output_ratio,omitempty" json:"output_ratio,omitempty"` // 输出倍率
 	Mode        string  `bson:"mode,omitempty"         json:"mode,omitempty"`         // 模式[all:全部, thinking:思考, non_thinking:非思考]
-	InputGt     int     `bson:"input_gt,omitempty"     json:"input_gt,omitempty"`     // 输入大于, 单位: k
-	InputLte    int     `bson:"input_lte,omitempty"    json:"input_lte,omitempty"`    // 输入小于等于, 单位: k
+	Gt          int     `bson:"gt,omitempty"           json:"gt,omitempty"`           // 大于, 单位: k
+	Lte         int     `bson:"lte,omitempty"          json:"lte,omitempty"`          // 小于等于, 单位: k
 }
 
 type CachePricing struct {
 	ReadRatio  float64 `bson:"read_ratio,omitempty"  json:"read_ratio,omitempty"`  // 读取/命中倍率
 	WriteRatio float64 `bson:"write_ratio,omitempty" json:"write_ratio,omitempty"` // 写入倍率
 	Mode       string  `bson:"mode,omitempty"        json:"mode,omitempty"`        // 模式[all:全部, thinking:思考, non_thinking:非思考]
-	InputGt    int     `bson:"input_gt,omitempty"    json:"input_gt,omitempty"`    // 输入大于, 单位: k
-	InputLte   int     `bson:"input_lte,omitempty"   json:"input_lte,omitempty"`   // 输入小于等于, 单位: k
+	Gt         int     `bson:"gt,omitempty"          json:"gt,omitempty"`          // 大于, 单位: k
+	Lte        int     `bson:"lte,omitempty"         json:"lte,omitempty"`         // 小于等于, 单位: k
 }
 
 type ImagePricing struct {
@@ -80,10 +80,16 @@ type OncePricing struct {
 	OnceRatio float64 `bson:"once_ratio,omitempty" json:"once_ratio,omitempty"` // 一次倍率
 }
 
-type SpendContent struct {
+type BillingData struct {
+	Path                   string
 	ChatCompletionRequest  smodel.ChatCompletionRequest
 	ImageGenerationRequest smodel.ImageGenerationRequest
+	ImageEditRequest       smodel.ImageEditRequest
 	Completion             string
+	AudioInput             string
+	AudioMinute            float64
+	EmbeddingRequest       smodel.EmbeddingRequest
+	ModerationRequest      smodel.ModerationRequest
 	Usage                  *smodel.Usage
 }
 
@@ -101,6 +107,7 @@ type SpendTokens struct {
 	AudioCacheTokens       int                    // 音频缓存
 	SearchTokens           int                    // 搜索
 	MidjourneyTokens       int                    // Midjourney
+	MidjourneyPricing      MidjourneyPricing      // Midjourney价格
 	OnceTokens             int                    // 一次
 	TotalTokens            int                    // 总
 }

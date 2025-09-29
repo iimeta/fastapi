@@ -54,13 +54,13 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		midjourneyQuota mcommon.MidjourneyQuota
-		baseUrl         = config.Cfg.Midjourney.ApiBaseUrl
-		path            = request.RequestURI[3:]
-		retryInfo       *mcommon.Retry
-		reqUrl          = request.RequestURI
-		taskId          string
-		prompt          = request.GetMapStrStr()["prompt"]
+		baseUrl     = config.Cfg.Midjourney.ApiBaseUrl
+		path        = request.RequestURI[3:]
+		retryInfo   *mcommon.Retry
+		reqUrl      = request.RequestURI
+		taskId      string
+		prompt      = request.GetMapStrStr()["prompt"]
+		totalTokens int
 	)
 
 	if model := request.GetRouterMap()["model"]; model != "" {
@@ -73,19 +73,26 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		usage := &smodel.Usage{
-			TotalTokens: midjourneyQuota.FixedQuota,
-		}
+		usage := &smodel.Usage{}
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
+			billingData := &mcommon.BillingData{
+				Path:  path,
+				Usage: usage,
+			}
+
+			spendTokens := common.SpendTokens(ctx, mak, billingData)
+			totalTokens = spendTokens.TotalTokens
+			usage = billingData.Usage
+
 			// 分组折扣
 			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
-				usage.TotalTokens = int(math.Ceil(float64(usage.TotalTokens) * mak.Group.Discount))
+				totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
 			}
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, usage.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -135,12 +142,19 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 		return response, err
 	}
 
-	if midjourneyQuota, err = common.GetMidjourneyQuota(mak.RealModel, request, path); err != nil {
-		logger.Error(ctx, err)
-		return response, err
+	if slices.Contains(mak.ReqModel.Pricing.BillingItems, "midjourney") {
+
+		billingData := &mcommon.BillingData{
+			Path: path,
+		}
+
+		spendTokens := common.SpendTokens(ctx, mak, billingData, "midjourney")
+		if spendTokens.MidjourneyPricing.Path == "" {
+			return response, errors.ERR_PATH_NOT_FOUND
+		}
 	}
 
-	client := sdk.NewMidjourneyClient(ctx, baseUrl, midjourneyQuota.Path, mak.RealKey, config.Cfg.Midjourney.ApiSecretHeader, request.Method, config.Cfg.Http.ProxyUrl)
+	client := sdk.NewMidjourneyClient(ctx, baseUrl, path, mak.RealKey, config.Cfg.Midjourney.ApiSecretHeader, request.Method, config.Cfg.Http.ProxyUrl)
 
 	response, err = client.Request(ctx, request.GetBody())
 	if err != nil {
@@ -233,12 +247,12 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		midjourneyQuota mcommon.MidjourneyQuota
-		baseUrl         = config.Cfg.Midjourney.ApiBaseUrl
-		path            = request.RequestURI[3:]
-		taskId          = request.GetRouterMap()["taskId"]
-		imageUrl        string
-		retryInfo       *mcommon.Retry
+		baseUrl     = config.Cfg.Midjourney.ApiBaseUrl
+		path        = request.RequestURI[3:]
+		taskId      = request.GetRouterMap()["taskId"]
+		imageUrl    string
+		retryInfo   *mcommon.Retry
+		totalTokens int
 	)
 
 	if model := request.GetRouterMap()["model"]; model != "" {
@@ -251,19 +265,26 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		usage := &smodel.Usage{
-			TotalTokens: midjourneyQuota.FixedQuota,
-		}
+		usage := &smodel.Usage{}
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
+			billingData := &mcommon.BillingData{
+				Path:  path,
+				Usage: usage,
+			}
+
+			spendTokens := common.SpendTokens(ctx, mak, billingData)
+			totalTokens = spendTokens.TotalTokens
+			usage = billingData.Usage
+
 			// 分组折扣
 			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
-				usage.TotalTokens = int(math.Ceil(float64(usage.TotalTokens) * mak.Group.Discount))
+				totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
 			}
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, usage.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -312,9 +333,16 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 		return response, err
 	}
 
-	if midjourneyQuota, err = common.GetMidjourneyQuota(mak.RealModel, request, path); err != nil {
-		logger.Error(ctx, err)
-		return response, err
+	if slices.Contains(mak.ReqModel.Pricing.BillingItems, "midjourney") {
+
+		billingData := &mcommon.BillingData{
+			Path: path,
+		}
+
+		spendTokens := common.SpendTokens(ctx, mak, billingData, "midjourney")
+		if spendTokens.MidjourneyPricing.Path == "" {
+			return response, errors.ERR_PATH_NOT_FOUND
+		}
 	}
 
 	client := sdk.NewMidjourneyClient(ctx, baseUrl, path, mak.RealKey, config.Cfg.Midjourney.ApiSecretHeader, http.MethodGet, config.Cfg.Http.ProxyUrl)

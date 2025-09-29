@@ -317,9 +317,18 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 			if realtimeResponse.Response.Usage.TotalTokens != 0 {
 
 				usage := &smodel.Usage{
-					PromptTokens:     realtimeResponse.Response.Usage.InputTokens,
+					PromptTokens: realtimeResponse.Response.Usage.InputTokens,
+					PromptTokensDetails: smodel.PromptTokensDetails{
+						TextTokens:   realtimeResponse.Response.Usage.InputTokenDetails.TextTokens,
+						AudioTokens:  realtimeResponse.Response.Usage.InputTokenDetails.AudioTokens,
+						CachedTokens: realtimeResponse.Response.Usage.InputTokenDetails.CachedTokens,
+					},
 					CompletionTokens: realtimeResponse.Response.Usage.OutputTokens,
-					TotalTokens:      realtimeResponse.Response.Usage.TotalTokens,
+					CompletionTokensDetails: smodel.CompletionTokensDetails{
+						TextTokens:  realtimeResponse.Response.Usage.OutputTokenDetails.TextTokens,
+						AudioTokens: realtimeResponse.Response.Usage.OutputTokenDetails.AudioTokens,
+					},
+					TotalTokens: realtimeResponse.Response.Usage.TotalTokens,
 				}
 
 				message := responseMessage
@@ -335,19 +344,15 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 					}
 				}
 
-				if typ == "text" || typ == "function_call" {
-					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.RealtimeQuota.TextQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.RealtimeQuota.TextQuota.CompletionRatio))
-				} else {
-					totalTokens = int(math.Ceil(float64(usage.PromptTokens)*mak.ReqModel.RealtimeQuota.AudioQuota.PromptRatio)) + int(math.Ceil(float64(usage.CompletionTokens)*mak.ReqModel.RealtimeQuota.AudioQuota.CompletionRatio))
+				billingData := &mcommon.BillingData{
+					ChatCompletionRequest: smodel.ChatCompletionRequest{Stream: true, Messages: []smodel.ChatCompletionMessage{{Content: message}}},
+					Completion:            completion,
+					Usage:                 usage,
 				}
 
-				if usage.PromptTokensDetails.CachedTokens != 0 {
-					totalTokens += int(math.Ceil(float64(usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.RealtimeQuota.TextQuota.CachedRatio))
-				}
-
-				if usage.CompletionTokensDetails.CachedTokens != 0 {
-					totalTokens += int(math.Ceil(float64(usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.RealtimeQuota.TextQuota.CachedRatio))
-				}
+				spendTokens := common.SpendTokens(ctx, mak, billingData)
+				totalTokens = spendTokens.TotalTokens
+				usage = billingData.Usage
 
 				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 

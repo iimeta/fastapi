@@ -58,15 +58,20 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
-		if mak.ReqModel != nil && response.Usage != nil {
-			if mak.ReqModel.TextQuota.BillingMethod == 1 {
-				totalTokens = int(math.Ceil(float64(response.Usage.PromptTokens)*mak.ReqModel.TextQuota.PromptRatio + float64(response.Usage.CompletionTokens)*mak.ReqModel.TextQuota.CompletionRatio))
-			} else {
-				totalTokens = mak.ReqModel.TextQuota.FixedQuota
-			}
-		}
-
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
+
+			billingData := &mcommon.BillingData{
+				ModerationRequest: params,
+				Usage:             response.Usage,
+			}
+
+			if response.Results != nil {
+				billingData.Completion = gconv.String(response.Results)
+			}
+
+			spendTokens := common.SpendTokens(ctx, mak, billingData)
+			totalTokens = spendTokens.TotalTokens
+			response.Usage = billingData.Usage
 
 			// 替换成调用的模型
 			if mak.ReqModel.IsEnableForward {

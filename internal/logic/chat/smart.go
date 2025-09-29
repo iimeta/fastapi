@@ -51,15 +51,15 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 				}
 			}
 
-			usageSpend := &mcommon.SpendContent{
+			billingData := &mcommon.BillingData{
 				ChatCompletionRequest: params,
 				Completion:            completion,
 				Usage:                 response.Usage,
 			}
 
-			usageSpendTokens := common.SpendTokens(ctx, usageSpend, mak)
-			totalTokens = usageSpendTokens.TotalTokens
-			response.Usage = usageSpend.Usage
+			spendTokens := common.SpendTokens(ctx, mak, billingData)
+			totalTokens = spendTokens.TotalTokens
+			response.Usage = billingData.Usage
 		}
 
 		if mak.RealModel != nil {

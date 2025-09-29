@@ -56,8 +56,8 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		generationQuota mcommon.GenerationQuota
-		retryInfo       *mcommon.Retry
+		retryInfo   *mcommon.Retry
+		totalTokens int
 	)
 
 	defer func() {
@@ -68,34 +68,22 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
-			if mak.ReqModel.ImageQuota.BillingMethod == 1 {
-
-				usage.TotalTokens = generationQuota.FixedQuota * len(response.Data)
-
-				if usage.InputTokens > 0 {
-					usage.TotalTokens += int(math.Ceil(float64(usage.InputTokensDetails.TextTokens) * mak.ReqModel.ImageQuota.TextRatio))
-					usage.TotalTokens += int(math.Ceil(float64(usage.InputTokensDetails.ImageTokens) * mak.ReqModel.ImageQuota.InputRatio))
-				}
-
-				if usage.OutputTokens > 0 {
-					usage.TotalTokens += int(math.Ceil(float64(usage.OutputTokens) * mak.ReqModel.ImageQuota.OutputRatio))
-				}
-
-				if usage.InputTokensDetails.CachedTokens > 0 {
-					usage.TotalTokens += int(math.Ceil(float64(usage.InputTokensDetails.CachedTokens) * mak.ReqModel.ImageQuota.CachedRatio))
-				}
-
-			} else {
-				usage.TotalTokens = mak.ReqModel.ImageQuota.FixedQuota
+			billingData := &mcommon.BillingData{
+				ImageGenerationRequest: params,
+				Usage:                  &usage,
 			}
+
+			spendTokens := common.SpendTokens(ctx, mak, billingData)
+			totalTokens = spendTokens.TotalTokens
+			response.Usage = *billingData.Usage
 
 			// 分组折扣
 			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
-				usage.TotalTokens = int(math.Ceil(float64(usage.TotalTokens) * mak.Group.Discount))
+				totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
 			}
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, usage.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -108,13 +96,12 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				imageRes := &model.ImageRes{
-					Created:         response.Created,
-					Data:            response.Data,
-					TotalTime:       response.TotalTime,
-					Error:           err,
-					InternalTime:    internalTime,
-					EnterTime:       enterTime,
-					GenerationQuota: generationQuota,
+					Created:      response.Created,
+					Data:         response.Data,
+					TotalTime:    response.TotalTime,
+					Error:        err,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
 				}
 
 				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
@@ -145,10 +132,18 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 		return response, err
 	}
 
-	if mak.ReqModel.ImageQuota.BillingMethod == 1 {
-		generationQuota = common.GetImageGenerationQuota(mak.RealModel, params.Quality, params.Size)
-		params.Quality = generationQuota.Quality
-		params.Size = fmt.Sprintf("%dx%d", generationQuota.Width, generationQuota.Height)
+	if slices.Contains(mak.ReqModel.Pricing.BillingItems, "image_generation") {
+
+		billingData := &mcommon.BillingData{
+			ImageGenerationRequest: params,
+		}
+
+		spendTokens := common.SpendTokens(ctx, mak, billingData, "image_generation")
+
+		if spendTokens.ImageGenerationPricing.Quality != "" {
+			params.Quality = spendTokens.ImageGenerationPricing.Quality
+			params.Size = fmt.Sprintf("%dx%d", spendTokens.ImageGenerationPricing.Width, spendTokens.ImageGenerationPricing.Height)
+		}
 	}
 
 	request := params
@@ -252,6 +247,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 		}
 		generationQuota mcommon.GenerationQuota
 		retryInfo       *mcommon.Retry
+		totalTokens     int
 	)
 
 	defer func() {
@@ -262,34 +258,21 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
-			if mak.ReqModel.ImageQuota.BillingMethod == 1 {
-
-				usage.TotalTokens = generationQuota.FixedQuota * len(response.Data)
-
-				if usage.InputTokens > 0 {
-					usage.TotalTokens += int(math.Ceil(float64(usage.InputTokensDetails.TextTokens) * mak.ReqModel.ImageQuota.TextRatio))
-					usage.TotalTokens += int(math.Ceil(float64(usage.InputTokensDetails.ImageTokens) * mak.ReqModel.ImageQuota.InputRatio))
-				}
-
-				if usage.OutputTokens > 0 {
-					usage.TotalTokens += int(math.Ceil(float64(usage.OutputTokens) * mak.ReqModel.ImageQuota.OutputRatio))
-				}
-
-				if usage.InputTokensDetails.CachedTokens > 0 {
-					usage.TotalTokens += int(math.Ceil(float64(usage.InputTokensDetails.CachedTokens) * mak.ReqModel.ImageQuota.CachedRatio))
-				}
-
-			} else {
-				usage.TotalTokens = mak.ReqModel.ImageQuota.FixedQuota
+			billingData := &mcommon.BillingData{
+				Usage: &usage,
 			}
+
+			spendTokens := common.SpendTokens(ctx, mak, billingData)
+			totalTokens = spendTokens.TotalTokens
+			response.Usage = *billingData.Usage
 
 			// 分组折扣
 			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
-				usage.TotalTokens = int(math.Ceil(float64(usage.TotalTokens) * mak.Group.Discount))
+				totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
 			}
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, usage.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -350,10 +333,18 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 		return response, err
 	}
 
-	if mak.ReqModel.ImageQuota.BillingMethod == 1 {
-		generationQuota = common.GetImageGenerationQuota(mak.RealModel, params.Quality, params.Size)
-		params.Quality = generationQuota.Quality
-		params.Size = fmt.Sprintf("%dx%d", generationQuota.Width, generationQuota.Height)
+	if slices.Contains(mak.ReqModel.Pricing.BillingItems, "image_generation") {
+
+		billingData := &mcommon.BillingData{
+			ImageEditRequest: params,
+		}
+
+		spendTokens := common.SpendTokens(ctx, mak, billingData, "image_generation")
+
+		if spendTokens.ImageGenerationPricing.Quality != "" {
+			params.Quality = spendTokens.ImageGenerationPricing.Quality
+			params.Size = fmt.Sprintf("%dx%d", spendTokens.ImageGenerationPricing.Width, spendTokens.ImageGenerationPricing.Height)
+		}
 	}
 
 	if !gstr.Contains(mak.RealModel.Model, "*") {

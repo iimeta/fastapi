@@ -75,15 +75,15 @@ func (s *sGeneral) General(ctx context.Context, request *ghttp.Request, fallback
 				}
 			}
 
-			usageSpend := &mcommon.SpendContent{
+			billingData := &mcommon.BillingData{
 				ChatCompletionRequest: params,
 				Completion:            completion,
 				Usage:                 response.Usage,
 			}
 
-			usageSpendTokens := common.SpendTokens(ctx, usageSpend, mak)
-			totalTokens = usageSpendTokens.TotalTokens
-			response.Usage = usageSpend.Usage
+			spendTokens := common.SpendTokens(ctx, mak, billingData)
+			totalTokens = spendTokens.TotalTokens
+			response.Usage = billingData.Usage
 
 			// 分组折扣
 			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
@@ -293,15 +293,15 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 			if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
 
-				usageSpend := &mcommon.SpendContent{
+				billingData := &mcommon.BillingData{
 					ChatCompletionRequest: params,
 					Completion:            completion,
 					Usage:                 usage,
 				}
 
-				usageSpendTokens := common.SpendTokens(ctx, usageSpend, mak)
-				totalTokens = usageSpendTokens.TotalTokens
-				usage = usageSpend.Usage
+				spendTokens := common.SpendTokens(ctx, mak, billingData)
+				totalTokens = spendTokens.TotalTokens
+				usage = billingData.Usage
 
 				// 分组折扣
 				if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
