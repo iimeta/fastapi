@@ -2,7 +2,6 @@ package moderation
 
 import (
 	"context"
-	"math"
 	"slices"
 	"time"
 
@@ -50,7 +49,7 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo   *mcommon.Retry
-		totalTokens int
+		spendTokens mcommon.SpendTokens
 	)
 
 	defer func() {
@@ -59,6 +58,11 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
+
+			// 替换成调用的模型
+			if mak.ReqModel.IsEnableForward {
+				response.Model = mak.ReqModel.Model
+			}
 
 			billingData := &mcommon.BillingData{
 				ModerationRequest: params,
@@ -69,22 +73,11 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 				billingData.Completion = gconv.String(response.Results)
 			}
 
-			spendTokens := common.SpendTokens(ctx, mak, billingData)
-			totalTokens = spendTokens.TotalTokens
+			spendTokens = common.SpendTokens(ctx, mak, billingData)
 			response.Usage = billingData.Usage
 
-			// 替换成调用的模型
-			if mak.ReqModel.IsEnableForward {
-				response.Model = mak.ReqModel.Model
-			}
-
-			// 分组折扣
-			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
-				totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
-			}
-
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -105,7 +98,7 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 
 				if retryInfo == nil && response.Usage != nil {
 					completionsRes.Usage = *response.Usage
-					completionsRes.Usage.TotalTokens = totalTokens
+					completionsRes.Usage.TotalTokens = spendTokens.TotalTokens
 				}
 
 				if retryInfo == nil && response.Results != nil {

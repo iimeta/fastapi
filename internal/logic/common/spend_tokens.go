@@ -13,6 +13,7 @@ import (
 	"github.com/iimeta/fastapi/internal/model/common"
 )
 
+// 花费额度
 func SpendTokens(ctx context.Context, mak *MAK, billingData *common.BillingData, billingItems ...string) (spendTokens common.SpendTokens) {
 
 	if billingItems == nil || len(billingItems) == 0 {
@@ -58,6 +59,11 @@ func SpendTokens(ctx context.Context, mak *MAK, billingData *common.BillingData,
 			spendTokens.AudioTokens + spendTokens.AudioCacheTokens + spendTokens.SearchTokens + spendTokens.MidjourneyTokens
 	} else {
 		spendTokens.TotalTokens = spendTokens.OnceTokens
+	}
+
+	// 分组折扣
+	if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
+		spendTokens.TotalTokens = int(math.Ceil(float64(spendTokens.TotalTokens) * mak.Group.Discount))
 	}
 
 	return

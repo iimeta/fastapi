@@ -3,7 +3,6 @@ package image
 import (
 	"context"
 	"fmt"
-	"math"
 	"slices"
 	"time"
 
@@ -57,7 +56,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo   *mcommon.Retry
-		totalTokens int
+		spendTokens mcommon.SpendTokens
 	)
 
 	defer func() {
@@ -73,17 +72,11 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 				Usage:                  &usage,
 			}
 
-			spendTokens := common.SpendTokens(ctx, mak, billingData)
-			totalTokens = spendTokens.TotalTokens
+			spendTokens = common.SpendTokens(ctx, mak, billingData)
 			response.Usage = *billingData.Usage
 
-			// 分组折扣
-			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
-				totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
-			}
-
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -138,7 +131,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 			ImageGenerationRequest: params,
 		}
 
-		spendTokens := common.SpendTokens(ctx, mak, billingData, "image_generation")
+		spendTokens = common.SpendTokens(ctx, mak, billingData, "image_generation")
 
 		if spendTokens.ImageGenerationPricing.Quality != "" {
 			params.Quality = spendTokens.ImageGenerationPricing.Quality
@@ -246,7 +239,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo   *mcommon.Retry
-		totalTokens int
+		spendTokens mcommon.SpendTokens
 	)
 
 	defer func() {
@@ -261,17 +254,11 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 				Usage: &usage,
 			}
 
-			spendTokens := common.SpendTokens(ctx, mak, billingData)
-			totalTokens = spendTokens.TotalTokens
+			spendTokens = common.SpendTokens(ctx, mak, billingData)
 			response.Usage = *billingData.Usage
 
-			// 分组折扣
-			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
-				totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
-			}
-
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -337,7 +324,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 			ImageEditRequest: params,
 		}
 
-		spendTokens := common.SpendTokens(ctx, mak, billingData, "image_generation")
+		spendTokens = common.SpendTokens(ctx, mak, billingData, "image_generation")
 
 		if spendTokens.ImageGenerationPricing.Quality != "" {
 			params.Quality = spendTokens.ImageGenerationPricing.Quality

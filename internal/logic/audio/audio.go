@@ -2,8 +2,6 @@ package audio
 
 import (
 	"context"
-	"math"
-	"slices"
 	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
@@ -57,7 +55,7 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo   *mcommon.Retry
-		totalTokens int
+		spendTokens mcommon.SpendTokens
 	)
 
 	defer func() {
@@ -71,16 +69,10 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 				AudioInput: params.Input,
 			}
 
-			spendTokens := common.SpendTokens(ctx, mak, billingData)
-			totalTokens = spendTokens.TotalTokens
-
-			// 分组折扣
-			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
-				totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
-			}
+			spendTokens = common.SpendTokens(ctx, mak, billingData)
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -105,7 +97,7 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 				}
 
 				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-					audioRes.TotalTokens = totalTokens
+					audioRes.TotalTokens = spendTokens.TotalTokens
 				}
 
 				s.SaveLog(ctx, model.AudioLog{
@@ -228,7 +220,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 		}
 		retryInfo   *mcommon.Retry
 		minute      float64
-		totalTokens int
+		spendTokens mcommon.SpendTokens
 	)
 
 	defer func() {
@@ -249,16 +241,10 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 				AudioMinute: minute,
 			}
 
-			spendTokens := common.SpendTokens(ctx, mak, billingData)
-			totalTokens = spendTokens.TotalTokens
-
-			// 分组折扣
-			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
-				totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
-			}
+			spendTokens = common.SpendTokens(ctx, mak, billingData)
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -284,7 +270,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 				}
 
 				if retryInfo == nil {
-					audioRes.TotalTokens = totalTokens
+					audioRes.TotalTokens = spendTokens.TotalTokens
 				}
 
 				s.SaveLog(ctx, model.AudioLog{

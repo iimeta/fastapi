@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math"
-	"slices"
 
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
@@ -54,7 +52,7 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo   *mcommon.Retry
-		totalTokens int
+		spendTokens mcommon.SpendTokens
 	)
 
 	defer func() {
@@ -82,17 +80,11 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 				Usage:                 response.Usage,
 			}
 
-			spendTokens := common.SpendTokens(ctx, mak, billingData)
-			totalTokens = spendTokens.TotalTokens
+			spendTokens = common.SpendTokens(ctx, mak, billingData)
 			response.Usage = billingData.Usage
 
-			// 分组折扣
-			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
-				totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
-			}
-
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -115,7 +107,7 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 
 				if retryInfo == nil && response.Usage != nil {
 					completionsRes.Usage = *response.Usage
-					completionsRes.Usage.TotalTokens = totalTokens
+					completionsRes.Usage.TotalTokens = spendTokens.TotalTokens
 				}
 
 				if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
@@ -305,9 +297,9 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 		connTime    int64
 		duration    int64
 		totalTime   int64
-		totalTokens int
 		usage       *smodel.Usage
 		retryInfo   *mcommon.Retry
+		spendTokens mcommon.SpendTokens
 	)
 
 	defer func() {
@@ -324,17 +316,11 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 					Usage:                 usage,
 				}
 
-				spendTokens := common.SpendTokens(ctx, mak, billingData)
-				totalTokens = spendTokens.TotalTokens
+				spendTokens = common.SpendTokens(ctx, mak, billingData)
 				usage = billingData.Usage
 
-				// 分组折扣
-				if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
-					totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
-				}
-
 				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
+					if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 						logger.Error(ctx, err)
 						panic(err)
 					}
@@ -358,7 +344,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 
 					if usage != nil {
 						completionsRes.Usage = *usage
-						completionsRes.Usage.TotalTokens = totalTokens
+						completionsRes.Usage.TotalTokens = spendTokens.TotalTokens
 					}
 
 					service.Chat().SaveLog(ctx, model.ChatLog{

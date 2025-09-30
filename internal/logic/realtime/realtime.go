@@ -3,7 +3,6 @@ package realtime
 import (
 	"context"
 	"io"
-	"math"
 	"net/http"
 	"slices"
 	"time"
@@ -333,7 +332,6 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 
 				message := responseMessage
 				completion := responseCompletion
-				totalTokens := 0
 
 				typ := ""
 				if len(realtimeResponse.Response.Output) > 0 {
@@ -351,17 +349,11 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 				}
 
 				spendTokens := common.SpendTokens(ctx, mak, billingData)
-				totalTokens = spendTokens.TotalTokens
 				usage = billingData.Usage
 
 				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-					// 分组折扣
-					if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
-						totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
-					}
-
-					if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
+					if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 						logger.Error(ctx, err)
 						panic(err)
 					}
@@ -386,7 +378,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 					}
 
 					completionsRes.Usage = *usage
-					completionsRes.Usage.TotalTokens = totalTokens
+					completionsRes.Usage.TotalTokens = spendTokens.TotalTokens
 
 					s.SaveLog(ctx, model.ChatLog{
 						Group:              mak.Group,

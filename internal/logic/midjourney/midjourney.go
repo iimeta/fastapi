@@ -3,7 +3,6 @@ package midjourney
 import (
 	"context"
 	"fmt"
-	"math"
 	"net/http"
 	"slices"
 	"time"
@@ -60,7 +59,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 		reqUrl      = request.RequestURI
 		taskId      string
 		prompt      = request.GetMapStrStr()["prompt"]
-		totalTokens int
+		spendTokens mcommon.SpendTokens
 	)
 
 	if model := request.GetRouterMap()["model"]; model != "" {
@@ -82,17 +81,11 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 				Usage: usage,
 			}
 
-			spendTokens := common.SpendTokens(ctx, mak, billingData)
-			totalTokens = spendTokens.TotalTokens
+			spendTokens = common.SpendTokens(ctx, mak, billingData)
 			usage = billingData.Usage
 
-			// 分组折扣
-			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
-				totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
-			}
-
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -148,7 +141,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 			Path: path,
 		}
 
-		spendTokens := common.SpendTokens(ctx, mak, billingData, "midjourney")
+		spendTokens = common.SpendTokens(ctx, mak, billingData, "midjourney")
 		if spendTokens.MidjourneyPricing.Path == "" {
 			return response, errors.ERR_PATH_NOT_FOUND
 		}
@@ -252,7 +245,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 		taskId      = request.GetRouterMap()["taskId"]
 		imageUrl    string
 		retryInfo   *mcommon.Retry
-		totalTokens int
+		spendTokens mcommon.SpendTokens
 	)
 
 	if model := request.GetRouterMap()["model"]; model != "" {
@@ -274,17 +267,11 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 				Usage: usage,
 			}
 
-			spendTokens := common.SpendTokens(ctx, mak, billingData)
-			totalTokens = spendTokens.TotalTokens
+			spendTokens = common.SpendTokens(ctx, mak, billingData)
 			usage = billingData.Usage
 
-			// 分组折扣
-			if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
-				totalTokens = int(math.Ceil(float64(totalTokens) * mak.Group.Discount))
-			}
-
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, totalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -339,7 +326,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 			Path: path,
 		}
 
-		spendTokens := common.SpendTokens(ctx, mak, billingData, "midjourney")
+		spendTokens = common.SpendTokens(ctx, mak, billingData, "midjourney")
 		if spendTokens.MidjourneyPricing.Path == "" {
 			return response, errors.ERR_PATH_NOT_FOUND
 		}

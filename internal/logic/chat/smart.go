@@ -34,7 +34,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo   *mcommon.Retry
-		totalTokens int
+		spendTokens mcommon.SpendTokens
 	)
 
 	defer func() {
@@ -57,8 +57,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 				Usage:                 response.Usage,
 			}
 
-			spendTokens := common.SpendTokens(ctx, mak, billingData)
-			totalTokens = spendTokens.TotalTokens
+			spendTokens = common.SpendTokens(ctx, mak, billingData)
 			response.Usage = billingData.Usage
 		}
 
@@ -76,7 +75,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 
 				if retryInfo == nil && response.Usage != nil {
 					completionsRes.Usage = *response.Usage
-					completionsRes.Usage.TotalTokens = totalTokens
+					completionsRes.Usage.TotalTokens = spendTokens.TotalTokens
 				}
 
 				if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
