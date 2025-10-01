@@ -69,6 +69,7 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 				AudioInput: params.Input,
 			}
 
+			// 花费额度
 			spendTokens = common.SpendTokens(ctx, mak, billingData)
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -218,8 +219,8 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo   *mcommon.Retry
 		minute      float64
+		retryInfo   *mcommon.Retry
 		spendTokens mcommon.SpendTokens
 	)
 
@@ -241,6 +242,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 				AudioMinute: minute,
 			}
 
+			// 花费额度
 			spendTokens = common.SpendTokens(ctx, mak, billingData)
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {

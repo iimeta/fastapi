@@ -343,6 +343,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 					Usage:                 usage,
 				}
 
+				// 花费额度
 				spendTokens = common.SpendTokens(ctx, mak, billingData)
 				usage = billingData.Usage
 

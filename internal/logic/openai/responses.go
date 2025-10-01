@@ -83,6 +83,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 				Usage:                 chatCompletionResponse.Usage,
 			}
 
+			// 花费额度
 			spendTokens = common.SpendTokens(ctx, mak, billingData)
 			chatCompletionResponse.Usage = billingData.Usage
 
@@ -314,6 +315,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 					Usage:                 usage,
 				}
 
+				// 花费额度
 				spendTokens = common.SpendTokens(ctx, mak, billingData)
 				usage = billingData.Usage
 

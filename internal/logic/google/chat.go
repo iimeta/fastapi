@@ -81,6 +81,7 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 				Usage:                 response.Usage,
 			}
 
+			// 花费额度
 			spendTokens = common.SpendTokens(ctx, mak, billingData)
 			response.Usage = billingData.Usage
 
@@ -317,6 +318,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 					Usage:                 usage,
 				}
 
+				// 花费额度
 				spendTokens = common.SpendTokens(ctx, mak, billingData)
 				usage = billingData.Usage
 

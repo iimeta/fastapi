@@ -72,6 +72,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 				Usage:                  &usage,
 			}
 
+			// 花费额度
 			spendTokens = common.SpendTokens(ctx, mak, billingData)
 			response.Usage = *billingData.Usage
 
@@ -131,6 +132,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 			ImageGenerationRequest: params,
 		}
 
+		// 花费额度
 		spendTokens = common.SpendTokens(ctx, mak, billingData, "image_generation")
 
 		if spendTokens.ImageGenerationPricing.Quality != "" {
@@ -254,6 +256,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 				Usage: &usage,
 			}
 
+			// 花费额度
 			spendTokens = common.SpendTokens(ctx, mak, billingData)
 			response.Usage = *billingData.Usage
 
@@ -324,6 +327,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 			ImageEditRequest: params,
 		}
 
+		// 花费额度
 		spendTokens = common.SpendTokens(ctx, mak, billingData, "image_generation")
 
 		if spendTokens.ImageGenerationPricing.Quality != "" {

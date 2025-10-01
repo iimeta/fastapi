@@ -73,6 +73,7 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 				billingData.Completion = gconv.String(response.Results)
 			}
 
+			// 花费额度
 			spendTokens = common.SpendTokens(ctx, mak, billingData)
 			response.Usage = billingData.Usage
 

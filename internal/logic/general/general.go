@@ -79,6 +79,7 @@ func (s *sGeneral) General(ctx context.Context, request *ghttp.Request, fallback
 				Usage:                 response.Usage,
 			}
 
+			// 花费额度
 			spendTokens = common.SpendTokens(ctx, mak, billingData)
 			response.Usage = billingData.Usage
 
@@ -291,6 +292,7 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 					Usage:                 usage,
 				}
 
+				// 花费额度
 				spendTokens = common.SpendTokens(ctx, mak, billingData)
 				usage = billingData.Usage
 

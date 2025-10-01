@@ -348,6 +348,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 					Usage:                 usage,
 				}
 
+				// 花费额度
 				spendTokens := common.SpendTokens(ctx, mak, billingData)
 				usage = billingData.Usage
 

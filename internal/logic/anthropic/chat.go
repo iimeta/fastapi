@@ -80,6 +80,7 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 				Usage:                 response.Usage,
 			}
 
+			// 花费额度
 			spendTokens = common.SpendTokens(ctx, mak, billingData)
 			response.Usage = billingData.Usage
 
@@ -316,6 +317,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 					Usage:                 usage,
 				}
 
+				// 花费额度
 				spendTokens = common.SpendTokens(ctx, mak, billingData)
 				usage = billingData.Usage
 

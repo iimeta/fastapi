@@ -55,10 +55,10 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 		}
 		baseUrl     = config.Cfg.Midjourney.ApiBaseUrl
 		path        = request.RequestURI[3:]
-		retryInfo   *mcommon.Retry
 		reqUrl      = request.RequestURI
 		taskId      string
 		prompt      = request.GetMapStrStr()["prompt"]
+		retryInfo   *mcommon.Retry
 		spendTokens mcommon.SpendTokens
 	)
 
@@ -81,6 +81,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 				Usage: usage,
 			}
 
+			// 花费额度
 			spendTokens = common.SpendTokens(ctx, mak, billingData)
 			usage = billingData.Usage
 
@@ -141,6 +142,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 			Path: path,
 		}
 
+		// 花费额度
 		spendTokens = common.SpendTokens(ctx, mak, billingData, "midjourney")
 		if spendTokens.MidjourneyPricing.Path == "" {
 			return response, errors.ERR_PATH_NOT_FOUND
@@ -267,6 +269,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 				Usage: usage,
 			}
 
+			// 花费额度
 			spendTokens = common.SpendTokens(ctx, mak, billingData)
 			usage = billingData.Usage
 
@@ -326,6 +329,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 			Path: path,
 		}
 
+		// 花费额度
 		spendTokens = common.SpendTokens(ctx, mak, billingData, "midjourney")
 		if spendTokens.MidjourneyPricing.Path == "" {
 			return response, errors.ERR_PATH_NOT_FOUND
