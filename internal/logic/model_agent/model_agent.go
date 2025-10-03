@@ -98,19 +98,6 @@ func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAge
 		return nil, err
 	}
 
-	modelList, err := dao.Model.Find(ctx, bson.M{"model_agents": bson.M{"$in": ids}})
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	modelMap := make(map[string][]string)
-	for _, model := range modelList {
-		for _, id := range model.ModelAgents {
-			modelMap[id] = append(modelMap[id], model.Id)
-		}
-	}
-
 	items := make([]*model.ModelAgent, 0)
 	for _, result := range results {
 		items = append(items, &model.ModelAgent{
@@ -120,7 +107,7 @@ func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAge
 			BaseUrl:              result.BaseUrl,
 			Path:                 result.Path,
 			Weight:               result.Weight,
-			Models:               modelMap[result.Id],
+			Models:               result.Models,
 			IsEnableModelReplace: result.IsEnableModelReplace,
 			ReplaceModels:        result.ReplaceModels,
 			TargetModels:         result.TargetModels,
@@ -149,19 +136,6 @@ func (s *sModelAgent) ListAll(ctx context.Context) ([]*model.ModelAgent, error) 
 		return nil, err
 	}
 
-	modelList, err := dao.Model.Find(ctx, bson.M{})
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	modelMap := make(map[string][]string)
-	for _, model := range modelList {
-		for _, id := range model.ModelAgents {
-			modelMap[id] = append(modelMap[id], model.Id)
-		}
-	}
-
 	items := make([]*model.ModelAgent, 0)
 	for _, result := range results {
 		items = append(items, &model.ModelAgent{
@@ -171,7 +145,7 @@ func (s *sModelAgent) ListAll(ctx context.Context) ([]*model.ModelAgent, error) 
 			BaseUrl:              result.BaseUrl,
 			Path:                 result.Path,
 			Weight:               result.Weight,
-			Models:               modelMap[result.Id],
+			Models:               result.Models,
 			IsEnableModelReplace: result.IsEnableModelReplace,
 			ReplaceModels:        result.ReplaceModels,
 			TargetModels:         result.TargetModels,
@@ -790,7 +764,7 @@ func (s *sModelAgent) AddCache(ctx context.Context, newData *model.ModelAgent) {
 }
 
 // 更新缓存中的模型代理列表
-func (s *sModelAgent) UpdateCache(ctx context.Context, oldData *model.ModelAgent, newData *model.ModelAgent) {
+func (s *sModelAgent) UpdateCache(ctx context.Context, oldData *entity.ModelAgent, newData *model.ModelAgent) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -1304,7 +1278,7 @@ func (s *sModelAgent) Subscribe(ctx context.Context, msg string) error {
 
 	case consts.ACTION_UPDATE:
 
-		var oldData *model.ModelAgent
+		var oldData *entity.ModelAgent
 		if err := gjson.Unmarshal(gjson.MustEncode(message.OldData), &oldData); err != nil {
 			logger.Error(ctx, err)
 			return err

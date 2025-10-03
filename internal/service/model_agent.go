@@ -49,7 +49,7 @@ type (
 		// 添加模型代理到缓存列表中
 		AddCache(ctx context.Context, newData *model.ModelAgent)
 		// 更新缓存中的模型代理列表
-		UpdateCache(ctx context.Context, oldData *model.ModelAgent, newData *model.ModelAgent)
+		UpdateCache(ctx context.Context, oldData *entity.ModelAgent, newData *model.ModelAgent)
 		// 移除缓存中的模型代理
 		RemoveCache(ctx context.Context, modelAgent *model.ModelAgent)
 		// 保存模型代理密钥列表到缓存

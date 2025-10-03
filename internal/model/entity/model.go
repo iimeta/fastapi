@@ -18,7 +18,6 @@ type Model struct {
 	IsPublic             bool                   `bson:"is_public,omitempty"`               // 是否公开
 	IsEnableModelAgent   bool                   `bson:"is_enable_model_agent,omitempty"`   // 是否启用模型代理
 	LbStrategy           int                    `bson:"lb_strategy,omitempty"`             // 代理负载均衡策略[1:轮询, 2:权重]
-	ModelAgents          []string               `bson:"model_agents,omitempty"`            // 模型代理
 	IsEnableForward      bool                   `bson:"is_enable_forward,omitempty"`       // 是否启用模型转发
 	ForwardConfig        *common.ForwardConfig  `bson:"forward_config,omitempty"`          // 模型转发配置
 	IsEnableFallback     bool                   `bson:"is_enable_fallback,omitempty"`      // 是否启用后备

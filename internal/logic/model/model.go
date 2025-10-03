@@ -52,7 +52,7 @@ func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 		return nil, err
 	}
 
-	return &model.Model{
+	model := &model.Model{
 		Id:                   result.Id,
 		ProviderId:           result.ProviderId,
 		Name:                 result.Name,
@@ -68,14 +68,23 @@ func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 		IsPublic:             result.IsPublic,
 		IsEnableModelAgent:   result.IsEnableModelAgent,
 		LbStrategy:           result.LbStrategy,
-		ModelAgents:          result.ModelAgents,
 		IsEnableForward:      result.IsEnableForward,
 		ForwardConfig:        result.ForwardConfig,
 		IsEnableFallback:     result.IsEnableFallback,
 		FallbackConfig:       result.FallbackConfig,
 		Remark:               result.Remark,
 		Status:               result.Status,
-	}, nil
+	}
+
+	if modelAgents, err := dao.ModelAgent.Find(ctx, bson.M{"models": bson.M{"$in": []string{model.Id}}}); err != nil {
+		logger.Error(ctx, err)
+	} else {
+		for _, modelAgent := range modelAgents {
+			model.ModelAgents = append(model.ModelAgents, modelAgent.Id)
+		}
+	}
+
+	return model, nil
 }
 
 // 根据模型ID获取模型信息
@@ -92,7 +101,7 @@ func (s *sModel) GetModelById(ctx context.Context, id string) (*model.Model, err
 		return nil, err
 	}
 
-	return &model.Model{
+	model := &model.Model{
 		Id:                   result.Id,
 		ProviderId:           result.ProviderId,
 		Name:                 result.Name,
@@ -108,14 +117,23 @@ func (s *sModel) GetModelById(ctx context.Context, id string) (*model.Model, err
 		IsPublic:             result.IsPublic,
 		IsEnableModelAgent:   result.IsEnableModelAgent,
 		LbStrategy:           result.LbStrategy,
-		ModelAgents:          result.ModelAgents,
 		IsEnableForward:      result.IsEnableForward,
 		ForwardConfig:        result.ForwardConfig,
 		IsEnableFallback:     result.IsEnableFallback,
 		FallbackConfig:       result.FallbackConfig,
 		Remark:               result.Remark,
 		Status:               result.Status,
-	}, nil
+	}
+
+	if modelAgents, err := dao.ModelAgent.Find(ctx, bson.M{"models": bson.M{"$in": []string{model.Id}}}); err != nil {
+		logger.Error(ctx, err)
+	} else {
+		for _, modelAgent := range modelAgents {
+			model.ModelAgents = append(model.ModelAgents, modelAgent.Id)
+		}
+	}
+
+	return model, nil
 }
 
 // 根据model和secretKey获取模型信息
@@ -610,7 +628,8 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 
 	items := make([]*model.Model, 0)
 	for _, result := range results {
-		items = append(items, &model.Model{
+
+		model := &model.Model{
 			Id:                   result.Id,
 			ProviderId:           result.ProviderId,
 			Name:                 result.Name,
@@ -626,7 +645,6 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 			IsPublic:             result.IsPublic,
 			IsEnableModelAgent:   result.IsEnableModelAgent,
 			LbStrategy:           result.LbStrategy,
-			ModelAgents:          result.ModelAgents,
 			IsEnableForward:      result.IsEnableForward,
 			ForwardConfig:        result.ForwardConfig,
 			IsEnableFallback:     result.IsEnableFallback,
@@ -634,7 +652,17 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 			Remark:               result.Remark,
 			Status:               result.Status,
 			CreatedAt:            result.CreatedAt,
-		})
+		}
+
+		if modelAgents, err := dao.ModelAgent.Find(ctx, bson.M{"models": bson.M{"$in": []string{model.Id}}}); err != nil {
+			logger.Error(ctx, err)
+		} else {
+			for _, modelAgent := range modelAgents {
+				model.ModelAgents = append(model.ModelAgents, modelAgent.Id)
+			}
+		}
+
+		items = append(items, model)
 	}
 
 	return items, nil
@@ -648,9 +676,13 @@ func (s *sModel) ListAll(ctx context.Context) ([]*model.Model, error) {
 		logger.Debugf(ctx, "sModel ListAll time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	filter := bson.M{}
+	results, err := dao.Model.Find(ctx, bson.M{}, &dao.FindOptions{SortFields: []string{"status", "-updated_at"}})
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
 
-	results, err := dao.Model.Find(ctx, filter, &dao.FindOptions{SortFields: []string{"status", "-updated_at"}})
+	modelAgents, err := dao.ModelAgent.Find(ctx, bson.M{}, &dao.FindOptions{SortFields: []string{"status", "-updated_at"}})
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
@@ -658,7 +690,8 @@ func (s *sModel) ListAll(ctx context.Context) ([]*model.Model, error) {
 
 	items := make([]*model.Model, 0)
 	for _, result := range results {
-		items = append(items, &model.Model{
+
+		model := &model.Model{
 			Id:                   result.Id,
 			ProviderId:           result.ProviderId,
 			Name:                 result.Name,
@@ -674,7 +707,6 @@ func (s *sModel) ListAll(ctx context.Context) ([]*model.Model, error) {
 			IsPublic:             result.IsPublic,
 			IsEnableModelAgent:   result.IsEnableModelAgent,
 			LbStrategy:           result.LbStrategy,
-			ModelAgents:          result.ModelAgents,
 			IsEnableForward:      result.IsEnableForward,
 			ForwardConfig:        result.ForwardConfig,
 			IsEnableFallback:     result.IsEnableFallback,
@@ -682,7 +714,15 @@ func (s *sModel) ListAll(ctx context.Context) ([]*model.Model, error) {
 			Remark:               result.Remark,
 			Status:               result.Status,
 			CreatedAt:            result.CreatedAt,
-		})
+		}
+
+		for _, modelAgent := range modelAgents {
+			if slices.Contains(modelAgent.Models, model.Id) {
+				model.ModelAgents = append(model.ModelAgents, modelAgent.Id)
+			}
+		}
+
+		items = append(items, model)
 	}
 
 	return items, nil
@@ -858,7 +898,7 @@ func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, ne
 		logger.Debugf(ctx, "sModel UpdateCacheModel time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	if err := s.SaveCache(ctx, &model.Model{
+	model := &model.Model{
 		Id:                   newData.Id,
 		ProviderId:           newData.ProviderId,
 		Name:                 newData.Name,
@@ -874,13 +914,22 @@ func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, ne
 		IsPublic:             newData.IsPublic,
 		IsEnableModelAgent:   newData.IsEnableModelAgent,
 		LbStrategy:           newData.LbStrategy,
-		ModelAgents:          newData.ModelAgents,
 		IsEnableForward:      newData.IsEnableForward,
 		ForwardConfig:        newData.ForwardConfig,
 		IsEnableFallback:     newData.IsEnableFallback,
 		FallbackConfig:       newData.FallbackConfig,
 		Status:               newData.Status,
-	}); err != nil {
+	}
+
+	if modelAgents, err := dao.ModelAgent.Find(ctx, bson.M{"models": bson.M{"$in": []string{model.Id}}}); err != nil {
+		logger.Error(ctx, err)
+	} else {
+		for _, modelAgent := range modelAgents {
+			model.ModelAgents = append(model.ModelAgents, modelAgent.Id)
+		}
+	}
+
+	if err := s.SaveCache(ctx, model); err != nil {
 		logger.Error(ctx, err)
 	}
 }
