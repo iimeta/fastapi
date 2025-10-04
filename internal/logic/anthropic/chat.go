@@ -51,8 +51,8 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo   *mcommon.Retry
-		spendTokens mcommon.SpendTokens
+		retryInfo *mcommon.Retry
+		spend     mcommon.Spend
 	)
 
 	defer func() {
@@ -80,12 +80,12 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 				Usage:                 response.Usage,
 			}
 
-			// 花费额度
-			spendTokens = common.SpendTokens(ctx, mak, billingData)
+			// 花费
+			spend = common.Spend(ctx, mak, billingData)
 			response.Usage = billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -108,7 +108,7 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 
 				if retryInfo == nil && response.Usage != nil {
 					completionsRes.Usage = *response.Usage
-					completionsRes.Usage.TotalTokens = spendTokens.TotalTokens
+					completionsRes.Usage.TotalTokens = spend.TotalTokens
 				}
 
 				if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
@@ -126,7 +126,6 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 				}
 
 				service.Chat().SaveLog(ctx, model.ChatLog{
-					Group:              mak.Group,
 					ReqModel:           mak.ReqModel,
 					RealModel:          mak.RealModel,
 					ModelAgent:         mak.ModelAgent,
@@ -136,6 +135,7 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 					CompletionsReq:     &params,
 					CompletionsRes:     completionsRes,
 					RetryInfo:          retryInfo,
+					Spend:              spend,
 				})
 
 			}); err != nil {
@@ -294,13 +294,13 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		completion  string
-		connTime    int64
-		duration    int64
-		totalTime   int64
-		usage       *smodel.Usage
-		retryInfo   *mcommon.Retry
-		spendTokens mcommon.SpendTokens
+		completion string
+		connTime   int64
+		duration   int64
+		totalTime  int64
+		usage      *smodel.Usage
+		retryInfo  *mcommon.Retry
+		spend      mcommon.Spend
 	)
 
 	defer func() {
@@ -317,12 +317,12 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 					Usage:                 usage,
 				}
 
-				// 花费额度
-				spendTokens = common.SpendTokens(ctx, mak, billingData)
+				// 花费
+				spend = common.Spend(ctx, mak, billingData)
 				usage = billingData.Usage
 
 				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+					if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 						logger.Error(ctx, err)
 						panic(err)
 					}
@@ -346,11 +346,10 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 
 					if usage != nil {
 						completionsRes.Usage = *usage
-						completionsRes.Usage.TotalTokens = spendTokens.TotalTokens
+						completionsRes.Usage.TotalTokens = spend.TotalTokens
 					}
 
 					service.Chat().SaveLog(ctx, model.ChatLog{
-						Group:              mak.Group,
 						ReqModel:           mak.ReqModel,
 						RealModel:          mak.RealModel,
 						ModelAgent:         mak.ModelAgent,
@@ -360,6 +359,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 						CompletionsReq:     &params,
 						CompletionsRes:     completionsRes,
 						RetryInfo:          retryInfo,
+						Spend:              spend,
 					})
 
 				}); err != nil {

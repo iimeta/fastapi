@@ -54,8 +54,8 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo   *mcommon.Retry
-		spendTokens mcommon.SpendTokens
+		retryInfo *mcommon.Retry
+		spend     mcommon.Spend
 	)
 
 	defer func() {
@@ -69,11 +69,11 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 				AudioInput: params.Input,
 			}
 
-			// 花费额度
-			spendTokens = common.SpendTokens(ctx, mak, billingData)
+			// 花费
+			spend = common.Spend(ctx, mak, billingData)
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -98,11 +98,10 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 				}
 
 				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-					audioRes.TotalTokens = spendTokens.TotalTokens
+					audioRes.TotalTokens = spend.TotalTokens
 				}
 
 				s.SaveLog(ctx, model.AudioLog{
-					Group:              mak.Group,
 					ReqModel:           mak.ReqModel,
 					RealModel:          mak.RealModel,
 					ModelAgent:         mak.ModelAgent,
@@ -112,6 +111,7 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 					AudioReq:           audioReq,
 					AudioRes:           audioRes,
 					RetryInfo:          retryInfo,
+					Spend:              spend,
 				})
 
 			}); err != nil {
@@ -219,9 +219,9 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		minute      float64
-		retryInfo   *mcommon.Retry
-		spendTokens mcommon.SpendTokens
+		minute    float64
+		retryInfo *mcommon.Retry
+		spend     mcommon.Spend
 	)
 
 	defer func() {
@@ -242,11 +242,11 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 				AudioMinute: minute,
 			}
 
-			// 花费额度
-			spendTokens = common.SpendTokens(ctx, mak, billingData)
+			// 花费
+			spend = common.Spend(ctx, mak, billingData)
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -272,11 +272,10 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 				}
 
 				if retryInfo == nil {
-					audioRes.TotalTokens = spendTokens.TotalTokens
+					audioRes.TotalTokens = spend.TotalTokens
 				}
 
 				s.SaveLog(ctx, model.AudioLog{
-					Group:              mak.Group,
 					ReqModel:           mak.ReqModel,
 					RealModel:          mak.RealModel,
 					ModelAgent:         mak.ModelAgent,
@@ -286,6 +285,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 					AudioReq:           audioReq,
 					AudioRes:           audioRes,
 					RetryInfo:          retryInfo,
+					Spend:              spend,
 				})
 
 			}); err != nil {
@@ -407,7 +407,7 @@ func (s *sAudio) SaveLog(ctx context.Context, audioLog model.AudioLog, retry ...
 		Characters:   audioLog.AudioRes.Characters,
 		Minute:       audioLog.AudioRes.Minute,
 		FilePath:     audioLog.AudioReq.FilePath,
-		TotalTokens:  audioLog.AudioRes.TotalTokens,
+		Spend:        audioLog.Spend,
 		TotalTime:    audioLog.AudioRes.TotalTime,
 		InternalTime: audioLog.AudioRes.InternalTime,
 		ReqTime:      audioLog.AudioRes.EnterTime,
@@ -418,12 +418,6 @@ func (s *sAudio) SaveLog(ctx context.Context, audioLog model.AudioLog, retry ...
 		Status:       1,
 		Host:         g.RequestFromCtx(ctx).GetHost(),
 		Rid:          service.Session().GetRid(ctx),
-	}
-
-	if audioLog.Group != nil {
-		audio.GroupId = audioLog.Group.Id
-		audio.GroupName = audioLog.Group.Name
-		audio.Discount = audioLog.Group.Discount
 	}
 
 	if audioLog.ReqModel != nil {

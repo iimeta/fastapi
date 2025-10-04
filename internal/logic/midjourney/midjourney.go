@@ -53,13 +53,13 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		baseUrl     = config.Cfg.Midjourney.ApiBaseUrl
-		path        = request.RequestURI[3:]
-		reqUrl      = request.RequestURI
-		taskId      string
-		prompt      = request.GetMapStrStr()["prompt"]
-		retryInfo   *mcommon.Retry
-		spendTokens mcommon.SpendTokens
+		baseUrl   = config.Cfg.Midjourney.ApiBaseUrl
+		path      = request.RequestURI[3:]
+		reqUrl    = request.RequestURI
+		taskId    string
+		prompt    = request.GetMapStrStr()["prompt"]
+		retryInfo *mcommon.Retry
+		spend     mcommon.Spend
 	)
 
 	if model := request.GetRouterMap()["model"]; model != "" {
@@ -81,12 +81,12 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 				Usage: usage,
 			}
 
-			// 花费额度
-			spendTokens = common.SpendTokens(ctx, mak, billingData)
+			// 花费
+			spend = common.Spend(ctx, mak, billingData)
 			usage = billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -114,7 +114,6 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 				}
 
 				s.SaveLog(ctx, model.MidjourneyLog{
-					Group:              mak.Group,
 					ReqModel:           mak.ReqModel,
 					RealModel:          mak.RealModel,
 					ModelAgent:         mak.ModelAgent,
@@ -123,6 +122,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 					Key:                mak.Key,
 					Response:           midjourneyResponse,
 					RetryInfo:          retryInfo,
+					Spend:              spend,
 				})
 
 			}); err != nil {
@@ -142,9 +142,9 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 			Path: path,
 		}
 
-		// 花费额度
-		spendTokens = common.SpendTokens(ctx, mak, billingData, "midjourney")
-		if spendTokens.MidjourneyPricing.Path == "" {
+		// 花费
+		spend = common.Spend(ctx, mak, billingData, "midjourney")
+		if spend.MidjourneyPricing.Path == "" {
 			return response, errors.ERR_PATH_NOT_FOUND
 		}
 	}
@@ -242,12 +242,12 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		baseUrl     = config.Cfg.Midjourney.ApiBaseUrl
-		path        = request.RequestURI[3:]
-		taskId      = request.GetRouterMap()["taskId"]
-		imageUrl    string
-		retryInfo   *mcommon.Retry
-		spendTokens mcommon.SpendTokens
+		baseUrl   = config.Cfg.Midjourney.ApiBaseUrl
+		path      = request.RequestURI[3:]
+		taskId    = request.GetRouterMap()["taskId"]
+		imageUrl  string
+		retryInfo *mcommon.Retry
+		spend     mcommon.Spend
 	)
 
 	if model := request.GetRouterMap()["model"]; model != "" {
@@ -269,12 +269,12 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 				Usage: usage,
 			}
 
-			// 花费额度
-			spendTokens = common.SpendTokens(ctx, mak, billingData)
+			// 花费
+			spend = common.Spend(ctx, mak, billingData)
 			usage = billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -301,7 +301,6 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 				}
 
 				s.SaveLog(ctx, model.MidjourneyLog{
-					Group:              mak.Group,
 					ReqModel:           mak.ReqModel,
 					RealModel:          mak.RealModel,
 					ModelAgent:         mak.ModelAgent,
@@ -310,6 +309,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 					Key:                mak.Key,
 					Response:           midjourneyResponse,
 					RetryInfo:          retryInfo,
+					Spend:              spend,
 				})
 
 			}); err != nil {
@@ -329,9 +329,9 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 			Path: path,
 		}
 
-		// 花费额度
-		spendTokens = common.SpendTokens(ctx, mak, billingData, "midjourney")
-		if spendTokens.MidjourneyPricing.Path == "" {
+		// 花费
+		spend = common.Spend(ctx, mak, billingData, "midjourney")
+		if spend.MidjourneyPricing.Path == "" {
 			return response, errors.ERR_PATH_NOT_FOUND
 		}
 	}
@@ -455,7 +455,7 @@ func (s *sMidjourney) SaveLog(ctx context.Context, midjourneyLog model.Midjourne
 		PromptEn:     midjourneyLog.Response.PromptEn,
 		ImageUrl:     midjourneyLog.Response.ImageUrl,
 		Progress:     midjourneyLog.Response.Progress,
-		TotalTokens:  midjourneyLog.Response.Usage.TotalTokens,
+		Spend:        midjourneyLog.Spend,
 		ConnTime:     midjourneyLog.Response.ConnTime,
 		Duration:     midjourneyLog.Response.Duration,
 		TotalTime:    midjourneyLog.Response.TotalTime,
@@ -468,12 +468,6 @@ func (s *sMidjourney) SaveLog(ctx context.Context, midjourneyLog model.Midjourne
 		Status:       1,
 		Host:         g.RequestFromCtx(ctx).GetHost(),
 		Rid:          service.Session().GetRid(ctx),
-	}
-
-	if midjourneyLog.Group != nil {
-		midjourney.GroupId = midjourneyLog.Group.Id
-		midjourney.GroupName = midjourneyLog.Group.Name
-		midjourney.Discount = midjourneyLog.Group.Discount
 	}
 
 	if midjourneyLog.ReqModel != nil {

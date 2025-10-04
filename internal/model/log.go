@@ -6,7 +6,6 @@ import (
 )
 
 type ChatLog struct {
-	Group              *Group
 	ReqModel           *Model
 	RealModel          *Model
 	ModelAgent         *ModelAgent
@@ -18,11 +17,11 @@ type ChatLog struct {
 	ModerationReq      *smodel.ModerationRequest
 	CompletionsRes     *CompletionsRes
 	RetryInfo          *mcommon.Retry
+	Spend              mcommon.Spend
 	IsSmartMatch       bool
 }
 
 type ImageLog struct {
-	Group              *Group
 	ReqModel           *Model
 	RealModel          *Model
 	ModelAgent         *ModelAgent
@@ -32,10 +31,10 @@ type ImageLog struct {
 	ImageReq           *smodel.ImageGenerationRequest
 	ImageRes           *ImageRes
 	RetryInfo          *mcommon.Retry
+	Spend              mcommon.Spend
 }
 
 type AudioLog struct {
-	Group              *Group
 	ReqModel           *Model
 	RealModel          *Model
 	ModelAgent         *ModelAgent
@@ -45,10 +44,10 @@ type AudioLog struct {
 	AudioReq           *AudioReq
 	AudioRes           *AudioRes
 	RetryInfo          *mcommon.Retry
+	Spend              mcommon.Spend
 }
 
 type MidjourneyLog struct {
-	Group              *Group
 	ReqModel           *Model
 	RealModel          *Model
 	ModelAgent         *ModelAgent
@@ -57,4 +56,5 @@ type MidjourneyLog struct {
 	Key                *Key
 	Response           MidjourneyResponse
 	RetryInfo          *mcommon.Retry
+	Spend              mcommon.Spend
 }

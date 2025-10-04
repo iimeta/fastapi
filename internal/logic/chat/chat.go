@@ -62,8 +62,8 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo   *mcommon.Retry
-		spendTokens mcommon.SpendTokens
+		retryInfo *mcommon.Retry
+		spend     mcommon.Spend
 	)
 
 	defer func() {
@@ -91,12 +91,12 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 				Usage:                 response.Usage,
 			}
 
-			// 花费额度
-			spendTokens = common.SpendTokens(ctx, mak, billingData)
+			// 花费
+			spend = common.Spend(ctx, mak, billingData)
 			response.Usage = billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -128,7 +128,7 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 					}
 
 					completionsRes.Usage = *response.Usage
-					completionsRes.Usage.TotalTokens = spendTokens.TotalTokens
+					completionsRes.Usage.TotalTokens = spend.TotalTokens
 				}
 
 				if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
@@ -162,7 +162,6 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 				}
 
 				s.SaveLog(ctx, model.ChatLog{
-					Group:              mak.Group,
 					ReqModel:           mak.ReqModel,
 					RealModel:          mak.RealModel,
 					ModelAgent:         mak.ModelAgent,
@@ -172,6 +171,7 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 					CompletionsReq:     &params,
 					CompletionsRes:     completionsRes,
 					RetryInfo:          retryInfo,
+					Spend:              spend,
 				})
 
 			}); err != nil {
@@ -320,13 +320,13 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		completion  string
-		connTime    int64
-		duration    int64
-		totalTime   int64
-		usage       *smodel.Usage
-		retryInfo   *mcommon.Retry
-		spendTokens mcommon.SpendTokens
+		completion string
+		connTime   int64
+		duration   int64
+		totalTime  int64
+		usage      *smodel.Usage
+		retryInfo  *mcommon.Retry
+		spend      mcommon.Spend
 	)
 
 	defer func() {
@@ -343,12 +343,12 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 					Usage:                 usage,
 				}
 
-				// 花费额度
-				spendTokens = common.SpendTokens(ctx, mak, billingData)
+				// 花费
+				spend = common.Spend(ctx, mak, billingData)
 				usage = billingData.Usage
 
 				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+					if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 						logger.Error(ctx, err)
 						panic(err)
 					}
@@ -381,11 +381,10 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 						}
 
 						completionsRes.Usage = *usage
-						completionsRes.Usage.TotalTokens = spendTokens.TotalTokens
+						completionsRes.Usage.TotalTokens = spend.TotalTokens
 					}
 
 					s.SaveLog(ctx, model.ChatLog{
-						Group:              mak.Group,
 						ReqModel:           mak.ReqModel,
 						RealModel:          mak.RealModel,
 						ModelAgent:         mak.ModelAgent,
@@ -395,6 +394,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 						CompletionsReq:     &params,
 						CompletionsRes:     completionsRes,
 						RetryInfo:          retryInfo,
+						Spend:              spend,
 					})
 
 				}); err != nil {
@@ -673,7 +673,7 @@ func (s *sChat) SaveLog(ctx context.Context, chatLog model.ChatLog, retry ...int
 		Stream:           chatLog.CompletionsReq.Stream,
 		PromptTokens:     chatLog.CompletionsRes.Usage.PromptTokens,
 		CompletionTokens: chatLog.CompletionsRes.Usage.CompletionTokens,
-		TotalTokens:      chatLog.CompletionsRes.Usage.TotalTokens,
+		Spend:            chatLog.Spend,
 		SearchTokens:     chatLog.CompletionsRes.Usage.SearchTokens,
 		CacheWriteTokens: chatLog.CompletionsRes.Usage.CacheCreationInputTokens,
 		CacheHitTokens:   chatLog.CompletionsRes.Usage.CacheReadInputTokens,
@@ -689,12 +689,6 @@ func (s *sChat) SaveLog(ctx context.Context, chatLog model.ChatLog, retry ...int
 		Status:           1,
 		Host:             g.RequestFromCtx(ctx).GetHost(),
 		Rid:              service.Session().GetRid(ctx),
-	}
-
-	if chatLog.Group != nil {
-		chat.GroupId = chatLog.Group.Id
-		chat.GroupName = chatLog.Group.Name
-		chat.Discount = chatLog.Group.Discount
 	}
 
 	if config.Cfg.Log.Open && len(chatLog.CompletionsReq.Messages) > 0 && slices.Contains(config.Cfg.Log.ChatRecords, "prompt") {

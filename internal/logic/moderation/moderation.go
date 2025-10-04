@@ -48,8 +48,8 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo   *mcommon.Retry
-		spendTokens mcommon.SpendTokens
+		retryInfo *mcommon.Retry
+		spend     mcommon.Spend
 	)
 
 	defer func() {
@@ -73,12 +73,12 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 				billingData.Completion = gconv.String(response.Results)
 			}
 
-			// 花费额度
-			spendTokens = common.SpendTokens(ctx, mak, billingData)
+			// 花费
+			spend = common.Spend(ctx, mak, billingData)
 			response.Usage = billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -99,7 +99,7 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 
 				if retryInfo == nil && response.Usage != nil {
 					completionsRes.Usage = *response.Usage
-					completionsRes.Usage.TotalTokens = spendTokens.TotalTokens
+					completionsRes.Usage.TotalTokens = spend.TotalTokens
 				}
 
 				if retryInfo == nil && response.Results != nil {
@@ -107,7 +107,6 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 				}
 
 				s.SaveLog(ctx, model.ChatLog{
-					Group:              mak.Group,
 					ReqModel:           mak.ReqModel,
 					RealModel:          mak.RealModel,
 					ModelAgent:         mak.ModelAgent,
@@ -117,6 +116,7 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 					ModerationReq:      &params,
 					CompletionsRes:     completionsRes,
 					RetryInfo:          retryInfo,
+					Spend:              spend,
 				})
 
 			}); err != nil {
@@ -235,7 +235,7 @@ func (s *sModeration) SaveLog(ctx context.Context, chatLog model.ChatLog, retry 
 		AppId:            service.Session().GetAppId(ctx),
 		PromptTokens:     chatLog.CompletionsRes.Usage.PromptTokens,
 		CompletionTokens: chatLog.CompletionsRes.Usage.CompletionTokens,
-		TotalTokens:      chatLog.CompletionsRes.Usage.TotalTokens,
+		Spend:            chatLog.Spend,
 		ConnTime:         chatLog.CompletionsRes.ConnTime,
 		Duration:         chatLog.CompletionsRes.Duration,
 		TotalTime:        chatLog.CompletionsRes.TotalTime,
@@ -248,12 +248,6 @@ func (s *sModeration) SaveLog(ctx context.Context, chatLog model.ChatLog, retry 
 		Status:           1,
 		Host:             g.RequestFromCtx(ctx).GetHost(),
 		Rid:              service.Session().GetRid(ctx),
-	}
-
-	if chatLog.Group != nil {
-		chat.GroupId = chatLog.Group.Id
-		chat.GroupName = chatLog.Group.Name
-		chat.Discount = chatLog.Group.Discount
 	}
 
 	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.ChatRecords, "prompt") {

@@ -14,7 +14,7 @@ import (
 
 type (
 	IAppKey interface {
-		// 根据secretKey获取密钥信息
+		// 根据secretKey获取应用密钥信息
 		GetBySecretKey(ctx context.Context, secretKey string) (*model.AppKey, error)
 		// 应用密钥列表
 		List(ctx context.Context) ([]*model.AppKey, error)

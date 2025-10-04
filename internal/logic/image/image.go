@@ -55,8 +55,8 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo   *mcommon.Retry
-		spendTokens mcommon.SpendTokens
+		retryInfo *mcommon.Retry
+		spend     mcommon.Spend
 	)
 
 	defer func() {
@@ -72,12 +72,12 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 				Usage:                  &usage,
 			}
 
-			// 花费额度
-			spendTokens = common.SpendTokens(ctx, mak, billingData)
+			// 花费
+			spend = common.Spend(ctx, mak, billingData)
 			response.Usage = *billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -103,7 +103,6 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 				}
 
 				s.SaveLog(ctx, model.ImageLog{
-					Group:              mak.Group,
 					ReqModel:           mak.ReqModel,
 					RealModel:          mak.RealModel,
 					ModelAgent:         mak.ModelAgent,
@@ -113,6 +112,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 					ImageReq:           &params,
 					ImageRes:           imageRes,
 					RetryInfo:          retryInfo,
+					Spend:              spend,
 				})
 
 			}); err != nil {
@@ -132,12 +132,12 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 			ImageGenerationRequest: params,
 		}
 
-		// 花费额度
-		spendTokens = common.SpendTokens(ctx, mak, billingData, "image_generation")
+		// 花费
+		spend = common.Spend(ctx, mak, billingData, "image_generation")
 
-		if spendTokens.ImageGenerationPricing.Quality != "" {
-			params.Quality = spendTokens.ImageGenerationPricing.Quality
-			params.Size = fmt.Sprintf("%dx%d", spendTokens.ImageGenerationPricing.Width, spendTokens.ImageGenerationPricing.Height)
+		if spend.ImageGenerationPricing.Quality != "" {
+			params.Quality = spend.ImageGenerationPricing.Quality
+			params.Size = fmt.Sprintf("%dx%d", spend.ImageGenerationPricing.Width, spend.ImageGenerationPricing.Height)
 		}
 	}
 
@@ -240,8 +240,8 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo   *mcommon.Retry
-		spendTokens mcommon.SpendTokens
+		retryInfo *mcommon.Retry
+		spend     mcommon.Spend
 	)
 
 	defer func() {
@@ -256,12 +256,12 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 				Usage: &usage,
 			}
 
-			// 花费额度
-			spendTokens = common.SpendTokens(ctx, mak, billingData)
+			// 花费
+			spend = common.Spend(ctx, mak, billingData)
 			response.Usage = *billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spendTokens.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -298,7 +298,6 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 				}
 
 				s.SaveLog(ctx, model.ImageLog{
-					Group:              mak.Group,
 					ReqModel:           mak.ReqModel,
 					RealModel:          mak.RealModel,
 					ModelAgent:         mak.ModelAgent,
@@ -308,6 +307,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 					ImageReq:           imageReq,
 					ImageRes:           imageRes,
 					RetryInfo:          retryInfo,
+					Spend:              spend,
 				})
 
 			}); err != nil {
@@ -327,12 +327,12 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 			ImageEditRequest: params,
 		}
 
-		// 花费额度
-		spendTokens = common.SpendTokens(ctx, mak, billingData, "image_generation")
+		// 花费
+		spend = common.Spend(ctx, mak, billingData, "image_generation")
 
-		if spendTokens.ImageGenerationPricing.Quality != "" {
-			params.Quality = spendTokens.ImageGenerationPricing.Quality
-			params.Size = fmt.Sprintf("%dx%d", spendTokens.ImageGenerationPricing.Width, spendTokens.ImageGenerationPricing.Height)
+		if spend.ImageGenerationPricing.Quality != "" {
+			params.Quality = spend.ImageGenerationPricing.Quality
+			params.Size = fmt.Sprintf("%dx%d", spend.ImageGenerationPricing.Width, spend.ImageGenerationPricing.Height)
 		}
 	}
 
@@ -451,7 +451,7 @@ func (s *sImage) SaveLog(ctx context.Context, imageLog model.ImageLog, retry ...
 		OutputTokens:   imageLog.ImageRes.Usage.OutputTokens,
 		TextTokens:     imageLog.ImageRes.Usage.InputTokensDetails.TextTokens,
 		ImageTokens:    imageLog.ImageRes.Usage.InputTokensDetails.ImageTokens,
-		TotalTokens:    imageLog.ImageRes.Usage.TotalTokens,
+		Spend:          imageLog.Spend,
 		TotalTime:      imageLog.ImageRes.TotalTime,
 		InternalTime:   imageLog.ImageRes.InternalTime,
 		ReqTime:        imageLog.ImageRes.EnterTime,
@@ -462,12 +462,6 @@ func (s *sImage) SaveLog(ctx context.Context, imageLog model.ImageLog, retry ...
 		Status:         1,
 		Host:           g.RequestFromCtx(ctx).GetHost(),
 		Rid:            service.Session().GetRid(ctx),
-	}
-
-	if imageLog.Group != nil {
-		image.GroupId = imageLog.Group.Id
-		image.GroupName = imageLog.Group.Name
-		image.Discount = imageLog.Group.Discount
 	}
 
 	for _, data := range imageLog.ImageRes.Data {

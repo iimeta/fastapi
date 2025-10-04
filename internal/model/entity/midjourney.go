@@ -9,9 +9,6 @@ type Midjourney struct {
 	TraceId              string                 `bson:"trace_id,omitempty"`                // 日志ID
 	UserId               int                    `bson:"user_id,omitempty"`                 // 用户ID
 	AppId                int                    `bson:"app_id,omitempty"`                  // 应用ID
-	GroupId              string                 `bson:"group_id,omitempty"`                // 分组ID
-	GroupName            string                 `bson:"group_name,omitempty"`              // 分组名称
-	Discount             float64                `bson:"discount,omitempty"`                // 分组折扣
 	ProviderId           string                 `bson:"provider_id,omitempty"`             // 提供商ID
 	ModelId              string                 `bson:"model_id,omitempty"`                // 模型ID
 	ModelName            string                 `bson:"model_name,omitempty"`              // 模型名称
@@ -39,7 +36,7 @@ type Midjourney struct {
 	ImageUrl             string                 `bson:"image_url,omitempty"`               // 图像地址
 	Progress             string                 `bson:"progress,omitempty"`                // 进度
 	Response             interface{}            `bson:"response,omitempty"`                // 响应结果
-	TotalTokens          int                    `bson:"total_tokens,omitempty"`            // 总令牌数
+	Spend                common.Spend           `bson:"spend,omitempty"`                   // 花费
 	ConnTime             int64                  `bson:"conn_time,omitempty"`               // 连接时间
 	Duration             int64                  `bson:"duration,omitempty"`                // 持续时间
 	TotalTime            int64                  `bson:"total_time,omitempty"`              // 总时间
