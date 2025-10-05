@@ -524,6 +524,11 @@ func (s *sRealtime) SaveLog(ctx context.Context, chatLog model.ChatLog, retry ..
 
 	if chatLog.ReqModel != nil {
 		chat.ProviderId = chatLog.ReqModel.ProviderId
+		if provider, err := service.Provider().GetCache(ctx, chatLog.ReqModel.ProviderId); err != nil {
+			logger.Error(ctx, err)
+		} else {
+			chat.ProviderName = provider.Name
+		}
 		chat.ModelId = chatLog.ReqModel.Id
 		chat.ModelName = chatLog.ReqModel.Name
 		chat.Model = chatLog.ReqModel.Model

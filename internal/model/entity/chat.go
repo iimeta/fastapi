@@ -8,6 +8,7 @@ type Chat struct {
 	UserId               int                    `bson:"user_id,omitempty"`                 // 用户ID
 	AppId                int                    `bson:"app_id,omitempty"`                  // 应用ID
 	ProviderId           string                 `bson:"provider_id,omitempty"`             // 提供商ID
+	ProviderName         string                 `bson:"provider_name,omitempty"`           // 提供商名称
 	ModelId              string                 `bson:"model_id,omitempty"`                // 模型ID
 	ModelName            string                 `bson:"model_name,omitempty"`              // 模型名称
 	Model                string                 `bson:"model,omitempty"`                   // 模型

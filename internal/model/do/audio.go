@@ -7,11 +7,11 @@ import (
 
 type Audio struct {
 	gmeta.Meta           `collection:"audio" bson:"-"`
-	Id                   string                 `bson:"_id,omitempty"`                     // ID
 	TraceId              string                 `bson:"trace_id,omitempty"`                // 日志ID
 	UserId               int                    `bson:"user_id,omitempty"`                 // 用户ID
 	AppId                int                    `bson:"app_id,omitempty"`                  // 应用ID
 	ProviderId           string                 `bson:"provider_id,omitempty"`             // 提供商ID
+	ProviderName         string                 `bson:"provider_name,omitempty"`           // 提供商名称
 	ModelId              string                 `bson:"model_id,omitempty"`                // 模型ID
 	ModelName            string                 `bson:"model_name,omitempty"`              // 模型名称
 	Model                string                 `bson:"model,omitempty"`                   // 模型

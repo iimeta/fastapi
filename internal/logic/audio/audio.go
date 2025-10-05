@@ -422,6 +422,11 @@ func (s *sAudio) SaveLog(ctx context.Context, audioLog model.AudioLog, retry ...
 
 	if audioLog.ReqModel != nil {
 		audio.ProviderId = audioLog.ReqModel.ProviderId
+		if provider, err := service.Provider().GetCache(ctx, audioLog.ReqModel.ProviderId); err != nil {
+			logger.Error(ctx, err)
+		} else {
+			audio.ProviderName = provider.Name
+		}
 		audio.ModelId = audioLog.ReqModel.Id
 		audio.ModelName = audioLog.ReqModel.Name
 		audio.Model = audioLog.ReqModel.Model

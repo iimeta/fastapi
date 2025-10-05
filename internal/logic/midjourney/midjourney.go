@@ -472,6 +472,11 @@ func (s *sMidjourney) SaveLog(ctx context.Context, midjourneyLog model.Midjourne
 
 	if midjourneyLog.ReqModel != nil {
 		midjourney.ProviderId = midjourneyLog.ReqModel.ProviderId
+		if provider, err := service.Provider().GetCache(ctx, midjourneyLog.ReqModel.ProviderId); err != nil {
+			logger.Error(ctx, err)
+		} else {
+			midjourney.ProviderName = provider.Name
+		}
 		midjourney.ModelId = midjourneyLog.ReqModel.Id
 		midjourney.ModelName = midjourneyLog.ReqModel.Name
 		midjourney.Model = midjourneyLog.ReqModel.Model

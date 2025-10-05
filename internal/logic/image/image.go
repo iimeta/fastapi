@@ -474,6 +474,11 @@ func (s *sImage) SaveLog(ctx context.Context, imageLog model.ImageLog, retry ...
 
 	if imageLog.ReqModel != nil {
 		image.ProviderId = imageLog.ReqModel.ProviderId
+		if provider, err := service.Provider().GetCache(ctx, imageLog.ReqModel.ProviderId); err != nil {
+			logger.Error(ctx, err)
+		} else {
+			image.ProviderName = provider.Name
+		}
 		image.ModelId = imageLog.ReqModel.Id
 		image.ModelName = imageLog.ReqModel.Name
 		image.Model = imageLog.ReqModel.Model
