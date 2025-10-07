@@ -77,7 +77,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 			response.Usage = *billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -135,9 +135,9 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 		// 花费
 		spend = common.Spend(ctx, mak, billingData, "image_generation")
 
-		if spend.ImageGenerationPricing.Quality != "" {
-			params.Quality = spend.ImageGenerationPricing.Quality
-			params.Size = fmt.Sprintf("%dx%d", spend.ImageGenerationPricing.Width, spend.ImageGenerationPricing.Height)
+		if spend.ImageGeneration.Pricing.Quality != "" {
+			params.Quality = spend.ImageGeneration.Pricing.Quality
+			params.Size = fmt.Sprintf("%dx%d", spend.ImageGeneration.Pricing.Width, spend.ImageGeneration.Pricing.Height)
 		}
 	}
 
@@ -261,7 +261,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 			response.Usage = *billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -330,9 +330,9 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 		// 花费
 		spend = common.Spend(ctx, mak, billingData, "image_generation")
 
-		if spend.ImageGenerationPricing.Quality != "" {
-			params.Quality = spend.ImageGenerationPricing.Quality
-			params.Size = fmt.Sprintf("%dx%d", spend.ImageGenerationPricing.Width, spend.ImageGenerationPricing.Height)
+		if spend.ImageGeneration.Pricing.Quality != "" {
+			params.Quality = spend.ImageGeneration.Pricing.Quality
+			params.Size = fmt.Sprintf("%dx%d", spend.ImageGeneration.Pricing.Width, spend.ImageGeneration.Pricing.Height)
 		}
 	}
 

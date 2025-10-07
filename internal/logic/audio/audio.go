@@ -73,7 +73,7 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 			spend = common.Spend(ctx, mak, billingData)
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -98,7 +98,7 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 				}
 
 				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-					audioRes.TotalTokens = spend.TotalTokens
+					audioRes.TotalTokens = spend.TotalSpendTokens
 				}
 
 				s.SaveLog(ctx, model.AudioLog{
@@ -246,7 +246,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 			spend = common.Spend(ctx, mak, billingData)
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -272,7 +272,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 				}
 
 				if retryInfo == nil {
-					audioRes.TotalTokens = spend.TotalTokens
+					audioRes.TotalTokens = spend.TotalSpendTokens
 				}
 
 				s.SaveLog(ctx, model.AudioLog{

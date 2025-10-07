@@ -96,7 +96,7 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 			response.Usage = billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -128,7 +128,7 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 					}
 
 					completionsRes.Usage = *response.Usage
-					completionsRes.Usage.TotalTokens = spend.TotalTokens
+					completionsRes.Usage.TotalTokens = spend.TotalSpendTokens
 				}
 
 				if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
@@ -348,7 +348,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 				usage = billingData.Usage
 
 				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+					if err := service.Common().RecordUsage(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
 						logger.Error(ctx, err)
 						panic(err)
 					}
@@ -381,7 +381,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 						}
 
 						completionsRes.Usage = *usage
-						completionsRes.Usage.TotalTokens = spend.TotalTokens
+						completionsRes.Usage.TotalTokens = spend.TotalSpendTokens
 					}
 
 					s.SaveLog(ctx, model.ChatLog{

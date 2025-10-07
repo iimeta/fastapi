@@ -88,7 +88,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 			chatCompletionResponse.Usage = billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -120,7 +120,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 					}
 
 					completionsRes.Usage = *chatCompletionResponse.Usage
-					completionsRes.Usage.TotalTokens = spend.TotalTokens
+					completionsRes.Usage.TotalTokens = spend.TotalSpendTokens
 				}
 
 				if retryInfo == nil && len(chatCompletionResponse.Choices) > 0 && chatCompletionResponse.Choices[0].Message != nil {
@@ -320,7 +320,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 				usage = billingData.Usage
 
 				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+					if err := service.Common().RecordUsage(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
 						logger.Error(ctx, err)
 						panic(err)
 					}
@@ -353,7 +353,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 						}
 
 						completionsRes.Usage = *usage
-						completionsRes.Usage.TotalTokens = spend.TotalTokens
+						completionsRes.Usage.TotalTokens = spend.TotalSpendTokens
 					}
 
 					service.Chat().SaveLog(ctx, model.ChatLog{

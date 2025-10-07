@@ -370,7 +370,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 
 				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-					if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+					if err := service.Common().RecordUsage(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
 						logger.Error(ctx, err)
 						panic(err)
 					}
@@ -395,7 +395,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 					}
 
 					completionsRes.Usage = *usage
-					completionsRes.Usage.TotalTokens = spend.TotalTokens
+					completionsRes.Usage.TotalTokens = spend.TotalSpendTokens
 
 					s.SaveLog(ctx, model.ChatLog{
 						ReqModel:           mak.ReqModel,

@@ -89,7 +89,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 			response.Usage = billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -110,7 +110,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 
 				if retryInfo == nil && response.Usage != nil {
 					completionsRes.Usage = *response.Usage
-					completionsRes.Usage.TotalTokens = spend.TotalTokens
+					completionsRes.Usage.TotalTokens = spend.TotalSpendTokens
 				}
 
 				if retryInfo == nil && len(response.Data) > 0 {

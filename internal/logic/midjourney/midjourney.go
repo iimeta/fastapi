@@ -86,7 +86,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 			usage = billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -144,7 +144,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 
 		// 花费
 		spend = common.Spend(ctx, mak, billingData, "midjourney")
-		if spend.MidjourneyPricing.Path == "" {
+		if spend.Midjourney.Pricing.Path == "" {
 			return response, errors.ERR_PATH_NOT_FOUND
 		}
 	}
@@ -274,7 +274,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 			usage = billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -331,7 +331,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 
 		// 花费
 		spend = common.Spend(ctx, mak, billingData, "midjourney")
-		if spend.MidjourneyPricing.Path == "" {
+		if spend.Midjourney.Pricing.Path == "" {
 			return response, errors.ERR_PATH_NOT_FOUND
 		}
 	}

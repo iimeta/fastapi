@@ -84,7 +84,7 @@ func (s *sGeneral) General(ctx context.Context, request *ghttp.Request, fallback
 			response.Usage = billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordUsage(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -116,7 +116,7 @@ func (s *sGeneral) General(ctx context.Context, request *ghttp.Request, fallback
 					}
 
 					completionsRes.Usage = *response.Usage
-					completionsRes.Usage.TotalTokens = spend.TotalTokens
+					completionsRes.Usage.TotalTokens = spend.TotalSpendTokens
 				}
 
 				if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
@@ -297,7 +297,7 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 				usage = billingData.Usage
 
 				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, spend.TotalTokens, mak.Key.Key, mak.Group); err != nil {
+					if err := service.Common().RecordUsage(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
 						logger.Error(ctx, err)
 						panic(err)
 					}
@@ -330,7 +330,7 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 						}
 
 						completionsRes.Usage = *usage
-						completionsRes.Usage.TotalTokens = spend.TotalTokens
+						completionsRes.Usage.TotalTokens = spend.TotalSpendTokens
 					}
 
 					service.Chat().SaveLog(ctx, model.ChatLog{
