@@ -37,10 +37,6 @@ type Image struct {
 	Style                string                 `bson:"style,omitempty"`                   // 图像样式[vivid, natural]
 	ResponseFormat       string                 `bson:"response_format,omitempty"`         // 图像格式[url, b64_json]
 	ImageData            []common.ImageData     `bson:"image_data,omitempty"`              // 生成图像数据
-	InputTokens          int                    `bson:"input_tokens,omitempty"`            // 输入令牌数
-	OutputTokens         int                    `bson:"output_tokens,omitempty"`           // 输出令牌数
-	TextTokens           int                    `bson:"text_tokens,omitempty"`             // 文本令牌数
-	ImageTokens          int                    `bson:"image_tokens,omitempty"`            // 图像令牌数
 	Spend                common.Spend           `bson:"spend,omitempty"`                   // 花费
 	TotalTime            int64                  `bson:"total_time,omitempty"`              // 总时间
 	InternalTime         int64                  `bson:"internal_time,omitempty"`           // 内耗时间

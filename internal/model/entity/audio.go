@@ -31,9 +31,6 @@ type Audio struct {
 	RealModel            string                 `bson:"real_model,omitempty"`              // 真实模型
 	Input                string                 `bson:"input,omitempty"`                   // 输入文本
 	Text                 string                 `bson:"text,omitempty"`                    // 输出文本
-	Characters           int                    `bson:"characters,omitempty"`              // 字符数
-	Minute               float64                `bson:"minute,omitempty"`                  // 分钟数
-	FilePath             string                 `bson:"file_path,omitempty"`               // 文件路径
 	Spend                common.Spend           `bson:"spend,omitempty"`                   // 花费
 	TotalTime            int64                  `bson:"total_time,omitempty"`              // 总时间
 	InternalTime         int64                  `bson:"internal_time,omitempty"`           // 内耗时间

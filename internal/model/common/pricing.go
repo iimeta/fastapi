@@ -120,15 +120,13 @@ type TextSpend struct {
 	Pricing      *TextPricing `bson:"pricing,omitempty"       json:"pricing,omitempty"`       // 定价
 	InputTokens  int          `bson:"input_tokens,omitempty"  json:"input_tokens,omitempty"`  // 输入Token数
 	OutputTokens int          `bson:"output_tokens,omitempty" json:"output_tokens,omitempty"` // 输出Token数
-	Mode         string       `bson:"mode,omitempty"          json:"mode,omitempty"`          // 模式[all:全部, thinking:思考, non_thinking:非思考]
 	SpendTokens  int          `bson:"spend_tokens,omitempty"  json:"spend_tokens,omitempty"`  // 花费Token数
 }
 
 type CacheSpend struct {
 	Pricing     *CachePricing `bson:"pricing,omitempty"      json:"pricing,omitempty"`      // 定价
-	ReadTokens  float64       `bson:"read_tokens,omitempty"  json:"read_tokens,omitempty"`  // 读取/命中Token数
-	WriteTokens float64       `bson:"write_tokens,omitempty" json:"write_tokens,omitempty"` // 写入Token数
-	Mode        string        `bson:"mode,omitempty"         json:"mode,omitempty"`         // 模式[all:全部, thinking:思考, non_thinking:非思考]
+	ReadTokens  int           `bson:"read_tokens,omitempty"  json:"read_tokens,omitempty"`  // 读取/命中Token数
+	WriteTokens int           `bson:"write_tokens,omitempty" json:"write_tokens,omitempty"` // 写入Token数
 	SpendTokens int           `bson:"spend_tokens,omitempty" json:"spend_tokens,omitempty"` // 花费Token数
 }
 
@@ -141,15 +139,12 @@ type ImageSpend struct {
 
 type ImageGenerationSpend struct {
 	Pricing     *ImageGenerationPricing `bson:"pricing,omitempty"      json:"pricing,omitempty"`      // 定价
-	Quality     string                  `bson:"quality,omitempty"      json:"quality,omitempty"`      // 质量[high, medium, low, hd, standard]
-	Width       int                     `bson:"width,omitempty"        json:"width,omitempty"`        // 宽度
-	Height      int                     `bson:"height,omitempty"       json:"height,omitempty"`       // 高度
+	N           int                     `bson:"n,omitempty"            json:"n,omitempty"`            // 图像数
 	SpendTokens int                     `bson:"spend_tokens,omitempty" json:"spend_tokens,omitempty"` // 花费Token数
 }
 
 type VisionSpend struct {
 	Pricing     *VisionPricing `bson:"pricing,omitempty"      json:"pricing,omitempty"`      // 定价
-	Mode        string         `bson:"mode,omitempty"         json:"mode,omitempty"`         // 模式[low, high, auto]
 	SpendTokens int            `bson:"spend_tokens,omitempty" json:"spend_tokens,omitempty"` // 花费Token数
 }
 
@@ -162,21 +157,17 @@ type AudioSpend struct {
 
 type SearchSpend struct {
 	Pricing     *SearchPricing `bson:"pricing,omitempty"      json:"pricing,omitempty"`      // 定价
-	ContextSize string         `bson:"context_size,omitempty" json:"context_size,omitempty"` // 上下文大小[high, medium, low]
 	SpendTokens int            `bson:"spend_tokens,omitempty" json:"spend_tokens,omitempty"` // 花费Token数
 }
 
 type MidjourneySpend struct {
 	Pricing     *MidjourneyPricing `bson:"pricing,omitempty"      json:"pricing,omitempty"`      // 定价
-	Name        string             `bson:"name,omitempty"         json:"name,omitempty"`         // 名称
-	Action      string             `bson:"action,omitempty"       json:"action,omitempty"`       // 动作[IMAGINE, UPSCALE, VARIATION, ZOOM, PAN, DESCRIBE, BLEND, SHORTEN, SWAP_FACE]
-	Path        string             `bson:"path,omitempty"         json:"path,omitempty"`         // 路径
 	SpendTokens int                `bson:"spend_tokens,omitempty" json:"spend_tokens,omitempty"` // 花费Token数
 }
 
 type OnceSpend struct {
 	Pricing      *OncePricing `bson:"pricing,omitempty"       json:"pricing,omitempty"`       // 定价
+	SpendTokens  int          `bson:"spend_tokens,omitempty"  json:"spend_tokens,omitempty"`  // 花费Token数
 	InputTokens  int          `bson:"input_tokens,omitempty"  json:"input_tokens,omitempty"`  // 输入Token数
 	OutputTokens int          `bson:"output_tokens,omitempty" json:"output_tokens,omitempty"` // 输出Token数
-	SpendTokens  int          `bson:"spend_tokens,omitempty"  json:"spend_tokens,omitempty"`  // 花费Token数
 }

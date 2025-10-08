@@ -34,11 +34,6 @@ type Chat struct {
 	Messages             []common.Message       `bson:"messages,omitempty"`                // 完整提示(提问)
 	Prompt               string                 `bson:"prompt,omitempty"`                  // 提示(提问)
 	Completion           string                 `bson:"completion,omitempty"`              // 补全(回答)
-	PromptTokens         int                    `bson:"prompt_tokens,omitempty"`           // 提示令牌数(提问令牌数)
-	CompletionTokens     int                    `bson:"completion_tokens,omitempty"`       // 补全令牌数(回答令牌数)
-	SearchTokens         int                    `bson:"search_tokens,omitempty"`           // 搜索令牌数
-	CacheWriteTokens     int                    `bson:"cache_write_tokens,omitempty"`      // 缓存写入令牌数
-	CacheHitTokens       int                    `bson:"cache_hit_tokens,omitempty"`        // 缓存命中令牌数
 	Spend                common.Spend           `bson:"spend,omitempty"`                   // 花费
 	ConnTime             int64                  `bson:"conn_time,omitempty"`               // 连接时间
 	Duration             int64                  `bson:"duration,omitempty"`                // 持续时间

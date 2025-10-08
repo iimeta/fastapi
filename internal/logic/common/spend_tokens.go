@@ -51,15 +51,61 @@ func Spend(ctx context.Context, mak *MAK, billingData *common.BillingData, billi
 		case "midjourney":
 			midjourney(ctx, mak, billingData, &spend)
 		case "once":
-			once(ctx, mak, &spend)
+			once(ctx, mak, billingData, &spend)
 		}
 	}
 
 	if !slices.Contains(mak.ReqModel.Pricing.BillingMethods, 2) {
-		spend.TotalSpendTokens = spend.Text.SpendTokens + spend.TextCache.SpendTokens + spend.TieredText.SpendTokens + spend.TieredTextCache.SpendTokens +
-			spend.Image.SpendTokens + spend.ImageGeneration.SpendTokens + spend.ImageCache.SpendTokens + spend.Vision.SpendTokens +
-			spend.Audio.SpendTokens + spend.AudioCache.SpendTokens + spend.Search.SpendTokens + spend.Midjourney.SpendTokens
-	} else {
+
+		if spend.Text != nil {
+			spend.TotalSpendTokens += spend.Text.SpendTokens
+		}
+
+		if spend.TextCache != nil {
+			spend.TotalSpendTokens += spend.TextCache.SpendTokens
+		}
+
+		if spend.TieredText != nil {
+			spend.TotalSpendTokens += spend.TieredText.SpendTokens
+		}
+
+		if spend.TieredTextCache != nil {
+			spend.TotalSpendTokens += spend.TieredTextCache.SpendTokens
+		}
+
+		if spend.Image != nil {
+			spend.TotalSpendTokens += spend.Image.SpendTokens
+		}
+
+		if spend.ImageGeneration != nil {
+			spend.TotalSpendTokens += spend.ImageGeneration.SpendTokens
+		}
+
+		if spend.ImageCache != nil {
+			spend.TotalSpendTokens += spend.ImageCache.SpendTokens
+		}
+
+		if spend.Vision != nil {
+			spend.TotalSpendTokens += spend.Vision.SpendTokens
+		}
+
+		if spend.Audio != nil {
+			spend.TotalSpendTokens += spend.Audio.SpendTokens
+		}
+
+		if spend.AudioCache != nil {
+			spend.TotalSpendTokens += spend.AudioCache.SpendTokens
+		}
+
+		if spend.Search != nil {
+			spend.TotalSpendTokens += spend.Search.SpendTokens
+		}
+
+		if spend.Midjourney != nil {
+			spend.TotalSpendTokens += spend.Midjourney.SpendTokens
+		}
+
+	} else if spend.Once != nil {
 		spend.TotalSpendTokens = spend.Once.SpendTokens
 	}
 
@@ -77,6 +123,10 @@ func Spend(ctx context.Context, mak *MAK, billingData *common.BillingData, billi
 // 文本
 func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
 
+	if spend.Text == nil {
+		spend.Text = new(common.TextSpend)
+	}
+
 	model := mak.ReqModel.Model
 	if !tiktoken.IsEncodingForModel(model) {
 		model = consts.DEFAULT_MODEL
@@ -90,7 +140,8 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 
 		if billingData.Usage.InputTokensDetails.TextTokens > 0 {
 			spend.Text.Pricing = mak.ReqModel.Pricing.Text
-			spend.Text.SpendTokens = int(math.Ceil(float64(billingData.Usage.InputTokensDetails.TextTokens) * mak.ReqModel.Pricing.Text.InputRatio))
+			spend.Text.InputTokens = billingData.Usage.InputTokensDetails.TextTokens
+			spend.Text.SpendTokens = int(math.Ceil(float64(spend.Text.InputTokens) * spend.Text.Pricing.InputRatio))
 		}
 
 		return
@@ -127,7 +178,9 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 	}
 
 	spend.Text.Pricing = mak.ReqModel.Pricing.Text
-	spend.Text.SpendTokens = int(math.Ceil(float64(billingData.Usage.PromptTokens)*mak.ReqModel.Pricing.Text.InputRatio + float64(billingData.Usage.CompletionTokens)*mak.ReqModel.Pricing.Text.OutputRatio))
+	spend.Text.InputTokens = billingData.Usage.PromptTokens
+	spend.Text.OutputTokens = billingData.Usage.CompletionTokens
+	spend.Text.SpendTokens = int(math.Ceil(float64(spend.Text.InputTokens)*spend.Text.Pricing.InputRatio)) + int(math.Ceil(float64(spend.Text.OutputTokens)*spend.Text.Pricing.OutputRatio))
 }
 
 // 文本缓存
@@ -137,25 +190,30 @@ func textCache(ctx context.Context, mak *MAK, billingData *common.BillingData, s
 		return
 	}
 
-	spend.TextCache.Pricing = mak.ReqModel.Pricing.TextCache
+	if spend.TextCache == nil {
+		spend.TextCache = new(common.CacheSpend)
+	}
 
 	if billingData.Usage.PromptTokensDetails.CachedTokens > 0 {
-		spend.TextCache.SpendTokens += int(math.Ceil(float64(billingData.Usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.Pricing.TextCache.ReadRatio))
+		spend.TextCache.ReadTokens += billingData.Usage.PromptTokensDetails.CachedTokens
 	}
 
 	if billingData.Usage.CompletionTokensDetails.CachedTokens > 0 {
-		spend.TextCache.SpendTokens += int(math.Ceil(float64(billingData.Usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.Pricing.TextCache.ReadRatio))
+		spend.TextCache.ReadTokens += billingData.Usage.CompletionTokensDetails.CachedTokens
 	}
 
 	// Claude
 	if billingData.Usage.CacheReadInputTokens > 0 {
-		spend.TextCache.SpendTokens += int(math.Ceil(float64(billingData.Usage.CacheReadInputTokens) * mak.ReqModel.Pricing.TextCache.ReadRatio))
+		spend.TextCache.ReadTokens += billingData.Usage.CacheReadInputTokens
 	}
 
 	// Claude
 	if billingData.Usage.CacheCreationInputTokens > 0 {
-		spend.TextCache.SpendTokens += int(math.Ceil(float64(billingData.Usage.CacheCreationInputTokens) * mak.ReqModel.Pricing.TextCache.WriteRatio))
+		spend.TextCache.WriteTokens += billingData.Usage.CacheCreationInputTokens
 	}
+
+	spend.TextCache.Pricing = mak.ReqModel.Pricing.TextCache
+	spend.TextCache.SpendTokens = int(math.Ceil(float64(spend.TextCache.ReadTokens)*spend.TextCache.Pricing.ReadRatio)) + int(math.Ceil(float64(spend.TextCache.WriteTokens)*spend.TextCache.Pricing.WriteRatio))
 }
 
 // 阶梯文本
@@ -165,10 +223,16 @@ func tieredText(ctx context.Context, mak *MAK, billingData *common.BillingData, 
 		return
 	}
 
+	if spend.TieredText == nil {
+		spend.TieredText = new(common.TextSpend)
+	}
+
 	for i, tieredText := range mak.ReqModel.Pricing.TieredText {
 		if (billingData.Usage.PromptTokens > tieredText.Gt && billingData.Usage.PromptTokens <= tieredText.Lte) || (i == len(mak.ReqModel.Pricing.TieredText)-1) {
 			spend.TieredText.Pricing = tieredText
-			spend.TieredText.SpendTokens = int(math.Ceil(float64(billingData.Usage.PromptTokens)*tieredText.InputRatio)) + int(math.Ceil(float64(billingData.Usage.CompletionTokens)*tieredText.OutputRatio))
+			spend.TieredText.InputTokens = billingData.Usage.PromptTokens
+			spend.TieredText.OutputTokens = billingData.Usage.CompletionTokens
+			spend.TieredText.SpendTokens = int(math.Ceil(float64(spend.TieredText.InputTokens)*spend.TieredText.Pricing.InputRatio)) + int(math.Ceil(float64(spend.TieredText.OutputTokens)*spend.TieredText.Pricing.OutputRatio))
 			return
 		}
 	}
@@ -181,10 +245,16 @@ func tieredTextCache(ctx context.Context, mak *MAK, billingData *common.BillingD
 		return
 	}
 
+	if spend.TieredTextCache == nil {
+		spend.TieredTextCache = new(common.CacheSpend)
+	}
+
 	for i, tieredTextCache := range mak.ReqModel.Pricing.TieredTextCache {
 		if (billingData.Usage.PromptTokens > tieredTextCache.Gt && billingData.Usage.PromptTokens <= tieredTextCache.Lte) || (i == len(mak.ReqModel.Pricing.TieredTextCache)-1) {
 			spend.TieredTextCache.Pricing = tieredTextCache
-			spend.TieredTextCache.SpendTokens = int(math.Ceil(float64(billingData.Usage.CacheReadInputTokens)*tieredTextCache.ReadRatio)) + int(math.Ceil(float64(billingData.Usage.CacheCreationInputTokens)*tieredTextCache.WriteRatio))
+			spend.TieredTextCache.ReadTokens = billingData.Usage.CacheReadInputTokens
+			spend.TieredTextCache.WriteTokens = billingData.Usage.CacheCreationInputTokens
+			spend.TieredTextCache.SpendTokens = int(math.Ceil(float64(spend.TieredTextCache.ReadTokens)*spend.TieredTextCache.Pricing.ReadRatio)) + int(math.Ceil(float64(spend.TieredTextCache.WriteTokens)*spend.TieredTextCache.Pricing.WriteRatio))
 			return
 		}
 	}
@@ -193,19 +263,28 @@ func tieredTextCache(ctx context.Context, mak *MAK, billingData *common.BillingD
 // 图像
 func image(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
 
-	spend.Image.Pricing = mak.ReqModel.Pricing.Image
+	if spend.Image == nil {
+		spend.Image = new(common.ImageSpend)
+	}
 
-	if billingData.Usage.InputTokens > 0 {
-		spend.Image.SpendTokens += int(math.Ceil(float64(billingData.Usage.InputTokensDetails.ImageTokens) * mak.ReqModel.Pricing.Image.InputRatio))
+	if billingData.Usage.InputTokensDetails.ImageTokens > 0 {
+		spend.Image.InputTokens += billingData.Usage.InputTokensDetails.ImageTokens
 	}
 
 	if billingData.Usage.OutputTokens > 0 {
-		spend.Image.SpendTokens += int(math.Ceil(float64(billingData.Usage.OutputTokens) * mak.ReqModel.Pricing.Image.OutputRatio))
+		spend.Image.OutputTokens += billingData.Usage.OutputTokens
 	}
+
+	spend.Image.Pricing = mak.ReqModel.Pricing.Image
+	spend.Image.SpendTokens = int(math.Ceil(float64(spend.Image.InputTokens)*spend.Image.Pricing.InputRatio)) + int(math.Ceil(float64(spend.Image.OutputTokens)*spend.Image.Pricing.OutputRatio))
 }
 
 // 图像生成
 func imageGeneration(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
+
+	if spend.ImageGeneration == nil {
+		spend.ImageGeneration = new(common.ImageGenerationSpend)
+	}
 
 	var (
 		quality = billingData.ImageGenerationRequest.Quality
@@ -260,19 +339,35 @@ func imageGeneration(ctx context.Context, mak *MAK, billingData *common.BillingD
 		}
 	}
 
-	spend.ImageGeneration.SpendTokens = int(math.Ceil(consts.QUOTA_USD_UNIT*spend.ImageGeneration.Pricing.OnceRatio)) * billingData.ImageEditRequest.N
+	spend.ImageGeneration.N = billingData.ImageEditRequest.N
+	if spend.ImageGeneration.N == 0 {
+		spend.ImageGeneration.N = 1
+	}
+
+	spend.ImageGeneration.SpendTokens = int(math.Ceil(consts.QUOTA_USD_UNIT*spend.ImageGeneration.Pricing.OnceRatio)) * spend.ImageGeneration.N
 }
 
 // 图像缓存
 func imageCache(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
+
 	if billingData.Usage.InputTokensDetails.CachedTokens > 0 {
+
+		if spend.ImageCache == nil {
+			spend.ImageCache = new(common.CacheSpend)
+		}
+
 		spend.ImageCache.Pricing = mak.ReqModel.Pricing.ImageCache
-		spend.ImageCache.SpendTokens = int(math.Ceil(float64(billingData.Usage.InputTokensDetails.CachedTokens) * mak.ReqModel.Pricing.ImageCache.ReadRatio))
+		spend.ImageCache.ReadTokens = billingData.Usage.InputTokensDetails.CachedTokens
+		spend.ImageCache.SpendTokens = int(math.Ceil(float64(spend.ImageCache.ReadTokens) * spend.ImageCache.Pricing.ReadRatio))
 	}
 }
 
 // 识图
 func vision(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
+
+	if spend.Vision == nil {
+		spend.Vision = new(common.VisionSpend)
+	}
 
 	model := mak.ReqModel.Model
 	if !tiktoken.IsEncodingForModel(model) {
@@ -310,37 +405,47 @@ func vision(ctx context.Context, mak *MAK, billingData *common.BillingData, spen
 // 音频
 func audio(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
 
-	spend.Audio.Pricing = mak.ReqModel.Pricing.Audio
+	if spend.Audio == nil {
+		spend.Audio = new(common.AudioSpend)
+	}
 
 	if audioInputLen := len(billingData.AudioInput); audioInputLen > 0 {
-		spend.Audio.SpendTokens += int(math.Ceil(float64(audioInputLen) * mak.ReqModel.Pricing.Audio.InputRatio))
+		spend.Audio.InputTokens += audioInputLen
 	}
 
 	if billingData.AudioMinute > 0 {
-		spend.Audio.SpendTokens += int(math.Ceil(billingData.AudioMinute * 1000 * mak.ReqModel.Pricing.Audio.OutputRatio))
+		spend.Audio.OutputTokens += int(math.Ceil(billingData.AudioMinute * 1000))
 	}
 
 	if billingData.Usage.PromptTokensDetails.AudioTokens > 0 {
-		spend.Audio.SpendTokens += int(math.Ceil(float64(billingData.Usage.PromptTokensDetails.AudioTokens) * mak.ReqModel.Pricing.Audio.InputRatio))
+		spend.Audio.InputTokens += billingData.Usage.PromptTokensDetails.AudioTokens
 	}
 
 	if billingData.Usage.CompletionTokensDetails.AudioTokens > 0 {
-		spend.Audio.SpendTokens += int(math.Ceil(float64(billingData.Usage.CompletionTokensDetails.AudioTokens) * mak.ReqModel.Pricing.Audio.OutputRatio))
+		spend.Audio.OutputTokens += billingData.Usage.CompletionTokensDetails.AudioTokens
 	}
+
+	spend.Audio.Pricing = mak.ReqModel.Pricing.Audio
+	spend.Audio.SpendTokens = int(math.Ceil(float64(spend.Audio.InputTokens)*spend.Audio.Pricing.InputRatio)) + int(math.Ceil(float64(spend.Audio.OutputTokens)*spend.Audio.Pricing.OutputRatio))
 }
 
 // 音频缓存
 func audioCache(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
 
-	spend.AudioCache.Pricing = mak.ReqModel.Pricing.AudioCache
+	if spend.AudioCache == nil {
+		spend.AudioCache = new(common.CacheSpend)
+	}
 
 	if billingData.Usage.PromptTokensDetails.CachedTokens > 0 {
-		spend.AudioCache.SpendTokens += int(math.Ceil(float64(billingData.Usage.PromptTokensDetails.CachedTokens) * mak.ReqModel.Pricing.AudioCache.ReadRatio))
+		spend.AudioCache.ReadTokens += billingData.Usage.PromptTokensDetails.CachedTokens
 	}
 
 	if billingData.Usage.CompletionTokensDetails.CachedTokens > 0 {
-		spend.AudioCache.SpendTokens += int(math.Ceil(float64(billingData.Usage.CompletionTokensDetails.CachedTokens) * mak.ReqModel.Pricing.AudioCache.ReadRatio))
+		spend.AudioCache.ReadTokens += billingData.Usage.CompletionTokensDetails.CachedTokens
 	}
+
+	spend.AudioCache.Pricing = mak.ReqModel.Pricing.AudioCache
+	spend.AudioCache.SpendTokens = int(math.Ceil(float64(spend.AudioCache.ReadTokens) * spend.AudioCache.Pricing.ReadRatio))
 }
 
 // 搜索
@@ -348,6 +453,10 @@ func search(ctx context.Context, mak *MAK, billingData *common.BillingData, spen
 
 	if billingData.ChatCompletionRequest.WebSearchOptions == nil && (billingData.ChatCompletionRequest.Tools == nil || (!gstr.Contains(gconv.String(billingData.ChatCompletionRequest.Tools), "google_search") && !gstr.Contains(gconv.String(billingData.ChatCompletionRequest.Tools), "googleSearch"))) {
 		return
+	}
+
+	if spend.Search == nil {
+		spend.Search = new(common.SearchSpend)
 	}
 
 	var searchContextSize string
@@ -374,6 +483,11 @@ func search(ctx context.Context, mak *MAK, billingData *common.BillingData, spen
 
 // Midjourney
 func midjourney(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
+
+	if spend.Midjourney == nil {
+		spend.Midjourney = new(common.MidjourneySpend)
+	}
+
 	for _, midjourney := range mak.ReqModel.Pricing.Midjourney {
 		if billingData.Path == midjourney.Path {
 			spend.Midjourney.Pricing = midjourney
@@ -384,7 +498,17 @@ func midjourney(ctx context.Context, mak *MAK, billingData *common.BillingData, 
 }
 
 // 一次
-func once(ctx context.Context, mak *MAK, spend *common.Spend) {
+func once(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
+
+	if spend.Once == nil {
+		spend.Once = new(common.OnceSpend)
+	}
+
 	spend.Once.Pricing = mak.ReqModel.Pricing.Once
-	spend.Once.SpendTokens = int(math.Ceil(consts.QUOTA_USD_UNIT * mak.ReqModel.Pricing.Once.OnceRatio))
+	spend.Once.SpendTokens = int(math.Ceil(consts.QUOTA_USD_UNIT * spend.Once.Pricing.OnceRatio))
+
+	if billingData.Usage != nil {
+		spend.Once.InputTokens = billingData.Usage.PromptTokens
+		spend.Once.OutputTokens = billingData.Usage.CompletionTokens
+	}
 }
