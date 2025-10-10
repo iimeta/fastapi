@@ -46,6 +46,8 @@ func Spend(ctx context.Context, mak *MAK, billingData *common.BillingData, billi
 			audio(ctx, mak, billingData, &spend)
 		case "audio_cache":
 			audioCache(ctx, mak, billingData, &spend)
+		case "video":
+			video(ctx, mak, billingData, &spend)
 		case "search":
 			search(ctx, mak, billingData, &spend)
 		case "midjourney":
@@ -95,6 +97,10 @@ func Spend(ctx context.Context, mak *MAK, billingData *common.BillingData, billi
 
 		if spend.AudioCache != nil {
 			spend.TotalSpendTokens += spend.AudioCache.SpendTokens
+		}
+
+		if spend.Video != nil {
+			spend.TotalSpendTokens += spend.Video.SpendTokens
 		}
 
 		if spend.Search != nil {
@@ -446,6 +452,13 @@ func audioCache(ctx context.Context, mak *MAK, billingData *common.BillingData, 
 
 	spend.AudioCache.Pricing = mak.ReqModel.Pricing.AudioCache
 	spend.AudioCache.SpendTokens = int(math.Ceil(float64(spend.AudioCache.ReadTokens) * spend.AudioCache.Pricing.ReadRatio))
+}
+
+// 视频
+func video(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
+	if spend.Video == nil {
+		spend.Video = new(common.VideoSpend)
+	}
 }
 
 // 搜索
