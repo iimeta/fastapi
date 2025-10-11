@@ -80,12 +80,12 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 				Usage:                 response.Usage,
 			}
 
-			// 花费
-			spend = common.Spend(ctx, mak, billingData)
+			// 计算花费
+			spend = common.Billing(ctx, mak, billingData)
 			response.Usage = billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordSpend(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -317,12 +317,12 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 					Usage:                 usage,
 				}
 
-				// 花费
-				spend = common.Spend(ctx, mak, billingData)
+				// 计算花费
+				spend = common.Billing(ctx, mak, billingData)
 				usage = billingData.Usage
 
 				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-					if err := service.Common().RecordUsage(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
+					if err := service.Common().RecordSpend(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
 						logger.Error(ctx, err)
 						panic(err)
 					}

@@ -57,8 +57,8 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 				Usage:                 response.Usage,
 			}
 
-			// 花费
-			spend = common.Spend(ctx, mak, billingData)
+			// 计算花费
+			spend = common.Billing(ctx, mak, billingData)
 			response.Usage = billingData.Usage
 		}
 

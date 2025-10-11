@@ -14,12 +14,12 @@ import (
 	"github.com/iimeta/fastapi/utility/redis"
 )
 
-// 记录使用额度
-func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string, group *model.Group) error {
+// 记录花费
+func (s *sCommon) RecordSpend(ctx context.Context, totalTokens int, key string, group *model.Group) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sCommon RecordUsage time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sCommon RecordSpend time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	if totalTokens == 0 {
@@ -31,9 +31,9 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string, 
 	appId := service.Session().GetAppId(ctx)
 	appKey := service.Session().GetSecretKey(ctx)
 
-	logger.Infof(ctx, "sCommon RecordUsage rid: %d, userId: %d, appId: %d, appKey: %s, spendQuota: %d, key: %s", rid, userId, appId, appKey, totalTokens, key)
+	logger.Infof(ctx, "sCommon RecordSpend rid: %d, userId: %d, appId: %d, appKey: %s, spendQuota: %d, key: %s", rid, userId, appId, appKey, totalTokens, key)
 
-	usageKey := s.GetUserUsageKey(ctx)
+	usageKey := getUserUsageKey(ctx)
 
 	currentQuota, err := redisSpendQuota(ctx, usageKey, consts.USER_QUOTA_FIELD, totalTokens)
 	if err != nil {
@@ -66,7 +66,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string, 
 
 	if rid != 0 {
 
-		currentQuota, err = redisSpendQuota(ctx, s.GetResellerUsageKey(ctx), consts.RESELLER_QUOTA_FIELD, totalTokens)
+		currentQuota, err = redisSpendQuota(ctx, getResellerUsageKey(ctx), consts.RESELLER_QUOTA_FIELD, totalTokens)
 		if err != nil {
 			logger.Error(ctx, err)
 			panic(err)
@@ -82,7 +82,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string, 
 
 	if service.Session().GetAppIsLimitQuota(ctx) {
 
-		currentQuota, err = redisSpendQuota(ctx, usageKey, s.GetAppTotalTokensField(ctx), totalTokens)
+		currentQuota, err = redisSpendQuota(ctx, usageKey, getAppTotalTokensField(ctx), totalTokens)
 		if err != nil {
 			logger.Error(ctx, err)
 			panic(err)
@@ -106,7 +106,7 @@ func (s *sCommon) RecordUsage(ctx context.Context, totalTokens int, key string, 
 
 	if service.Session().GetKeyIsLimitQuota(ctx) {
 
-		currentQuota, err = redisSpendQuota(ctx, usageKey, s.GetKeyTotalTokensField(ctx), totalTokens)
+		currentQuota, err = redisSpendQuota(ctx, usageKey, getAppKeyTotalTokensField(ctx), totalTokens)
 		if err != nil {
 			logger.Error(ctx, err)
 			panic(err)
@@ -241,30 +241,18 @@ func mongoUsedQuota(ctx context.Context, f func() error, retry ...int) error {
 	return nil
 }
 
-func (s *sCommon) GetUserTotalTokens(ctx context.Context) (int, error) {
-	return redis.HGetInt(ctx, s.GetUserUsageKey(ctx), consts.USER_QUOTA_FIELD)
-}
-
-func (s *sCommon) GetAppTotalTokens(ctx context.Context) (int, error) {
-	return redis.HGetInt(ctx, s.GetUserUsageKey(ctx), s.GetAppTotalTokensField(ctx))
-}
-
-func (s *sCommon) GetKeyTotalTokens(ctx context.Context) (int, error) {
-	return redis.HGetInt(ctx, s.GetUserUsageKey(ctx), s.GetKeyTotalTokensField(ctx))
-}
-
-func (s *sCommon) GetResellerUsageKey(ctx context.Context) string {
+func getResellerUsageKey(ctx context.Context) string {
 	return fmt.Sprintf(consts.API_RESELLER_USAGE_KEY, service.Session().GetRid(ctx))
 }
 
-func (s *sCommon) GetUserUsageKey(ctx context.Context) string {
+func getUserUsageKey(ctx context.Context) string {
 	return fmt.Sprintf(consts.API_USER_USAGE_KEY, service.Session().GetUserId(ctx))
 }
 
-func (s *sCommon) GetAppTotalTokensField(ctx context.Context) string {
+func getAppTotalTokensField(ctx context.Context) string {
 	return fmt.Sprintf(consts.APP_QUOTA_FIELD, service.Session().GetAppId(ctx))
 }
 
-func (s *sCommon) GetKeyTotalTokensField(ctx context.Context) string {
-	return fmt.Sprintf(consts.KEY_QUOTA_FIELD, service.Session().GetAppId(ctx), service.Session().GetSecretKey(ctx))
+func getAppKeyTotalTokensField(ctx context.Context) string {
+	return fmt.Sprintf(consts.APP_KEY_QUOTA_FIELD, service.Session().GetAppId(ctx), service.Session().GetSecretKey(ctx))
 }

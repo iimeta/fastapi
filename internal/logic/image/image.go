@@ -72,12 +72,12 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 				Usage:                  &usage,
 			}
 
-			// 花费
-			spend = common.Spend(ctx, mak, billingData)
+			// 计算花费
+			spend = common.Billing(ctx, mak, billingData)
 			response.Usage = *billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordSpend(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -132,8 +132,8 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 			ImageGenerationRequest: params,
 		}
 
-		// 花费
-		spend = common.Spend(ctx, mak, billingData, "image_generation")
+		// 计算花费
+		spend = common.Billing(ctx, mak, billingData, "image_generation")
 
 		if spend.ImageGeneration.Pricing.Quality != "" {
 			params.Quality = spend.ImageGeneration.Pricing.Quality
@@ -256,12 +256,12 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 				Usage: &usage,
 			}
 
-			// 花费
-			spend = common.Spend(ctx, mak, billingData)
+			// 计算花费
+			spend = common.Billing(ctx, mak, billingData)
 			response.Usage = *billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordSpend(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -327,8 +327,8 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 			ImageEditRequest: params,
 		}
 
-		// 花费
-		spend = common.Spend(ctx, mak, billingData, "image_generation")
+		// 计算花费
+		spend = common.Billing(ctx, mak, billingData, "image_generation")
 
 		if spend.ImageGeneration.Pricing.Quality != "" {
 			params.Quality = spend.ImageGeneration.Pricing.Quality

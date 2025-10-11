@@ -81,12 +81,12 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 				Usage: usage,
 			}
 
-			// 花费
-			spend = common.Spend(ctx, mak, billingData)
+			// 计算花费
+			spend = common.Billing(ctx, mak, billingData)
 			usage = billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordSpend(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -142,8 +142,8 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 			Path: path,
 		}
 
-		// 花费
-		spend = common.Spend(ctx, mak, billingData, "midjourney")
+		// 计算花费
+		spend = common.Billing(ctx, mak, billingData, "midjourney")
 
 		if spend.Midjourney == nil || spend.Midjourney.Pricing == nil || spend.Midjourney.Pricing.Path == "" {
 			return response, errors.ERR_PATH_NOT_FOUND
@@ -270,12 +270,12 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 				Usage: usage,
 			}
 
-			// 花费
-			spend = common.Spend(ctx, mak, billingData)
+			// 计算花费
+			spend = common.Billing(ctx, mak, billingData)
 			usage = billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordUsage(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := service.Common().RecordSpend(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -330,8 +330,8 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 			Path: path,
 		}
 
-		// 花费
-		spend = common.Spend(ctx, mak, billingData, "midjourney")
+		// 计算花费
+		spend = common.Billing(ctx, mak, billingData, "midjourney")
 
 		if spend.Midjourney == nil || spend.Midjourney.Pricing == nil || spend.Midjourney.Pricing.Path == "" {
 			return response, errors.ERR_PATH_NOT_FOUND

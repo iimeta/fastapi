@@ -13,8 +13,8 @@ import (
 	"github.com/iimeta/fastapi/internal/model/common"
 )
 
-// 花费
-func Spend(ctx context.Context, mak *MAK, billingData *common.BillingData, billingItems ...string) (spend common.Spend) {
+// 计算花费
+func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, billingItems ...string) (spend common.Spend) {
 
 	if billingItems == nil || len(billingItems) == 0 {
 		billingItems = mak.ReqModel.Pricing.BillingItems
@@ -123,7 +123,7 @@ func Spend(ctx context.Context, mak *MAK, billingData *common.BillingData, billi
 		spend.TotalSpendTokens = int(math.Ceil(float64(spend.TotalSpendTokens) * mak.Group.Discount))
 	}
 
-	return
+	return spend
 }
 
 // 文本

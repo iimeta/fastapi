@@ -251,7 +251,7 @@ func (s *sCore) Refresh(ctx context.Context) error {
 
 			keys := appKeyMap[app.AppId]
 			for _, key := range keys {
-				fields[fmt.Sprintf(consts.KEY_QUOTA_FIELD, key.AppId, key.Key)] = key.Quota
+				fields[fmt.Sprintf(consts.APP_KEY_QUOTA_FIELD, key.AppId, key.Key)] = key.Quota
 			}
 
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {

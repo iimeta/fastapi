@@ -8,7 +8,7 @@ const (
 	RESELLER_QUOTA_FIELD = "reseller.quota"
 	USER_QUOTA_FIELD     = "user.quota"
 	APP_QUOTA_FIELD      = "app.%d.quota"
-	KEY_QUOTA_FIELD      = "key.%d.%s.quota"
+	APP_KEY_QUOTA_FIELD  = "key.%d.%s.quota"
 
 	ERROR_MODEL_KEY       = "api:error:model:key:%s"
 	ERROR_MODEL_AGENT     = "api:error:model:agent:%s"
