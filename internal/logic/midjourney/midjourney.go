@@ -144,7 +144,8 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 
 		// 花费
 		spend = common.Spend(ctx, mak, billingData, "midjourney")
-		if spend.Midjourney.Pricing.Path == "" {
+
+		if spend.Midjourney == nil || spend.Midjourney.Pricing == nil || spend.Midjourney.Pricing.Path == "" {
 			return response, errors.ERR_PATH_NOT_FOUND
 		}
 	}
@@ -331,7 +332,8 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 
 		// 花费
 		spend = common.Spend(ctx, mak, billingData, "midjourney")
-		if spend.Midjourney.Pricing.Path == "" {
+
+		if spend.Midjourney == nil || spend.Midjourney.Pricing == nil || spend.Midjourney.Pricing.Path == "" {
 			return response, errors.ERR_PATH_NOT_FOUND
 		}
 	}

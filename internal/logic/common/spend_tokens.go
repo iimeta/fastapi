@@ -192,7 +192,7 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 // 文本缓存
 func textCache(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
 
-	if billingData.Usage == nil {
+	if billingData.Usage == nil || billingData.Usage.PromptTokensDetails.CachedTokens+billingData.Usage.CompletionTokensDetails.CachedTokens+billingData.Usage.CacheReadInputTokens+billingData.Usage.CacheCreationInputTokens == 0 {
 		return
 	}
 
@@ -225,7 +225,7 @@ func textCache(ctx context.Context, mak *MAK, billingData *common.BillingData, s
 // 阶梯文本
 func tieredText(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
 
-	if billingData.Usage.PromptTokens+billingData.Usage.CompletionTokens == 0 {
+	if billingData.Usage == nil || billingData.Usage.PromptTokens+billingData.Usage.CompletionTokens == 0 {
 		return
 	}
 
@@ -247,7 +247,7 @@ func tieredText(ctx context.Context, mak *MAK, billingData *common.BillingData, 
 // 阶梯文本缓存
 func tieredTextCache(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
 
-	if billingData.Usage.CacheReadInputTokens+billingData.Usage.CacheCreationInputTokens == 0 {
+	if billingData.Usage == nil || billingData.Usage.CacheReadInputTokens+billingData.Usage.CacheCreationInputTokens == 0 {
 		return
 	}
 
@@ -268,6 +268,10 @@ func tieredTextCache(ctx context.Context, mak *MAK, billingData *common.BillingD
 
 // 图像
 func image(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
+
+	if billingData.Usage == nil || billingData.Usage.InputTokensDetails.ImageTokens+billingData.Usage.OutputTokens == 0 {
+		return
+	}
 
 	if spend.Image == nil {
 		spend.Image = new(common.ImageSpend)
@@ -356,24 +360,21 @@ func imageGeneration(ctx context.Context, mak *MAK, billingData *common.BillingD
 // 图像缓存
 func imageCache(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
 
-	if billingData.Usage.InputTokensDetails.CachedTokens > 0 {
-
-		if spend.ImageCache == nil {
-			spend.ImageCache = new(common.CacheSpend)
-		}
-
-		spend.ImageCache.Pricing = mak.ReqModel.Pricing.ImageCache
-		spend.ImageCache.ReadTokens = billingData.Usage.InputTokensDetails.CachedTokens
-		spend.ImageCache.SpendTokens = int(math.Ceil(float64(spend.ImageCache.ReadTokens) * spend.ImageCache.Pricing.ReadRatio))
+	if billingData.Usage == nil || billingData.Usage.InputTokensDetails.CachedTokens == 0 {
+		return
 	}
+
+	if spend.ImageCache == nil {
+		spend.ImageCache = new(common.CacheSpend)
+	}
+
+	spend.ImageCache.Pricing = mak.ReqModel.Pricing.ImageCache
+	spend.ImageCache.ReadTokens = billingData.Usage.InputTokensDetails.CachedTokens
+	spend.ImageCache.SpendTokens = int(math.Ceil(float64(spend.ImageCache.ReadTokens) * spend.ImageCache.Pricing.ReadRatio))
 }
 
 // 识图
 func vision(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
-
-	if spend.Vision == nil {
-		spend.Vision = new(common.VisionSpend)
-	}
 
 	model := mak.ReqModel.Model
 	if !tiktoken.IsEncodingForModel(model) {
@@ -381,6 +382,11 @@ func vision(ctx context.Context, mak *MAK, billingData *common.BillingData, spen
 	}
 
 	if multiContent, ok := billingData.ChatCompletionRequest.Messages[len(billingData.ChatCompletionRequest.Messages)-1].Content.([]interface{}); ok {
+
+		if spend.Vision == nil {
+			spend.Vision = new(common.VisionSpend)
+		}
+
 		for _, value := range multiContent {
 
 			if content, ok := value.(map[string]interface{}); ok && content["type"] == "image_url" {
@@ -411,11 +417,17 @@ func vision(ctx context.Context, mak *MAK, billingData *common.BillingData, spen
 // 音频
 func audio(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
 
+	audioInputLen := len(billingData.AudioInput)
+
+	if audioInputLen+int(math.Ceil(billingData.AudioMinute*1000)) == 0 && (billingData.Usage == nil || billingData.Usage.PromptTokensDetails.AudioTokens+billingData.Usage.CompletionTokensDetails.AudioTokens == 0) {
+		return
+	}
+
 	if spend.Audio == nil {
 		spend.Audio = new(common.AudioSpend)
 	}
 
-	if audioInputLen := len(billingData.AudioInput); audioInputLen > 0 {
+	if audioInputLen > 0 {
 		spend.Audio.InputTokens += audioInputLen
 	}
 
@@ -438,6 +450,10 @@ func audio(ctx context.Context, mak *MAK, billingData *common.BillingData, spend
 // 音频缓存
 func audioCache(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
 
+	if billingData.Usage == nil || billingData.Usage.PromptTokensDetails.CachedTokens+billingData.Usage.CompletionTokensDetails.CachedTokens == 0 {
+		return
+	}
+
 	if spend.AudioCache == nil {
 		spend.AudioCache = new(common.CacheSpend)
 	}
@@ -456,9 +472,18 @@ func audioCache(ctx context.Context, mak *MAK, billingData *common.BillingData, 
 
 // 视频
 func video(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
+
 	if spend.Video == nil {
 		spend.Video = new(common.VideoSpend)
 	}
+
+	for _, video := range mak.ReqModel.Pricing.Video {
+		if video.IsDefault {
+			spend.Video.Pricing = video
+		}
+	}
+
+	spend.Video.SpendTokens = int(math.Ceil(consts.QUOTA_USD_UNIT * spend.Video.Pricing.OnceRatio))
 }
 
 // 搜索
@@ -497,12 +522,17 @@ func search(ctx context.Context, mak *MAK, billingData *common.BillingData, spen
 // Midjourney
 func midjourney(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
 
-	if spend.Midjourney == nil {
-		spend.Midjourney = new(common.MidjourneySpend)
+	if billingData.Path == "" {
+		return
 	}
 
 	for _, midjourney := range mak.ReqModel.Pricing.Midjourney {
 		if billingData.Path == midjourney.Path {
+
+			if spend.Midjourney == nil {
+				spend.Midjourney = new(common.MidjourneySpend)
+			}
+
 			spend.Midjourney.Pricing = midjourney
 			spend.Midjourney.SpendTokens = int(math.Ceil(consts.QUOTA_USD_UNIT * spend.Midjourney.Pricing.OnceRatio))
 			return
