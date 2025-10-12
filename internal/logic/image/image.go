@@ -6,6 +6,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
@@ -136,7 +137,9 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 		spend = common.Billing(ctx, mak, billingData, "image_generation")
 
 		if spend.ImageGeneration.Pricing.Quality != "" {
-			params.Quality = spend.ImageGeneration.Pricing.Quality
+			if params.Quality != "" {
+				params.Quality = spend.ImageGeneration.Pricing.Quality
+			}
 			params.Size = fmt.Sprintf("%dx%d", spend.ImageGeneration.Pricing.Width, spend.ImageGeneration.Pricing.Height)
 		}
 	}
@@ -158,7 +161,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 		}
 	}
 
-	response, err = common.NewAdapter(ctx, mak, false).ImageGenerations(ctx, data)
+	response, err = common.NewAdapter(ctx, mak, false).ImageGenerations(ctx, gjson.MustEncode(request))
 	if err != nil {
 		logger.Error(ctx, err)
 

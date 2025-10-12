@@ -129,10 +129,6 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 // 文本
 func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
 
-	if spend.Text == nil {
-		spend.Text = new(common.TextSpend)
-	}
-
 	model := mak.ReqModel.Model
 	if !tiktoken.IsEncodingForModel(model) {
 		model = consts.DEFAULT_MODEL
@@ -145,12 +141,21 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 	if mak.ReqModel.Type == 2 || mak.ReqModel.Type == 3 || mak.ReqModel.Type == 4 {
 
 		if billingData.Usage.InputTokensDetails.TextTokens > 0 {
+
+			if spend.Text == nil {
+				spend.Text = new(common.TextSpend)
+			}
+
 			spend.Text.Pricing = mak.ReqModel.Pricing.Text
 			spend.Text.InputTokens = billingData.Usage.InputTokensDetails.TextTokens
 			spend.Text.SpendTokens = int(math.Ceil(float64(spend.Text.InputTokens) * spend.Text.Pricing.InputRatio))
 		}
 
 		return
+	}
+
+	if spend.Text == nil {
+		spend.Text = new(common.TextSpend)
 	}
 
 	if billingData.Usage.TotalTokens == 0 || mak.ReqModel.Pricing.BillingRule == 2 {
@@ -349,9 +354,12 @@ func imageGeneration(ctx context.Context, mak *MAK, billingData *common.BillingD
 		}
 	}
 
-	spend.ImageGeneration.N = billingData.ImageEditRequest.N
+	spend.ImageGeneration.N = billingData.ImageGenerationRequest.N
 	if spend.ImageGeneration.N == 0 {
-		spend.ImageGeneration.N = 1
+		spend.ImageGeneration.N = billingData.ImageEditRequest.N
+		if spend.ImageGeneration.N == 0 {
+			spend.ImageGeneration.N = 1
+		}
 	}
 
 	spend.ImageGeneration.SpendTokens = int(math.Ceil(consts.QUOTA_USD_UNIT*spend.ImageGeneration.Pricing.OnceRatio)) * spend.ImageGeneration.N
@@ -435,12 +443,15 @@ func audio(ctx context.Context, mak *MAK, billingData *common.BillingData, spend
 		spend.Audio.OutputTokens += int(math.Ceil(billingData.AudioMinute * 1000))
 	}
 
-	if billingData.Usage.PromptTokensDetails.AudioTokens > 0 {
-		spend.Audio.InputTokens += billingData.Usage.PromptTokensDetails.AudioTokens
-	}
+	if billingData.Usage != nil {
 
-	if billingData.Usage.CompletionTokensDetails.AudioTokens > 0 {
-		spend.Audio.OutputTokens += billingData.Usage.CompletionTokensDetails.AudioTokens
+		if billingData.Usage.PromptTokensDetails.AudioTokens > 0 {
+			spend.Audio.InputTokens += billingData.Usage.PromptTokensDetails.AudioTokens
+		}
+
+		if billingData.Usage.CompletionTokensDetails.AudioTokens > 0 {
+			spend.Audio.OutputTokens += billingData.Usage.CompletionTokensDetails.AudioTokens
+		}
 	}
 
 	spend.Audio.Pricing = mak.ReqModel.Pricing.Audio
