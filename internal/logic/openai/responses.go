@@ -88,7 +88,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 			chatCompletionResponse.Usage = billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordSpend(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := common.RecordSpend(ctx, spend, mak); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -320,7 +320,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 				usage = billingData.Usage
 
 				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-					if err := service.Common().RecordSpend(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
+					if err := common.RecordSpend(ctx, spend, mak); err != nil {
 						logger.Error(ctx, err)
 						panic(err)
 					}

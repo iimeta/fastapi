@@ -17,8 +17,6 @@ type (
 		ParseSecretKey(ctx context.Context, secretKey string) (int, int, error)
 		// 记录错误次数和禁用
 		RecordError(ctx context.Context, model *model.Model, key *model.Key, modelAgent *model.ModelAgent)
-		// 记录花费
-		RecordSpend(ctx context.Context, totalTokens int, key string, group *model.Group) error
 	}
 )
 

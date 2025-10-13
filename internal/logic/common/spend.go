@@ -9,20 +9,21 @@ import (
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/model"
+	"github.com/iimeta/fastapi/internal/model/common"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/redis"
 )
 
 // 记录花费
-func (s *sCommon) RecordSpend(ctx context.Context, totalTokens int, key string, group *model.Group) error {
+func RecordSpend(ctx context.Context, spend common.Spend, mak *MAK) error {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sCommon RecordSpend time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "RecordSpend time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	if totalTokens == 0 {
+	if spend.TotalSpendTokens == 0 {
 		return nil
 	}
 
@@ -31,11 +32,11 @@ func (s *sCommon) RecordSpend(ctx context.Context, totalTokens int, key string, 
 	appId := service.Session().GetAppId(ctx)
 	appKey := service.Session().GetSecretKey(ctx)
 
-	logger.Infof(ctx, "sCommon RecordSpend rid: %d, userId: %d, appId: %d, appKey: %s, spendQuota: %d, key: %s", rid, userId, appId, appKey, totalTokens, key)
+	logger.Infof(ctx, "RecordSpend rid: %d, userId: %d, appId: %d, appKey: %s, totalSpendTokens: %d, key: %s", rid, userId, appId, appKey, spend.TotalSpendTokens, mak.Key.Key)
 
 	usageKey := getUserUsageKey(ctx)
 
-	currentQuota, err := redisSpendQuota(ctx, usageKey, consts.USER_QUOTA_FIELD, totalTokens)
+	currentQuota, err := redisSpendQuota(ctx, usageKey, consts.USER_QUOTA_FIELD, spend.TotalSpendTokens)
 	if err != nil {
 		logger.Error(ctx, err)
 		panic(err)
@@ -58,7 +59,7 @@ func (s *sCommon) RecordSpend(ctx context.Context, totalTokens int, key string, 
 	}
 
 	if err = mongoSpendQuota(ctx, func() error {
-		return service.User().SpendQuota(ctx, userId, totalTokens, currentQuota)
+		return service.User().SpendQuota(ctx, userId, spend.TotalSpendTokens, currentQuota)
 	}); err != nil {
 		logger.Error(ctx, err)
 		panic(err)
@@ -66,14 +67,14 @@ func (s *sCommon) RecordSpend(ctx context.Context, totalTokens int, key string, 
 
 	if rid != 0 {
 
-		currentQuota, err = redisSpendQuota(ctx, getResellerUsageKey(ctx), consts.RESELLER_QUOTA_FIELD, totalTokens)
+		currentQuota, err = redisSpendQuota(ctx, getResellerUsageKey(ctx), consts.RESELLER_QUOTA_FIELD, spend.TotalSpendTokens)
 		if err != nil {
 			logger.Error(ctx, err)
 			panic(err)
 		}
 
 		if err = mongoSpendQuota(ctx, func() error {
-			return service.Reseller().SpendQuota(ctx, rid, totalTokens, currentQuota)
+			return service.Reseller().SpendQuota(ctx, rid, spend.TotalSpendTokens, currentQuota)
 		}); err != nil {
 			logger.Error(ctx, err)
 			panic(err)
@@ -82,14 +83,14 @@ func (s *sCommon) RecordSpend(ctx context.Context, totalTokens int, key string, 
 
 	if service.Session().GetAppIsLimitQuota(ctx) {
 
-		currentQuota, err = redisSpendQuota(ctx, usageKey, getAppTotalTokensField(ctx), totalTokens)
+		currentQuota, err = redisSpendQuota(ctx, usageKey, getAppTotalTokensField(ctx), spend.TotalSpendTokens)
 		if err != nil {
 			logger.Error(ctx, err)
 			panic(err)
 		}
 
 		if err = mongoSpendQuota(ctx, func() error {
-			return service.App().SpendQuota(ctx, appId, totalTokens, currentQuota)
+			return service.App().SpendQuota(ctx, appId, spend.TotalSpendTokens, currentQuota)
 		}); err != nil {
 			logger.Error(ctx, err)
 			panic(err)
@@ -97,7 +98,7 @@ func (s *sCommon) RecordSpend(ctx context.Context, totalTokens int, key string, 
 
 	} else {
 		if err = mongoUsedQuota(ctx, func() error {
-			return service.App().UsedQuota(ctx, appId, totalTokens)
+			return service.App().UsedQuota(ctx, appId, spend.TotalSpendTokens)
 		}); err != nil {
 			logger.Error(ctx, err)
 			panic(err)
@@ -106,14 +107,14 @@ func (s *sCommon) RecordSpend(ctx context.Context, totalTokens int, key string, 
 
 	if service.Session().GetKeyIsLimitQuota(ctx) {
 
-		currentQuota, err = redisSpendQuota(ctx, usageKey, getAppKeyTotalTokensField(ctx), totalTokens)
+		currentQuota, err = redisSpendQuota(ctx, usageKey, getAppKeyTotalTokensField(ctx), spend.TotalSpendTokens)
 		if err != nil {
 			logger.Error(ctx, err)
 			panic(err)
 		}
 
 		if err = mongoSpendQuota(ctx, func() error {
-			return service.AppKey().SpendQuota(ctx, appKey, totalTokens, currentQuota)
+			return service.AppKey().SpendQuota(ctx, appKey, spend.TotalSpendTokens, currentQuota)
 		}); err != nil {
 			logger.Error(ctx, err)
 			panic(err)
@@ -121,7 +122,7 @@ func (s *sCommon) RecordSpend(ctx context.Context, totalTokens int, key string, 
 
 	} else {
 		if err = mongoUsedQuota(ctx, func() error {
-			return service.AppKey().UsedQuota(ctx, appKey, totalTokens)
+			return service.AppKey().UsedQuota(ctx, appKey, spend.TotalSpendTokens)
 		}); err != nil {
 			logger.Error(ctx, err)
 			panic(err)
@@ -129,24 +130,24 @@ func (s *sCommon) RecordSpend(ctx context.Context, totalTokens int, key string, 
 	}
 
 	if err = mongoUsedQuota(ctx, func() error {
-		return service.Key().UsedQuota(ctx, key, totalTokens)
+		return service.Key().UsedQuota(ctx, mak.Key.Key, spend.TotalSpendTokens)
 	}); err != nil {
 		logger.Error(ctx, err)
 		panic(err)
 	}
 
-	if group != nil {
+	if mak.Group != nil {
 
-		if group.IsLimitQuota {
+		if mak.Group.IsLimitQuota {
 
-			currentQuota, err = redisSpendQuota(ctx, consts.API_GROUP_USAGE_KEY, group.Id, totalTokens)
+			currentQuota, err = redisSpendQuota(ctx, consts.API_GROUP_USAGE_KEY, mak.Group.Id, spend.TotalSpendTokens)
 			if err != nil {
 				logger.Error(ctx, err)
 				panic(err)
 			}
 
 			if err = mongoSpendQuota(ctx, func() error {
-				return service.Group().SpendQuota(ctx, group.Id, totalTokens, currentQuota)
+				return service.Group().SpendQuota(ctx, mak.Group.Id, spend.TotalSpendTokens, currentQuota)
 			}); err != nil {
 				logger.Error(ctx, err)
 				panic(err)
@@ -154,21 +155,21 @@ func (s *sCommon) RecordSpend(ctx context.Context, totalTokens int, key string, 
 
 		} else {
 			if err = mongoUsedQuota(ctx, func() error {
-				return service.Group().UsedQuota(ctx, group.Id, totalTokens)
+				return service.Group().UsedQuota(ctx, mak.Group.Id, spend.TotalSpendTokens)
 			}); err != nil {
 				logger.Error(ctx, err)
 				panic(err)
 			}
 		}
 
-		if group.IsEnableForward && group.ForwardConfig.ForwardRule == 4 && group.UsedQuota < group.ForwardConfig.UsedQuota {
+		if mak.Group.IsEnableForward && mak.Group.ForwardConfig.ForwardRule == 4 && mak.Group.UsedQuota < mak.Group.ForwardConfig.UsedQuota {
 
-			if group, err = service.Group().GetById(ctx, group.Id); err != nil {
+			if mak.Group, err = service.Group().GetById(ctx, mak.Group.Id); err != nil {
 				logger.Error(ctx, err)
 				panic(err)
 			}
 
-			if err = service.Group().SaveCache(ctx, group); err != nil {
+			if err = service.Group().SaveCache(ctx, mak.Group); err != nil {
 				logger.Error(ctx, err)
 			}
 		}

@@ -78,7 +78,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 			response.Usage = *billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordSpend(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := common.RecordSpend(ctx, spend, mak); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -264,7 +264,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 			response.Usage = *billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordSpend(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := common.RecordSpend(ctx, spend, mak); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}

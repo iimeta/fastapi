@@ -86,7 +86,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 			usage = billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordSpend(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := common.RecordSpend(ctx, spend, mak); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
@@ -275,7 +275,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 			usage = billingData.Usage
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := service.Common().RecordSpend(ctx, spend.TotalSpendTokens, mak.Key.Key, mak.Group); err != nil {
+				if err := common.RecordSpend(ctx, spend, mak); err != nil {
 					logger.Error(ctx, err)
 					panic(err)
 				}
