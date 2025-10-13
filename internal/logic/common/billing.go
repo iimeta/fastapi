@@ -427,7 +427,7 @@ func audio(ctx context.Context, mak *MAK, billingData *common.BillingData, spend
 
 	audioInputLen := len(billingData.AudioInput)
 
-	if audioInputLen+int(math.Ceil(billingData.AudioMinute*1000)) == 0 && (billingData.Usage == nil || billingData.Usage.PromptTokensDetails.AudioTokens+billingData.Usage.CompletionTokensDetails.AudioTokens == 0) {
+	if audioInputLen+int(math.Ceil(billingData.AudioMinute*1000000)) == 0 && (billingData.Usage == nil || billingData.Usage.PromptTokensDetails.AudioTokens+billingData.Usage.CompletionTokensDetails.AudioTokens == 0) {
 		return
 	}
 
@@ -440,7 +440,7 @@ func audio(ctx context.Context, mak *MAK, billingData *common.BillingData, spend
 	}
 
 	if billingData.AudioMinute > 0 {
-		spend.Audio.OutputTokens += int(math.Ceil(billingData.AudioMinute * 1000))
+		spend.Audio.OutputTokens += int(math.Ceil(billingData.AudioMinute * 1000000))
 	}
 
 	if billingData.Usage != nil {
