@@ -108,11 +108,6 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 					EnterTime:    enterTime,
 				}
 
-				if retryInfo == nil && response.Usage != nil {
-					completionsRes.Usage = *response.Usage
-					completionsRes.Usage.TotalTokens = spend.TotalSpendTokens
-				}
-
 				if retryInfo == nil && len(response.Data) > 0 {
 					completionsRes.Completion = gconv.String(response.Data[0])
 				}

@@ -109,10 +109,6 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 					EnterTime:          enterTime,
 				}
 
-				if err == nil {
-					midjourneyResponse.Usage = *usage
-				}
-
 				s.SaveLog(ctx, model.MidjourneyLog{
 					ReqModel:           mak.ReqModel,
 					RealModel:          mak.RealModel,
@@ -295,10 +291,6 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 					Error:        err,
 					InternalTime: internalTime,
 					EnterTime:    enterTime,
-				}
-
-				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-					midjourneyResponse.Usage = *usage
 				}
 
 				s.SaveLog(ctx, model.MidjourneyLog{

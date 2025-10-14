@@ -99,10 +99,6 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 					EnterTime:    enterTime,
 				}
 
-				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-					imageRes.Usage = usage
-				}
-
 				s.SaveLog(ctx, model.ImageLog{
 					ReqModel:           mak.ReqModel,
 					RealModel:          mak.RealModel,
@@ -283,10 +279,6 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 					Error:        err,
 					InternalTime: internalTime,
 					EnterTime:    enterTime,
-				}
-
-				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-					imageRes.Usage = usage
 				}
 
 				imageReq := &smodel.ImageGenerationRequest{

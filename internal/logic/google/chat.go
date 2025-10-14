@@ -13,10 +13,8 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
-	"github.com/gogf/gf/v2/util/grand"
 	sconsts "github.com/iimeta/fastapi-sdk/consts"
 	smodel "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
@@ -105,11 +103,6 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 					TotalTime:    response.TotalTime,
 					InternalTime: internalTime,
 					EnterTime:    enterTime,
-				}
-
-				if retryInfo == nil && response.Usage != nil {
-					completionsRes.Usage = *response.Usage
-					completionsRes.Usage.TotalTokens = spend.TotalSpendTokens
 				}
 
 				if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
@@ -343,11 +336,6 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 						TotalTime:    totalTime,
 						InternalTime: internalTime,
 						EnterTime:    enterTime,
-					}
-
-					if usage != nil {
-						completionsRes.Usage = *usage
-						completionsRes.Usage.TotalTokens = spend.TotalSpendTokens
 					}
 
 					service.Chat().SaveLog(ctx, model.ChatLog{
@@ -695,66 +683,4 @@ func convToChatCompletionRequest(request *ghttp.Request) smodel.ChatCompletionRe
 		Temperature: googleChatCompletionReq.GenerationConfig.Temperature,
 		TopP:        googleChatCompletionReq.GenerationConfig.TopP,
 	}
-}
-
-func convToChatCompletionResponse(ctx context.Context, res smodel.GoogleChatCompletionRes, stream bool) smodel.ChatCompletionResponse {
-
-	googleChatCompletionRes := smodel.GoogleChatCompletionRes{
-		ResponseBytes: res.ResponseBytes,
-		UsageMetadata: res.UsageMetadata,
-		Err:           res.Err,
-	}
-
-	if res.ResponseBytes != nil {
-		if err := gjson.Unmarshal(res.ResponseBytes, &googleChatCompletionRes); err != nil {
-			logger.Error(ctx, err)
-		}
-	}
-
-	chatCompletionResponse := smodel.ChatCompletionResponse{
-		Id:            consts.COMPLETION_ID_PREFIX + grand.S(29),
-		Object:        consts.COMPLETION_OBJECT,
-		Created:       gtime.Timestamp(),
-		Model:         googleChatCompletionRes.ModelVersion,
-		ResponseBytes: res.ResponseBytes,
-		ConnTime:      res.ConnTime,
-		Duration:      res.Duration,
-		TotalTime:     res.TotalTime,
-		Error:         googleChatCompletionRes.Err,
-	}
-
-	if len(googleChatCompletionRes.Candidates) > 0 {
-		if stream {
-			for _, candidate := range googleChatCompletionRes.Candidates {
-				chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, smodel.ChatCompletionChoice{
-					Index: candidate.Index,
-					Delta: &smodel.ChatCompletionStreamChoiceDelta{
-						Role:    sconsts.ROLE_ASSISTANT,
-						Content: candidate.Content.Parts[0].Text,
-					},
-				})
-			}
-		} else {
-			for i, part := range googleChatCompletionRes.Candidates[0].Content.Parts {
-				chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, smodel.ChatCompletionChoice{
-					Index: i,
-					Message: &smodel.ChatCompletionMessage{
-						Role:    sconsts.ROLE_ASSISTANT,
-						Content: part.Text,
-					},
-					FinishReason: "stop",
-				})
-			}
-		}
-	}
-
-	if googleChatCompletionRes.UsageMetadata != nil {
-		chatCompletionResponse.Usage = &smodel.Usage{
-			PromptTokens:     googleChatCompletionRes.UsageMetadata.PromptTokenCount,
-			CompletionTokens: googleChatCompletionRes.UsageMetadata.CandidatesTokenCount,
-			TotalTokens:      googleChatCompletionRes.UsageMetadata.TotalTokenCount,
-		}
-	}
-
-	return chatCompletionResponse
 }

@@ -15,7 +15,6 @@ import (
 	"github.com/gogf/gf/v2/util/gconv"
 	sconsts "github.com/iimeta/fastapi-sdk/consts"
 	smodel "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
@@ -104,11 +103,6 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 					TotalTime:    response.TotalTime,
 					InternalTime: internalTime,
 					EnterTime:    enterTime,
-				}
-
-				if retryInfo == nil && response.Usage != nil {
-					completionsRes.Usage = *response.Usage
-					completionsRes.Usage.TotalTokens = spend.TotalSpendTokens
 				}
 
 				if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
@@ -342,11 +336,6 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 						TotalTime:    totalTime,
 						InternalTime: internalTime,
 						EnterTime:    enterTime,
-					}
-
-					if usage != nil {
-						completionsRes.Usage = *usage
-						completionsRes.Usage.TotalTokens = spend.TotalSpendTokens
 					}
 
 					service.Chat().SaveLog(ctx, model.ChatLog{
@@ -695,97 +684,4 @@ func convToChatCompletionRequest(request *ghttp.Request) smodel.ChatCompletionRe
 		TopK:        anthropicChatCompletionReq.TopK,
 		TopP:        anthropicChatCompletionReq.TopP,
 	}
-}
-
-func convToChatCompletionResponse(ctx context.Context, res smodel.AnthropicChatCompletionRes, stream bool) smodel.ChatCompletionResponse {
-
-	anthropicChatCompletionRes := smodel.AnthropicChatCompletionRes{
-		ResponseBytes: res.ResponseBytes,
-		Err:           res.Err,
-	}
-
-	if res.ResponseBytes != nil {
-		if err := gjson.Unmarshal(res.ResponseBytes, &anthropicChatCompletionRes); err != nil {
-			logger.Error(ctx, err)
-		}
-	}
-
-	chatCompletionResponse := smodel.ChatCompletionResponse{
-		Id:            consts.COMPLETION_ID_PREFIX + anthropicChatCompletionRes.Id,
-		Object:        consts.COMPLETION_OBJECT,
-		Created:       gtime.Timestamp(),
-		Model:         anthropicChatCompletionRes.Model,
-		ResponseBytes: res.ResponseBytes,
-		ConnTime:      res.ConnTime,
-		Duration:      res.Duration,
-		TotalTime:     res.TotalTime,
-		Error:         anthropicChatCompletionRes.Err,
-	}
-
-	if stream {
-		if anthropicChatCompletionRes.Delta.Type == consts.DELTA_TYPE_INPUT_JSON {
-			chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, smodel.ChatCompletionChoice{
-				Delta: &smodel.ChatCompletionStreamChoiceDelta{
-					Role: sconsts.ROLE_ASSISTANT,
-					ToolCalls: []smodel.ToolCall{{
-						Function: smodel.FunctionCall{
-							Arguments: anthropicChatCompletionRes.Delta.PartialJson,
-						},
-					}},
-				},
-			})
-		} else {
-			chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, smodel.ChatCompletionChoice{
-				Delta: &smodel.ChatCompletionStreamChoiceDelta{
-					Role:    sconsts.ROLE_ASSISTANT,
-					Content: anthropicChatCompletionRes.Delta.Text,
-				},
-			})
-		}
-	} else if len(anthropicChatCompletionRes.Content) > 0 {
-		for _, content := range anthropicChatCompletionRes.Content {
-			if content.Type == consts.DELTA_TYPE_INPUT_JSON {
-				chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, smodel.ChatCompletionChoice{
-					Delta: &smodel.ChatCompletionStreamChoiceDelta{
-						Role: sconsts.ROLE_ASSISTANT,
-						ToolCalls: []smodel.ToolCall{{
-							Function: smodel.FunctionCall{
-								Arguments: content.PartialJson,
-							},
-						}},
-					},
-				})
-			} else {
-				chatCompletionResponse.Choices = append(chatCompletionResponse.Choices, smodel.ChatCompletionChoice{
-					Message: &smodel.ChatCompletionMessage{
-						Role:    anthropicChatCompletionRes.Role,
-						Content: content.Text,
-					},
-					FinishReason: "stop",
-				})
-			}
-		}
-	}
-
-	if anthropicChatCompletionRes.Message.Usage != nil {
-		chatCompletionResponse.Usage = &smodel.Usage{
-			PromptTokens:             anthropicChatCompletionRes.Message.Usage.InputTokens,
-			CompletionTokens:         anthropicChatCompletionRes.Message.Usage.OutputTokens,
-			TotalTokens:              anthropicChatCompletionRes.Message.Usage.InputTokens + anthropicChatCompletionRes.Message.Usage.OutputTokens,
-			CacheCreationInputTokens: anthropicChatCompletionRes.Message.Usage.CacheCreationInputTokens,
-			CacheReadInputTokens:     anthropicChatCompletionRes.Message.Usage.CacheReadInputTokens,
-		}
-	}
-
-	if anthropicChatCompletionRes.Usage != nil {
-		chatCompletionResponse.Usage = &smodel.Usage{
-			PromptTokens:             anthropicChatCompletionRes.Usage.InputTokens,
-			CompletionTokens:         anthropicChatCompletionRes.Usage.OutputTokens,
-			TotalTokens:              anthropicChatCompletionRes.Usage.InputTokens + anthropicChatCompletionRes.Usage.OutputTokens,
-			CacheCreationInputTokens: anthropicChatCompletionRes.Usage.CacheCreationInputTokens,
-			CacheReadInputTokens:     anthropicChatCompletionRes.Usage.CacheReadInputTokens,
-		}
-	}
-
-	return chatCompletionResponse
 }

@@ -105,20 +105,6 @@ func (s *sGeneral) General(ctx context.Context, request *ghttp.Request, fallback
 					EnterTime:    enterTime,
 				}
 
-				if retryInfo == nil && response.Usage != nil {
-
-					if response.Usage.PromptTokensDetails.CachedTokens != 0 {
-						response.Usage.CacheCreationInputTokens = response.Usage.PromptTokensDetails.CachedTokens
-					}
-
-					if response.Usage.CompletionTokensDetails.CachedTokens != 0 {
-						response.Usage.CacheReadInputTokens = response.Usage.CompletionTokensDetails.CachedTokens
-					}
-
-					completionsRes.Usage = *response.Usage
-					completionsRes.Usage.TotalTokens = spend.TotalSpendTokens
-				}
-
 				if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
 					if mak.RealModel.Type == 102 && response.Choices[0].Message.Audio != nil {
 						completionsRes.Completion = response.Choices[0].Message.Audio.Transcript
@@ -317,20 +303,6 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 						TotalTime:    totalTime,
 						InternalTime: internalTime,
 						EnterTime:    enterTime,
-					}
-
-					if usage != nil {
-
-						if usage.PromptTokensDetails.CachedTokens != 0 {
-							usage.CacheCreationInputTokens = usage.PromptTokensDetails.CachedTokens
-						}
-
-						if usage.CompletionTokensDetails.CachedTokens != 0 {
-							usage.CacheReadInputTokens = usage.CompletionTokensDetails.CachedTokens
-						}
-
-						completionsRes.Usage = *usage
-						completionsRes.Usage.TotalTokens = spend.TotalSpendTokens
 					}
 
 					service.Chat().SaveLog(ctx, model.ChatLog{

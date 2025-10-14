@@ -19,7 +19,6 @@ type ImageReq struct {
 type ImageRes struct {
 	Created      int64                           `json:"created,omitempty"`
 	Data         []smodel.ImageResponseDataInner `json:"data,omitempty"`
-	Usage        smodel.Usage                    `json:"usage"`
 	Error        error                           `json:"err"`
 	TotalTime    int64                           `json:"-"`
 	InternalTime int64                           `json:"-"`

@@ -394,9 +394,6 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 						EnterTime:    enterTime,
 					}
 
-					completionsRes.Usage = *usage
-					completionsRes.Usage.TotalTokens = spend.TotalSpendTokens
-
 					s.SaveLog(ctx, model.ChatLog{
 						ReqModel:           mak.ReqModel,
 						RealModel:          mak.RealModel,

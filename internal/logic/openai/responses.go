@@ -109,20 +109,6 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 					EnterTime:    enterTime,
 				}
 
-				if retryInfo == nil && chatCompletionResponse.Usage != nil {
-
-					if chatCompletionResponse.Usage.PromptTokensDetails.CachedTokens != 0 {
-						chatCompletionResponse.Usage.CacheCreationInputTokens = response.Usage.PromptTokensDetails.CachedTokens
-					}
-
-					if chatCompletionResponse.Usage.CompletionTokensDetails.CachedTokens != 0 {
-						chatCompletionResponse.Usage.CacheReadInputTokens = response.Usage.CompletionTokensDetails.CachedTokens
-					}
-
-					completionsRes.Usage = *chatCompletionResponse.Usage
-					completionsRes.Usage.TotalTokens = spend.TotalSpendTokens
-				}
-
 				if retryInfo == nil && len(chatCompletionResponse.Choices) > 0 && chatCompletionResponse.Choices[0].Message != nil {
 					if mak.RealModel.Type == 102 && chatCompletionResponse.Choices[0].Message.Audio != nil {
 						completionsRes.Completion = chatCompletionResponse.Choices[0].Message.Audio.Transcript
@@ -340,20 +326,6 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 						TotalTime:    totalTime,
 						InternalTime: internalTime,
 						EnterTime:    enterTime,
-					}
-
-					if usage != nil {
-
-						if usage.PromptTokensDetails.CachedTokens != 0 {
-							usage.CacheCreationInputTokens = usage.PromptTokensDetails.CachedTokens
-						}
-
-						if usage.CompletionTokensDetails.CachedTokens != 0 {
-							usage.CacheReadInputTokens = usage.CompletionTokensDetails.CachedTokens
-						}
-
-						completionsRes.Usage = *usage
-						completionsRes.Usage.TotalTokens = spend.TotalSpendTokens
 					}
 
 					service.Chat().SaveLog(ctx, model.ChatLog{

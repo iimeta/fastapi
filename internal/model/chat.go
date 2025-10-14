@@ -13,13 +13,12 @@ type CompletionsReq struct {
 }
 
 type CompletionsRes struct {
-	Type         string       `json:"type"`
-	Completion   string       `json:"completion"`
-	Usage        smodel.Usage `json:"usage"`
-	Error        error        `json:"err"`
-	ConnTime     int64        `json:"-"`
-	Duration     int64        `json:"-"`
-	TotalTime    int64        `json:"-"`
-	InternalTime int64        `json:"-"`
-	EnterTime    int64        `json:"-"`
+	Type         string `json:"type"`
+	Completion   string `json:"completion"`
+	Error        error  `json:"err"`
+	ConnTime     int64  `json:"-"`
+	Duration     int64  `json:"-"`
+	TotalTime    int64  `json:"-"`
+	InternalTime int64  `json:"-"`
+	EnterTime    int64  `json:"-"`
 }

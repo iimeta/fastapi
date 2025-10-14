@@ -97,11 +97,6 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 					EnterTime:    enterTime,
 				}
 
-				if retryInfo == nil && response.Usage != nil {
-					completionsRes.Usage = *response.Usage
-					completionsRes.Usage.TotalTokens = spend.TotalSpendTokens
-				}
-
 				if retryInfo == nil && response.Results != nil {
 					completionsRes.Completion = gconv.String(response.Results)
 				}

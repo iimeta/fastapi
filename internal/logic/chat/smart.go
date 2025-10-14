@@ -74,11 +74,6 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 					EnterTime:    enterTime,
 				}
 
-				if retryInfo == nil && response.Usage != nil {
-					completionsRes.Usage = *response.Usage
-					completionsRes.Usage.TotalTokens = spend.TotalSpendTokens
-				}
-
 				if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
 					completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
 				}
