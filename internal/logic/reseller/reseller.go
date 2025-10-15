@@ -56,7 +56,6 @@ func (s *sReseller) GetByUserId(ctx context.Context, userId int) (*model.Reselle
 		Quota:          reseller.Quota,
 		UsedQuota:      reseller.UsedQuota,
 		QuotaExpiresAt: reseller.QuotaExpiresAt,
-		Models:         reseller.Models,
 		Groups:         reseller.Groups,
 		Status:         reseller.Status,
 	}, nil
@@ -90,7 +89,6 @@ func (s *sReseller) List(ctx context.Context) ([]*model.Reseller, error) {
 			Quota:          result.Quota,
 			UsedQuota:      result.UsedQuota,
 			QuotaExpiresAt: result.QuotaExpiresAt,
-			Models:         result.Models,
 			Groups:         result.Groups,
 			Status:         result.Status,
 		})
@@ -188,7 +186,6 @@ func (s *sReseller) UpdateCache(ctx context.Context, reseller *entity.Reseller) 
 		Quota:          reseller.Quota,
 		UsedQuota:      reseller.UsedQuota,
 		QuotaExpiresAt: reseller.QuotaExpiresAt,
-		Models:         reseller.Models,
 		Groups:         reseller.Groups,
 		Status:         reseller.Status,
 	}); err != nil {

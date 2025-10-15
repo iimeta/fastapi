@@ -19,8 +19,6 @@ type (
 		GetModel(ctx context.Context, m string) (*model.Model, error)
 		// 根据模型ID获取模型信息
 		GetModelById(ctx context.Context, id string) (*model.Model, error)
-		// 根据model和secretKey获取模型信息
-		GetModelBySecretKey(ctx context.Context, m string, secretKey string) (*model.Model, error)
 		// 根据model和group获取模型信息
 		GetModelByGroup(ctx context.Context, m string, group *model.Group) (*model.Model, error)
 		// 模型列表

@@ -70,7 +70,8 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 	}
 
 	if mak.Group == nil {
-		if len(mak.User.Groups) > 0 && !mak.AppKey.IsBindGroup && !mak.App.IsBindGroup {
+
+		if !mak.AppKey.IsBindGroup && !mak.App.IsBindGroup {
 
 			if mak.ReqModel, mak.Group, err = service.Group().PickGroupAndModel(ctx, mak.Model, mak.User.Groups...); err != nil {
 				logger.Error(ctx, err)
@@ -105,40 +106,34 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 		}
 	}
 
-	if mak.Group != nil {
-
-		if !slices.Contains(mak.User.Groups, mak.Group.Id) {
-			err = errors.ERR_GROUP_NOT_FOUND
-			logger.Error(ctx, err)
-			return err
-		}
-
-		if mak.Group.Status == 2 {
-			err = errors.ERR_GROUP_DISABLED
-			logger.Error(ctx, err)
-			return err
-		}
-
-		if mak.Group.ExpiresAt != 0 && mak.Group.ExpiresAt < gtime.TimestampMilli() {
-			err = errors.ERR_GROUP_EXPIRED
-			logger.Error(ctx, err)
-			return err
-		}
-
-		if mak.Group.IsLimitQuota && service.Group().GetCacheQuota(ctx, mak.Group.Id) <= 0 {
-			err = errors.ERR_GROUP_INSUFFICIENT_QUOTA
-			logger.Error(ctx, err)
-			return err
-		}
+	if mak.Group == nil || !slices.Contains(mak.User.Groups, mak.Group.Id) {
+		err = errors.ERR_GROUP_NOT_FOUND
+		logger.Error(ctx, err)
+		return err
 	}
 
-	if mak.ReqModel == nil && mak.Group != nil {
+	if mak.Group.Status == 2 {
+		err = errors.ERR_GROUP_DISABLED
+		logger.Error(ctx, err)
+		return err
+	}
+
+	if mak.Group.ExpiresAt != 0 && mak.Group.ExpiresAt < gtime.TimestampMilli() {
+		err = errors.ERR_GROUP_EXPIRED
+		logger.Error(ctx, err)
+		return err
+	}
+
+	if mak.Group.IsLimitQuota && service.Group().GetCacheQuota(ctx, mak.Group.Id) <= 0 {
+		err = errors.ERR_GROUP_INSUFFICIENT_QUOTA
+		logger.Error(ctx, err)
+		return err
+	}
+
+	if mak.ReqModel == nil {
 		if mak.ReqModel, err = service.Model().GetModelByGroup(ctx, mak.Model, mak.Group); err != nil {
-			if !mak.Group.IsDefault || !errors.Is(err, errors.ERR_MODEL_NOT_FOUND) {
-				logger.Error(ctx, err)
-				return err
-			}
-			mak.Group = nil
+			logger.Error(ctx, err)
+			return err
 		}
 	}
 
@@ -156,13 +151,6 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 		} else if len(appKey.Models) > 0 && !slices.Contains(appKey.Models, mak.ReqModel.Id) {
 			err = errors.ERR_MODEL_NOT_FOUND
 			logger.Info(ctx, err)
-			return err
-		}
-	}
-
-	if mak.ReqModel == nil {
-		if mak.ReqModel, err = service.Model().GetModelBySecretKey(ctx, mak.Model, service.Session().GetSecretKey(ctx)); err != nil {
-			logger.Error(ctx, err)
 			return err
 		}
 	}

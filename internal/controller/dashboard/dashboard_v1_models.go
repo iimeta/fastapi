@@ -14,7 +14,7 @@ import (
 
 func (c *ControllerV1) Models(ctx context.Context, req *v1.ModelsReq) (res *v1.ModelsRes, err error) {
 
-	modelIds := service.Session().GetUser(ctx).Models
+	modelIds := make([]string, 0)
 
 	if len(service.Session().GetUser(ctx).Groups) > 0 {
 		ids, err := service.Group().GetModelIds(ctx, service.Session().GetUser(ctx).Groups...)

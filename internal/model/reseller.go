@@ -10,7 +10,6 @@ type Reseller struct {
 	Quota          int      `json:"quota,omitempty"`            // 剩余额度
 	UsedQuota      int      `json:"used_quota,omitempty"`       // 已用额度
 	QuotaExpiresAt int64    `json:"quota_expires_at,omitempty"` // 额度过期时间
-	Models         []string `json:"models,omitempty"`           // 模型权限
 	Groups         []string `json:"groups,omitempty"`           // 分组权限
 	Remark         string   `json:"remark,omitempty"`           // 备注
 	Status         int      `json:"status,omitempty"`           // 状态[1:正常, 2:禁用, -1:删除]

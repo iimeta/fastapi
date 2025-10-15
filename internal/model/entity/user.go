@@ -10,7 +10,6 @@ type User struct {
 	Quota          int      `bson:"quota,omitempty"`            // 剩余额度
 	UsedQuota      int      `bson:"used_quota,omitempty"`       // 已用额度
 	QuotaExpiresAt int64    `bson:"quota_expires_at,omitempty"` // 额度过期时间
-	Models         []string `bson:"models,omitempty"`           // 模型权限
 	Groups         []string `bson:"groups,omitempty"`           // 分组权限
 	Remark         string   `bson:"remark,omitempty"`           // 备注
 	Status         int      `bson:"status,omitempty"`           // 状态[1:正常, 2:禁用, -1:删除]
