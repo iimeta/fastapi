@@ -57,61 +57,59 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 		}
 	}
 
-	if !slices.Contains(mak.ReqModel.Pricing.BillingMethods, 2) {
+	if spend.Text != nil {
+		spend.TotalSpendTokens += spend.Text.SpendTokens
+	}
 
-		if spend.Text != nil {
-			spend.TotalSpendTokens += spend.Text.SpendTokens
-		}
+	if spend.TextCache != nil {
+		spend.TotalSpendTokens += spend.TextCache.SpendTokens
+	}
 
-		if spend.TextCache != nil {
-			spend.TotalSpendTokens += spend.TextCache.SpendTokens
-		}
+	if spend.TieredText != nil {
+		spend.TotalSpendTokens += spend.TieredText.SpendTokens
+	}
 
-		if spend.TieredText != nil {
-			spend.TotalSpendTokens += spend.TieredText.SpendTokens
-		}
+	if spend.TieredTextCache != nil {
+		spend.TotalSpendTokens += spend.TieredTextCache.SpendTokens
+	}
 
-		if spend.TieredTextCache != nil {
-			spend.TotalSpendTokens += spend.TieredTextCache.SpendTokens
-		}
+	if spend.Image != nil {
+		spend.TotalSpendTokens += spend.Image.SpendTokens
+	}
 
-		if spend.Image != nil {
-			spend.TotalSpendTokens += spend.Image.SpendTokens
-		}
+	if spend.ImageGeneration != nil {
+		spend.TotalSpendTokens += spend.ImageGeneration.SpendTokens
+	}
 
-		if spend.ImageGeneration != nil {
-			spend.TotalSpendTokens += spend.ImageGeneration.SpendTokens
-		}
+	if spend.ImageCache != nil {
+		spend.TotalSpendTokens += spend.ImageCache.SpendTokens
+	}
 
-		if spend.ImageCache != nil {
-			spend.TotalSpendTokens += spend.ImageCache.SpendTokens
-		}
+	if spend.Vision != nil {
+		spend.TotalSpendTokens += spend.Vision.SpendTokens
+	}
 
-		if spend.Vision != nil {
-			spend.TotalSpendTokens += spend.Vision.SpendTokens
-		}
+	if spend.Audio != nil {
+		spend.TotalSpendTokens += spend.Audio.SpendTokens
+	}
 
-		if spend.Audio != nil {
-			spend.TotalSpendTokens += spend.Audio.SpendTokens
-		}
+	if spend.AudioCache != nil {
+		spend.TotalSpendTokens += spend.AudioCache.SpendTokens
+	}
 
-		if spend.AudioCache != nil {
-			spend.TotalSpendTokens += spend.AudioCache.SpendTokens
-		}
+	if spend.Video != nil {
+		spend.TotalSpendTokens += spend.Video.SpendTokens
+	}
 
-		if spend.Video != nil {
-			spend.TotalSpendTokens += spend.Video.SpendTokens
-		}
+	if spend.Search != nil {
+		spend.TotalSpendTokens += spend.Search.SpendTokens
+	}
 
-		if spend.Search != nil {
-			spend.TotalSpendTokens += spend.Search.SpendTokens
-		}
+	if spend.Midjourney != nil {
+		spend.TotalSpendTokens += spend.Midjourney.SpendTokens
+	}
 
-		if spend.Midjourney != nil {
-			spend.TotalSpendTokens += spend.Midjourney.SpendTokens
-		}
-
-	} else if spend.Once != nil {
+	if spend.Once != nil && (spend.TotalSpendTokens == 0 || mak.AppKey == nil || slices.Contains(mak.AppKey.BillingMethods, 2)) {
 		spend.TotalSpendTokens = spend.Once.SpendTokens
 	}
 
