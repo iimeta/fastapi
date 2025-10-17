@@ -66,29 +66,30 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := response.Usage
 
-		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
-
-			billingData := &mcommon.BillingData{
-				ImageGenerationRequest: params,
-				Usage:                  &usage,
-			}
-
-			// 计算花费
-			spend = common.Billing(ctx, mak, billingData)
-			response.Usage = *billingData.Usage
-
-			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := common.RecordSpend(ctx, spend, mak); err != nil {
-					logger.Error(ctx, err)
-					panic(err)
-				}
-			}); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
-
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+
+					billingData := &mcommon.BillingData{
+						ImageGenerationRequest: params,
+						Usage:                  &usage,
+					}
+
+					// 计算花费
+					spend = common.Billing(ctx, mak, billingData)
+					response.Usage = *billingData.Usage
+
+					if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+						// 记录花费
+						if err := common.RecordSpend(ctx, spend, mak); err != nil {
+							logger.Error(ctx, err)
+							panic(err)
+						}
+					}); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
 
 				imageRes := &model.ImageRes{
 					Created:      response.Created,
@@ -97,6 +98,12 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 					Error:        err,
 					InternalTime: internalTime,
 					EnterTime:    enterTime,
+				}
+
+				if spend.GroupId == "" && mak.Group != nil {
+					spend.GroupId = mak.Group.Id
+					spend.GroupName = mak.Group.Name
+					spend.GroupDiscount = mak.Group.Discount
 				}
 
 				s.SaveLog(ctx, model.ImageLog{
@@ -130,8 +137,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 		}
 
 		// 计算花费
-		spend = common.Billing(ctx, mak, billingData, "image_generation")
-
+		spend := common.Billing(ctx, mak, billingData, "image_generation")
 		if spend.ImageGeneration.Pricing.Quality != "" {
 			if params.Quality != "" {
 				params.Quality = spend.ImageGeneration.Pricing.Quality
@@ -249,28 +255,29 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := response.Usage
 
-		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
-
-			billingData := &mcommon.BillingData{
-				Usage: &usage,
-			}
-
-			// 计算花费
-			spend = common.Billing(ctx, mak, billingData)
-			response.Usage = *billingData.Usage
-
-			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := common.RecordSpend(ctx, spend, mak); err != nil {
-					logger.Error(ctx, err)
-					panic(err)
-				}
-			}); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
-
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+
+					billingData := &mcommon.BillingData{
+						Usage: &usage,
+					}
+
+					// 计算花费
+					spend = common.Billing(ctx, mak, billingData)
+					response.Usage = *billingData.Usage
+
+					if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+						// 记录花费
+						if err := common.RecordSpend(ctx, spend, mak); err != nil {
+							logger.Error(ctx, err)
+							panic(err)
+						}
+					}); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
 
 				imageRes := &model.ImageRes{
 					Created:      response.Created,
@@ -290,6 +297,12 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 					ResponseFormat: params.ResponseFormat,
 					Size:           params.Size,
 					User:           params.User,
+				}
+
+				if spend.GroupId == "" && mak.Group != nil {
+					spend.GroupId = mak.Group.Id
+					spend.GroupName = mak.Group.Name
+					spend.GroupDiscount = mak.Group.Discount
 				}
 
 				s.SaveLog(ctx, model.ImageLog{
@@ -323,8 +336,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 		}
 
 		// 计算花费
-		spend = common.Billing(ctx, mak, billingData, "image_generation")
-
+		spend := common.Billing(ctx, mak, billingData, "image_generation")
 		if spend.ImageGeneration.Pricing.Quality != "" {
 			params.Quality = spend.ImageGeneration.Pricing.Quality
 			params.Size = fmt.Sprintf("%dx%d", spend.ImageGeneration.Pricing.Width, spend.ImageGeneration.Pricing.Height)

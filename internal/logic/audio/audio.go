@@ -63,27 +63,28 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
-		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
-
-			billingData := &mcommon.BillingData{
-				AudioInput: params.Input,
-			}
-
-			// 计算花费
-			spend = common.Billing(ctx, mak, billingData)
-
-			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := common.RecordSpend(ctx, spend, mak); err != nil {
-					logger.Error(ctx, err)
-					panic(err)
-				}
-			}); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
-
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+
+					billingData := &mcommon.BillingData{
+						AudioInput: params.Input,
+					}
+
+					// 计算花费
+					spend = common.Billing(ctx, mak, billingData)
+
+					if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+						// 记录花费
+						if err := common.RecordSpend(ctx, spend, mak); err != nil {
+							logger.Error(ctx, err)
+							panic(err)
+						}
+					}); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
 
 				audioReq := &model.AudioReq{
 					Input: params.Input,
@@ -99,6 +100,12 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 
 				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 					audioRes.TotalTokens = spend.TotalSpendTokens
+				}
+
+				if spend.GroupId == "" && mak.Group != nil {
+					spend.GroupId = mak.Group.Id
+					spend.GroupName = mak.Group.Name
+					spend.GroupDiscount = mak.Group.Discount
 				}
 
 				s.SaveLog(ctx, model.AudioLog{
@@ -229,34 +236,35 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
-		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
-
-			if response.Duration != 0 {
-				minute = util.Round(response.Duration/60, 2)
-			} else {
-				minute = util.Round(params.Duration/60, 2)
-				response.Duration = params.Duration
-			}
-
-			billingData := &mcommon.BillingData{
-				AudioMinute: minute,
-			}
-
-			// 计算花费
-			spend = common.Billing(ctx, mak, billingData)
-
-			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := common.RecordSpend(ctx, spend, mak); err != nil {
-					logger.Error(ctx, err)
-					panic(err)
-				}
-			}); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
-
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+
+					if response.Duration != 0 {
+						minute = util.Round(response.Duration/60, 2)
+					} else {
+						minute = util.Round(params.Duration/60, 2)
+						response.Duration = params.Duration
+					}
+
+					billingData := &mcommon.BillingData{
+						AudioMinute: minute,
+					}
+
+					// 计算花费
+					spend = common.Billing(ctx, mak, billingData)
+
+					if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+						// 记录花费
+						if err := common.RecordSpend(ctx, spend, mak); err != nil {
+							logger.Error(ctx, err)
+							panic(err)
+						}
+					}); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
 
 				audioReq := &model.AudioReq{
 					//FilePath: params.FilePath,
@@ -273,6 +281,12 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 
 				if retryInfo == nil {
 					audioRes.TotalTokens = spend.TotalSpendTokens
+				}
+
+				if spend.GroupId == "" && mak.Group != nil {
+					spend.GroupId = mak.Group.Id
+					spend.GroupName = mak.Group.Name
+					spend.GroupDiscount = mak.Group.Discount
 				}
 
 				s.SaveLog(ctx, model.AudioLog{

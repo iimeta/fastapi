@@ -63,42 +63,46 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 			response.ResponseBytes = gjson.MustEncode(chatCompletionResponse)
 		}
 
-		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
+		if mak.ReqModel != nil && mak.RealModel != nil {
 
 			// 替换成调用的模型
 			if mak.ReqModel.IsEnableForward {
 				chatCompletionResponse.Model = mak.ReqModel.Model
 			}
 
-			completion := ""
-			if len(chatCompletionResponse.Choices) > 0 && chatCompletionResponse.Choices[0].Message != nil {
-				for _, choice := range chatCompletionResponse.Choices {
-					completion += gconv.String(choice.Message.Content)
-				}
-			}
-
-			billingData := &mcommon.BillingData{
-				ChatCompletionRequest: params,
-				Completion:            completion,
-				Usage:                 chatCompletionResponse.Usage,
-			}
-
-			// 计算花费
-			spend = common.Billing(ctx, mak, billingData)
-			chatCompletionResponse.Usage = billingData.Usage
-
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := common.RecordSpend(ctx, spend, mak); err != nil {
-					logger.Error(ctx, err)
-					panic(err)
-				}
-			}); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
+				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 
-		if mak.ReqModel != nil && mak.RealModel != nil {
-			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+					billingData := &mcommon.BillingData{
+						ChatCompletionRequest: params,
+						Usage:                 chatCompletionResponse.Usage,
+					}
+
+					if len(chatCompletionResponse.Choices) > 0 && chatCompletionResponse.Choices[0].Message != nil {
+						if mak.RealModel.Type == 102 && chatCompletionResponse.Choices[0].Message.Audio != nil {
+							billingData.Completion = chatCompletionResponse.Choices[0].Message.Audio.Transcript
+						} else {
+							for _, choice := range chatCompletionResponse.Choices {
+								billingData.Completion += gconv.String(choice.Message.Content)
+								billingData.Completion += gconv.String(choice.Message.ToolCalls)
+							}
+						}
+					}
+
+					// 计算花费
+					spend = common.Billing(ctx, mak, billingData)
+					chatCompletionResponse.Usage = billingData.Usage
+
+					if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+						// 记录花费
+						if err := common.RecordSpend(ctx, spend, mak); err != nil {
+							logger.Error(ctx, err)
+							panic(err)
+						}
+					}); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
 
 				completionsRes := &model.CompletionsRes{
 					Error:        err,
@@ -137,6 +141,12 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 							}
 						}
 					}
+				}
+
+				if spend.GroupId == "" && mak.Group != nil {
+					spend.GroupId = mak.Group.Id
+					spend.GroupName = mak.Group.Name
+					spend.GroupDiscount = mak.Group.Discount
 				}
 
 				service.Chat().SaveLog(ctx, model.ChatLog{
@@ -292,63 +302,65 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 
-		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-			if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
+		if mak.ReqModel != nil && mak.RealModel != nil {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				billingData := &mcommon.BillingData{
-					ChatCompletionRequest: params,
-					Completion:            completion,
-					Usage:                 usage,
-				}
+				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 
-				// 计算花费
-				spend = common.Billing(ctx, mak, billingData)
-				usage = billingData.Usage
+					billingData := &mcommon.BillingData{
+						ChatCompletionRequest: params,
+						Completion:            completion,
+						Usage:                 usage,
+					}
 
-				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-					if err := common.RecordSpend(ctx, spend, mak); err != nil {
+					// 计算花费
+					spend = common.Billing(ctx, mak, billingData)
+					usage = billingData.Usage
+
+					if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+						// 记录花费
+						if err := common.RecordSpend(ctx, spend, mak); err != nil {
+							logger.Error(ctx, err)
+							panic(err)
+						}
+					}); err != nil {
 						logger.Error(ctx, err)
-						panic(err)
 					}
-				}); err != nil {
-					logger.Error(ctx, err)
 				}
-			}
 
-			if mak.ReqModel != nil && mak.RealModel != nil {
-				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-					completionsRes := &model.CompletionsRes{
-						Completion:   completion,
-						Error:        err,
-						ConnTime:     connTime,
-						Duration:     duration,
-						TotalTime:    totalTime,
-						InternalTime: internalTime,
-						EnterTime:    enterTime,
-					}
-
-					service.Chat().SaveLog(ctx, model.ChatLog{
-						ReqModel:           mak.ReqModel,
-						RealModel:          mak.RealModel,
-						ModelAgent:         mak.ModelAgent,
-						FallbackModelAgent: fallbackModelAgent,
-						FallbackModel:      fallbackModel,
-						Key:                mak.Key,
-						CompletionsReq:     &params,
-						CompletionsRes:     completionsRes,
-						RetryInfo:          retryInfo,
-						Spend:              spend,
-					})
-
-				}); err != nil {
-					logger.Error(ctx, err)
-					panic(err)
+				completionsRes := &model.CompletionsRes{
+					Completion:   completion,
+					Error:        err,
+					ConnTime:     connTime,
+					Duration:     duration,
+					TotalTime:    totalTime,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
 				}
-			}
 
-		}); err != nil {
-			logger.Error(ctx, err)
+				if spend.GroupId == "" && mak.Group != nil {
+					spend.GroupId = mak.Group.Id
+					spend.GroupName = mak.Group.Name
+					spend.GroupDiscount = mak.Group.Discount
+				}
+
+				service.Chat().SaveLog(ctx, model.ChatLog{
+					ReqModel:           mak.ReqModel,
+					RealModel:          mak.RealModel,
+					ModelAgent:         mak.ModelAgent,
+					FallbackModelAgent: fallbackModelAgent,
+					FallbackModel:      fallbackModel,
+					Key:                mak.Key,
+					CompletionsReq:     &params,
+					CompletionsRes:     completionsRes,
+					RetryInfo:          retryInfo,
+					Spend:              spend,
+				})
+
+			}); err != nil {
+				logger.Error(ctx, err)
+				panic(err)
+			}
 		}
 	}()
 

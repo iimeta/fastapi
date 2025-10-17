@@ -42,28 +42,31 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
-		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
-
-			completion := ""
-			if len(response.Choices) > 0 && response.Choices[0].Message != nil {
-				for _, choice := range response.Choices {
-					completion += gconv.String(choice.Message.Content)
-				}
-			}
-
-			billingData := &mcommon.BillingData{
-				ChatCompletionRequest: params,
-				Completion:            completion,
-				Usage:                 response.Usage,
-			}
-
-			// 计算花费
-			spend = common.Billing(ctx, mak, billingData)
-			response.Usage = billingData.Usage
-		}
-
-		if mak.RealModel != nil {
+		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+
+					billingData := &mcommon.BillingData{
+						ChatCompletionRequest: params,
+						Usage:                 response.Usage,
+					}
+
+					if len(response.Choices) > 0 && response.Choices[0].Message != nil {
+						if mak.RealModel.Type == 102 && response.Choices[0].Message.Audio != nil {
+							billingData.Completion = response.Choices[0].Message.Audio.Transcript
+						} else {
+							for _, choice := range response.Choices {
+								billingData.Completion += gconv.String(choice.Message.Content)
+								billingData.Completion += gconv.String(choice.Message.ToolCalls)
+							}
+						}
+					}
+
+					// 计算花费
+					spend = common.Billing(ctx, mak, billingData)
+					response.Usage = billingData.Usage
+				}
 
 				completionsRes := &model.CompletionsRes{
 					Error:        err,
@@ -76,6 +79,12 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 
 				if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
 					completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
+				}
+
+				if spend.GroupId == "" && mak.Group != nil {
+					spend.GroupId = mak.Group.Id
+					spend.GroupName = mak.Group.Name
+					spend.GroupDiscount = mak.Group.Discount
 				}
 
 				s.SaveLog(ctx, model.ChatLog{

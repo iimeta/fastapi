@@ -57,38 +57,40 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
-		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
+		if mak.ReqModel != nil && mak.RealModel != nil {
 
 			// 替换成调用的模型
 			if mak.ReqModel.IsEnableForward {
 				response.Model = mak.ReqModel.Model
 			}
 
-			billingData := &mcommon.BillingData{
-				ModerationRequest: params,
-				Usage:             response.Usage,
-			}
-
-			if response.Results != nil {
-				billingData.Completion = gconv.String(response.Results)
-			}
-
-			// 计算花费
-			spend = common.Billing(ctx, mak, billingData)
-			response.Usage = billingData.Usage
-
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := common.RecordSpend(ctx, spend, mak); err != nil {
-					logger.Error(ctx, err)
-					panic(err)
+
+				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+
+					billingData := &mcommon.BillingData{
+						ModerationRequest: params,
+						Usage:             response.Usage,
+					}
+
+					if response.Results != nil {
+						billingData.Completion = gconv.String(response.Results)
+					}
+
+					// 计算花费
+					spend = common.Billing(ctx, mak, billingData)
+					response.Usage = billingData.Usage
+
+					if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+						// 记录花费
+						if err := common.RecordSpend(ctx, spend, mak); err != nil {
+							logger.Error(ctx, err)
+							panic(err)
+						}
+					}); err != nil {
+						logger.Error(ctx, err)
+					}
 				}
-			}); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
-
-		if mak.ReqModel != nil && mak.RealModel != nil {
-			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				completionsRes := &model.CompletionsRes{
 					Error:        err,
@@ -99,6 +101,12 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 
 				if retryInfo == nil && response.Results != nil {
 					completionsRes.Completion = gconv.String(response.Results)
+				}
+
+				if spend.GroupId == "" && mak.Group != nil {
+					spend.GroupId = mak.Group.Id
+					spend.GroupName = mak.Group.Name
+					spend.GroupDiscount = mak.Group.Discount
 				}
 
 				s.SaveLog(ctx, model.ChatLog{

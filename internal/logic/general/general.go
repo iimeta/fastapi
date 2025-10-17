@@ -64,37 +64,41 @@ func (s *sGeneral) General(ctx context.Context, request *ghttp.Request, fallback
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
-		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
-
-			completion := ""
-			if len(response.Choices) > 0 && response.Choices[0].Message != nil {
-				for _, choice := range response.Choices {
-					completion += gconv.String(choice.Message.Content)
-				}
-			}
-
-			billingData := &mcommon.BillingData{
-				ChatCompletionRequest: params,
-				Completion:            completion,
-				Usage:                 response.Usage,
-			}
-
-			// 计算花费
-			spend = common.Billing(ctx, mak, billingData)
-			response.Usage = billingData.Usage
-
-			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := common.RecordSpend(ctx, spend, mak); err != nil {
-					logger.Error(ctx, err)
-					panic(err)
-				}
-			}); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
-
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+
+					billingData := &mcommon.BillingData{
+						ChatCompletionRequest: params,
+						Usage:                 response.Usage,
+					}
+
+					if len(response.Choices) > 0 && response.Choices[0].Message != nil {
+						if mak.RealModel.Type == 102 && response.Choices[0].Message.Audio != nil {
+							billingData.Completion = response.Choices[0].Message.Audio.Transcript
+						} else {
+							for _, choice := range response.Choices {
+								billingData.Completion += gconv.String(choice.Message.Content)
+								billingData.Completion += gconv.String(choice.Message.ToolCalls)
+							}
+						}
+					}
+
+					// 计算花费
+					spend = common.Billing(ctx, mak, billingData)
+					response.Usage = billingData.Usage
+
+					if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+						// 记录花费
+						if err := common.RecordSpend(ctx, spend, mak); err != nil {
+							logger.Error(ctx, err)
+							panic(err)
+						}
+					}); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
 
 				completionsRes := &model.CompletionsRes{
 					Error:        err,
@@ -133,6 +137,12 @@ func (s *sGeneral) General(ctx context.Context, request *ghttp.Request, fallback
 							}
 						}
 					}
+				}
+
+				if spend.GroupId == "" && mak.Group != nil {
+					spend.GroupId = mak.Group.Id
+					spend.GroupName = mak.Group.Name
+					spend.GroupDiscount = mak.Group.Discount
 				}
 
 				service.Chat().SaveLog(ctx, model.ChatLog{
@@ -269,63 +279,65 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 
-		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-			if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
+		if mak.ReqModel != nil && mak.RealModel != nil {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				billingData := &mcommon.BillingData{
-					ChatCompletionRequest: params,
-					Completion:            completion,
-					Usage:                 usage,
-				}
+				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
 
-				// 计算花费
-				spend = common.Billing(ctx, mak, billingData)
-				usage = billingData.Usage
+					billingData := &mcommon.BillingData{
+						ChatCompletionRequest: params,
+						Completion:            completion,
+						Usage:                 usage,
+					}
 
-				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-					if err := common.RecordSpend(ctx, spend, mak); err != nil {
+					// 计算花费
+					spend = common.Billing(ctx, mak, billingData)
+					usage = billingData.Usage
+
+					if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+						// 记录花费
+						if err := common.RecordSpend(ctx, spend, mak); err != nil {
+							logger.Error(ctx, err)
+							panic(err)
+						}
+					}); err != nil {
 						logger.Error(ctx, err)
-						panic(err)
 					}
-				}); err != nil {
-					logger.Error(ctx, err)
 				}
-			}
 
-			if mak.ReqModel != nil && mak.RealModel != nil {
-				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-					completionsRes := &model.CompletionsRes{
-						Completion:   completion,
-						Error:        err,
-						ConnTime:     connTime,
-						Duration:     duration,
-						TotalTime:    totalTime,
-						InternalTime: internalTime,
-						EnterTime:    enterTime,
-					}
-
-					service.Chat().SaveLog(ctx, model.ChatLog{
-						ReqModel:           mak.ReqModel,
-						RealModel:          mak.RealModel,
-						ModelAgent:         mak.ModelAgent,
-						FallbackModelAgent: fallbackModelAgent,
-						FallbackModel:      fallbackModel,
-						Key:                mak.Key,
-						CompletionsReq:     &params,
-						CompletionsRes:     completionsRes,
-						RetryInfo:          retryInfo,
-						Spend:              spend,
-					})
-
-				}); err != nil {
-					logger.Error(ctx, err)
-					panic(err)
+				completionsRes := &model.CompletionsRes{
+					Completion:   completion,
+					Error:        err,
+					ConnTime:     connTime,
+					Duration:     duration,
+					TotalTime:    totalTime,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
 				}
-			}
 
-		}); err != nil {
-			logger.Error(ctx, err)
+				if spend.GroupId == "" && mak.Group != nil {
+					spend.GroupId = mak.Group.Id
+					spend.GroupName = mak.Group.Name
+					spend.GroupDiscount = mak.Group.Discount
+				}
+
+				service.Chat().SaveLog(ctx, model.ChatLog{
+					ReqModel:           mak.ReqModel,
+					RealModel:          mak.RealModel,
+					ModelAgent:         mak.ModelAgent,
+					FallbackModelAgent: fallbackModelAgent,
+					FallbackModel:      fallbackModel,
+					Key:                mak.Key,
+					CompletionsReq:     &params,
+					CompletionsRes:     completionsRes,
+					RetryInfo:          retryInfo,
+					Spend:              spend,
+				})
+
+			}); err != nil {
+				logger.Error(ctx, err)
+				panic(err)
+			}
 		}
 	}()
 

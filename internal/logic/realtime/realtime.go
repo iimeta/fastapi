@@ -369,7 +369,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 				usage = billingData.Usage
 
 				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-
+					// 记录花费
 					if err := common.RecordSpend(ctx, spend, mak); err != nil {
 						logger.Error(ctx, err)
 						panic(err)
@@ -392,6 +392,12 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 						TotalTime:    response.TotalTime,
 						InternalTime: internalTime,
 						EnterTime:    enterTime,
+					}
+
+					if spend.GroupId == "" && mak.Group != nil {
+						spend.GroupId = mak.Group.Id
+						spend.GroupName = mak.Group.Name
+						spend.GroupDiscount = mak.Group.Discount
 					}
 
 					s.SaveLog(ctx, model.ChatLog{

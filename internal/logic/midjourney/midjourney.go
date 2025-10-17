@@ -74,29 +74,30 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := &smodel.Usage{}
 
-		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
-
-			billingData := &mcommon.BillingData{
-				Path:  path,
-				Usage: usage,
-			}
-
-			// 计算花费
-			spend = common.Billing(ctx, mak, billingData)
-			usage = billingData.Usage
-
-			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := common.RecordSpend(ctx, spend, mak); err != nil {
-					logger.Error(ctx, err)
-					panic(err)
-				}
-			}); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
-
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+
+					billingData := &mcommon.BillingData{
+						Path:  path,
+						Usage: usage,
+					}
+
+					// 计算花费
+					spend = common.Billing(ctx, mak, billingData)
+					usage = billingData.Usage
+
+					if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+						// 记录花费
+						if err := common.RecordSpend(ctx, spend, mak); err != nil {
+							logger.Error(ctx, err)
+							panic(err)
+						}
+					}); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
 
 				midjourneyResponse := model.MidjourneyResponse{
 					ReqUrl:             reqUrl,
@@ -107,6 +108,12 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 					Error:              err,
 					InternalTime:       internalTime,
 					EnterTime:          enterTime,
+				}
+
+				if spend.GroupId == "" && mak.Group != nil {
+					spend.GroupId = mak.Group.Id
+					spend.GroupName = mak.Group.Name
+					spend.GroupDiscount = mak.Group.Discount
 				}
 
 				s.SaveLog(ctx, model.MidjourneyLog{
@@ -139,8 +146,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 		}
 
 		// 计算花费
-		spend = common.Billing(ctx, mak, billingData, "midjourney")
-
+		spend := common.Billing(ctx, mak, billingData, "midjourney")
 		if spend.Midjourney == nil || spend.Midjourney.Pricing == nil || spend.Midjourney.Pricing.Path == "" {
 			return response, errors.ERR_PATH_NOT_FOUND
 		}
@@ -259,29 +265,30 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := &smodel.Usage{}
 
-		if retryInfo == nil && (err == nil || common.IsAborted(err)) && mak.ReqModel != nil {
-
-			billingData := &mcommon.BillingData{
-				Path:  path,
-				Usage: usage,
-			}
-
-			// 计算花费
-			spend = common.Billing(ctx, mak, billingData)
-			usage = billingData.Usage
-
-			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if err := common.RecordSpend(ctx, spend, mak); err != nil {
-					logger.Error(ctx, err)
-					panic(err)
-				}
-			}); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
-
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
+
+					billingData := &mcommon.BillingData{
+						Path:  path,
+						Usage: usage,
+					}
+
+					// 计算花费
+					spend = common.Billing(ctx, mak, billingData)
+					usage = billingData.Usage
+
+					if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+						// 记录花费
+						if err := common.RecordSpend(ctx, spend, mak); err != nil {
+							logger.Error(ctx, err)
+							panic(err)
+						}
+					}); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
 
 				midjourneyResponse := model.MidjourneyResponse{
 					MidjourneyResponse: smodel.MidjourneyResponse{
@@ -291,6 +298,12 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 					Error:        err,
 					InternalTime: internalTime,
 					EnterTime:    enterTime,
+				}
+
+				if spend.GroupId == "" && mak.Group != nil {
+					spend.GroupId = mak.Group.Id
+					spend.GroupName = mak.Group.Name
+					spend.GroupDiscount = mak.Group.Discount
 				}
 
 				s.SaveLog(ctx, model.MidjourneyLog{
@@ -323,8 +336,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 		}
 
 		// 计算花费
-		spend = common.Billing(ctx, mak, billingData, "midjourney")
-
+		spend := common.Billing(ctx, mak, billingData, "midjourney")
 		if spend.Midjourney == nil || spend.Midjourney.Pricing == nil || spend.Midjourney.Pricing.Path == "" {
 			return response, errors.ERR_PATH_NOT_FOUND
 		}
