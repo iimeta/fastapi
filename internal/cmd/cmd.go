@@ -284,7 +284,7 @@ func middlewareHandlerResponse(r *ghttp.Request) {
 			r.SetError(err)
 
 		} else {
-			code = errors.Error(r.GetCtx(), errors.NewError(200, 0, "success", "success"))
+			code = errors.Error(r.GetCtx(), errors.NewError(200, 0, "success", "success", nil))
 			msg = code.ErrMessage()
 		}
 	}

@@ -243,7 +243,7 @@ func CheckIp(ctx context.Context, ipWhitelist, ipBlacklist []string) error {
 			}
 		}
 
-		return errors.NewError(403, "fastapi_error", fmt.Sprintf("IP: %s Forbidden.", g.RequestFromCtx(ctx).GetClientIp()), "fastapi_error")
+		return errors.NewError(403, "fastapi_error", fmt.Sprintf("IP: %s Forbidden.", g.RequestFromCtx(ctx).GetClientIp()), "fastapi_error", nil)
 	}
 
 	return nil
