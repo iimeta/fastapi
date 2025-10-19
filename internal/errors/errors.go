@@ -94,12 +94,17 @@ func NewErrorf(status int, code any, message, typ string, param any, args ...int
 func Error(ctx context.Context, err error) (iFastApiError IFastApiError) {
 
 	defer func() {
-		if config.Cfg.Core.ErrorPrefix != "fastapi" {
+
+		if len(config.Cfg.Core.ReplaceErrorPrefixes) == 0 && config.Cfg.Core.ErrorPrefix == "fastapi" {
+			return
+		}
+
+		for _, prefix := range append(config.Cfg.Core.ReplaceErrorPrefixes, "fastapi") {
 			code := iFastApiError.ErrCode()
 			if c, ok := code.(string); ok {
-				code = gstr.Replace(c, "fastapi", config.Cfg.Core.ErrorPrefix)
+				code = gstr.Replace(c, prefix, config.Cfg.Core.ErrorPrefix)
 			}
-			iFastApiError = NewError(iFastApiError.Status(), code, iFastApiError.ErrMessage(), gstr.Replace(iFastApiError.ErrType(), "fastapi", config.Cfg.Core.ErrorPrefix), nil).(IFastApiError)
+			iFastApiError = NewError(iFastApiError.Status(), code, iFastApiError.ErrMessage(), gstr.Replace(iFastApiError.ErrType(), prefix, config.Cfg.Core.ErrorPrefix), nil).(IFastApiError)
 		}
 	}()
 

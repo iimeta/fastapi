@@ -3,9 +3,10 @@ package common
 import "time"
 
 type Core struct {
-	SecretKeyPrefix string `bson:"secret_key_prefix" json:"secret_key_prefix"` // 密钥前缀
-	ErrorPrefix     string `bson:"error_prefix"      json:"error_prefix"`      // 错误码前缀
-	ChannelPrefix   string `bson:"channel_prefix"    json:"channel_prefix"`    // 通道前缀
+	SecretKeyPrefix      string   `bson:"secret_key_prefix"      json:"secret_key_prefix"`      // 密钥前缀
+	ErrorPrefix          string   `bson:"error_prefix"           json:"error_prefix"`           // 错误码前缀
+	ReplaceErrorPrefixes []string `bson:"replace_error_prefixes" json:"replace_error_prefixes"` // 替换错误码前缀
+	ChannelPrefix        string   `bson:"channel_prefix"         json:"channel_prefix"`         // 通道前缀
 }
 
 type Http struct {
