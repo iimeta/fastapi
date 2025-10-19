@@ -236,8 +236,17 @@ func tieredText(ctx context.Context, mak *MAK, billingData *common.BillingData, 
 		spend.TieredText = new(common.TextSpend)
 	}
 
+	mode := "all"
+	if billingData.ChatCompletionRequest.EnableThinking != nil {
+		if *billingData.ChatCompletionRequest.EnableThinking {
+			mode = "thinking"
+		} else {
+			mode = "non_thinking"
+		}
+	}
+
 	for i, tieredText := range mak.ReqModel.Pricing.TieredText {
-		if (billingData.Usage.PromptTokens > tieredText.Gt && billingData.Usage.PromptTokens <= tieredText.Lte) || (i == len(mak.ReqModel.Pricing.TieredText)-1) {
+		if mode == tieredText.Mode && ((billingData.Usage.PromptTokens > tieredText.Gt && billingData.Usage.PromptTokens <= tieredText.Lte) || (i == len(mak.ReqModel.Pricing.TieredText)-1)) {
 			spend.TieredText.Pricing = tieredText
 			spend.TieredText.InputTokens = billingData.Usage.PromptTokens
 			spend.TieredText.OutputTokens = billingData.Usage.CompletionTokens
@@ -258,8 +267,17 @@ func tieredTextCache(ctx context.Context, mak *MAK, billingData *common.BillingD
 		spend.TieredTextCache = new(common.CacheSpend)
 	}
 
+	mode := "all"
+	if billingData.ChatCompletionRequest.EnableThinking != nil {
+		if *billingData.ChatCompletionRequest.EnableThinking {
+			mode = "thinking"
+		} else {
+			mode = "non_thinking"
+		}
+	}
+
 	for i, tieredTextCache := range mak.ReqModel.Pricing.TieredTextCache {
-		if (billingData.Usage.PromptTokens > tieredTextCache.Gt && billingData.Usage.PromptTokens <= tieredTextCache.Lte) || (i == len(mak.ReqModel.Pricing.TieredTextCache)-1) {
+		if mode == tieredTextCache.Mode && ((billingData.Usage.PromptTokens > tieredTextCache.Gt && billingData.Usage.PromptTokens <= tieredTextCache.Lte) || (i == len(mak.ReqModel.Pricing.TieredTextCache)-1)) {
 			spend.TieredTextCache.Pricing = tieredTextCache
 			spend.TieredTextCache.ReadTokens = billingData.Usage.CacheReadInputTokens
 			spend.TieredTextCache.WriteTokens = billingData.Usage.CacheCreationInputTokens
