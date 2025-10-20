@@ -54,7 +54,7 @@ type FastAPI struct {
 	Provider string         `json:"provider,omitempty"` // 提供商名称
 	Code     string         `json:"code,omitempty"`     // 提供商代码
 	Model    string         `json:"model,omitempty"`    // 模型
-	Type     int            `json:"type,omitempty"`     // 模型类型[1:文生文, 2:文生图, 3:图生文, 4:图生图, 5:文生语音, 6:语音生文, 7:文本向量化, 100:多模态, 101:多模态实时, 102:多模态语音, 103:多模态向量化]
+	Type     int            `json:"type,omitempty"`     // 模型类型
 	BaseUrl  string         `json:"base_url,omitempty"` // 模型地址
 	Path     string         `json:"path,omitempty"`     // 模型路径
 	Pricing  common.Pricing `json:"pricing,omitempty"`  // 定价
