@@ -13,7 +13,12 @@ import (
 
 type (
 	ILogger interface {
+		// 聊天日志
 		Chat(ctx context.Context, chatLog model.ChatLog, retry ...int)
+		// 绘图日志
+		Image(ctx context.Context, imageLog model.ImageLog, retry ...int)
+		// 音频日志
+		Audio(ctx context.Context, audioLog model.AudioLog, retry ...int)
 	}
 )
 

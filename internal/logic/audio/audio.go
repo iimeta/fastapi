@@ -55,7 +55,6 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
-		spend     mcommon.Spend
 	)
 
 	defer func() {
@@ -66,59 +65,13 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-
-					billingData := &mcommon.BillingData{
-						AudioInput: params.Input,
-					}
-
-					// 计算花费
-					spend = common.Billing(ctx, mak, billingData)
-
-					if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-						// 记录花费
-						if err := common.RecordSpend(ctx, spend, mak); err != nil {
-							logger.Error(ctx, err)
-							panic(err)
-						}
-					}); err != nil {
-						logger.Error(ctx, err)
-					}
-				}
-
-				audioReq := &model.AudioReq{
-					Input: params.Input,
-				}
-
-				audioRes := &model.AudioRes{
-					Characters:   len(audioReq.Input),
+				common.After(ctx, mak, &mcommon.AfterHandler{
+					AudioInput:   params.Input,
 					Error:        err,
+					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
 					InternalTime: internalTime,
 					EnterTime:    enterTime,
-				}
-
-				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-					audioRes.TotalTokens = spend.TotalSpendTokens
-				}
-
-				if spend.GroupId == "" && mak.Group != nil {
-					spend.GroupId = mak.Group.Id
-					spend.GroupName = mak.Group.Name
-					spend.GroupDiscount = mak.Group.Discount
-				}
-
-				s.SaveLog(ctx, model.AudioLog{
-					ReqModel:           mak.ReqModel,
-					RealModel:          mak.RealModel,
-					ModelAgent:         mak.ModelAgent,
-					FallbackModelAgent: fallbackModelAgent,
-					FallbackModel:      fallbackModel,
-					Key:                mak.Key,
-					AudioReq:           audioReq,
-					AudioRes:           audioRes,
-					RetryInfo:          retryInfo,
-					Spend:              spend,
 				})
 
 			}); err != nil {
@@ -226,9 +179,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		minute    float64
 		retryInfo *mcommon.Retry
-		spend     mcommon.Spend
 	)
 
 	defer func() {
@@ -239,68 +190,22 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-
-					if response.Duration != 0 {
-						minute = util.Round(response.Duration/60, 2)
-					} else {
-						minute = util.Round(params.Duration/60, 2)
-						response.Duration = params.Duration
-					}
-
-					billingData := &mcommon.BillingData{
-						AudioMinute: minute,
-					}
-
-					// 计算花费
-					spend = common.Billing(ctx, mak, billingData)
-
-					if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-						// 记录花费
-						if err := common.RecordSpend(ctx, spend, mak); err != nil {
-							logger.Error(ctx, err)
-							panic(err)
-						}
-					}); err != nil {
-						logger.Error(ctx, err)
-					}
-				}
-
-				audioReq := &model.AudioReq{
-					//FilePath: params.FilePath,
-				}
-
-				audioRes := &model.AudioRes{
-					Text:         response.Text,
-					Minute:       minute,
+				afterHandler := &mcommon.AfterHandler{
+					AudioText:    response.Text,
 					Error:        err,
+					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
 					InternalTime: internalTime,
 					EnterTime:    enterTime,
 				}
 
-				if retryInfo == nil {
-					audioRes.TotalTokens = spend.TotalSpendTokens
+				if response.Duration != 0 {
+					afterHandler.AudioMinute = util.Round(response.Duration/60, 2)
+				} else {
+					afterHandler.AudioMinute = util.Round(params.Duration/60, 2)
 				}
 
-				if spend.GroupId == "" && mak.Group != nil {
-					spend.GroupId = mak.Group.Id
-					spend.GroupName = mak.Group.Name
-					spend.GroupDiscount = mak.Group.Discount
-				}
-
-				s.SaveLog(ctx, model.AudioLog{
-					ReqModel:           mak.ReqModel,
-					RealModel:          mak.RealModel,
-					ModelAgent:         mak.ModelAgent,
-					FallbackModelAgent: fallbackModelAgent,
-					FallbackModel:      fallbackModel,
-					Key:                mak.Key,
-					AudioReq:           audioReq,
-					AudioRes:           audioRes,
-					RetryInfo:          retryInfo,
-					Spend:              spend,
-				})
+				common.After(ctx, mak, afterHandler)
 
 			}); err != nil {
 				logger.Error(ctx, err)

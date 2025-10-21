@@ -17,10 +17,19 @@ func Before(ctx context.Context, before *mcommon.BeforeHandler) {
 }
 
 func After(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
-	chat(ctx, mak, after)
+	switch mak.ReqModel.Type {
+	case 1, 100, 101, 102, 7, 103:
+		chatHandler(ctx, mak, after)
+	case 2, 3, 4:
+		imageHandler(ctx, mak, after)
+	case 5, 6:
+		audioHandler(ctx, mak, after)
+	default:
+		chatHandler(ctx, mak, after)
+	}
 }
 
-func chat(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
+func chatHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
 
@@ -45,7 +54,6 @@ func chat(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 		// 计算花费
 		after.Spend = Billing(ctx, mak, billingData)
-		after.Usage = billingData.Usage
 
 		if !after.IsSmartMatch {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -115,6 +123,118 @@ func chat(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		Key:                mak.Key,
 		CompletionsReq:     &after.ChatCompletionReq,
 		CompletionsRes:     completionsRes,
+		RetryInfo:          after.RetryInfo,
+		Spend:              after.Spend,
+	})
+}
+
+func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
+
+	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
+
+		billingData := &mcommon.BillingData{
+			ImageGenerationRequest: after.ImageGenerationRequest,
+			Usage:                  after.Usage,
+		}
+
+		// 计算花费
+		after.Spend = Billing(ctx, mak, billingData)
+
+		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+			// 记录花费
+			if err := RecordSpend(ctx, after.Spend, mak); err != nil {
+				logger.Error(ctx, err)
+				panic(err)
+			}
+		}); err != nil {
+			logger.Error(ctx, err)
+		}
+	}
+
+	imageRes := &model.ImageRes{
+		Created:      after.ImageResponse.Created,
+		Data:         after.ImageResponse.Data,
+		TotalTime:    after.ImageResponse.TotalTime,
+		Error:        after.Error,
+		InternalTime: after.InternalTime,
+		EnterTime:    after.EnterTime,
+	}
+
+	if after.Spend.GroupId == "" && mak.Group != nil {
+		after.Spend.GroupId = mak.Group.Id
+		after.Spend.GroupName = mak.Group.Name
+		after.Spend.GroupDiscount = mak.Group.Discount
+	}
+
+	service.Logger().Image(ctx, model.ImageLog{
+		ReqModel:           mak.ReqModel,
+		RealModel:          mak.RealModel,
+		ModelAgent:         mak.ModelAgent,
+		FallbackModelAgent: mak.FallbackModelAgent,
+		FallbackModel:      mak.FallbackModel,
+		Key:                mak.Key,
+		ImageReq:           &after.ImageGenerationRequest,
+		ImageRes:           imageRes,
+		RetryInfo:          after.RetryInfo,
+		Spend:              after.Spend,
+	})
+}
+
+func audioHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
+
+	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
+
+		billingData := &mcommon.BillingData{
+			AudioInput:  after.AudioInput,
+			AudioMinute: after.AudioMinute,
+		}
+
+		// 计算花费
+		after.Spend = Billing(ctx, mak, billingData)
+
+		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+			// 记录花费
+			if err := RecordSpend(ctx, after.Spend, mak); err != nil {
+				logger.Error(ctx, err)
+				panic(err)
+			}
+		}); err != nil {
+			logger.Error(ctx, err)
+		}
+	}
+
+	audioReq := &model.AudioReq{
+		Input: after.AudioInput,
+	}
+
+	audioRes := &model.AudioRes{
+		Text:         after.AudioText,
+		Minute:       after.AudioMinute,
+		Error:        after.Error,
+		TotalTime:    after.TotalTime,
+		InternalTime: after.InternalTime,
+		EnterTime:    after.EnterTime,
+	}
+
+	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
+		audioRes.TotalTokens = after.Spend.TotalSpendTokens
+	}
+
+	if after.Spend.GroupId == "" && mak.Group != nil {
+		after.Spend.GroupId = mak.Group.Id
+		after.Spend.GroupName = mak.Group.Name
+		after.Spend.GroupDiscount = mak.Group.Discount
+	}
+
+	service.Logger().Audio(ctx, model.AudioLog{
+		ReqModel:           mak.ReqModel,
+		RealModel:          mak.RealModel,
+		ModelAgent:         mak.ModelAgent,
+		FallbackModelAgent: mak.FallbackModelAgent,
+		FallbackModel:      mak.FallbackModel,
+		Key:                mak.Key,
+		AudioReq:           audioReq,
+		AudioRes:           audioRes,
 		RetryInfo:          after.RetryInfo,
 		Spend:              after.Spend,
 	})

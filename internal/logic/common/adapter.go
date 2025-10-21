@@ -77,7 +77,7 @@ func NewRealtimeAdapter(ctx context.Context, model *model.Model, key, baseUrl, p
 }
 
 func NewModerationClient(ctx context.Context, model *model.Model, key, baseUrl, path string) *sdk.ModerationClient {
-	return sdk.NewModerationClient(ctx, model.Model, key, baseUrl, path, config.Cfg.Base.ShortTimeout, config.Cfg.Http.ProxyUrl)
+	return sdk.NewModerationClient(ctx, model.Model, key, baseUrl, path, config.Cfg.Base.ShortTimeout*time.Second, config.Cfg.Http.ProxyUrl)
 }
 
 func NewConverter(ctx context.Context, provider string) sdk.Converter {

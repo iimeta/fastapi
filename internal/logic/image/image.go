@@ -57,7 +57,6 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
-		spend     mcommon.Spend
 	)
 
 	defer func() {
@@ -69,54 +68,15 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-
-					billingData := &mcommon.BillingData{
-						ImageGenerationRequest: params,
-						Usage:                  &usage,
-					}
-
-					// 计算花费
-					spend = common.Billing(ctx, mak, billingData)
-					response.Usage = *billingData.Usage
-
-					if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-						// 记录花费
-						if err := common.RecordSpend(ctx, spend, mak); err != nil {
-							logger.Error(ctx, err)
-							panic(err)
-						}
-					}); err != nil {
-						logger.Error(ctx, err)
-					}
-				}
-
-				imageRes := &model.ImageRes{
-					Created:      response.Created,
-					Data:         response.Data,
-					TotalTime:    response.TotalTime,
-					Error:        err,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
-				}
-
-				if spend.GroupId == "" && mak.Group != nil {
-					spend.GroupId = mak.Group.Id
-					spend.GroupName = mak.Group.Name
-					spend.GroupDiscount = mak.Group.Discount
-				}
-
-				s.SaveLog(ctx, model.ImageLog{
-					ReqModel:           mak.ReqModel,
-					RealModel:          mak.RealModel,
-					ModelAgent:         mak.ModelAgent,
-					FallbackModelAgent: fallbackModelAgent,
-					FallbackModel:      fallbackModel,
-					Key:                mak.Key,
-					ImageReq:           &params,
-					ImageRes:           imageRes,
-					RetryInfo:          retryInfo,
-					Spend:              spend,
+				common.After(ctx, mak, &mcommon.AfterHandler{
+					ImageGenerationRequest: params,
+					ImageResponse:          response,
+					Usage:                  &usage,
+					Error:                  err,
+					RetryInfo:              retryInfo,
+					TotalTime:              response.TotalTime,
+					InternalTime:           internalTime,
+					EnterTime:              enterTime,
 				})
 
 			}); err != nil {
@@ -246,7 +206,6 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
-		spend     mcommon.Spend
 	)
 
 	defer func() {
@@ -258,37 +217,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-
-					billingData := &mcommon.BillingData{
-						Usage: &usage,
-					}
-
-					// 计算花费
-					spend = common.Billing(ctx, mak, billingData)
-					response.Usage = *billingData.Usage
-
-					if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-						// 记录花费
-						if err := common.RecordSpend(ctx, spend, mak); err != nil {
-							logger.Error(ctx, err)
-							panic(err)
-						}
-					}); err != nil {
-						logger.Error(ctx, err)
-					}
-				}
-
-				imageRes := &model.ImageRes{
-					Created:      response.Created,
-					Data:         response.Data,
-					TotalTime:    response.TotalTime,
-					Error:        err,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
-				}
-
-				imageReq := &smodel.ImageGenerationRequest{
+				imageReq := smodel.ImageGenerationRequest{
 					Prompt:         params.Prompt,
 					Background:     params.Background,
 					Model:          params.Model,
@@ -299,23 +228,15 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 					User:           params.User,
 				}
 
-				if spend.GroupId == "" && mak.Group != nil {
-					spend.GroupId = mak.Group.Id
-					spend.GroupName = mak.Group.Name
-					spend.GroupDiscount = mak.Group.Discount
-				}
-
-				s.SaveLog(ctx, model.ImageLog{
-					ReqModel:           mak.ReqModel,
-					RealModel:          mak.RealModel,
-					ModelAgent:         mak.ModelAgent,
-					FallbackModelAgent: fallbackModelAgent,
-					FallbackModel:      fallbackModel,
-					Key:                mak.Key,
-					ImageReq:           imageReq,
-					ImageRes:           imageRes,
-					RetryInfo:          retryInfo,
-					Spend:              spend,
+				common.After(ctx, mak, &mcommon.AfterHandler{
+					ImageGenerationRequest: imageReq,
+					ImageResponse:          response,
+					Usage:                  &usage,
+					Error:                  err,
+					RetryInfo:              retryInfo,
+					TotalTime:              response.TotalTime,
+					InternalTime:           internalTime,
+					EnterTime:              enterTime,
 				})
 
 			}); err != nil {

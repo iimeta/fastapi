@@ -51,7 +51,6 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
-		spend     mcommon.Spend
 	)
 
 	defer func() {
@@ -74,7 +73,6 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 					Usage:             response.Usage,
 					Error:             err,
 					RetryInfo:         retryInfo,
-					Spend:             spend,
 					ConnTime:          response.ConnTime,
 					Duration:          response.Duration,
 					TotalTime:         response.TotalTime,
@@ -244,7 +242,6 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 		totalTime  int64
 		usage      *smodel.Usage
 		retryInfo  *mcommon.Retry
-		spend      mcommon.Spend
 	)
 
 	defer func() {
@@ -261,7 +258,6 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 					Usage:             usage,
 					Error:             err,
 					RetryInfo:         retryInfo,
-					Spend:             spend,
 					ConnTime:          connTime,
 					Duration:          duration,
 					TotalTime:         totalTime,

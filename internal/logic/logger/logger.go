@@ -36,6 +36,7 @@ func New() service.ILogger {
 	return &sLogger{}
 }
 
+// 聊天日志
 func (s *sLogger) Chat(ctx context.Context, chatLog model.ChatLog, retry ...int) {
 
 	now := gtime.TimestampMilli()
@@ -416,5 +417,308 @@ func (s *sLogger) Chat(ctx context.Context, chatLog model.ChatLog, retry ...int)
 		logger.Errorf(ctx, "sLogger Chat retry: %d", len(retry))
 
 		s.Chat(ctx, chatLog, retry...)
+	}
+}
+
+// 绘图日志
+func (s *sLogger) Image(ctx context.Context, imageLog model.ImageLog, retry ...int) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sLogger Image time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	// 不记录此错误日志
+	if imageLog.ImageRes.Error != nil && (errors.Is(imageLog.ImageRes.Error, errors.ERR_MODEL_NOT_FOUND) ||
+		errors.Is(imageLog.ImageRes.Error, errors.ERR_MODEL_DISABLED) ||
+		errors.Is(imageLog.ImageRes.Error, errors.ERR_GROUP_NOT_FOUND) ||
+		errors.Is(imageLog.ImageRes.Error, errors.ERR_GROUP_DISABLED) ||
+		errors.Is(imageLog.ImageRes.Error, errors.ERR_GROUP_EXPIRED) ||
+		errors.Is(imageLog.ImageRes.Error, errors.ERR_GROUP_INSUFFICIENT_QUOTA)) {
+		return
+	}
+
+	image := do.Image{
+		TraceId:        gctx.CtxId(ctx),
+		UserId:         service.Session().GetUserId(ctx),
+		AppId:          service.Session().GetAppId(ctx),
+		Prompt:         imageLog.ImageReq.Prompt,
+		Size:           imageLog.ImageReq.Size,
+		N:              imageLog.ImageReq.N,
+		Quality:        imageLog.ImageReq.Quality,
+		Style:          imageLog.ImageReq.Style,
+		ResponseFormat: imageLog.ImageReq.ResponseFormat,
+		Spend:          imageLog.Spend,
+		TotalTime:      imageLog.ImageRes.TotalTime,
+		InternalTime:   imageLog.ImageRes.InternalTime,
+		ReqTime:        imageLog.ImageRes.EnterTime,
+		ReqDate:        gtime.NewFromTimeStamp(imageLog.ImageRes.EnterTime).Format("Y-m-d"),
+		ClientIp:       g.RequestFromCtx(ctx).GetClientIp(),
+		RemoteIp:       g.RequestFromCtx(ctx).GetRemoteIp(),
+		LocalIp:        util.GetLocalIp(),
+		Status:         1,
+		Host:           g.RequestFromCtx(ctx).GetHost(),
+		Rid:            service.Session().GetRid(ctx),
+	}
+
+	for _, data := range imageLog.ImageRes.Data {
+		image.ImageData = append(image.ImageData, mcommon.ImageData{
+			Url: data.Url,
+			//B64Json:       data.B64Json, // todo 太大了, 不存
+			RevisedPrompt: data.RevisedPrompt,
+		})
+	}
+
+	if imageLog.ReqModel != nil {
+		image.ProviderId = imageLog.ReqModel.ProviderId
+		if provider, err := service.Provider().GetCache(ctx, imageLog.ReqModel.ProviderId); err != nil {
+			logger.Error(ctx, err)
+		} else {
+			image.ProviderName = provider.Name
+		}
+		image.ModelId = imageLog.ReqModel.Id
+		image.ModelName = imageLog.ReqModel.Name
+		image.Model = imageLog.ReqModel.Model
+		image.ModelType = imageLog.ReqModel.Type
+	}
+
+	if imageLog.RealModel != nil {
+		image.IsEnablePresetConfig = imageLog.RealModel.IsEnablePresetConfig
+		image.PresetConfig = imageLog.RealModel.PresetConfig
+		image.IsEnableForward = imageLog.RealModel.IsEnableForward
+		image.ForwardConfig = imageLog.RealModel.ForwardConfig
+		image.IsEnableModelAgent = imageLog.RealModel.IsEnableModelAgent
+		image.RealModelId = imageLog.RealModel.Id
+		image.RealModelName = imageLog.RealModel.Name
+		image.RealModel = imageLog.RealModel.Model
+	}
+
+	if image.IsEnableModelAgent && imageLog.ModelAgent != nil {
+		image.ModelAgentId = imageLog.ModelAgent.Id
+		image.ModelAgent = &do.ModelAgent{
+			ProviderId: imageLog.ModelAgent.ProviderId,
+			Name:       imageLog.ModelAgent.Name,
+			BaseUrl:    imageLog.ModelAgent.BaseUrl,
+			Path:       imageLog.ModelAgent.Path,
+			Weight:     imageLog.ModelAgent.Weight,
+			Remark:     imageLog.ModelAgent.Remark,
+		}
+	}
+
+	if imageLog.FallbackModelAgent != nil {
+		image.IsEnableFallback = true
+		image.FallbackConfig = &mcommon.FallbackConfig{
+			ModelAgent:     imageLog.FallbackModelAgent.Id,
+			ModelAgentName: imageLog.FallbackModelAgent.Name,
+		}
+	}
+
+	if imageLog.FallbackModel != nil {
+		image.IsEnableFallback = true
+		if image.FallbackConfig == nil {
+			image.FallbackConfig = new(mcommon.FallbackConfig)
+		}
+		image.FallbackConfig.Model = imageLog.FallbackModel.Model
+		image.FallbackConfig.ModelName = imageLog.FallbackModel.Name
+	}
+
+	if imageLog.Key != nil {
+		image.Key = imageLog.Key.Key
+	}
+
+	if imageLog.ImageRes.Error != nil {
+
+		image.ErrMsg = imageLog.ImageRes.Error.Error()
+		openaiApiError := &serrors.ApiError{}
+		if errors.As(imageLog.ImageRes.Error, &openaiApiError) {
+			image.ErrMsg = openaiApiError.Message
+		}
+
+		if common.IsAborted(imageLog.ImageRes.Error) {
+			image.Status = 2
+		} else {
+			image.Status = -1
+		}
+	}
+
+	if imageLog.RetryInfo != nil {
+
+		image.IsRetry = imageLog.RetryInfo.IsRetry
+		image.Retry = &mcommon.Retry{
+			IsRetry:    imageLog.RetryInfo.IsRetry,
+			RetryCount: imageLog.RetryInfo.RetryCount,
+			ErrMsg:     imageLog.RetryInfo.ErrMsg,
+		}
+
+		if image.IsRetry {
+			image.Status = 3
+			image.ErrMsg = imageLog.RetryInfo.ErrMsg
+		}
+	}
+
+	if _, err := dao.Image.Insert(ctx, image); err != nil {
+		logger.Errorf(ctx, "sLogger Image error: %v", err)
+
+		if err.Error() == "an inserted document is too large" {
+			imageLog.ImageReq.Prompt = err.Error()
+		}
+
+		if len(retry) == 10 {
+			panic(err)
+		}
+
+		retry = append(retry, 1)
+
+		time.Sleep(time.Duration(len(retry)*5) * time.Second)
+
+		logger.Errorf(ctx, "sLogger Image retry: %d", len(retry))
+
+		s.Image(ctx, imageLog, retry...)
+	}
+}
+
+// 音频日志
+func (s *sLogger) Audio(ctx context.Context, audioLog model.AudioLog, retry ...int) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sLogger Audio time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	// 不记录此错误日志
+	if audioLog.AudioRes.Error != nil && (errors.Is(audioLog.AudioRes.Error, errors.ERR_MODEL_NOT_FOUND) ||
+		errors.Is(audioLog.AudioRes.Error, errors.ERR_MODEL_DISABLED) ||
+		errors.Is(audioLog.AudioRes.Error, errors.ERR_GROUP_NOT_FOUND) ||
+		errors.Is(audioLog.AudioRes.Error, errors.ERR_GROUP_DISABLED) ||
+		errors.Is(audioLog.AudioRes.Error, errors.ERR_GROUP_EXPIRED) ||
+		errors.Is(audioLog.AudioRes.Error, errors.ERR_GROUP_INSUFFICIENT_QUOTA)) {
+		return
+	}
+
+	audio := do.Audio{
+		TraceId:      gctx.CtxId(ctx),
+		UserId:       service.Session().GetUserId(ctx),
+		AppId:        service.Session().GetAppId(ctx),
+		Input:        audioLog.AudioReq.Input,
+		Text:         audioLog.AudioRes.Text,
+		Spend:        audioLog.Spend,
+		TotalTime:    audioLog.AudioRes.TotalTime,
+		InternalTime: audioLog.AudioRes.InternalTime,
+		ReqTime:      audioLog.AudioRes.EnterTime,
+		ReqDate:      gtime.NewFromTimeStamp(audioLog.AudioRes.EnterTime).Format("Y-m-d"),
+		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
+		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
+		LocalIp:      util.GetLocalIp(),
+		Status:       1,
+		Host:         g.RequestFromCtx(ctx).GetHost(),
+		Rid:          service.Session().GetRid(ctx),
+	}
+
+	if audioLog.ReqModel != nil {
+		audio.ProviderId = audioLog.ReqModel.ProviderId
+		if provider, err := service.Provider().GetCache(ctx, audioLog.ReqModel.ProviderId); err != nil {
+			logger.Error(ctx, err)
+		} else {
+			audio.ProviderName = provider.Name
+		}
+		audio.ModelId = audioLog.ReqModel.Id
+		audio.ModelName = audioLog.ReqModel.Name
+		audio.Model = audioLog.ReqModel.Model
+		audio.ModelType = audioLog.ReqModel.Type
+	}
+
+	if audioLog.RealModel != nil {
+		audio.IsEnablePresetConfig = audioLog.RealModel.IsEnablePresetConfig
+		audio.PresetConfig = audioLog.RealModel.PresetConfig
+		audio.IsEnableForward = audioLog.RealModel.IsEnableForward
+		audio.ForwardConfig = audioLog.RealModel.ForwardConfig
+		audio.IsEnableModelAgent = audioLog.RealModel.IsEnableModelAgent
+		audio.RealModelId = audioLog.RealModel.Id
+		audio.RealModelName = audioLog.RealModel.Name
+		audio.RealModel = audioLog.RealModel.Model
+	}
+
+	if audio.IsEnableModelAgent && audioLog.ModelAgent != nil {
+		audio.ModelAgentId = audioLog.ModelAgent.Id
+		audio.ModelAgent = &do.ModelAgent{
+			ProviderId: audioLog.ModelAgent.ProviderId,
+			Name:       audioLog.ModelAgent.Name,
+			BaseUrl:    audioLog.ModelAgent.BaseUrl,
+			Path:       audioLog.ModelAgent.Path,
+			Weight:     audioLog.ModelAgent.Weight,
+			Remark:     audioLog.ModelAgent.Remark,
+			Status:     audioLog.ModelAgent.Status,
+		}
+	}
+
+	if audioLog.FallbackModelAgent != nil {
+		audio.IsEnableFallback = true
+		audio.FallbackConfig = &mcommon.FallbackConfig{
+			ModelAgent:     audioLog.FallbackModelAgent.Id,
+			ModelAgentName: audioLog.FallbackModelAgent.Name,
+		}
+	}
+
+	if audioLog.FallbackModel != nil {
+		audio.IsEnableFallback = true
+		if audio.FallbackConfig == nil {
+			audio.FallbackConfig = new(mcommon.FallbackConfig)
+		}
+		audio.FallbackConfig.Model = audioLog.FallbackModel.Model
+		audio.FallbackConfig.ModelName = audioLog.FallbackModel.Name
+	}
+
+	if audioLog.Key != nil {
+		audio.Key = audioLog.Key.Key
+	}
+
+	if audioLog.AudioRes.Error != nil {
+
+		audio.ErrMsg = audioLog.AudioRes.Error.Error()
+		openaiApiError := &serrors.ApiError{}
+		if errors.As(audioLog.AudioRes.Error, &openaiApiError) {
+			audio.ErrMsg = openaiApiError.Message
+		}
+
+		if common.IsAborted(audioLog.AudioRes.Error) {
+			audio.Status = 2
+		} else {
+			audio.Status = -1
+		}
+	}
+
+	if audioLog.RetryInfo != nil {
+
+		audio.IsRetry = audioLog.RetryInfo.IsRetry
+		audio.Retry = &mcommon.Retry{
+			IsRetry:    audioLog.RetryInfo.IsRetry,
+			RetryCount: audioLog.RetryInfo.RetryCount,
+			ErrMsg:     audioLog.RetryInfo.ErrMsg,
+		}
+
+		if audio.IsRetry {
+			audio.Status = 3
+			audio.ErrMsg = audioLog.RetryInfo.ErrMsg
+		}
+	}
+
+	if _, err := dao.Audio.Insert(ctx, audio); err != nil {
+		logger.Errorf(ctx, "sLogger Audio error: %v", err)
+
+		if err.Error() == "an inserted document is too large" {
+			audioLog.AudioReq.Input = err.Error()
+		}
+
+		if len(retry) == 10 {
+			panic(err)
+		}
+
+		retry = append(retry, 1)
+
+		time.Sleep(time.Duration(len(retry)*5) * time.Second)
+
+		logger.Errorf(ctx, "sLogger Audio retry: %d", len(retry))
+
+		s.Audio(ctx, audioLog, retry...)
 	}
 }

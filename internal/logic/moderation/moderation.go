@@ -49,7 +49,6 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
-		spend     mcommon.Spend
 	)
 
 	defer func() {
@@ -71,7 +70,6 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 					Usage:         response.Usage,
 					Error:         err,
 					RetryInfo:     retryInfo,
-					Spend:         spend,
 					TotalTime:     response.TotalTime,
 					InternalTime:  internalTime,
 					EnterTime:     enterTime,

@@ -56,7 +56,6 @@ func (s *sGeneral) General(ctx context.Context, request *ghttp.Request, fallback
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
-		spend     mcommon.Spend
 	)
 
 	defer func() {
@@ -73,7 +72,6 @@ func (s *sGeneral) General(ctx context.Context, request *ghttp.Request, fallback
 					Usage:             response.Usage,
 					Error:             err,
 					RetryInfo:         retryInfo,
-					Spend:             spend,
 					ConnTime:          response.ConnTime,
 					Duration:          response.Duration,
 					TotalTime:         response.TotalTime,
@@ -194,7 +192,6 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 		totalTime  int64
 		usage      *smodel.Usage
 		retryInfo  *mcommon.Retry
-		spend      mcommon.Spend
 	)
 
 	defer func() {
@@ -211,7 +208,6 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 					Usage:             usage,
 					Error:             err,
 					RetryInfo:         retryInfo,
-					Spend:             spend,
 					ConnTime:          connTime,
 					Duration:          duration,
 					TotalTime:         totalTime,

@@ -60,7 +60,6 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
-		spend     mcommon.Spend
 	)
 
 	defer func() {
@@ -82,7 +81,6 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 					Usage:        response.Usage,
 					Error:        err,
 					RetryInfo:    retryInfo,
-					Spend:        spend,
 					TotalTime:    response.TotalTime,
 					InternalTime: internalTime,
 					EnterTime:    enterTime,

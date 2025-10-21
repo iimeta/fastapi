@@ -63,7 +63,6 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
-		spend     mcommon.Spend
 	)
 
 	defer func() {
@@ -86,7 +85,6 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 					Usage:             response.Usage,
 					Error:             err,
 					RetryInfo:         retryInfo,
-					Spend:             spend,
 					ConnTime:          response.ConnTime,
 					Duration:          response.Duration,
 					TotalTime:         response.TotalTime,
@@ -246,7 +244,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 		totalTime  int64
 		usage      *smodel.Usage
 		retryInfo  *mcommon.Retry
-		spend      mcommon.Spend
 	)
 
 	defer func() {
@@ -263,7 +260,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 					Usage:             usage,
 					Error:             err,
 					RetryInfo:         retryInfo,
-					Spend:             spend,
 					ConnTime:          connTime,
 					Duration:          duration,
 					TotalTime:         totalTime,

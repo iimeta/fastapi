@@ -50,7 +50,6 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
-		spend     mcommon.Spend
 	)
 
 	defer func() {
@@ -78,7 +77,6 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 					Usage:             chatCompletionResponse.Usage,
 					Error:             err,
 					RetryInfo:         retryInfo,
-					Spend:             spend,
 					ConnTime:          chatCompletionResponse.ConnTime,
 					Duration:          chatCompletionResponse.Duration,
 					TotalTime:         chatCompletionResponse.TotalTime,
@@ -218,7 +216,6 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 		totalTime  int64
 		usage      *smodel.Usage
 		retryInfo  *mcommon.Retry
-		spend      mcommon.Spend
 	)
 
 	defer func() {
@@ -235,7 +232,6 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 					Usage:             usage,
 					Error:             err,
 					RetryInfo:         retryInfo,
-					Spend:             spend,
 					ConnTime:          connTime,
 					Duration:          duration,
 					TotalTime:         totalTime,

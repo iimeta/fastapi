@@ -33,7 +33,6 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
-		spend     mcommon.Spend
 	)
 
 	defer func() {
@@ -50,7 +49,6 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 					Usage:             response.Usage,
 					Error:             err,
 					RetryInfo:         retryInfo,
-					Spend:             spend,
 					ConnTime:          response.ConnTime,
 					Duration:          response.Duration,
 					TotalTime:         response.TotalTime,
