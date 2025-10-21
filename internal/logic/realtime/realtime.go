@@ -101,34 +101,15 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 		if err != nil && mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				completionsRes := &model.CompletionsRes{
-					Error:        err,
-					ConnTime:     connTime,
-					Duration:     duration,
-					TotalTime:    totalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
-				}
-
-				spend := mcommon.Spend{}
-
-				if mak.Group != nil {
-					spend.GroupId = mak.Group.Id
-					spend.GroupName = mak.Group.Name
-					spend.GroupDiscount = mak.Group.Discount
-				}
-
-				s.SaveLog(ctx, model.ChatLog{
-					ReqModel:           mak.ReqModel,
-					RealModel:          mak.RealModel,
-					ModelAgent:         mak.ModelAgent,
-					FallbackModelAgent: fallbackModelAgent,
-					FallbackModel:      fallbackModel,
-					Key:                mak.Key,
-					CompletionsReq:     &smodel.ChatCompletionRequest{Stream: true},
-					CompletionsRes:     completionsRes,
-					RetryInfo:          retryInfo,
-					Spend:              spend,
+				common.After(ctx, mak, &mcommon.AfterHandler{
+					ChatCompletionReq: smodel.ChatCompletionRequest{Stream: true},
+					Error:             err,
+					RetryInfo:         retryInfo,
+					ConnTime:          connTime,
+					Duration:          duration,
+					TotalTime:         totalTime,
+					InternalTime:      internalTime,
+					EnterTime:         enterTime,
 				})
 
 			}); err != nil {
@@ -245,34 +226,15 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 					enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 					internalTime := gtime.TimestampMilli() - enterTime - totalTime
 
-					completionsRes := &model.CompletionsRes{
-						Error:        response.Error,
-						ConnTime:     connTime,
-						Duration:     duration,
-						TotalTime:    totalTime,
-						InternalTime: internalTime,
-						EnterTime:    enterTime,
-					}
-
-					spend := mcommon.Spend{}
-
-					if mak.Group != nil {
-						spend.GroupId = mak.Group.Id
-						spend.GroupName = mak.Group.Name
-						spend.GroupDiscount = mak.Group.Discount
-					}
-
-					s.SaveLog(ctx, model.ChatLog{
-						ReqModel:           mak.ReqModel,
-						RealModel:          mak.RealModel,
-						ModelAgent:         mak.ModelAgent,
-						FallbackModelAgent: fallbackModelAgent,
-						FallbackModel:      fallbackModel,
-						Key:                mak.Key,
-						CompletionsReq:     &smodel.ChatCompletionRequest{Stream: true},
-						CompletionsRes:     completionsRes,
-						RetryInfo:          retryInfo,
-						Spend:              spend,
+					common.After(ctx, mak, &mcommon.AfterHandler{
+						ChatCompletionReq: smodel.ChatCompletionRequest{Stream: true},
+						Error:             response.Error,
+						RetryInfo:         retryInfo,
+						ConnTime:          connTime,
+						Duration:          duration,
+						TotalTime:         totalTime,
+						InternalTime:      internalTime,
+						EnterTime:         enterTime,
 					})
 
 				}); err != nil {
@@ -349,68 +311,22 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 				message := responseMessage
 				completion := responseCompletion
 
-				typ := ""
-				if len(realtimeResponse.Response.Output) > 0 {
-					if len(realtimeResponse.Response.Output[0].Content) > 0 {
-						typ = realtimeResponse.Response.Output[0].Content[0].Type
-					} else {
-						typ = realtimeResponse.Response.Output[0].Type
-					}
-				}
-
-				billingData := &mcommon.BillingData{
-					ChatCompletionRequest: smodel.ChatCompletionRequest{Stream: true, Messages: []smodel.ChatCompletionMessage{{Content: message}}},
-					Completion:            completion,
-					Usage:                 usage,
-				}
-
-				// 计算花费
-				spend := common.Billing(ctx, mak, billingData)
-				usage = billingData.Usage
-
-				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-					// 记录花费
-					if err := common.RecordSpend(ctx, spend, mak); err != nil {
-						logger.Error(ctx, err)
-						panic(err)
-					}
-				}); err != nil {
-					logger.Error(ctx, err)
-				}
-
 				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 					enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 					internalTime := gtime.TimestampMilli() - enterTime - totalTime
 
-					completionsRes := &model.CompletionsRes{
-						Type:         typ,
-						Completion:   completion,
-						Error:        err,
-						ConnTime:     response.ConnTime,
-						Duration:     response.Duration,
-						TotalTime:    response.TotalTime,
-						InternalTime: internalTime,
-						EnterTime:    enterTime,
-					}
-
-					if spend.GroupId == "" && mak.Group != nil {
-						spend.GroupId = mak.Group.Id
-						spend.GroupName = mak.Group.Name
-						spend.GroupDiscount = mak.Group.Discount
-					}
-
-					s.SaveLog(ctx, model.ChatLog{
-						ReqModel:           mak.ReqModel,
-						RealModel:          mak.RealModel,
-						ModelAgent:         mak.ModelAgent,
-						FallbackModelAgent: fallbackModelAgent,
-						FallbackModel:      fallbackModel,
-						Key:                mak.Key,
-						CompletionsReq:     &smodel.ChatCompletionRequest{Stream: true, Messages: []smodel.ChatCompletionMessage{{Content: message}}},
-						CompletionsRes:     completionsRes,
-						RetryInfo:          retryInfo,
-						Spend:              spend,
+					common.After(ctx, mak, &mcommon.AfterHandler{
+						ChatCompletionReq: smodel.ChatCompletionRequest{Stream: true, Messages: []smodel.ChatCompletionMessage{{Content: message}}},
+						Completion:        completion,
+						Usage:             usage,
+						Error:             err,
+						RetryInfo:         retryInfo,
+						ConnTime:          response.ConnTime,
+						Duration:          response.Duration,
+						TotalTime:         response.TotalTime,
+						InternalTime:      internalTime,
+						EnterTime:         enterTime,
 					})
 
 				}); err != nil {

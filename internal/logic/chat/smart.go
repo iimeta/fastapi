@@ -7,7 +7,6 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
-	"github.com/gogf/gf/v2/util/gconv"
 	sconsts "github.com/iimeta/fastapi-sdk/consts"
 	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/logic/common"
@@ -45,60 +44,19 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-
-					billingData := &mcommon.BillingData{
-						ChatCompletionRequest: params,
-						Usage:                 response.Usage,
-					}
-
-					if len(response.Choices) > 0 && response.Choices[0].Message != nil {
-						if mak.RealModel.Type == 102 && response.Choices[0].Message.Audio != nil {
-							billingData.Completion = response.Choices[0].Message.Audio.Transcript
-						} else {
-							for _, choice := range response.Choices {
-								billingData.Completion += gconv.String(choice.Message.Content)
-								billingData.Completion += gconv.String(choice.Message.ToolCalls)
-							}
-						}
-					}
-
-					// 计算花费
-					spend = common.Billing(ctx, mak, billingData)
-					response.Usage = billingData.Usage
-				}
-
-				completionsRes := &model.CompletionsRes{
-					Error:        err,
-					ConnTime:     response.ConnTime,
-					Duration:     response.Duration,
-					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
-				}
-
-				if retryInfo == nil && len(response.Choices) > 0 && response.Choices[0].Message != nil {
-					completionsRes.Completion = gconv.String(response.Choices[0].Message.Content)
-				}
-
-				if spend.GroupId == "" && mak.Group != nil {
-					spend.GroupId = mak.Group.Id
-					spend.GroupName = mak.Group.Name
-					spend.GroupDiscount = mak.Group.Discount
-				}
-
-				s.SaveLog(ctx, model.ChatLog{
-					ReqModel:           reqModel,
-					RealModel:          mak.RealModel,
-					ModelAgent:         mak.ModelAgent,
-					FallbackModelAgent: fallbackModelAgent,
-					FallbackModel:      fallbackModel,
-					Key:                mak.Key,
-					CompletionsReq:     &params,
-					CompletionsRes:     completionsRes,
-					RetryInfo:          retryInfo,
-					Spend:              spend,
-					IsSmartMatch:       true,
+				common.After(ctx, mak, &mcommon.AfterHandler{
+					ChatCompletionReq: params,
+					ChatCompletionRes: response,
+					Usage:             response.Usage,
+					Error:             err,
+					RetryInfo:         retryInfo,
+					Spend:             spend,
+					ConnTime:          response.ConnTime,
+					Duration:          response.Duration,
+					TotalTime:         response.TotalTime,
+					InternalTime:      internalTime,
+					EnterTime:         enterTime,
+					IsSmartMatch:      true,
 				})
 
 			}); err != nil {

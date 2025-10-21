@@ -66,61 +66,22 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-
-					billingData := &mcommon.BillingData{
-						ModerationRequest: params,
-						Usage:             response.Usage,
-					}
-
-					if response.Results != nil {
-						billingData.Completion = gconv.String(response.Results)
-					}
-
-					// 计算花费
-					spend = common.Billing(ctx, mak, billingData)
-					response.Usage = billingData.Usage
-
-					if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-						// 记录花费
-						if err := common.RecordSpend(ctx, spend, mak); err != nil {
-							logger.Error(ctx, err)
-							panic(err)
-						}
-					}); err != nil {
-						logger.Error(ctx, err)
-					}
+				afterHandler := &mcommon.AfterHandler{
+					ModerationReq: params,
+					Usage:         response.Usage,
+					Error:         err,
+					RetryInfo:     retryInfo,
+					Spend:         spend,
+					TotalTime:     response.TotalTime,
+					InternalTime:  internalTime,
+					EnterTime:     enterTime,
 				}
 
-				completionsRes := &model.CompletionsRes{
-					Error:        err,
-					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
+				if response.Results != nil {
+					afterHandler.Completion = gconv.String(response.Results)
 				}
 
-				if retryInfo == nil && response.Results != nil {
-					completionsRes.Completion = gconv.String(response.Results)
-				}
-
-				if spend.GroupId == "" && mak.Group != nil {
-					spend.GroupId = mak.Group.Id
-					spend.GroupName = mak.Group.Name
-					spend.GroupDiscount = mak.Group.Discount
-				}
-
-				s.SaveLog(ctx, model.ChatLog{
-					ReqModel:           mak.ReqModel,
-					RealModel:          mak.RealModel,
-					ModelAgent:         mak.ModelAgent,
-					FallbackModelAgent: fallbackModelAgent,
-					FallbackModel:      fallbackModel,
-					Key:                mak.Key,
-					ModerationReq:      &params,
-					CompletionsRes:     completionsRes,
-					RetryInfo:          retryInfo,
-					Spend:              spend,
-				})
+				common.After(ctx, mak, afterHandler)
 
 			}); err != nil {
 				logger.Error(ctx, err)

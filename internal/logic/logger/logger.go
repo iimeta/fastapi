@@ -75,120 +75,123 @@ func (s *sLogger) Chat(ctx context.Context, chatLog model.ChatLog, retry ...int)
 	}
 
 	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.ChatRecords, "prompt") {
-		chat.Prompt = gconv.String(chatLog.EmbeddingReq.Input)
-	}
 
-	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.ChatRecords, "prompt") {
-		chat.Prompt = gconv.String(chatLog.ModerationReq.Input)
-	}
+		if chatLog.CompletionsReq != nil {
 
-	if config.Cfg.Log.Open && len(chatLog.CompletionsReq.Messages) > 0 && slices.Contains(config.Cfg.Log.ChatRecords, "prompt") {
+			if len(chatLog.CompletionsReq.Messages) > 0 {
 
-		prompt := chatLog.CompletionsReq.Messages[len(chatLog.CompletionsReq.Messages)-1].Content
+				prompt := chatLog.CompletionsReq.Messages[len(chatLog.CompletionsReq.Messages)-1].Content
 
-		if chatLog.ReqModel.Type == 102 {
+				if chatLog.ReqModel.Type == 102 {
 
-			if slices.Contains(config.Cfg.Log.ChatRecords, "audio") {
-				chat.Prompt = gconv.String(prompt)
-			} else {
-				if multiContent, ok := prompt.([]interface{}); ok {
+					if slices.Contains(config.Cfg.Log.ChatRecords, "audio") {
+						chat.Prompt = gconv.String(prompt)
+					} else {
+						if multiContent, ok := prompt.([]interface{}); ok {
 
-					multiContents := make([]interface{}, 0)
+							multiContents := make([]interface{}, 0)
 
-					for _, value := range multiContent {
+							for _, value := range multiContent {
 
-						if content, ok := value.(map[string]interface{}); ok {
+								if content, ok := value.(map[string]interface{}); ok {
 
-							if content["type"] == "input_audio" {
+									if content["type"] == "input_audio" {
 
-								if inputAudio, ok := content["input_audio"].(map[string]interface{}); ok {
+										if inputAudio, ok := content["input_audio"].(map[string]interface{}); ok {
 
-									inputAudio = gmap.NewStrAnyMapFrom(inputAudio).MapCopy()
-									inputAudio["data"] = "[BASE64音频数据]"
+											inputAudio = gmap.NewStrAnyMapFrom(inputAudio).MapCopy()
+											inputAudio["data"] = "[BASE64音频数据]"
 
-									content = gmap.NewStrAnyMapFrom(content).MapCopy()
-									content["input_audio"] = inputAudio
-								}
-							}
-
-							value = content
-						}
-
-						multiContents = append(multiContents, value)
-					}
-
-					chat.Prompt = gconv.String(multiContents)
-
-				} else {
-					chat.Prompt = gconv.String(prompt)
-				}
-			}
-
-		} else {
-
-			if slices.Contains(config.Cfg.Log.ChatRecords, "image") {
-				chat.Prompt = gconv.String(prompt)
-			} else {
-				if multiContent, ok := prompt.([]interface{}); ok {
-
-					multiContents := make([]interface{}, 0)
-
-					for _, value := range multiContent {
-
-						if content, ok := value.(map[string]interface{}); ok {
-
-							if content["type"] == "image_url" {
-
-								if imageUrl, ok := content["image_url"].(map[string]interface{}); ok {
-
-									if !gstr.HasPrefix(gconv.String(imageUrl["url"]), "http") {
-
-										imageUrl = gmap.NewStrAnyMapFrom(imageUrl).MapCopy()
-										imageUrl["url"] = "[BASE64图像数据]"
-
-										content = gmap.NewStrAnyMapFrom(content).MapCopy()
-										content["image_url"] = imageUrl
+											content = gmap.NewStrAnyMapFrom(content).MapCopy()
+											content["input_audio"] = inputAudio
+										}
 									}
+
+									value = content
 								}
+
+								multiContents = append(multiContents, value)
 							}
 
-							if content["type"] == "image" {
-								if source, ok := content["source"].(smodel.Source); ok {
-									source.Data = "[BASE64图像数据]"
-									content = gmap.NewStrAnyMapFrom(content).MapCopy()
-									content["source"] = source
-								}
-							}
+							chat.Prompt = gconv.String(multiContents)
 
-							value = content
+						} else {
+							chat.Prompt = gconv.String(prompt)
 						}
-
-						multiContents = append(multiContents, value)
 					}
-
-					chat.Prompt = gconv.String(multiContents)
-
-				} else if multiContent, ok := prompt.([]smodel.OpenAIResponsesContent); ok {
-
-					multiContents := make([]smodel.OpenAIResponsesContent, 0)
-
-					for _, value := range multiContent {
-						if value.Type == "input_image" && !gstr.HasPrefix(value.ImageUrl, "http") {
-							value.ImageUrl = "[BASE64图像数据]"
-						}
-						multiContents = append(multiContents, value)
-					}
-
-					chat.Prompt = gconv.String(multiContents)
 
 				} else {
-					chat.Prompt = gconv.String(prompt)
+
+					if slices.Contains(config.Cfg.Log.ChatRecords, "image") {
+						chat.Prompt = gconv.String(prompt)
+					} else {
+						if multiContent, ok := prompt.([]interface{}); ok {
+
+							multiContents := make([]interface{}, 0)
+
+							for _, value := range multiContent {
+
+								if content, ok := value.(map[string]interface{}); ok {
+
+									if content["type"] == "image_url" {
+
+										if imageUrl, ok := content["image_url"].(map[string]interface{}); ok {
+
+											if !gstr.HasPrefix(gconv.String(imageUrl["url"]), "http") {
+
+												imageUrl = gmap.NewStrAnyMapFrom(imageUrl).MapCopy()
+												imageUrl["url"] = "[BASE64图像数据]"
+
+												content = gmap.NewStrAnyMapFrom(content).MapCopy()
+												content["image_url"] = imageUrl
+											}
+										}
+									}
+
+									if content["type"] == "image" {
+										if source, ok := content["source"].(smodel.Source); ok {
+											source.Data = "[BASE64图像数据]"
+											content = gmap.NewStrAnyMapFrom(content).MapCopy()
+											content["source"] = source
+										}
+									}
+
+									value = content
+								}
+
+								multiContents = append(multiContents, value)
+							}
+
+							chat.Prompt = gconv.String(multiContents)
+
+						} else if multiContent, ok := prompt.([]smodel.OpenAIResponsesContent); ok {
+
+							multiContents := make([]smodel.OpenAIResponsesContent, 0)
+
+							for _, value := range multiContent {
+								if value.Type == "input_image" && !gstr.HasPrefix(value.ImageUrl, "http") {
+									value.ImageUrl = "[BASE64图像数据]"
+								}
+								multiContents = append(multiContents, value)
+							}
+
+							chat.Prompt = gconv.String(multiContents)
+
+						} else {
+							chat.Prompt = gconv.String(prompt)
+						}
+					}
 				}
 			}
+
+		} else if chatLog.EmbeddingReq != nil {
+			chat.Prompt = gconv.String(chatLog.EmbeddingReq.Input)
+		} else if chatLog.ModerationReq != nil {
+			chat.Prompt = gconv.String(chatLog.ModerationReq.Input)
 		}
 	}
 
-	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.ChatRecords, "completion") {
+	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.ChatRecords, "completion") && chatLog.CompletionsRes != nil {
 		chat.Completion = chatLog.CompletionsRes.Completion
 	}
 
@@ -265,7 +268,7 @@ func (s *sLogger) Chat(ctx context.Context, chatLog model.ChatLog, retry ...int)
 		}
 	}
 
-	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.ChatRecords, "messages") {
+	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.ChatRecords, "messages") && chatLog.CompletionsReq != nil {
 		for _, message := range chatLog.CompletionsReq.Messages {
 
 			content := message.Content
@@ -390,10 +393,16 @@ func (s *sLogger) Chat(ctx context.Context, chatLog model.ChatLog, retry ...int)
 		logger.Errorf(ctx, "sLogger Chat error: %v", err)
 
 		if err.Error() == "an inserted document is too large" {
-			chatLog.CompletionsReq.Messages = []smodel.ChatCompletionMessage{{
-				Role:    sconsts.ROLE_SYSTEM,
-				Content: err.Error(),
-			}}
+			if chatLog.CompletionsReq != nil {
+				chatLog.CompletionsReq.Messages = []smodel.ChatCompletionMessage{{
+					Role:    sconsts.ROLE_SYSTEM,
+					Content: err.Error(),
+				}}
+			} else if chatLog.EmbeddingReq != nil {
+				chatLog.EmbeddingReq.Input = err.Error()
+			} else if chatLog.ModerationReq != nil {
+				chatLog.ModerationReq.Input = err.Error()
+			}
 		}
 
 		if len(retry) == 10 {

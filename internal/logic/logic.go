@@ -19,7 +19,6 @@ import (
 	_ "github.com/iimeta/fastapi/internal/logic/general"
 	_ "github.com/iimeta/fastapi/internal/logic/google"
 	_ "github.com/iimeta/fastapi/internal/logic/group"
-	_ "github.com/iimeta/fastapi/internal/logic/handler"
 	_ "github.com/iimeta/fastapi/internal/logic/image"
 	_ "github.com/iimeta/fastapi/internal/logic/key"
 	_ "github.com/iimeta/fastapi/internal/logic/logger"

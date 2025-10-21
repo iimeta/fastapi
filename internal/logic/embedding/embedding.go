@@ -77,61 +77,22 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				if retryInfo == nil && (err == nil || common.IsAborted(err)) {
-
-					billingData := &mcommon.BillingData{
-						EmbeddingRequest: params,
-						Usage:            response.Usage,
-					}
-
-					if len(response.Data) > 0 {
-						billingData.Completion = gconv.String(response.Data[0])
-					}
-
-					// 计算花费
-					spend = common.Billing(ctx, mak, billingData)
-					response.Usage = billingData.Usage
-
-					if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-						// 记录花费
-						if err := common.RecordSpend(ctx, spend, mak); err != nil {
-							logger.Error(ctx, err)
-							panic(err)
-						}
-					}); err != nil {
-						logger.Error(ctx, err)
-					}
-				}
-
-				completionsRes := &model.CompletionsRes{
+				afterHandler := &mcommon.AfterHandler{
+					EmbeddingReq: params,
+					Usage:        response.Usage,
 					Error:        err,
+					RetryInfo:    retryInfo,
+					Spend:        spend,
 					TotalTime:    response.TotalTime,
 					InternalTime: internalTime,
 					EnterTime:    enterTime,
 				}
 
 				if retryInfo == nil && len(response.Data) > 0 {
-					completionsRes.Completion = gconv.String(response.Data[0])
+					afterHandler.Completion = gconv.String(response.Data[0])
 				}
 
-				if spend.GroupId == "" && mak.Group != nil {
-					spend.GroupId = mak.Group.Id
-					spend.GroupName = mak.Group.Name
-					spend.GroupDiscount = mak.Group.Discount
-				}
-
-				s.SaveLog(ctx, model.ChatLog{
-					ReqModel:           mak.ReqModel,
-					RealModel:          mak.RealModel,
-					ModelAgent:         mak.ModelAgent,
-					FallbackModelAgent: fallbackModelAgent,
-					FallbackModel:      fallbackModel,
-					Key:                mak.Key,
-					EmbeddingReq:       &params,
-					CompletionsRes:     completionsRes,
-					RetryInfo:          retryInfo,
-					Spend:              spend,
-				})
+				common.After(ctx, mak, afterHandler)
 
 			}); err != nil {
 				logger.Error(ctx, err)
