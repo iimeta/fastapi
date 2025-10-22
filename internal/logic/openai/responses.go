@@ -71,7 +71,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.After(ctx, mak, &mcommon.AfterHandler{
+				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					ChatCompletionRes: chatCompletionResponse,
 					Usage:             chatCompletionResponse.Usage,
@@ -226,7 +226,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.After(ctx, mak, &mcommon.AfterHandler{
+				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					Completion:        completion,
 					Usage:             usage,

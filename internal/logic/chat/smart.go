@@ -43,7 +43,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.After(ctx, mak, &mcommon.AfterHandler{
+				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					ChatCompletionRes: response,
 					Usage:             response.Usage,

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"time"
 
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
@@ -13,17 +12,12 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
 	sconsts "github.com/iimeta/fastapi-sdk/consts"
-	serrors "github.com/iimeta/fastapi-sdk/errors"
 	smodel "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi/internal/dao"
-	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
 	mcommon "github.com/iimeta/fastapi/internal/model/common"
-	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
-	"github.com/iimeta/fastapi/utility/util"
 )
 
 type sImage struct{}
@@ -68,7 +62,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.After(ctx, mak, &mcommon.AfterHandler{
+				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ImageGenerationRequest: params,
 					ImageResponse:          response,
 					Usage:                  &usage,
@@ -228,7 +222,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 					User:           params.User,
 				}
 
-				common.After(ctx, mak, &mcommon.AfterHandler{
+				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ImageGenerationRequest: imageReq,
 					ImageResponse:          response,
 					Usage:                  &usage,
@@ -345,161 +339,4 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 	}
 
 	return response, nil
-}
-
-// 保存日志
-func (s *sImage) SaveLog(ctx context.Context, imageLog model.ImageLog, retry ...int) {
-
-	now := gtime.TimestampMilli()
-	defer func() {
-		logger.Debugf(ctx, "sImage SaveLog time: %d", gtime.TimestampMilli()-now)
-	}()
-
-	// 不记录此错误日志
-	if imageLog.ImageRes.Error != nil && (errors.Is(imageLog.ImageRes.Error, errors.ERR_MODEL_NOT_FOUND) ||
-		errors.Is(imageLog.ImageRes.Error, errors.ERR_MODEL_DISABLED) ||
-		errors.Is(imageLog.ImageRes.Error, errors.ERR_GROUP_NOT_FOUND) ||
-		errors.Is(imageLog.ImageRes.Error, errors.ERR_GROUP_DISABLED) ||
-		errors.Is(imageLog.ImageRes.Error, errors.ERR_GROUP_EXPIRED) ||
-		errors.Is(imageLog.ImageRes.Error, errors.ERR_GROUP_INSUFFICIENT_QUOTA)) {
-		return
-	}
-
-	image := do.Image{
-		TraceId:        gctx.CtxId(ctx),
-		UserId:         service.Session().GetUserId(ctx),
-		AppId:          service.Session().GetAppId(ctx),
-		Prompt:         imageLog.ImageReq.Prompt,
-		Size:           imageLog.ImageReq.Size,
-		N:              imageLog.ImageReq.N,
-		Quality:        imageLog.ImageReq.Quality,
-		Style:          imageLog.ImageReq.Style,
-		ResponseFormat: imageLog.ImageReq.ResponseFormat,
-		Spend:          imageLog.Spend,
-		TotalTime:      imageLog.ImageRes.TotalTime,
-		InternalTime:   imageLog.ImageRes.InternalTime,
-		ReqTime:        imageLog.ImageRes.EnterTime,
-		ReqDate:        gtime.NewFromTimeStamp(imageLog.ImageRes.EnterTime).Format("Y-m-d"),
-		ClientIp:       g.RequestFromCtx(ctx).GetClientIp(),
-		RemoteIp:       g.RequestFromCtx(ctx).GetRemoteIp(),
-		LocalIp:        util.GetLocalIp(),
-		Status:         1,
-		Host:           g.RequestFromCtx(ctx).GetHost(),
-		Rid:            service.Session().GetRid(ctx),
-	}
-
-	for _, data := range imageLog.ImageRes.Data {
-		image.ImageData = append(image.ImageData, mcommon.ImageData{
-			Url: data.Url,
-			//B64Json:       data.B64Json, // todo 太大了, 不存
-			RevisedPrompt: data.RevisedPrompt,
-		})
-	}
-
-	if imageLog.ReqModel != nil {
-		image.ProviderId = imageLog.ReqModel.ProviderId
-		if provider, err := service.Provider().GetCache(ctx, imageLog.ReqModel.ProviderId); err != nil {
-			logger.Error(ctx, err)
-		} else {
-			image.ProviderName = provider.Name
-		}
-		image.ModelId = imageLog.ReqModel.Id
-		image.ModelName = imageLog.ReqModel.Name
-		image.Model = imageLog.ReqModel.Model
-		image.ModelType = imageLog.ReqModel.Type
-	}
-
-	if imageLog.RealModel != nil {
-		image.IsEnablePresetConfig = imageLog.RealModel.IsEnablePresetConfig
-		image.PresetConfig = imageLog.RealModel.PresetConfig
-		image.IsEnableForward = imageLog.RealModel.IsEnableForward
-		image.ForwardConfig = imageLog.RealModel.ForwardConfig
-		image.IsEnableModelAgent = imageLog.RealModel.IsEnableModelAgent
-		image.RealModelId = imageLog.RealModel.Id
-		image.RealModelName = imageLog.RealModel.Name
-		image.RealModel = imageLog.RealModel.Model
-	}
-
-	if image.IsEnableModelAgent && imageLog.ModelAgent != nil {
-		image.ModelAgentId = imageLog.ModelAgent.Id
-		image.ModelAgent = &do.ModelAgent{
-			ProviderId: imageLog.ModelAgent.ProviderId,
-			Name:       imageLog.ModelAgent.Name,
-			BaseUrl:    imageLog.ModelAgent.BaseUrl,
-			Path:       imageLog.ModelAgent.Path,
-			Weight:     imageLog.ModelAgent.Weight,
-			Remark:     imageLog.ModelAgent.Remark,
-		}
-	}
-
-	if imageLog.FallbackModelAgent != nil {
-		image.IsEnableFallback = true
-		image.FallbackConfig = &mcommon.FallbackConfig{
-			ModelAgent:     imageLog.FallbackModelAgent.Id,
-			ModelAgentName: imageLog.FallbackModelAgent.Name,
-		}
-	}
-
-	if imageLog.FallbackModel != nil {
-		image.IsEnableFallback = true
-		if image.FallbackConfig == nil {
-			image.FallbackConfig = new(mcommon.FallbackConfig)
-		}
-		image.FallbackConfig.Model = imageLog.FallbackModel.Model
-		image.FallbackConfig.ModelName = imageLog.FallbackModel.Name
-	}
-
-	if imageLog.Key != nil {
-		image.Key = imageLog.Key.Key
-	}
-
-	if imageLog.ImageRes.Error != nil {
-
-		image.ErrMsg = imageLog.ImageRes.Error.Error()
-		openaiApiError := &serrors.ApiError{}
-		if errors.As(imageLog.ImageRes.Error, &openaiApiError) {
-			image.ErrMsg = openaiApiError.Message
-		}
-
-		if common.IsAborted(imageLog.ImageRes.Error) {
-			image.Status = 2
-		} else {
-			image.Status = -1
-		}
-	}
-
-	if imageLog.RetryInfo != nil {
-
-		image.IsRetry = imageLog.RetryInfo.IsRetry
-		image.Retry = &mcommon.Retry{
-			IsRetry:    imageLog.RetryInfo.IsRetry,
-			RetryCount: imageLog.RetryInfo.RetryCount,
-			ErrMsg:     imageLog.RetryInfo.ErrMsg,
-		}
-
-		if image.IsRetry {
-			image.Status = 3
-			image.ErrMsg = imageLog.RetryInfo.ErrMsg
-		}
-	}
-
-	if _, err := dao.Image.Insert(ctx, image); err != nil {
-		logger.Errorf(ctx, "sImage SaveLog error: %v", err)
-
-		if err.Error() == "an inserted document is too large" {
-			imageLog.ImageReq.Prompt = err.Error()
-		}
-
-		if len(retry) == 10 {
-			panic(err)
-		}
-
-		retry = append(retry, 1)
-
-		time.Sleep(time.Duration(len(retry)*5) * time.Second)
-
-		logger.Errorf(ctx, "sImage SaveLog retry: %d", len(retry))
-
-		s.SaveLog(ctx, imageLog, retry...)
-	}
 }

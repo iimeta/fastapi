@@ -79,7 +79,7 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.After(ctx, mak, &mcommon.AfterHandler{
+				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					ChatCompletionRes: response,
 					Usage:             response.Usage,
@@ -254,7 +254,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.After(ctx, mak, &mcommon.AfterHandler{
+				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					Completion:        completion,
 					Usage:             usage,

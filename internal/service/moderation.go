@@ -16,8 +16,6 @@ type (
 	IModeration interface {
 		// Moderations
 		Moderations(ctx context.Context, params smodel.ModerationRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.ModerationResponse, err error)
-		// 保存日志
-		SaveLog(ctx context.Context, chatLog model.ChatLog, retry ...int)
 	}
 )
 

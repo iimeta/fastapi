@@ -66,7 +66,7 @@ func (s *sGeneral) General(ctx context.Context, request *ghttp.Request, fallback
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.After(ctx, mak, &mcommon.AfterHandler{
+				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					ChatCompletionRes: response,
 					Usage:             response.Usage,
@@ -202,7 +202,7 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.After(ctx, mak, &mcommon.AfterHandler{
+				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					Completion:        completion,
 					Usage:             usage,

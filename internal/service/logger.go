@@ -19,6 +19,8 @@ type (
 		Image(ctx context.Context, imageLog model.ImageLog, retry ...int)
 		// 音频日志
 		Audio(ctx context.Context, audioLog model.AudioLog, retry ...int)
+		// Midjourney日志
+		Midjourney(ctx context.Context, midjourneyLog model.MidjourneyLog, retry ...int)
 	}
 )
 

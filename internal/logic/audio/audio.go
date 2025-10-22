@@ -2,7 +2,6 @@ package audio
 
 import (
 	"context"
-	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
@@ -10,15 +9,11 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
 	sconsts "github.com/iimeta/fastapi-sdk/consts"
-	serrors "github.com/iimeta/fastapi-sdk/errors"
 	smodel "github.com/iimeta/fastapi-sdk/model"
 	v1 "github.com/iimeta/fastapi/api/audio/v1"
-	"github.com/iimeta/fastapi/internal/dao"
-	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
 	mcommon "github.com/iimeta/fastapi/internal/model/common"
-	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"github.com/iimeta/fastapi/utility/util"
@@ -65,7 +60,7 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.After(ctx, mak, &mcommon.AfterHandler{
+				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					AudioInput:   params.Input,
 					Error:        err,
 					RetryInfo:    retryInfo,
@@ -205,7 +200,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 					afterHandler.AudioMinute = util.Round(params.Duration/60, 2)
 				}
 
-				common.After(ctx, mak, afterHandler)
+				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -297,150 +292,4 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 	}
 
 	return response, nil
-}
-
-// 保存日志
-func (s *sAudio) SaveLog(ctx context.Context, audioLog model.AudioLog, retry ...int) {
-
-	now := gtime.TimestampMilli()
-	defer func() {
-		logger.Debugf(ctx, "sAudio SaveLog time: %d", gtime.TimestampMilli()-now)
-	}()
-
-	// 不记录此错误日志
-	if audioLog.AudioRes.Error != nil && (errors.Is(audioLog.AudioRes.Error, errors.ERR_MODEL_NOT_FOUND) ||
-		errors.Is(audioLog.AudioRes.Error, errors.ERR_MODEL_DISABLED) ||
-		errors.Is(audioLog.AudioRes.Error, errors.ERR_GROUP_NOT_FOUND) ||
-		errors.Is(audioLog.AudioRes.Error, errors.ERR_GROUP_DISABLED) ||
-		errors.Is(audioLog.AudioRes.Error, errors.ERR_GROUP_EXPIRED) ||
-		errors.Is(audioLog.AudioRes.Error, errors.ERR_GROUP_INSUFFICIENT_QUOTA)) {
-		return
-	}
-
-	audio := do.Audio{
-		TraceId:      gctx.CtxId(ctx),
-		UserId:       service.Session().GetUserId(ctx),
-		AppId:        service.Session().GetAppId(ctx),
-		Input:        audioLog.AudioReq.Input,
-		Text:         audioLog.AudioRes.Text,
-		Spend:        audioLog.Spend,
-		TotalTime:    audioLog.AudioRes.TotalTime,
-		InternalTime: audioLog.AudioRes.InternalTime,
-		ReqTime:      audioLog.AudioRes.EnterTime,
-		ReqDate:      gtime.NewFromTimeStamp(audioLog.AudioRes.EnterTime).Format("Y-m-d"),
-		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
-		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
-		LocalIp:      util.GetLocalIp(),
-		Status:       1,
-		Host:         g.RequestFromCtx(ctx).GetHost(),
-		Rid:          service.Session().GetRid(ctx),
-	}
-
-	if audioLog.ReqModel != nil {
-		audio.ProviderId = audioLog.ReqModel.ProviderId
-		if provider, err := service.Provider().GetCache(ctx, audioLog.ReqModel.ProviderId); err != nil {
-			logger.Error(ctx, err)
-		} else {
-			audio.ProviderName = provider.Name
-		}
-		audio.ModelId = audioLog.ReqModel.Id
-		audio.ModelName = audioLog.ReqModel.Name
-		audio.Model = audioLog.ReqModel.Model
-		audio.ModelType = audioLog.ReqModel.Type
-	}
-
-	if audioLog.RealModel != nil {
-		audio.IsEnablePresetConfig = audioLog.RealModel.IsEnablePresetConfig
-		audio.PresetConfig = audioLog.RealModel.PresetConfig
-		audio.IsEnableForward = audioLog.RealModel.IsEnableForward
-		audio.ForwardConfig = audioLog.RealModel.ForwardConfig
-		audio.IsEnableModelAgent = audioLog.RealModel.IsEnableModelAgent
-		audio.RealModelId = audioLog.RealModel.Id
-		audio.RealModelName = audioLog.RealModel.Name
-		audio.RealModel = audioLog.RealModel.Model
-	}
-
-	if audio.IsEnableModelAgent && audioLog.ModelAgent != nil {
-		audio.ModelAgentId = audioLog.ModelAgent.Id
-		audio.ModelAgent = &do.ModelAgent{
-			ProviderId: audioLog.ModelAgent.ProviderId,
-			Name:       audioLog.ModelAgent.Name,
-			BaseUrl:    audioLog.ModelAgent.BaseUrl,
-			Path:       audioLog.ModelAgent.Path,
-			Weight:     audioLog.ModelAgent.Weight,
-			Remark:     audioLog.ModelAgent.Remark,
-			Status:     audioLog.ModelAgent.Status,
-		}
-	}
-
-	if audioLog.FallbackModelAgent != nil {
-		audio.IsEnableFallback = true
-		audio.FallbackConfig = &mcommon.FallbackConfig{
-			ModelAgent:     audioLog.FallbackModelAgent.Id,
-			ModelAgentName: audioLog.FallbackModelAgent.Name,
-		}
-	}
-
-	if audioLog.FallbackModel != nil {
-		audio.IsEnableFallback = true
-		if audio.FallbackConfig == nil {
-			audio.FallbackConfig = new(mcommon.FallbackConfig)
-		}
-		audio.FallbackConfig.Model = audioLog.FallbackModel.Model
-		audio.FallbackConfig.ModelName = audioLog.FallbackModel.Name
-	}
-
-	if audioLog.Key != nil {
-		audio.Key = audioLog.Key.Key
-	}
-
-	if audioLog.AudioRes.Error != nil {
-
-		audio.ErrMsg = audioLog.AudioRes.Error.Error()
-		openaiApiError := &serrors.ApiError{}
-		if errors.As(audioLog.AudioRes.Error, &openaiApiError) {
-			audio.ErrMsg = openaiApiError.Message
-		}
-
-		if common.IsAborted(audioLog.AudioRes.Error) {
-			audio.Status = 2
-		} else {
-			audio.Status = -1
-		}
-	}
-
-	if audioLog.RetryInfo != nil {
-
-		audio.IsRetry = audioLog.RetryInfo.IsRetry
-		audio.Retry = &mcommon.Retry{
-			IsRetry:    audioLog.RetryInfo.IsRetry,
-			RetryCount: audioLog.RetryInfo.RetryCount,
-			ErrMsg:     audioLog.RetryInfo.ErrMsg,
-		}
-
-		if audio.IsRetry {
-			audio.Status = 3
-			audio.ErrMsg = audioLog.RetryInfo.ErrMsg
-		}
-	}
-
-	if _, err := dao.Audio.Insert(ctx, audio); err != nil {
-		logger.Errorf(ctx, "sAudio SaveLog error: %v", err)
-
-		if err.Error() == "an inserted document is too large" {
-			audioLog.AudioReq.Input = err.Error()
-		}
-
-		if len(retry) == 10 {
-			panic(err)
-		}
-
-		retry = append(retry, 1)
-
-		time.Sleep(time.Duration(len(retry)*5) * time.Second)
-
-		logger.Errorf(ctx, "sAudio SaveLog retry: %d", len(retry))
-
-		s.SaveLog(ctx, audioLog, retry...)
-	}
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
+	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/iimeta/fastapi/internal/model"
 	mcommon "github.com/iimeta/fastapi/internal/model/common"
@@ -13,15 +14,21 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 )
 
-func Before(ctx context.Context, before *mcommon.BeforeHandler) {
+// 前置处理器
+func BeforeHandler(ctx context.Context, before *mcommon.BeforeHandler) {
 }
 
-func After(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
+// 后置处理器
+func AfterHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	switch mak.ReqModel.Type {
 	case 1, 100, 101, 102, 7, 103:
 		chatHandler(ctx, mak, after)
 	case 2, 3, 4:
-		imageHandler(ctx, mak, after)
+		if mak.ReqModel.Model == "midjourney" || gstr.HasPrefix(mak.ReqModel.Model, "midjourney") {
+			midjourneyHandler(ctx, mak, after)
+		} else {
+			imageHandler(ctx, mak, after)
+		}
 	case 5, 6:
 		audioHandler(ctx, mak, after)
 	default:
@@ -235,6 +242,58 @@ func audioHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		Key:                mak.Key,
 		AudioReq:           audioReq,
 		AudioRes:           audioRes,
+		RetryInfo:          after.RetryInfo,
+		Spend:              after.Spend,
+	})
+}
+
+func midjourneyHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
+
+	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
+
+		billingData := &mcommon.BillingData{
+			Path: after.MidjourneyPath,
+		}
+
+		// 计算花费
+		after.Spend = Billing(ctx, mak, billingData)
+
+		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+			// 记录花费
+			if err := RecordSpend(ctx, after.Spend, mak); err != nil {
+				logger.Error(ctx, err)
+				panic(err)
+			}
+		}); err != nil {
+			logger.Error(ctx, err)
+		}
+	}
+
+	midjourneyResponse := model.MidjourneyResponse{
+		ReqUrl:             after.MidjourneyReqUrl,
+		TaskId:             after.MidjourneyTaskId,
+		Prompt:             after.MidjourneyPrompt,
+		MidjourneyResponse: after.MidjourneyResponse,
+		TotalTime:          after.TotalTime,
+		Error:              after.Error,
+		InternalTime:       after.InternalTime,
+		EnterTime:          after.EnterTime,
+	}
+
+	if after.Spend.GroupId == "" && mak.Group != nil {
+		after.Spend.GroupId = mak.Group.Id
+		after.Spend.GroupName = mak.Group.Name
+		after.Spend.GroupDiscount = mak.Group.Discount
+	}
+
+	service.Logger().Midjourney(ctx, model.MidjourneyLog{
+		ReqModel:           mak.ReqModel,
+		RealModel:          mak.RealModel,
+		ModelAgent:         mak.ModelAgent,
+		FallbackModelAgent: mak.FallbackModelAgent,
+		FallbackModel:      mak.FallbackModel,
+		Key:                mak.Key,
+		Response:           midjourneyResponse,
 		RetryInfo:          after.RetryInfo,
 		Spend:              after.Spend,
 	})

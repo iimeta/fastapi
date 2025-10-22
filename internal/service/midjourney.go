@@ -19,8 +19,6 @@ type (
 		Submit(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.MidjourneyResponse, err error)
 		// 任务查询
 		Task(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.MidjourneyResponse, err error)
-		// 保存日志
-		SaveLog(ctx context.Context, midjourneyLog model.MidjourneyLog, retry ...int)
 	}
 )
 

@@ -16,8 +16,6 @@ type (
 	IRealtime interface {
 		// Realtime
 		Realtime(ctx context.Context, r *ghttp.Request, params model.RealtimeRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (err error)
-		// 保存日志
-		SaveLog(ctx context.Context, chatLog model.ChatLog, retry ...int)
 	}
 )
 

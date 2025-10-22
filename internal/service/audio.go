@@ -19,8 +19,6 @@ type (
 		Speech(ctx context.Context, data []byte, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.SpeechResponse, err error)
 		// Transcriptions
 		Transcriptions(ctx context.Context, params *v1.TranscriptionsReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.AudioResponse, err error)
-		// 保存日志
-		SaveLog(ctx context.Context, audioLog model.AudioLog, retry ...int)
 	}
 )
 
