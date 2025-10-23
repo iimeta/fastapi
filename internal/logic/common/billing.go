@@ -378,7 +378,7 @@ func imageGeneration(ctx context.Context, mak *MAK, billingData *common.BillingD
 		}
 	}
 
-	spend.ImageGeneration.SpendTokens = int(math.Ceil(consts.QUOTA_USD_UNIT*spend.ImageGeneration.Pricing.OnceRatio)) * spend.ImageGeneration.N
+	spend.ImageGeneration.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT*spend.ImageGeneration.Pricing.OnceRatio)) * spend.ImageGeneration.N
 }
 
 // 图像缓存
@@ -431,7 +431,7 @@ func vision(ctx context.Context, mak *MAK, billingData *common.BillingData, spen
 						}
 					}
 
-					spend.Vision.SpendTokens = int(math.Ceil(consts.QUOTA_USD_UNIT * spend.Vision.Pricing.OnceRatio))
+					spend.Vision.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT * spend.Vision.Pricing.OnceRatio))
 				}
 			}
 		}
@@ -510,7 +510,7 @@ func video(ctx context.Context, mak *MAK, billingData *common.BillingData, spend
 		}
 	}
 
-	spend.Video.SpendTokens = int(math.Ceil(consts.QUOTA_USD_UNIT * spend.Video.Pricing.OnceRatio))
+	spend.Video.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT * spend.Video.Pricing.OnceRatio))
 }
 
 // 搜索
@@ -543,7 +543,7 @@ func search(ctx context.Context, mak *MAK, billingData *common.BillingData, spen
 		}
 	}
 
-	spend.Search.SpendTokens = int(math.Ceil(consts.QUOTA_USD_UNIT * spend.Search.Pricing.OnceRatio))
+	spend.Search.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT * spend.Search.Pricing.OnceRatio))
 }
 
 // Midjourney
@@ -561,7 +561,7 @@ func midjourney(ctx context.Context, mak *MAK, billingData *common.BillingData, 
 			}
 
 			spend.Midjourney.Pricing = midjourney
-			spend.Midjourney.SpendTokens = int(math.Ceil(consts.QUOTA_USD_UNIT * spend.Midjourney.Pricing.OnceRatio))
+			spend.Midjourney.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT * spend.Midjourney.Pricing.OnceRatio))
 			return
 		}
 	}
@@ -575,7 +575,7 @@ func once(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 	}
 
 	spend.Once.Pricing = mak.ReqModel.Pricing.Once
-	spend.Once.SpendTokens = int(math.Ceil(consts.QUOTA_USD_UNIT * spend.Once.Pricing.OnceRatio))
+	spend.Once.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT * spend.Once.Pricing.OnceRatio))
 
 	if billingData.Usage != nil {
 		spend.Once.InputTokens = billingData.Usage.PromptTokens

@@ -7,8 +7,24 @@ import (
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/util/gconv"
 	smodel "github.com/iimeta/fastapi-sdk/model"
+	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/utility/logger"
+	"github.com/iimeta/fastapi/utility/util"
 )
+
+// 转换额度单位
+func ConvQuota(quota int, n ...int) float64 {
+
+	if quota == 0 {
+		return 0.0
+	}
+
+	if len(n) == 0 {
+		n = []int{6}
+	}
+
+	return util.Round(float64(quota)/consts.QUOTA_DEFAULT_UNIT, n[0])
+}
 
 func ConvResponsesToChatCompletionsRequest(request *ghttp.Request, isChatCompletions bool) smodel.ChatCompletionRequest {
 

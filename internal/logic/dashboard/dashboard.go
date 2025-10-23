@@ -2,10 +2,9 @@ package dashboard
 
 import (
 	"context"
-	"math"
 
 	"github.com/gogf/gf/v2/os/gtime"
-	"github.com/iimeta/fastapi/internal/consts"
+	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
@@ -67,9 +66,9 @@ func (s *sDashboard) Subscription(ctx context.Context) (*model.DashboardSubscrip
 	return &model.DashboardSubscriptionRes{
 		Object:             "billing_subscription",
 		HasPaymentMethod:   true,
-		SoftLimitUSD:       round(float64(quota)/consts.QUOTA_USD_UNIT, 4),
-		HardLimitUSD:       round(float64(quota)/consts.QUOTA_USD_UNIT, 4),
-		SystemHardLimitUSD: round(float64(quota)/consts.QUOTA_USD_UNIT, 4),
+		SoftLimitUSD:       common.ConvQuota(quota, 4),
+		HardLimitUSD:       common.ConvQuota(quota, 4),
+		SystemHardLimitUSD: common.ConvQuota(quota, 4),
 		AccessUntil:        0,
 	}, nil
 }
@@ -119,11 +118,6 @@ func (s *sDashboard) Usage(ctx context.Context) (*model.DashboardUsageRes, error
 
 	return &model.DashboardUsageRes{
 		Object:     "list",
-		TotalUsage: round(float64(usedQuota)/consts.QUOTA_USD_UNIT, 4),
+		TotalUsage: common.ConvQuota(usedQuota, 4),
 	}, nil
-}
-
-func round(f float64, n int) float64 {
-	n10 := math.Pow10(n)
-	return math.Trunc((f+0.5/n10)*n10) / n10
 }

@@ -20,8 +20,8 @@ const (
 )
 
 const (
-	DEFAULT_MODEL  = "gpt-3.5-turbo"
-	QUOTA_USD_UNIT = 500000.0 // $1 = 500,000tokens
+	DEFAULT_MODEL      = "gpt-3.5-turbo"
+	QUOTA_DEFAULT_UNIT = 1000000.0 // $1 = 1M Tokens
 
 	COMPLETION_ID_PREFIX = "chatcmpl-"
 	COMPLETION_OBJECT    = "chat.completion"
