@@ -50,16 +50,11 @@ var (
 
 			s.BindHookHandler("/*", ghttp.HookBeforeServe, beforeServeHook)
 
+			s.SetServerRoot("./resource/index/")
+
 			s.Group("/", func(g *ghttp.RouterGroup) {
-
 				g.Middleware(middlewareHandlerResponse)
-
 				g.Bind(
-					func(r *ghttp.Request) {
-						r.Response.WriteStatus(http.StatusOK, "Hello Fast API")
-						r.Exit()
-						return
-					},
 					health.NewV1(),
 				)
 			})
