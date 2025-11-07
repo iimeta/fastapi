@@ -14,8 +14,8 @@ require (
 	github.com/redis/go-redis/v9 v9.14.0
 	github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300
 	github.com/tjfoc/gmsm v1.4.1
-	go.mongodb.org/mongo-driver v1.17.4
-	google.golang.org/api v0.252.0
+	go.mongodb.org/mongo-driver v1.17.6
+	google.golang.org/api v0.255.0
 )
 
 require (
@@ -23,13 +23,13 @@ require (
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.39.2 // indirect
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.1 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.18.16 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.9 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.9 // indirect
-	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.41.0 // indirect
-	github.com/aws/smithy-go v1.23.0 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.39.6 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.3 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.18.21 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.13 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.13 // indirect
+	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.42.2 // indirect
+	github.com/aws/smithy-go v1.23.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
@@ -69,16 +69,16 @@ require (
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
-	golang.org/x/crypto v0.42.0 // indirect
-	golang.org/x/net v0.44.0 // indirect
-	golang.org/x/oauth2 v0.31.0 // indirect
+	golang.org/x/crypto v0.43.0 // indirect
+	golang.org/x/net v0.46.0 // indirect
+	golang.org/x/oauth2 v0.32.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
-	golang.org/x/sys v0.36.0 // indirect
-	golang.org/x/text v0.29.0 // indirect
-	golang.org/x/time v0.13.0 // indirect
+	golang.org/x/sys v0.37.0 // indirect
+	golang.org/x/text v0.30.0 // indirect
+	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250818200422-3122310a409c // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251002232023-7c0ddcbb5797 // indirect
-	google.golang.org/grpc v1.75.1 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda // indirect
+	google.golang.org/grpc v1.76.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
