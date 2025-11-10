@@ -14,8 +14,8 @@ output/
 manifest/output/
 temp/
 temp.yaml
-log/
-logs/
+/log/
+/logs/
 bin/fastapi*
 bin/*.zip
 **/config/config.yaml

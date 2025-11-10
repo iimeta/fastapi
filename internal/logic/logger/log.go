@@ -37,12 +37,12 @@ func New() service.ILogger {
 	return &sLogger{}
 }
 
-// 聊天日志
-func (s *sLogger) Chat(ctx context.Context, chatLog model.ChatLog, retry ...int) {
+// 文本日志
+func (s *sLogger) Text(ctx context.Context, chatLog model.LogText, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sLogger Chat time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sLogger LogText time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	// 不记录此错误日志
@@ -50,7 +50,7 @@ func (s *sLogger) Chat(ctx context.Context, chatLog model.ChatLog, retry ...int)
 		return
 	}
 
-	chat := do.Chat{
+	chat := do.LogText{
 		TraceId:      gctx.CtxId(ctx),
 		UserId:       service.Session().GetUserId(ctx),
 		AppId:        service.Session().GetAppId(ctx),
@@ -386,8 +386,8 @@ func (s *sLogger) Chat(ctx context.Context, chatLog model.ChatLog, retry ...int)
 		}
 	}
 
-	if _, err := dao.Chat.Insert(ctx, chat); err != nil {
-		logger.Errorf(ctx, "sLogger Chat error: %v", err)
+	if _, err := dao.LogText.Insert(ctx, chat); err != nil {
+		logger.Errorf(ctx, "sLogger LogText error: %v", err)
 
 		if err.Error() == "an inserted document is too large" {
 			if chatLog.CompletionsReq != nil {
@@ -410,18 +410,18 @@ func (s *sLogger) Chat(ctx context.Context, chatLog model.ChatLog, retry ...int)
 
 		time.Sleep(time.Duration(len(retry)*5) * time.Second)
 
-		logger.Errorf(ctx, "sLogger Chat retry: %d", len(retry))
+		logger.Errorf(ctx, "sLogger LogText retry: %d", len(retry))
 
-		s.Chat(ctx, chatLog, retry...)
+		s.Text(ctx, chatLog, retry...)
 	}
 }
 
 // 绘图日志
-func (s *sLogger) Image(ctx context.Context, imageLog model.ImageLog, retry ...int) {
+func (s *sLogger) Image(ctx context.Context, imageLog model.LogImage, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sLogger Image time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sLogger LogImage time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	// 不记录此错误日志
@@ -429,7 +429,7 @@ func (s *sLogger) Image(ctx context.Context, imageLog model.ImageLog, retry ...i
 		return
 	}
 
-	image := do.Image{
+	image := do.LogImage{
 		TraceId:        gctx.CtxId(ctx),
 		UserId:         service.Session().GetUserId(ctx),
 		AppId:          service.Session().GetAppId(ctx),
@@ -547,8 +547,8 @@ func (s *sLogger) Image(ctx context.Context, imageLog model.ImageLog, retry ...i
 		}
 	}
 
-	if _, err := dao.Image.Insert(ctx, image); err != nil {
-		logger.Errorf(ctx, "sLogger Image error: %v", err)
+	if _, err := dao.LogImage.Insert(ctx, image); err != nil {
+		logger.Errorf(ctx, "sLogger LogImage error: %v", err)
 
 		if err.Error() == "an inserted document is too large" {
 			imageLog.ImageReq.Prompt = err.Error()
@@ -562,18 +562,18 @@ func (s *sLogger) Image(ctx context.Context, imageLog model.ImageLog, retry ...i
 
 		time.Sleep(time.Duration(len(retry)*5) * time.Second)
 
-		logger.Errorf(ctx, "sLogger Image retry: %d", len(retry))
+		logger.Errorf(ctx, "sLogger LogImage retry: %d", len(retry))
 
 		s.Image(ctx, imageLog, retry...)
 	}
 }
 
 // 音频日志
-func (s *sLogger) Audio(ctx context.Context, audioLog model.AudioLog, retry ...int) {
+func (s *sLogger) Audio(ctx context.Context, audioLog model.LogAudio, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sLogger Audio time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sLogger LogAudio time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	// 不记录此错误日志
@@ -581,7 +581,7 @@ func (s *sLogger) Audio(ctx context.Context, audioLog model.AudioLog, retry ...i
 		return
 	}
 
-	audio := do.Audio{
+	audio := do.LogAudio{
 		TraceId:      gctx.CtxId(ctx),
 		UserId:       service.Session().GetUserId(ctx),
 		AppId:        service.Session().GetAppId(ctx),
@@ -688,8 +688,8 @@ func (s *sLogger) Audio(ctx context.Context, audioLog model.AudioLog, retry ...i
 		}
 	}
 
-	if _, err := dao.Audio.Insert(ctx, audio); err != nil {
-		logger.Errorf(ctx, "sLogger Audio error: %v", err)
+	if _, err := dao.LogAudio.Insert(ctx, audio); err != nil {
+		logger.Errorf(ctx, "sLogger LogAudio error: %v", err)
 
 		if err.Error() == "an inserted document is too large" {
 			audioLog.AudioReq.Input = err.Error()
@@ -703,18 +703,18 @@ func (s *sLogger) Audio(ctx context.Context, audioLog model.AudioLog, retry ...i
 
 		time.Sleep(time.Duration(len(retry)*5) * time.Second)
 
-		logger.Errorf(ctx, "sLogger Audio retry: %d", len(retry))
+		logger.Errorf(ctx, "sLogger LogAudio retry: %d", len(retry))
 
 		s.Audio(ctx, audioLog, retry...)
 	}
 }
 
 // Midjourney日志
-func (s *sLogger) Midjourney(ctx context.Context, midjourneyLog model.MidjourneyLog, retry ...int) {
+func (s *sLogger) Midjourney(ctx context.Context, midjourneyLog model.LogMidjourney, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sLogger Midjourney time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sLogger LogMidjourney time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	// 不记录此错误日志
@@ -722,7 +722,7 @@ func (s *sLogger) Midjourney(ctx context.Context, midjourneyLog model.Midjourney
 		return
 	}
 
-	midjourney := do.Midjourney{
+	midjourney := do.LogMidjourney{
 		TraceId:      gctx.CtxId(ctx),
 		UserId:       service.Session().GetUserId(ctx),
 		AppId:        service.Session().GetAppId(ctx),
@@ -835,8 +835,8 @@ func (s *sLogger) Midjourney(ctx context.Context, midjourneyLog model.Midjourney
 		}
 	}
 
-	if _, err := dao.Midjourney.Insert(ctx, midjourney); err != nil {
-		logger.Errorf(ctx, "sLogger Midjourney error: %v", err)
+	if _, err := dao.LogMidjourney.Insert(ctx, midjourney); err != nil {
+		logger.Errorf(ctx, "sLogger LogMidjourney error: %v", err)
 
 		if err.Error() == "an inserted document is too large" {
 			midjourneyLog.Response.Prompt = err.Error()
@@ -851,7 +851,7 @@ func (s *sLogger) Midjourney(ctx context.Context, midjourneyLog model.Midjourney
 
 		time.Sleep(time.Duration(len(retry)*5) * time.Second)
 
-		logger.Errorf(ctx, "sLogger Midjourney retry: %d", len(retry))
+		logger.Errorf(ctx, "sLogger LogMidjourney retry: %d", len(retry))
 
 		s.Midjourney(ctx, midjourneyLog, retry...)
 	}
