@@ -5,7 +5,7 @@ import (
 	mcommon "github.com/iimeta/fastapi/internal/model/common"
 )
 
-type ChatLog struct {
+type LogText struct {
 	ReqModel           *Model
 	RealModel          *Model
 	ModelAgent         *ModelAgent
@@ -21,7 +21,7 @@ type ChatLog struct {
 	IsSmartMatch       bool
 }
 
-type ImageLog struct {
+type LogImage struct {
 	ReqModel           *Model
 	RealModel          *Model
 	ModelAgent         *ModelAgent
@@ -34,7 +34,7 @@ type ImageLog struct {
 	Spend              mcommon.Spend
 }
 
-type AudioLog struct {
+type LogAudio struct {
 	ReqModel           *Model
 	RealModel          *Model
 	ModelAgent         *ModelAgent
@@ -47,7 +47,7 @@ type AudioLog struct {
 	Spend              mcommon.Spend
 }
 
-type MidjourneyLog struct {
+type LogMidjourney struct {
 	ReqModel           *Model
 	RealModel          *Model
 	ModelAgent         *ModelAgent

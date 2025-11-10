@@ -2,7 +2,7 @@ package entity
 
 import "github.com/iimeta/fastapi/internal/model/common"
 
-type Chat struct {
+type LogText struct {
 	Id                   string                 `bson:"_id,omitempty"`                     // ID
 	TraceId              string                 `bson:"trace_id,omitempty"`                // 日志ID
 	UserId               int                    `bson:"user_id,omitempty"`                 // 用户ID

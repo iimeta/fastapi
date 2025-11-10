@@ -5,19 +5,19 @@ import (
 	"github.com/iimeta/fastapi/utility/db"
 )
 
-var Audio = NewAudioDao()
+var LogAudio = NewLogAudioDao()
 
-type AudioDao struct {
-	*MongoDB[entity.Audio]
+type LogAudioDao struct {
+	*MongoDB[entity.LogAudio]
 }
 
-func NewAudioDao(database ...string) *AudioDao {
+func NewLogAudioDao(database ...string) *LogAudioDao {
 
 	if len(database) == 0 {
 		database = append(database, db.DefaultDatabase)
 	}
 
-	return &AudioDao{
-		MongoDB: NewMongoDB[entity.Audio](database[0], AUDIO),
+	return &LogAudioDao{
+		MongoDB: NewMongoDB[entity.LogAudio](database[0], LOG_AUDIO),
 	}
 }

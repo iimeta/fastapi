@@ -121,7 +121,7 @@ func chatHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		after.Spend.GroupDiscount = mak.Group.Discount
 	}
 
-	service.Logger().Chat(ctx, model.ChatLog{
+	service.Log().Text(ctx, model.LogText{
 		ReqModel:           mak.ReqModel,
 		RealModel:          mak.RealModel,
 		ModelAgent:         mak.ModelAgent,
@@ -173,7 +173,7 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		after.Spend.GroupDiscount = mak.Group.Discount
 	}
 
-	service.Logger().Image(ctx, model.ImageLog{
+	service.Log().Image(ctx, model.LogImage{
 		ReqModel:           mak.ReqModel,
 		RealModel:          mak.RealModel,
 		ModelAgent:         mak.ModelAgent,
@@ -233,7 +233,7 @@ func audioHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		after.Spend.GroupDiscount = mak.Group.Discount
 	}
 
-	service.Logger().Audio(ctx, model.AudioLog{
+	service.Log().Audio(ctx, model.LogAudio{
 		ReqModel:           mak.ReqModel,
 		RealModel:          mak.RealModel,
 		ModelAgent:         mak.ModelAgent,
@@ -286,7 +286,7 @@ func midjourneyHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandle
 		after.Spend.GroupDiscount = mak.Group.Discount
 	}
 
-	service.Logger().Midjourney(ctx, model.MidjourneyLog{
+	service.Log().Midjourney(ctx, model.LogMidjourney{
 		ReqModel:           mak.ReqModel,
 		RealModel:          mak.RealModel,
 		ModelAgent:         mak.ModelAgent,

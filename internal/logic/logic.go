@@ -21,7 +21,7 @@ import (
 	_ "github.com/iimeta/fastapi/internal/logic/group"
 	_ "github.com/iimeta/fastapi/internal/logic/image"
 	_ "github.com/iimeta/fastapi/internal/logic/key"
-	_ "github.com/iimeta/fastapi/internal/logic/logger"
+	_ "github.com/iimeta/fastapi/internal/logic/log"
 	_ "github.com/iimeta/fastapi/internal/logic/midjourney"
 	_ "github.com/iimeta/fastapi/internal/logic/model"
 	_ "github.com/iimeta/fastapi/internal/logic/model_agent"

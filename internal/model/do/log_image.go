@@ -5,8 +5,8 @@ import (
 	"github.com/iimeta/fastapi/internal/model/common"
 )
 
-type Image struct {
-	gmeta.Meta           `collection:"image" bson:"-"`
+type LogImage struct {
+	gmeta.Meta           `collection:"log_image" bson:"-"`
 	TraceId              string                 `bson:"trace_id,omitempty"`                // 日志ID
 	UserId               int                    `bson:"user_id,omitempty"`                 // 用户ID
 	AppId                int                    `bson:"app_id,omitempty"`                  // 应用ID

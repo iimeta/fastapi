@@ -5,8 +5,8 @@ import (
 	"github.com/iimeta/fastapi/internal/model/common"
 )
 
-type Audio struct {
-	gmeta.Meta           `collection:"audio" bson:"-"`
+type LogAudio struct {
+	gmeta.Meta           `collection:"log_audio" bson:"-"`
 	TraceId              string                 `bson:"trace_id,omitempty"`                // 日志ID
 	UserId               int                    `bson:"user_id,omitempty"`                 // 用户ID
 	AppId                int                    `bson:"app_id,omitempty"`                  // 应用ID

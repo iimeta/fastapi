@@ -5,19 +5,19 @@ import (
 	"github.com/iimeta/fastapi/utility/db"
 )
 
-var Image = NewImageDao()
+var LogImage = NewLogImageDao()
 
-type ImageDao struct {
-	*MongoDB[entity.Image]
+type LogImageDao struct {
+	*MongoDB[entity.LogImage]
 }
 
-func NewImageDao(database ...string) *ImageDao {
+func NewLogImageDao(database ...string) *LogImageDao {
 
 	if len(database) == 0 {
 		database = append(database, db.DefaultDatabase)
 	}
 
-	return &ImageDao{
-		MongoDB: NewMongoDB[entity.Image](database[0], IMAGE),
+	return &LogImageDao{
+		MongoDB: NewMongoDB[entity.LogImage](database[0], LOG_IMAGE),
 	}
 }

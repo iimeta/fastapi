@@ -5,19 +5,19 @@ import (
 	"github.com/iimeta/fastapi/utility/db"
 )
 
-var Midjourney = NewMidjourneyDao()
+var LogMidjourney = NewLogMidjourneyDao()
 
-type MidjourneyDao struct {
-	*MongoDB[entity.Midjourney]
+type LogMidjourneyDao struct {
+	*MongoDB[entity.LogMidjourney]
 }
 
-func NewMidjourneyDao(database ...string) *MidjourneyDao {
+func NewLogMidjourneyDao(database ...string) *LogMidjourneyDao {
 
 	if len(database) == 0 {
 		database = append(database, db.DefaultDatabase)
 	}
 
-	return &MidjourneyDao{
-		MongoDB: NewMongoDB[entity.Midjourney](database[0], MIDJOURNEY),
+	return &LogMidjourneyDao{
+		MongoDB: NewMongoDB[entity.LogMidjourney](database[0], LOG_MIDJOURNEY),
 	}
 }

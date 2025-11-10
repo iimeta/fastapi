@@ -1,4 +1,4 @@
-package logger
+package log
 
 import (
 	"context"
@@ -27,42 +27,42 @@ import (
 	"github.com/iimeta/fastapi/utility/util"
 )
 
-type sLogger struct{}
+type sLog struct{}
 
 func init() {
-	service.RegisterLogger(New())
+	service.RegisterLog(New())
 }
 
-func New() service.ILogger {
-	return &sLogger{}
+func New() service.ILog {
+	return &sLog{}
 }
 
 // 文本日志
-func (s *sLogger) Text(ctx context.Context, chatLog model.LogText, retry ...int) {
+func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sLogger LogText time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sLog Text time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	// 不记录此错误日志
-	if chatLog.CompletionsRes.Error != nil && checkError(chatLog.CompletionsRes.Error) {
+	if textLog.CompletionsRes.Error != nil && checkError(textLog.CompletionsRes.Error) {
 		return
 	}
 
-	chat := do.LogText{
+	text := do.LogText{
 		TraceId:      gctx.CtxId(ctx),
 		UserId:       service.Session().GetUserId(ctx),
 		AppId:        service.Session().GetAppId(ctx),
-		IsSmartMatch: chatLog.IsSmartMatch,
-		Stream:       chatLog.CompletionsReq.Stream,
-		Spend:        chatLog.Spend,
-		ConnTime:     chatLog.CompletionsRes.ConnTime,
-		Duration:     chatLog.CompletionsRes.Duration,
-		TotalTime:    chatLog.CompletionsRes.TotalTime,
-		InternalTime: chatLog.CompletionsRes.InternalTime,
-		ReqTime:      chatLog.CompletionsRes.EnterTime,
-		ReqDate:      gtime.NewFromTimeStamp(chatLog.CompletionsRes.EnterTime).Format("Y-m-d"),
+		IsSmartMatch: textLog.IsSmartMatch,
+		Stream:       textLog.CompletionsReq.Stream,
+		Spend:        textLog.Spend,
+		ConnTime:     textLog.CompletionsRes.ConnTime,
+		Duration:     textLog.CompletionsRes.Duration,
+		TotalTime:    textLog.CompletionsRes.TotalTime,
+		InternalTime: textLog.CompletionsRes.InternalTime,
+		ReqTime:      textLog.CompletionsRes.EnterTime,
+		ReqDate:      gtime.NewFromTimeStamp(textLog.CompletionsRes.EnterTime).Format("Y-m-d"),
 		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
 		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
 		LocalIp:      util.GetLocalIp(),
@@ -71,18 +71,18 @@ func (s *sLogger) Text(ctx context.Context, chatLog model.LogText, retry ...int)
 		Rid:          service.Session().GetRid(ctx),
 	}
 
-	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.ChatRecords, "prompt") {
+	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.TextRecords, "prompt") {
 
-		if chatLog.CompletionsReq != nil {
+		if textLog.CompletionsReq != nil {
 
-			if len(chatLog.CompletionsReq.Messages) > 0 {
+			if len(textLog.CompletionsReq.Messages) > 0 {
 
-				prompt := chatLog.CompletionsReq.Messages[len(chatLog.CompletionsReq.Messages)-1].Content
+				prompt := textLog.CompletionsReq.Messages[len(textLog.CompletionsReq.Messages)-1].Content
 
-				if chatLog.ReqModel.Type == 102 {
+				if textLog.ReqModel.Type == 102 {
 
-					if slices.Contains(config.Cfg.Log.ChatRecords, "audio") {
-						chat.Prompt = gconv.String(prompt)
+					if slices.Contains(config.Cfg.Log.TextRecords, "audio") {
+						text.Prompt = gconv.String(prompt)
 					} else {
 						if multiContent, ok := prompt.([]interface{}); ok {
 
@@ -110,17 +110,17 @@ func (s *sLogger) Text(ctx context.Context, chatLog model.LogText, retry ...int)
 								multiContents = append(multiContents, value)
 							}
 
-							chat.Prompt = gconv.String(multiContents)
+							text.Prompt = gconv.String(multiContents)
 
 						} else {
-							chat.Prompt = gconv.String(prompt)
+							text.Prompt = gconv.String(prompt)
 						}
 					}
 
 				} else {
 
-					if slices.Contains(config.Cfg.Log.ChatRecords, "image") {
-						chat.Prompt = gconv.String(prompt)
+					if slices.Contains(config.Cfg.Log.TextRecords, "image") {
+						text.Prompt = gconv.String(prompt)
 					} else {
 						if multiContent, ok := prompt.([]interface{}); ok {
 
@@ -159,7 +159,7 @@ func (s *sLogger) Text(ctx context.Context, chatLog model.LogText, retry ...int)
 								multiContents = append(multiContents, value)
 							}
 
-							chat.Prompt = gconv.String(multiContents)
+							text.Prompt = gconv.String(multiContents)
 
 						} else if multiContent, ok := prompt.([]smodel.OpenAIResponsesContent); ok {
 
@@ -172,105 +172,105 @@ func (s *sLogger) Text(ctx context.Context, chatLog model.LogText, retry ...int)
 								multiContents = append(multiContents, value)
 							}
 
-							chat.Prompt = gconv.String(multiContents)
+							text.Prompt = gconv.String(multiContents)
 
 						} else {
-							chat.Prompt = gconv.String(prompt)
+							text.Prompt = gconv.String(prompt)
 						}
 					}
 				}
 			}
 
-		} else if chatLog.EmbeddingReq != nil {
-			chat.Prompt = gconv.String(chatLog.EmbeddingReq.Input)
-		} else if chatLog.ModerationReq != nil {
-			chat.Prompt = gconv.String(chatLog.ModerationReq.Input)
+		} else if textLog.EmbeddingReq != nil {
+			text.Prompt = gconv.String(textLog.EmbeddingReq.Input)
+		} else if textLog.ModerationReq != nil {
+			text.Prompt = gconv.String(textLog.ModerationReq.Input)
 		}
 	}
 
-	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.ChatRecords, "completion") && chatLog.CompletionsRes != nil {
-		chat.Completion = chatLog.CompletionsRes.Completion
+	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.TextRecords, "completion") && textLog.CompletionsRes != nil {
+		text.Completion = textLog.CompletionsRes.Completion
 	}
 
-	if chatLog.ReqModel != nil {
-		chat.ProviderId = chatLog.ReqModel.ProviderId
-		if provider, err := service.Provider().GetCache(ctx, chatLog.ReqModel.ProviderId); err != nil {
+	if textLog.ReqModel != nil {
+		text.ProviderId = textLog.ReqModel.ProviderId
+		if provider, err := service.Provider().GetCache(ctx, textLog.ReqModel.ProviderId); err != nil {
 			logger.Error(ctx, err)
 		} else {
-			chat.ProviderName = provider.Name
+			text.ProviderName = provider.Name
 		}
-		chat.ModelId = chatLog.ReqModel.Id
-		chat.ModelName = chatLog.ReqModel.Name
-		chat.Model = chatLog.ReqModel.Model
-		chat.ModelType = chatLog.ReqModel.Type
+		text.ModelId = textLog.ReqModel.Id
+		text.ModelName = textLog.ReqModel.Name
+		text.Model = textLog.ReqModel.Model
+		text.ModelType = textLog.ReqModel.Type
 	}
 
-	if chatLog.RealModel != nil {
-		chat.IsEnablePresetConfig = chatLog.RealModel.IsEnablePresetConfig
-		chat.PresetConfig = chatLog.RealModel.PresetConfig
-		chat.IsEnableForward = chatLog.RealModel.IsEnableForward
-		chat.ForwardConfig = chatLog.RealModel.ForwardConfig
-		chat.IsEnableModelAgent = chatLog.RealModel.IsEnableModelAgent
-		chat.RealModelId = chatLog.RealModel.Id
-		chat.RealModelName = chatLog.RealModel.Name
-		chat.RealModel = chatLog.RealModel.Model
+	if textLog.RealModel != nil {
+		text.IsEnablePresetConfig = textLog.RealModel.IsEnablePresetConfig
+		text.PresetConfig = textLog.RealModel.PresetConfig
+		text.IsEnableForward = textLog.RealModel.IsEnableForward
+		text.ForwardConfig = textLog.RealModel.ForwardConfig
+		text.IsEnableModelAgent = textLog.RealModel.IsEnableModelAgent
+		text.RealModelId = textLog.RealModel.Id
+		text.RealModelName = textLog.RealModel.Name
+		text.RealModel = textLog.RealModel.Model
 	}
 
-	if chatLog.ModelAgent != nil {
-		chat.IsEnableModelAgent = true
-		chat.ModelAgentId = chatLog.ModelAgent.Id
-		chat.ModelAgent = &do.ModelAgent{
-			ProviderId: chatLog.ModelAgent.ProviderId,
-			Name:       chatLog.ModelAgent.Name,
-			BaseUrl:    chatLog.ModelAgent.BaseUrl,
-			Path:       chatLog.ModelAgent.Path,
-			Weight:     chatLog.ModelAgent.Weight,
-			Remark:     chatLog.ModelAgent.Remark,
-		}
-	}
-
-	if chatLog.FallbackModelAgent != nil {
-		chat.IsEnableFallback = true
-		chat.FallbackConfig = &mcommon.FallbackConfig{
-			ModelAgent:     chatLog.FallbackModelAgent.Id,
-			ModelAgentName: chatLog.FallbackModelAgent.Name,
+	if textLog.ModelAgent != nil {
+		text.IsEnableModelAgent = true
+		text.ModelAgentId = textLog.ModelAgent.Id
+		text.ModelAgent = &do.ModelAgent{
+			ProviderId: textLog.ModelAgent.ProviderId,
+			Name:       textLog.ModelAgent.Name,
+			BaseUrl:    textLog.ModelAgent.BaseUrl,
+			Path:       textLog.ModelAgent.Path,
+			Weight:     textLog.ModelAgent.Weight,
+			Remark:     textLog.ModelAgent.Remark,
 		}
 	}
 
-	if chatLog.FallbackModel != nil {
-		chat.IsEnableFallback = true
-		if chat.FallbackConfig == nil {
-			chat.FallbackConfig = new(mcommon.FallbackConfig)
+	if textLog.FallbackModelAgent != nil {
+		text.IsEnableFallback = true
+		text.FallbackConfig = &mcommon.FallbackConfig{
+			ModelAgent:     textLog.FallbackModelAgent.Id,
+			ModelAgentName: textLog.FallbackModelAgent.Name,
 		}
-		chat.FallbackConfig.Model = chatLog.FallbackModel.Model
-		chat.FallbackConfig.ModelName = chatLog.FallbackModel.Name
 	}
 
-	if chatLog.Key != nil {
-		chat.Key = chatLog.Key.Key
+	if textLog.FallbackModel != nil {
+		text.IsEnableFallback = true
+		if text.FallbackConfig == nil {
+			text.FallbackConfig = new(mcommon.FallbackConfig)
+		}
+		text.FallbackConfig.Model = textLog.FallbackModel.Model
+		text.FallbackConfig.ModelName = textLog.FallbackModel.Name
 	}
 
-	if chatLog.CompletionsRes.Error != nil {
+	if textLog.Key != nil {
+		text.Key = textLog.Key.Key
+	}
 
-		chat.ErrMsg = chatLog.CompletionsRes.Error.Error()
+	if textLog.CompletionsRes.Error != nil {
+
+		text.ErrMsg = textLog.CompletionsRes.Error.Error()
 		openaiApiError := &serrors.ApiError{}
-		if errors.As(chatLog.CompletionsRes.Error, &openaiApiError) {
-			chat.ErrMsg = openaiApiError.Message
+		if errors.As(textLog.CompletionsRes.Error, &openaiApiError) {
+			text.ErrMsg = openaiApiError.Message
 		}
 
-		if common.IsAborted(chatLog.CompletionsRes.Error) {
-			chat.Status = 2
+		if common.IsAborted(textLog.CompletionsRes.Error) {
+			text.Status = 2
 		} else {
-			chat.Status = -1
+			text.Status = -1
 		}
 	}
 
-	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.ChatRecords, "messages") && chatLog.CompletionsReq != nil {
-		for _, message := range chatLog.CompletionsReq.Messages {
+	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.TextRecords, "messages") && textLog.CompletionsReq != nil {
+		for _, message := range textLog.CompletionsReq.Messages {
 
 			content := message.Content
 
-			if !slices.Contains(config.Cfg.Log.ChatRecords, "image") {
+			if !slices.Contains(config.Cfg.Log.TextRecords, "image") {
 
 				if multiContent, ok := content.([]interface{}); ok {
 
@@ -326,7 +326,7 @@ func (s *sLogger) Text(ctx context.Context, chatLog model.LogText, retry ...int)
 				}
 			}
 
-			if !slices.Contains(config.Cfg.Log.ChatRecords, "audio") {
+			if !slices.Contains(config.Cfg.Log.TextRecords, "audio") {
 
 				if multiContent, ok := content.([]interface{}); ok {
 
@@ -358,7 +358,7 @@ func (s *sLogger) Text(ctx context.Context, chatLog model.LogText, retry ...int)
 				}
 			}
 
-			chat.Messages = append(chat.Messages, mcommon.Message{
+			text.Messages = append(text.Messages, mcommon.Message{
 				Role:         message.Role,
 				Content:      gconv.String(content),
 				Refusal:      message.Refusal,
@@ -371,34 +371,34 @@ func (s *sLogger) Text(ctx context.Context, chatLog model.LogText, retry ...int)
 		}
 	}
 
-	if chatLog.RetryInfo != nil {
+	if textLog.RetryInfo != nil {
 
-		chat.IsRetry = chatLog.RetryInfo.IsRetry
-		chat.Retry = &mcommon.Retry{
-			IsRetry:    chatLog.RetryInfo.IsRetry,
-			RetryCount: chatLog.RetryInfo.RetryCount,
-			ErrMsg:     chatLog.RetryInfo.ErrMsg,
+		text.IsRetry = textLog.RetryInfo.IsRetry
+		text.Retry = &mcommon.Retry{
+			IsRetry:    textLog.RetryInfo.IsRetry,
+			RetryCount: textLog.RetryInfo.RetryCount,
+			ErrMsg:     textLog.RetryInfo.ErrMsg,
 		}
 
-		if chat.IsRetry {
-			chat.Status = 3
-			chat.ErrMsg = chatLog.RetryInfo.ErrMsg
+		if text.IsRetry {
+			text.Status = 3
+			text.ErrMsg = textLog.RetryInfo.ErrMsg
 		}
 	}
 
-	if _, err := dao.LogText.Insert(ctx, chat); err != nil {
-		logger.Errorf(ctx, "sLogger LogText error: %v", err)
+	if _, err := dao.LogText.Insert(ctx, text); err != nil {
+		logger.Errorf(ctx, "sLog Text error: %v", err)
 
 		if err.Error() == "an inserted document is too large" {
-			if chatLog.CompletionsReq != nil {
-				chatLog.CompletionsReq.Messages = []smodel.ChatCompletionMessage{{
+			if textLog.CompletionsReq != nil {
+				textLog.CompletionsReq.Messages = []smodel.ChatCompletionMessage{{
 					Role:    sconsts.ROLE_SYSTEM,
 					Content: err.Error(),
 				}}
-			} else if chatLog.EmbeddingReq != nil {
-				chatLog.EmbeddingReq.Input = err.Error()
-			} else if chatLog.ModerationReq != nil {
-				chatLog.ModerationReq.Input = err.Error()
+			} else if textLog.EmbeddingReq != nil {
+				textLog.EmbeddingReq.Input = err.Error()
+			} else if textLog.ModerationReq != nil {
+				textLog.ModerationReq.Input = err.Error()
 			}
 		}
 
@@ -410,18 +410,18 @@ func (s *sLogger) Text(ctx context.Context, chatLog model.LogText, retry ...int)
 
 		time.Sleep(time.Duration(len(retry)*5) * time.Second)
 
-		logger.Errorf(ctx, "sLogger LogText retry: %d", len(retry))
+		logger.Errorf(ctx, "sLog Text retry: %d", len(retry))
 
-		s.Text(ctx, chatLog, retry...)
+		s.Text(ctx, textLog, retry...)
 	}
 }
 
 // 绘图日志
-func (s *sLogger) Image(ctx context.Context, imageLog model.LogImage, retry ...int) {
+func (s *sLog) Image(ctx context.Context, imageLog model.LogImage, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sLogger LogImage time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sLog Image time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	// 不记录此错误日志
@@ -548,7 +548,7 @@ func (s *sLogger) Image(ctx context.Context, imageLog model.LogImage, retry ...i
 	}
 
 	if _, err := dao.LogImage.Insert(ctx, image); err != nil {
-		logger.Errorf(ctx, "sLogger LogImage error: %v", err)
+		logger.Errorf(ctx, "sLog Image error: %v", err)
 
 		if err.Error() == "an inserted document is too large" {
 			imageLog.ImageReq.Prompt = err.Error()
@@ -562,18 +562,18 @@ func (s *sLogger) Image(ctx context.Context, imageLog model.LogImage, retry ...i
 
 		time.Sleep(time.Duration(len(retry)*5) * time.Second)
 
-		logger.Errorf(ctx, "sLogger LogImage retry: %d", len(retry))
+		logger.Errorf(ctx, "sLog Image retry: %d", len(retry))
 
 		s.Image(ctx, imageLog, retry...)
 	}
 }
 
 // 音频日志
-func (s *sLogger) Audio(ctx context.Context, audioLog model.LogAudio, retry ...int) {
+func (s *sLog) Audio(ctx context.Context, audioLog model.LogAudio, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sLogger LogAudio time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sLog Audio time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	// 不记录此错误日志
@@ -689,7 +689,7 @@ func (s *sLogger) Audio(ctx context.Context, audioLog model.LogAudio, retry ...i
 	}
 
 	if _, err := dao.LogAudio.Insert(ctx, audio); err != nil {
-		logger.Errorf(ctx, "sLogger LogAudio error: %v", err)
+		logger.Errorf(ctx, "sLog Audio error: %v", err)
 
 		if err.Error() == "an inserted document is too large" {
 			audioLog.AudioReq.Input = err.Error()
@@ -703,18 +703,18 @@ func (s *sLogger) Audio(ctx context.Context, audioLog model.LogAudio, retry ...i
 
 		time.Sleep(time.Duration(len(retry)*5) * time.Second)
 
-		logger.Errorf(ctx, "sLogger LogAudio retry: %d", len(retry))
+		logger.Errorf(ctx, "sLog Audio retry: %d", len(retry))
 
 		s.Audio(ctx, audioLog, retry...)
 	}
 }
 
 // Midjourney日志
-func (s *sLogger) Midjourney(ctx context.Context, midjourneyLog model.LogMidjourney, retry ...int) {
+func (s *sLog) Midjourney(ctx context.Context, midjourneyLog model.LogMidjourney, retry ...int) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
-		logger.Debugf(ctx, "sLogger LogMidjourney time: %d", gtime.TimestampMilli()-now)
+		logger.Debugf(ctx, "sLog Midjourney time: %d", gtime.TimestampMilli()-now)
 	}()
 
 	// 不记录此错误日志
@@ -836,7 +836,7 @@ func (s *sLogger) Midjourney(ctx context.Context, midjourneyLog model.LogMidjour
 	}
 
 	if _, err := dao.LogMidjourney.Insert(ctx, midjourney); err != nil {
-		logger.Errorf(ctx, "sLogger LogMidjourney error: %v", err)
+		logger.Errorf(ctx, "sLog Midjourney error: %v", err)
 
 		if err.Error() == "an inserted document is too large" {
 			midjourneyLog.Response.Prompt = err.Error()
@@ -851,7 +851,7 @@ func (s *sLogger) Midjourney(ctx context.Context, midjourneyLog model.LogMidjour
 
 		time.Sleep(time.Duration(len(retry)*5) * time.Second)
 
-		logger.Errorf(ctx, "sLogger LogMidjourney retry: %d", len(retry))
+		logger.Errorf(ctx, "sLog Midjourney retry: %d", len(retry))
 
 		s.Midjourney(ctx, midjourneyLog, retry...)
 	}
