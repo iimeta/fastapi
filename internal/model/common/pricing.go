@@ -25,6 +25,7 @@ type Pricing struct {
 }
 
 type TextPricing struct {
+	ServiceTier string  `bson:"service_tier,omitempty" json:"service_tier,omitempty"` // 服务层[all:全部, default:默认, priority:优先, flex:弹性]
 	InputRatio  float64 `bson:"input_ratio,omitempty"  json:"input_ratio,omitempty"`  // 输入倍率
 	OutputRatio float64 `bson:"output_ratio,omitempty" json:"output_ratio,omitempty"` // 输出倍率
 	Mode        string  `bson:"mode,omitempty"         json:"mode,omitempty"`         // 模式[all:全部, thinking:思考, non_thinking:非思考]
@@ -33,11 +34,12 @@ type TextPricing struct {
 }
 
 type CachePricing struct {
-	ReadRatio  float64 `bson:"read_ratio,omitempty"  json:"read_ratio,omitempty"`  // 读取/命中倍率
-	WriteRatio float64 `bson:"write_ratio,omitempty" json:"write_ratio,omitempty"` // 写入倍率
-	Mode       string  `bson:"mode,omitempty"        json:"mode,omitempty"`        // 模式[all:全部, thinking:思考, non_thinking:非思考]
-	Gt         int     `bson:"gt,omitempty"          json:"gt,omitempty"`          // 大于, 单位: k
-	Lte        int     `bson:"lte,omitempty"         json:"lte,omitempty"`         // 小于等于, 单位: k
+	ServiceTier string  `bson:"service_tier,omitempty" json:"service_tier,omitempty"` // 服务层[all:全部, default:默认, priority:优先, flex:弹性]
+	ReadRatio   float64 `bson:"read_ratio,omitempty"   json:"read_ratio,omitempty"`   // 读取/命中倍率
+	WriteRatio  float64 `bson:"write_ratio,omitempty"  json:"write_ratio,omitempty"`  // 写入倍率
+	Mode        string  `bson:"mode,omitempty"         json:"mode,omitempty"`         // 模式[all:全部, thinking:思考, non_thinking:非思考]
+	Gt          int     `bson:"gt,omitempty"           json:"gt,omitempty"`           // 大于, 单位: k
+	Lte         int     `bson:"lte,omitempty"          json:"lte,omitempty"`          // 小于等于, 单位: k
 }
 
 type ImagePricing struct {
@@ -105,8 +107,8 @@ type Spend struct {
 	BillingRule      int                   `bson:"billing_rule,omitempty"       json:"billing_rule,omitempty"`       // 计费规则[1:按官方, 2:按系统]
 	BillingMethods   []int                 `bson:"billing_methods,omitempty"    json:"billing_methods,omitempty"`    // 计费方式[1:按Tokens, 2:按次]
 	BillingItems     []string              `bson:"billing_items,omitempty"      json:"billing_items,omitempty"`      // 计费项[text:文本, text_cache:文本缓存, tiered_text:阶梯文本, tiered_text_cache:阶梯文本缓存, image:图像, image_generation:图像生成, image_cache:图像缓存, vision:识图, audio:音频, audio_cache:音频缓存, video:视频, search:搜索, midjourney:Midjourney, once:一次]
-	Text             *TextSpend            `bson:"text,omitempty"               json:"text,omitempty"`               // 文本
-	TextCache        *CacheSpend           `bson:"text_cache,omitempty"         json:"text_cache,omitempty"`         // 文本缓存
+	Text             []*TextPricing        `bson:"text,omitempty"               json:"text,omitempty"`               // 文本
+	TextCache        []*CachePricing       `bson:"text_cache,omitempty"         json:"text_cache,omitempty"`         // 文本缓存
 	TieredText       *TextSpend            `bson:"tiered_text,omitempty"        json:"tiered_text,omitempty"`        // 阶梯文本
 	TieredTextCache  *CacheSpend           `bson:"tiered_text_cache,omitempty"  json:"tiered_text_cache,omitempty"`  // 阶梯文本缓存
 	Image            *ImageSpend           `bson:"image,omitempty"              json:"image,omitempty"`              // 图像
