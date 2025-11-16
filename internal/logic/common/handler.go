@@ -40,11 +40,19 @@ func chatHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
 
+		if after.ServiceTier == "" {
+			after.ServiceTier = after.ChatCompletionRes.ServiceTier
+			if after.ServiceTier == "" {
+				after.ServiceTier = after.ChatCompletionReq.ServiceTier
+			}
+		}
+
 		billingData := &mcommon.BillingData{
 			ChatCompletionRequest: after.ChatCompletionReq,
 			EmbeddingRequest:      after.EmbeddingReq,
 			ModerationRequest:     after.ModerationReq,
 			Completion:            after.Completion,
+			ServiceTier:           after.ServiceTier,
 			Usage:                 after.Usage,
 		}
 

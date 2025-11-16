@@ -55,6 +55,7 @@ func ConvResponsesToChatCompletionsRequest(request *ghttp.Request, isChatComplet
 		ParallelToolCalls:   responsesReq.ParallelToolCalls,
 		Store:               responsesReq.Store,
 		Metadata:            responsesReq.Metadata,
+		ServiceTier:         responsesReq.ServiceTier,
 	}
 
 	if responsesReq.Input != nil {
@@ -111,6 +112,7 @@ func ConvResponsesToChatCompletionsResponse(ctx context.Context, res smodel.Open
 		Object:        responsesRes.Object,
 		Created:       responsesRes.CreatedAt,
 		Model:         responsesRes.Model,
+		ServiceTier:   responsesRes.ServiceTier,
 		ResponseBytes: responsesRes.ResponseBytes,
 		ConnTime:      responsesRes.ConnTime,
 		Duration:      responsesRes.Duration,
@@ -179,6 +181,7 @@ func ConvResponsesStreamToChatCompletionsResponse(ctx context.Context, res smode
 		Object:        responsesStreamRes.Response.Object,
 		Created:       responsesStreamRes.Response.CreatedAt,
 		Model:         responsesStreamRes.Response.Model,
+		ServiceTier:   responsesStreamRes.Response.ServiceTier,
 		ResponseBytes: responsesStreamRes.ResponseBytes,
 		ConnTime:      responsesStreamRes.ConnTime,
 		Duration:      responsesStreamRes.Duration,
@@ -244,6 +247,7 @@ func ConvChatCompletionsToResponsesRequest(ctx context.Context, body []byte) smo
 		ToolChoice:        chatCompletionRequest.ToolChoice,
 		TopP:              chatCompletionRequest.TopP,
 		User:              chatCompletionRequest.User,
+		ServiceTier:       chatCompletionRequest.ServiceTier,
 	}
 
 	input := make([]smodel.OpenAIResponsesInput, 0)

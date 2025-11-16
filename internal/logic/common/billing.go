@@ -144,7 +144,20 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 				spend.Text = new(common.TextSpend)
 			}
 
-			spend.Text.Pricing = mak.ReqModel.Pricing.Text
+			serviceTier := "all"
+			if billingData.ServiceTier != "" {
+				serviceTier = billingData.ServiceTier
+			} else if billingData.ChatCompletionRequest.ServiceTier != "" {
+				serviceTier = billingData.ChatCompletionRequest.ServiceTier
+			}
+
+			for i, text := range mak.ReqModel.Pricing.Text {
+				if serviceTier == text.ServiceTier || i == len(mak.ReqModel.Pricing.Text)-1 {
+					spend.Text.Pricing = text
+					break
+				}
+			}
+
 			spend.Text.InputTokens = billingData.Usage.InputTokensDetails.TextTokens
 			spend.Text.SpendTokens = int(math.Ceil(float64(spend.Text.InputTokens) * spend.Text.Pricing.InputRatio))
 		}
@@ -186,7 +199,20 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 		}
 	}
 
-	spend.Text.Pricing = mak.ReqModel.Pricing.Text
+	serviceTier := "all"
+	if billingData.ServiceTier != "" {
+		serviceTier = billingData.ServiceTier
+	} else if billingData.ChatCompletionRequest.ServiceTier != "" {
+		serviceTier = billingData.ChatCompletionRequest.ServiceTier
+	}
+
+	for i, text := range mak.ReqModel.Pricing.Text {
+		if serviceTier == text.ServiceTier || i == len(mak.ReqModel.Pricing.Text)-1 {
+			spend.Text.Pricing = text
+			break
+		}
+	}
+
 	spend.Text.InputTokens = billingData.Usage.PromptTokens
 	spend.Text.OutputTokens = billingData.Usage.CompletionTokens
 	spend.Text.SpendTokens = int(math.Ceil(float64(spend.Text.InputTokens)*spend.Text.Pricing.InputRatio)) + int(math.Ceil(float64(spend.Text.OutputTokens)*spend.Text.Pricing.OutputRatio))
@@ -221,7 +247,20 @@ func textCache(ctx context.Context, mak *MAK, billingData *common.BillingData, s
 		spend.TextCache.WriteTokens += billingData.Usage.CacheCreationInputTokens
 	}
 
-	spend.TextCache.Pricing = mak.ReqModel.Pricing.TextCache
+	serviceTier := "all"
+	if billingData.ServiceTier != "" {
+		serviceTier = billingData.ServiceTier
+	} else if billingData.ChatCompletionRequest.ServiceTier != "" {
+		serviceTier = billingData.ChatCompletionRequest.ServiceTier
+	}
+
+	for i, textCache := range mak.ReqModel.Pricing.TextCache {
+		if serviceTier == textCache.ServiceTier || i == len(mak.ReqModel.Pricing.TextCache)-1 {
+			spend.TextCache.Pricing = textCache
+			break
+		}
+	}
+
 	spend.TextCache.SpendTokens = int(math.Ceil(float64(spend.TextCache.ReadTokens)*spend.TextCache.Pricing.ReadRatio)) + int(math.Ceil(float64(spend.TextCache.WriteTokens)*spend.TextCache.Pricing.WriteRatio))
 }
 

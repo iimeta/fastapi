@@ -19,6 +19,7 @@ type AfterHandler struct {
 	ModerationReq          smodel.ModerationRequest
 	ChatCompletionRes      smodel.ChatCompletionResponse
 	Completion             string
+	ServiceTier            string
 	MidjourneyPath         string
 	MidjourneyResponse     smodel.MidjourneyResponse
 	MidjourneyReqUrl       string

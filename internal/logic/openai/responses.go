@@ -210,12 +210,13 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		completion string
-		connTime   int64
-		duration   int64
-		totalTime  int64
-		usage      *smodel.Usage
-		retryInfo  *mcommon.Retry
+		completion  string
+		serviceTier string
+		connTime    int64
+		duration    int64
+		totalTime   int64
+		usage       *smodel.Usage
+		retryInfo   *mcommon.Retry
 	)
 
 	defer func() {
@@ -229,6 +230,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					Completion:        completion,
+					ServiceTier:       serviceTier,
 					Usage:             usage,
 					Error:             err,
 					RetryInfo:         retryInfo,
@@ -522,6 +524,10 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 
 		if len(response.Choices) > 0 && response.Choices[0].Delta != nil && response.Choices[0].Delta.ToolCalls != nil {
 			completion += gconv.String(response.Choices[0].Delta.ToolCalls)
+		}
+
+		if response.ServiceTier != "" {
+			serviceTier = response.ServiceTier
 		}
 
 		if response.Usage != nil {
