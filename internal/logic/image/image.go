@@ -117,6 +117,13 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 		}
 	}
 
+	if mak.Path == "" {
+		mak.Path = g.RequestFromCtx(ctx).RequestURI
+		if gstr.HasSuffix(mak.BaseUrl, "/v1") {
+			mak.Path = mak.Path[3:]
+		}
+	}
+
 	response, err = common.NewAdapter(ctx, mak, false).ImageGenerations(ctx, gjson.MustEncode(request))
 	if err != nil {
 		logger.Error(ctx, err)
@@ -270,6 +277,13 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 				mak.RealModel.Model = params.Model
 				break
 			}
+		}
+	}
+
+	if mak.Path == "" {
+		mak.Path = g.RequestFromCtx(ctx).RequestURI
+		if gstr.HasSuffix(mak.BaseUrl, "/v1") {
+			mak.Path = mak.Path[3:]
 		}
 	}
 

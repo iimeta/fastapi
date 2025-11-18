@@ -7,6 +7,7 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/gogf/gf/v2/text/gstr"
 	sconsts "github.com/iimeta/fastapi-sdk/consts"
 	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/logic/common"
@@ -105,6 +106,13 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 				params.Model = mak.ModelAgent.TargetModels[i]
 				break
 			}
+		}
+	}
+
+	if mak.Path == "" {
+		mak.Path = g.RequestFromCtx(ctx).RequestURI
+		if gstr.HasSuffix(mak.BaseUrl, "/v1") {
+			mak.Path = mak.Path[3:]
 		}
 	}
 

@@ -116,6 +116,13 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 		return err
 	}
 
+	if mak.Path == "" {
+		mak.Path = g.RequestFromCtx(ctx).RequestURI
+		if gstr.HasSuffix(mak.BaseUrl, "/v1") {
+			mak.Path = mak.Path[3:]
+		}
+	}
+
 	requestChan := make(chan *smodel.RealtimeRequest)
 
 	response, err := common.NewRealtimeAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).Realtime(ctx, requestChan)

@@ -141,6 +141,13 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 		}
 	}
 
+	if mak.Path == "" {
+		mak.Path = g.RequestFromCtx(ctx).RequestURI
+		if gstr.HasSuffix(mak.BaseUrl, "/v1") {
+			mak.Path = mak.Path[3:]
+		}
+	}
+
 	response, err = common.NewAdapter(ctx, mak, false).ChatCompletions(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
@@ -315,6 +322,13 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 				mak.RealModel.Model = request.Model
 				break
 			}
+		}
+	}
+
+	if mak.Path == "" {
+		mak.Path = g.RequestFromCtx(ctx).RequestURI
+		if gstr.HasSuffix(mak.BaseUrl, "/v1") {
+			mak.Path = mak.Path[3:]
 		}
 	}
 

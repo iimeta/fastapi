@@ -7,6 +7,7 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	sconsts "github.com/iimeta/fastapi-sdk/consts"
 	smodel "github.com/iimeta/fastapi-sdk/model"
@@ -105,6 +106,13 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 				request.Model = mak.ModelAgent.TargetModels[i]
 				break
 			}
+		}
+	}
+
+	if mak.Path == "" {
+		mak.Path = g.RequestFromCtx(ctx).RequestURI
+		if gstr.HasSuffix(mak.BaseUrl, "/v1") {
+			mak.Path = mak.Path[3:]
 		}
 	}
 
