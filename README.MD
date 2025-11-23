@@ -137,7 +137,7 @@ curl --location 'https://api.fastapi.ai/v1/chat/completions' \
 
 <center>
   <img src="https://iim.ai/public/images/Author.png?t=20231207" width="320" alt="作者"/>
-  <img src="https://iim.ai/public/images/WeChatGroup.jpg?t=20251116" width="320" alt="交流群"/>
+  <img src="https://iim.ai/public/images/WeChatGroup.jpg?t=20251123" width="320" alt="交流群"/>
 </center>
 
 ![Star History Chart](https://api.star-history.com/svg?repos=iimeta/fastapi&type=Date)
