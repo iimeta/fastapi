@@ -22,7 +22,7 @@ func BeforeHandler(ctx context.Context, before *mcommon.BeforeHandler) {
 func AfterHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	switch mak.ReqModel.Type {
 	case 1, 100, 101, 102, 7, 103:
-		chatHandler(ctx, mak, after)
+		textHandler(ctx, mak, after)
 	case 2, 3, 4:
 		if mak.ReqModel.Model == "midjourney" || gstr.HasPrefix(mak.ReqModel.Model, "midjourney") {
 			midjourneyHandler(ctx, mak, after)
@@ -32,11 +32,11 @@ func AfterHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	case 5, 6:
 		audioHandler(ctx, mak, after)
 	default:
-		chatHandler(ctx, mak, after)
+		textHandler(ctx, mak, after)
 	}
 }
 
-func chatHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
+func textHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
 
