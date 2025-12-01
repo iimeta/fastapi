@@ -27,6 +27,7 @@ import (
 	"github.com/iimeta/fastapi/internal/controller/midjourney"
 	"github.com/iimeta/fastapi/internal/controller/moderation"
 	"github.com/iimeta/fastapi/internal/controller/openai"
+	"github.com/iimeta/fastapi/internal/controller/video"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/model"
 	"github.com/iimeta/fastapi/internal/service"
@@ -109,6 +110,12 @@ var (
 				v1.Group("/audio", func(g *ghttp.RouterGroup) {
 					g.Bind(
 						audio.NewV1(),
+					)
+				})
+
+				v1.Group("/videos", func(g *ghttp.RouterGroup) {
+					g.Bind(
+						video.NewV1(),
 					)
 				})
 			})
