@@ -33,4 +33,5 @@ import (
 	_ "github.com/iimeta/fastapi/internal/logic/session"
 	_ "github.com/iimeta/fastapi/internal/logic/sys_config"
 	_ "github.com/iimeta/fastapi/internal/logic/user"
+	_ "github.com/iimeta/fastapi/internal/logic/video"
 )

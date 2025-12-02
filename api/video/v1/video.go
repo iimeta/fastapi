@@ -1,41 +1,19 @@
 package v1
 
 import (
-	"mime/multipart"
-
 	"github.com/gogf/gf/v2/frame/g"
+	smodel "github.com/iimeta/fastapi-sdk/model"
 )
 
 // Create接口请求参数
 type CreateReq struct {
-	g.Meta         `path:"/" tags:"video" method:"post" summary:"Create接口"`
-	Model          string                `json:"model"`
-	Prompt         string                `json:"prompt"`
-	InputReference *multipart.FileHeader `json:"input_reference"`
-	Seconds        string                `json:"seconds"`
-	Size           string                `json:"size"`
+	g.Meta `path:"/" tags:"video" method:"post" summary:"Create接口"`
+	smodel.VideoRequest
 }
 
 // Create接口响应参数
 type CreateRes struct {
-	g.Meta             `mime:"application/json" example:"json"`
-	Id                 string `json:"id"`
-	Object             string `json:"object"`
-	Model              string `json:"model"`
-	Status             string `json:"status"`
-	Progress           int    `json:"progress"`
-	CreatedAt          int    `json:"created_at"`
-	CompletedAt        int    `json:"completed_at"`
-	ExpiresAt          int    `json:"expires_at"`
-	Size               string `json:"size"`
-	Prompt             string `json:"prompt"`
-	Seconds            string `json:"seconds"`
-	Quality            string `json:"quality"`
-	RemixedFromVideoId string `json:"remixed_from_video_id"`
-	Error              struct {
-		Code    int    `json:"code"`
-		Message string `json:"message"`
-	} `json:"error"`
+	g.Meta `mime:"application/json" example:"json"`
 }
 
 // Remix接口请求参数
