@@ -709,6 +709,147 @@ func (s *sLog) Audio(ctx context.Context, audioLog model.LogAudio, retry ...int)
 	}
 }
 
+// 视频日志
+func (s *sLog) Video(ctx context.Context, videoLog model.LogVideo, retry ...int) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sLog Video time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	// 不记录此错误日志
+	if videoLog.VideoRes.Error != nil && checkError(videoLog.VideoRes.Error) {
+		return
+	}
+
+	video := do.LogVideo{
+		TraceId:      gctx.CtxId(ctx),
+		UserId:       service.Session().GetUserId(ctx),
+		AppId:        service.Session().GetAppId(ctx),
+		Request:      videoLog.VideoReq.Request,
+		Response:     videoLog.VideoRes.Response,
+		Spend:        videoLog.Spend,
+		TotalTime:    videoLog.VideoRes.TotalTime,
+		InternalTime: videoLog.VideoRes.InternalTime,
+		ReqTime:      videoLog.VideoRes.EnterTime,
+		ReqDate:      gtime.NewFromTimeStamp(videoLog.VideoRes.EnterTime).Format("Y-m-d"),
+		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
+		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
+		LocalIp:      util.GetLocalIp(),
+		Status:       1,
+		Host:         g.RequestFromCtx(ctx).GetHost(),
+		Rid:          service.Session().GetRid(ctx),
+	}
+
+	if videoLog.ReqModel != nil {
+		video.ProviderId = videoLog.ReqModel.ProviderId
+		if provider, err := service.Provider().GetCache(ctx, videoLog.ReqModel.ProviderId); err != nil {
+			logger.Error(ctx, err)
+		} else {
+			video.ProviderName = provider.Name
+		}
+		video.ModelId = videoLog.ReqModel.Id
+		video.ModelName = videoLog.ReqModel.Name
+		video.Model = videoLog.ReqModel.Model
+		video.ModelType = videoLog.ReqModel.Type
+	}
+
+	if videoLog.RealModel != nil {
+		video.IsEnablePresetConfig = videoLog.RealModel.IsEnablePresetConfig
+		video.PresetConfig = videoLog.RealModel.PresetConfig
+		video.IsEnableForward = videoLog.RealModel.IsEnableForward
+		video.ForwardConfig = videoLog.RealModel.ForwardConfig
+		video.IsEnableModelAgent = videoLog.RealModel.IsEnableModelAgent
+		video.RealModelId = videoLog.RealModel.Id
+		video.RealModelName = videoLog.RealModel.Name
+		video.RealModel = videoLog.RealModel.Model
+	}
+
+	if video.IsEnableModelAgent && videoLog.ModelAgent != nil {
+		video.ModelAgentId = videoLog.ModelAgent.Id
+		video.ModelAgent = &do.ModelAgent{
+			ProviderId: videoLog.ModelAgent.ProviderId,
+			Name:       videoLog.ModelAgent.Name,
+			BaseUrl:    videoLog.ModelAgent.BaseUrl,
+			Path:       videoLog.ModelAgent.Path,
+			Weight:     videoLog.ModelAgent.Weight,
+			Remark:     videoLog.ModelAgent.Remark,
+			Status:     videoLog.ModelAgent.Status,
+		}
+	}
+
+	if videoLog.FallbackModelAgent != nil {
+		video.IsEnableFallback = true
+		video.FallbackConfig = &mcommon.FallbackConfig{
+			ModelAgent:     videoLog.FallbackModelAgent.Id,
+			ModelAgentName: videoLog.FallbackModelAgent.Name,
+		}
+	}
+
+	if videoLog.FallbackModel != nil {
+		video.IsEnableFallback = true
+		if video.FallbackConfig == nil {
+			video.FallbackConfig = new(mcommon.FallbackConfig)
+		}
+		video.FallbackConfig.Model = videoLog.FallbackModel.Model
+		video.FallbackConfig.ModelName = videoLog.FallbackModel.Name
+	}
+
+	if videoLog.Key != nil {
+		video.Key = videoLog.Key.Key
+	}
+
+	if videoLog.VideoRes.Error != nil {
+
+		video.ErrMsg = videoLog.VideoRes.Error.Error()
+		openaiApiError := &serrors.ApiError{}
+		if errors.As(videoLog.VideoRes.Error, &openaiApiError) {
+			video.ErrMsg = openaiApiError.Message
+		}
+
+		if common.IsAborted(videoLog.VideoRes.Error) {
+			video.Status = 2
+		} else {
+			video.Status = -1
+		}
+	}
+
+	if videoLog.RetryInfo != nil {
+
+		video.IsRetry = videoLog.RetryInfo.IsRetry
+		video.Retry = &mcommon.Retry{
+			IsRetry:    videoLog.RetryInfo.IsRetry,
+			RetryCount: videoLog.RetryInfo.RetryCount,
+			ErrMsg:     videoLog.RetryInfo.ErrMsg,
+		}
+
+		if video.IsRetry {
+			video.Status = 3
+			video.ErrMsg = videoLog.RetryInfo.ErrMsg
+		}
+	}
+
+	if _, err := dao.LogVideo.Insert(ctx, video); err != nil {
+		logger.Errorf(ctx, "sLog Video error: %v", err)
+
+		if err.Error() == "an inserted document is too large" {
+			videoLog.VideoReq.Request = map[string]any{"error": err.Error()}
+		}
+
+		if len(retry) == 10 {
+			panic(err)
+		}
+
+		retry = append(retry, 1)
+
+		time.Sleep(time.Duration(len(retry)*5) * time.Second)
+
+		logger.Errorf(ctx, "sLog Video retry: %d", len(retry))
+
+		s.Video(ctx, videoLog, retry...)
+	}
+}
+
 // Midjourney日志
 func (s *sLog) Midjourney(ctx context.Context, midjourneyLog model.LogMidjourney, retry ...int) {
 

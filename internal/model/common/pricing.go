@@ -101,6 +101,8 @@ type BillingData struct {
 	AudioMinute            float64
 	EmbeddingRequest       smodel.EmbeddingRequest
 	ModerationRequest      smodel.ModerationRequest
+	Seconds                int
+	Size                   string
 	Usage                  *smodel.Usage
 }
 
@@ -169,6 +171,7 @@ type AudioSpend struct {
 
 type VideoSpend struct {
 	Pricing     *VideoPricing `bson:"pricing,omitempty"      json:"pricing,omitempty"`      // 定价
+	Seconds     int           `bson:"seconds,omitempty"      json:"seconds,omitempty"`      // 秒数
 	SpendTokens int           `bson:"spend_tokens,omitempty" json:"spend_tokens,omitempty"` // 花费Token数
 }
 

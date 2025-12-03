@@ -11,7 +11,6 @@ import (
 	"github.com/gogf/gf/v2/util/gconv"
 	sconsts "github.com/iimeta/fastapi-sdk/consts"
 	smodel "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
 	mcommon "github.com/iimeta/fastapi/internal/model/common"
@@ -41,10 +40,6 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 	if err != nil {
 		logger.Errorf(ctx, "sEmbedding Embeddings ConvTextEmbeddingsRequest error: %v", err)
 		return response, err
-	}
-
-	if params.Input == nil || len(gconv.SliceAny(params.Input)) == 0 {
-		return response, errors.ERR_INVALID_PARAMETER
 	}
 
 	var (

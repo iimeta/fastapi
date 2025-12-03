@@ -31,6 +31,8 @@ func AfterHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		}
 	case 5, 6:
 		audioHandler(ctx, mak, after)
+	case 8:
+		videoHandler(ctx, mak, after)
 	default:
 		textHandler(ctx, mak, after)
 	}
@@ -167,7 +169,6 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	}
 
 	imageRes := &model.ImageRes{
-		Created:      after.ImageResponse.Created,
 		Data:         after.ImageResponse.Data,
 		TotalTime:    after.ImageResponse.TotalTime,
 		Error:        after.Error,
@@ -231,10 +232,6 @@ func audioHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		EnterTime:    after.EnterTime,
 	}
 
-	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
-		audioRes.TotalTokens = after.Spend.TotalSpendTokens
-	}
-
 	if after.Spend.GroupId == "" && mak.Group != nil {
 		after.Spend.GroupId = mak.Group.Id
 		after.Spend.GroupName = mak.Group.Name
@@ -250,6 +247,61 @@ func audioHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		Key:                mak.Key,
 		AudioReq:           audioReq,
 		AudioRes:           audioRes,
+		RetryInfo:          after.RetryInfo,
+		Spend:              after.Spend,
+	})
+}
+
+func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
+
+	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
+
+		billingData := &mcommon.BillingData{
+			Seconds: after.Seconds,
+			Size:    after.Size,
+		}
+
+		// 计算花费
+		after.Spend = Billing(ctx, mak, billingData)
+
+		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+			// 记录花费
+			if err := RecordSpend(ctx, after.Spend, mak); err != nil {
+				logger.Error(ctx, err)
+				panic(err)
+			}
+		}); err != nil {
+			logger.Error(ctx, err)
+		}
+	}
+
+	videoReq := &model.VideoReq{
+		Request: after.Request,
+	}
+
+	videoRes := &model.VideoRes{
+		Response:     after.Response,
+		Error:        after.Error,
+		TotalTime:    after.TotalTime,
+		InternalTime: after.InternalTime,
+		EnterTime:    after.EnterTime,
+	}
+
+	if after.Spend.GroupId == "" && mak.Group != nil {
+		after.Spend.GroupId = mak.Group.Id
+		after.Spend.GroupName = mak.Group.Name
+		after.Spend.GroupDiscount = mak.Group.Discount
+	}
+
+	service.Log().Video(ctx, model.LogVideo{
+		ReqModel:           mak.ReqModel,
+		RealModel:          mak.RealModel,
+		ModelAgent:         mak.ModelAgent,
+		FallbackModelAgent: mak.FallbackModelAgent,
+		FallbackModel:      mak.FallbackModel,
+		Key:                mak.Key,
+		VideoReq:           videoReq,
+		VideoRes:           videoRes,
 		RetryInfo:          after.RetryInfo,
 		Spend:              after.Spend,
 	})

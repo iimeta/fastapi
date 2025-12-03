@@ -20,11 +20,15 @@ type AfterHandler struct {
 	ChatCompletionRes      smodel.ChatCompletionResponse
 	Completion             string
 	ServiceTier            string
+	Seconds                int
+	Size                   string
 	MidjourneyPath         string
 	MidjourneyResponse     smodel.MidjourneyResponse
 	MidjourneyReqUrl       string
 	MidjourneyTaskId       string
 	MidjourneyPrompt       string
+	Request                map[string]any
+	Response               map[string]any
 	Usage                  *smodel.Usage
 	Error                  error
 	RetryInfo              *Retry

@@ -1,39 +1,13 @@
 package model
 
 import (
-	"github.com/gogf/gf/v2/net/ghttp"
 	smodel "github.com/iimeta/fastapi-sdk/model"
 )
 
-type ImageReq struct {
-	Prompt         string `json:"prompt,omitempty"`
-	Model          string `json:"model,omitempty"`
-	N              int    `json:"n,omitempty"`
-	Quality        string `json:"quality,omitempty"`
-	Size           string `json:"size,omitempty"`
-	Style          string `json:"style,omitempty"`
-	ResponseFormat string `json:"response_format,omitempty"`
-	User           string `json:"user,omitempty"`
-}
-
 type ImageRes struct {
-	Created      int64                           `json:"created,omitempty"`
-	Data         []smodel.ImageResponseDataInner `json:"data,omitempty"`
-	Error        error                           `json:"err"`
-	TotalTime    int64                           `json:"-"`
-	InternalTime int64                           `json:"-"`
-	EnterTime    int64                           `json:"-"`
-}
-
-type ImageEditRequest struct {
-	Image          []*ghttp.UploadFile `json:"image,omitempty"`
-	Prompt         string              `json:"prompt,omitempty"`
-	Background     string              `json:"background,omitempty"`
-	Mask           *ghttp.UploadFile   `json:"mask,omitempty"`
-	Model          string              `json:"model,omitempty"`
-	N              int                 `json:"n,omitempty"`
-	Quality        string              `json:"quality,omitempty"`
-	ResponseFormat string              `json:"response_format,omitempty"`
-	Size           string              `json:"size,omitempty"`
-	User           string              `json:"user,omitempty"`
+	Data         []smodel.ImageResponseDataInner // 图像数据
+	Error        error                           // 错误信息
+	TotalTime    int64                           // 总时间
+	InternalTime int64                           // 内耗时间
+	EnterTime    int64                           // 进入时间
 }

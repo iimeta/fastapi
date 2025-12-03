@@ -7,7 +7,7 @@ import (
 
 // Moderations接口请求参数
 type ModerationsReq struct {
-	g.Meta `path:"/moderations" tags:"moderation" method:"post" summary:"moderations接口"`
+	g.Meta `path:"/moderations" tags:"moderation" method:"post" summary:"Moderations接口"`
 	smodel.ModerationRequest
 }
 

@@ -7,7 +7,7 @@ import (
 
 // Speech接口请求参数
 type SpeechReq struct {
-	g.Meta `path:"/speech" tags:"audio" method:"post" summary:"audio接口"`
+	g.Meta `path:"/speech" tags:"audio" method:"post" summary:"Speech接口"`
 	smodel.SpeechRequest
 }
 
@@ -18,7 +18,7 @@ type SpeechRes struct {
 
 // Transcriptions接口请求参数
 type TranscriptionsReq struct {
-	g.Meta `path:"/transcriptions" tags:"audio" method:"post" summary:"transcriptions接口"`
+	g.Meta `path:"/transcriptions" tags:"audio" method:"post" summary:"Transcriptions接口"`
 	smodel.AudioRequest
 	Duration float64 `json:"duration"`
 }

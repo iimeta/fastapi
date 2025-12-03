@@ -397,15 +397,15 @@ func imageGeneration(ctx context.Context, mak *MAK, billingData *common.BillingD
 		}
 	}
 
-	for _, pricing := range mak.ReqModel.Pricing.ImageGeneration {
+	for _, imageGeneration := range mak.ReqModel.Pricing.ImageGeneration {
 
-		if pricing.Quality == quality && pricing.Width == width && pricing.Height == height {
-			spend.ImageGeneration.Pricing = pricing
+		if imageGeneration.Quality == quality && imageGeneration.Width == width && imageGeneration.Height == height {
+			spend.ImageGeneration.Pricing = imageGeneration
 			break
 		}
 
-		if pricing.IsDefault {
-			spend.ImageGeneration.Pricing = pricing
+		if imageGeneration.IsDefault {
+			spend.ImageGeneration.Pricing = imageGeneration
 		}
 	}
 
@@ -543,13 +543,51 @@ func video(ctx context.Context, mak *MAK, billingData *common.BillingData, spend
 		spend.Video = new(common.VideoSpend)
 	}
 
+	var (
+		size   = billingData.Size
+		width  int
+		height int
+	)
+
+	if size != "" {
+
+		widthHeight := gstr.Split(size, `×`)
+
+		if len(widthHeight) != 2 {
+			widthHeight = gstr.Split(size, `x`)
+		}
+
+		if len(widthHeight) != 2 {
+			widthHeight = gstr.Split(size, `X`)
+		}
+
+		if len(widthHeight) != 2 {
+			widthHeight = gstr.Split(size, `*`)
+		}
+
+		if len(widthHeight) != 2 {
+			widthHeight = gstr.Split(size, `:`)
+		}
+
+		if len(widthHeight) == 2 {
+			width = gconv.Int(widthHeight[0])
+			height = gconv.Int(widthHeight[1])
+		}
+	}
+
 	for _, video := range mak.ReqModel.Pricing.Video {
+
+		if video.Width == width && video.Height == height {
+			spend.Video.Pricing = video
+			break
+		}
+
 		if video.IsDefault {
 			spend.Video.Pricing = video
 		}
 	}
 
-	spend.Video.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT * spend.Video.Pricing.OnceRatio))
+	spend.Video.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT*spend.Video.Pricing.OnceRatio)) * billingData.Seconds
 }
 
 // 搜索

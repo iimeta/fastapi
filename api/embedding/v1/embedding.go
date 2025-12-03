@@ -7,7 +7,7 @@ import (
 
 // Embeddings接口请求参数
 type EmbeddingsReq struct {
-	g.Meta `path:"/embeddings" tags:"embedding" method:"post" summary:"embeddings接口"`
+	g.Meta `path:"/embeddings" tags:"embedding" method:"post" summary:"Embeddings接口"`
 	smodel.EmbeddingRequest
 }
 

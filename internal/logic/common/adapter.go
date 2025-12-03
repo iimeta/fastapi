@@ -81,7 +81,7 @@ func NewModerationClient(ctx context.Context, model *model.Model, key, baseUrl, 
 }
 
 func NewConverter(ctx context.Context, provider string) sdk.Converter {
-	return sdk.NewConverter(ctx, &options.AdapterOptions{Provider: GetProviderCode(ctx, provider)})
+	return sdk.NewConverter(ctx, &options.AdapterOptions{Provider: provider})
 }
 
 func GetProviderCode(ctx context.Context, providerId string) string {

@@ -37,7 +37,7 @@ type LogMidjourney struct {
 	PromptEn             string                 `bson:"prompt_en,omitempty"`               // 英文提示(提问)
 	ImageUrl             string                 `bson:"image_url,omitempty"`               // 图像地址
 	Progress             string                 `bson:"progress,omitempty"`                // 进度
-	Response             interface{}            `bson:"response,omitempty"`                // 响应结果
+	Response             any                    `bson:"response,omitempty"`                // 响应结果
 	Spend                common.Spend           `bson:"spend,omitempty"`                   // 花费
 	ConnTime             int64                  `bson:"conn_time,omitempty"`               // 连接时间
 	Duration             int64                  `bson:"duration,omitempty"`                // 持续时间

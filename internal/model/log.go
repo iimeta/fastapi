@@ -47,6 +47,19 @@ type LogAudio struct {
 	Spend              mcommon.Spend
 }
 
+type LogVideo struct {
+	ReqModel           *Model
+	RealModel          *Model
+	ModelAgent         *ModelAgent
+	FallbackModelAgent *ModelAgent
+	FallbackModel      *Model
+	Key                *Key
+	VideoReq           *VideoReq
+	VideoRes           *VideoRes
+	RetryInfo          *mcommon.Retry
+	Spend              mcommon.Spend
+}
+
 type LogMidjourney struct {
 	ReqModel           *Model
 	RealModel          *Model
