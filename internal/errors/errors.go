@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
 	serrors "github.com/iimeta/fastapi-sdk/errors"
@@ -121,7 +121,7 @@ func Error(ctx context.Context, err error) (iFastApiError IFastApiError) {
 	}
 
 	if e, ok := err.(IFastApiError); ok {
-		return NewErrorf(e.Status(), e.ErrCode(), e.ErrMessage()+" TraceId: %s Timestamp: %d", e.ErrType(), e.ErrParam(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
+		return NewErrorf(e.Status(), e.ErrCode(), e.ErrMessage()+" TraceId: %s Timestamp: %d", e.ErrType(), e.ErrParam(), gtrace.GetTraceID(ctx), gtime.TimestampMilli()).(IFastApiError)
 	}
 
 	// 不屏蔽错误
@@ -133,15 +133,15 @@ func Error(ctx context.Context, err error) (iFastApiError IFastApiError) {
 
 				requestError := &serrors.RequestError{}
 				if As(err, &requestError) {
-					return NewErrorf(requestError.HttpStatusCode, e.ErrCode(), gstr.Split(gstr.Split(requestError.Err.Error(), " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", e.ErrType(), e.ErrParam(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
+					return NewErrorf(requestError.HttpStatusCode, e.ErrCode(), gstr.Split(gstr.Split(requestError.Err.Error(), " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", e.ErrType(), e.ErrParam(), gtrace.GetTraceID(ctx), gtime.TimestampMilli()).(IFastApiError)
 				}
 
 				apiError := &serrors.ApiError{}
 				if As(err, &apiError) {
-					return NewErrorf(apiError.HttpStatusCode, apiError.Code, gstr.Split(gstr.Split(apiError.Message, " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", apiError.Type, apiError.Param, gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
+					return NewErrorf(apiError.HttpStatusCode, apiError.Code, gstr.Split(gstr.Split(apiError.Message, " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", apiError.Type, apiError.Param, gtrace.GetTraceID(ctx), gtime.TimestampMilli()).(IFastApiError)
 				}
 
-				return NewErrorf(e.Status(), e.ErrCode(), gstr.Split(gstr.Split(err.Error(), " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", e.ErrType(), e.ErrParam(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
+				return NewErrorf(e.Status(), e.ErrCode(), gstr.Split(gstr.Split(err.Error(), " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", e.ErrType(), e.ErrParam(), gtrace.GetTraceID(ctx), gtime.TimestampMilli()).(IFastApiError)
 			}
 		}
 	}
@@ -149,7 +149,7 @@ func Error(ctx context.Context, err error) (iFastApiError IFastApiError) {
 	// 未知的错误, 用统一描述处理
 	e := ERR_UNKNOWN.(IFastApiError)
 
-	return NewErrorf(e.Status(), e.ErrCode(), e.ErrMessage()+" TraceId: %s Timestamp: %d", e.ErrType(), e.ErrParam(), gctx.CtxId(ctx), gtime.TimestampMilli()).(IFastApiError)
+	return NewErrorf(e.Status(), e.ErrCode(), e.ErrMessage()+" TraceId: %s Timestamp: %d", e.ErrType(), e.ErrParam(), gtrace.GetTraceID(ctx), gtime.TimestampMilli()).(IFastApiError)
 }
 
 func (e *FastApiError) Error() string {

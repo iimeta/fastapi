@@ -8,7 +8,7 @@ import (
 
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
-	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/utility/logger"
@@ -65,7 +65,7 @@ func SSEServer(ctx context.Context, data string) error {
 		return errors.New("Streaming unsupported")
 	}
 
-	r.Response.Header().Set("Trace-Id", gctx.CtxId(ctx))
+	r.Response.Header().Set("Trace-Id", gtrace.GetTraceID(ctx))
 	r.Response.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
 	r.Response.Header().Set("Cache-Control", "no-cache")
 	r.Response.Header().Set("Connection", "keep-alive")

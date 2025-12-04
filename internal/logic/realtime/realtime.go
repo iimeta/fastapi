@@ -9,6 +9,7 @@ import (
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
+	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
@@ -53,7 +54,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 	}()
 
 	header := http.Header{
-		"Trace-Id": {gctx.CtxId(ctx)},
+		"Trace-Id": {gtrace.GetTraceID(ctx)},
 	}
 
 	if swp := r.Header.Values("Sec-Websocket-Protocol"); len(swp) > 0 && gstr.Contains(swp[0], "realtime") {

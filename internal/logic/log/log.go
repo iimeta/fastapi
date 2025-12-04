@@ -8,7 +8,7 @@ import (
 	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
-	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
@@ -51,7 +51,7 @@ func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 	}
 
 	text := do.LogText{
-		TraceId:      gctx.CtxId(ctx),
+		TraceId:      gtrace.GetTraceID(ctx),
 		UserId:       service.Session().GetUserId(ctx),
 		AppId:        service.Session().GetAppId(ctx),
 		IsSmartMatch: textLog.IsSmartMatch,
@@ -430,7 +430,7 @@ func (s *sLog) Image(ctx context.Context, imageLog model.LogImage, retry ...int)
 	}
 
 	image := do.LogImage{
-		TraceId:        gctx.CtxId(ctx),
+		TraceId:        gtrace.GetTraceID(ctx),
 		UserId:         service.Session().GetUserId(ctx),
 		AppId:          service.Session().GetAppId(ctx),
 		Prompt:         imageLog.ImageReq.Prompt,
@@ -582,7 +582,7 @@ func (s *sLog) Audio(ctx context.Context, audioLog model.LogAudio, retry ...int)
 	}
 
 	audio := do.LogAudio{
-		TraceId:      gctx.CtxId(ctx),
+		TraceId:      gtrace.GetTraceID(ctx),
 		UserId:       service.Session().GetUserId(ctx),
 		AppId:        service.Session().GetAppId(ctx),
 		Input:        audioLog.AudioReq.Input,
@@ -723,7 +723,7 @@ func (s *sLog) Video(ctx context.Context, videoLog model.LogVideo, retry ...int)
 	}
 
 	video := do.LogVideo{
-		TraceId:      gctx.CtxId(ctx),
+		TraceId:      gtrace.GetTraceID(ctx),
 		UserId:       service.Session().GetUserId(ctx),
 		AppId:        service.Session().GetAppId(ctx),
 		RequestData:  videoLog.VideoReq.RequestData,
@@ -864,7 +864,7 @@ func (s *sLog) Midjourney(ctx context.Context, midjourneyLog model.LogMidjourney
 	}
 
 	midjourney := do.LogMidjourney{
-		TraceId:      gctx.CtxId(ctx),
+		TraceId:      gtrace.GetTraceID(ctx),
 		UserId:       service.Session().GetUserId(ctx),
 		AppId:        service.Session().GetAppId(ctx),
 		ReqUrl:       midjourneyLog.Response.ReqUrl,
@@ -1012,7 +1012,7 @@ func (s *sLog) General(ctx context.Context, generalLog model.LogGeneral, retry .
 	}
 
 	general := do.LogGeneral{
-		TraceId:      gctx.CtxId(ctx),
+		TraceId:      gtrace.GetTraceID(ctx),
 		UserId:       service.Session().GetUserId(ctx),
 		AppId:        service.Session().GetAppId(ctx),
 		RequestData:  generalLog.GeneralReq.RequestData,
