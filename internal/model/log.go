@@ -71,3 +71,16 @@ type LogMidjourney struct {
 	RetryInfo          *mcommon.Retry
 	Spend              mcommon.Spend
 }
+
+type LogGeneral struct {
+	ReqModel           *Model
+	RealModel          *Model
+	ModelAgent         *ModelAgent
+	FallbackModelAgent *ModelAgent
+	FallbackModel      *Model
+	Key                *Key
+	GeneralReq         *GeneralReq
+	GeneralRes         *GeneralRes
+	RetryInfo          *mcommon.Retry
+	Spend              mcommon.Spend
+}

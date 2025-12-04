@@ -34,7 +34,7 @@ func AfterHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	case 8:
 		videoHandler(ctx, mak, after)
 	default:
-		textHandler(ctx, mak, after)
+		generalHandler(ctx, mak, after)
 	}
 }
 
@@ -142,6 +142,7 @@ func textHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		CompletionsRes:     completionsRes,
 		RetryInfo:          after.RetryInfo,
 		Spend:              after.Spend,
+		IsSmartMatch:       after.IsSmartMatch,
 	})
 }
 
@@ -276,11 +277,11 @@ func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	}
 
 	videoReq := &model.VideoReq{
-		Request: after.Request,
+		RequestData: after.RequestData,
 	}
 
 	videoRes := &model.VideoRes{
-		Response:     after.Response,
+		ResponseData: after.ResponseData,
 		Error:        after.Error,
 		TotalTime:    after.TotalTime,
 		InternalTime: after.InternalTime,
@@ -354,6 +355,81 @@ func midjourneyHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandle
 		FallbackModel:      mak.FallbackModel,
 		Key:                mak.Key,
 		Response:           midjourneyResponse,
+		RetryInfo:          after.RetryInfo,
+		Spend:              after.Spend,
+	})
+}
+
+func generalHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
+
+	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
+
+		if after.ServiceTier == "" {
+			after.ServiceTier = after.ChatCompletionRes.ServiceTier
+			if after.ServiceTier == "" {
+				after.ServiceTier = after.ChatCompletionReq.ServiceTier
+			}
+		}
+
+		billingData := &mcommon.BillingData{
+			ChatCompletionRequest:  after.ChatCompletionReq,
+			EmbeddingRequest:       after.EmbeddingReq,
+			ModerationRequest:      after.ModerationReq,
+			Completion:             after.Completion,
+			ServiceTier:            after.ServiceTier,
+			ImageGenerationRequest: after.ImageGenerationRequest,
+			AudioInput:             after.AudioInput,
+			AudioMinute:            after.AudioMinute,
+			Seconds:                after.Seconds,
+			Size:                   after.Size,
+			Usage:                  after.Usage,
+		}
+
+		// 计算花费
+		after.Spend = Billing(ctx, mak, billingData)
+
+		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+			// 记录花费
+			if err := RecordSpend(ctx, after.Spend, mak); err != nil {
+				logger.Error(ctx, err)
+				panic(err)
+			}
+		}); err != nil {
+			logger.Error(ctx, err)
+		}
+	}
+
+	generalReq := &model.GeneralReq{
+		RequestData: after.RequestData,
+		Stream:      after.ChatCompletionReq.Stream,
+	}
+
+	generalRes := &model.GeneralRes{
+		ResponseData: after.ResponseData,
+		Completion:   after.Completion,
+		Error:        after.Error,
+		ConnTime:     after.ConnTime,
+		Duration:     after.Duration,
+		TotalTime:    after.TotalTime,
+		InternalTime: after.InternalTime,
+		EnterTime:    after.EnterTime,
+	}
+
+	if after.Spend.GroupId == "" && mak.Group != nil {
+		after.Spend.GroupId = mak.Group.Id
+		after.Spend.GroupName = mak.Group.Name
+		after.Spend.GroupDiscount = mak.Group.Discount
+	}
+
+	service.Log().General(ctx, model.LogGeneral{
+		ReqModel:           mak.ReqModel,
+		RealModel:          mak.RealModel,
+		ModelAgent:         mak.ModelAgent,
+		FallbackModelAgent: mak.FallbackModelAgent,
+		FallbackModel:      mak.FallbackModel,
+		Key:                mak.Key,
+		GeneralReq:         generalReq,
+		GeneralRes:         generalRes,
 		RetryInfo:          after.RetryInfo,
 		Spend:              after.Spend,
 	})

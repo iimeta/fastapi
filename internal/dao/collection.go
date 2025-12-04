@@ -16,5 +16,6 @@ const (
 	LOG_AUDIO      = "log_audio"
 	LOG_VIDEO      = "log_video"
 	LOG_MIDJOURNEY = "log_midjourney"
+	LOG_GENERAL    = "log_general"
 	SYS_CONFIG     = "sys_config"
 )

@@ -587,7 +587,8 @@ func video(ctx context.Context, mak *MAK, billingData *common.BillingData, spend
 		}
 	}
 
-	spend.Video.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT*spend.Video.Pricing.OnceRatio)) * billingData.Seconds
+	spend.Video.Seconds = billingData.Seconds
+	spend.Video.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT*spend.Video.Pricing.OnceRatio)) * spend.Video.Seconds
 }
 
 // 搜索

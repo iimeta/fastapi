@@ -54,8 +54,8 @@ func (s *sVideo) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				afterHandler := &mcommon.AfterHandler{
-					Request:      gconv.Map(params.VideoRequest),
-					Response:     gconv.Map(response),
+					RequestData:  gconv.Map(params.VideoRequest),
+					ResponseData: gconv.Map(response),
 					Seconds:      gconv.Int(params.Seconds),
 					Error:        err,
 					RetryInfo:    retryInfo,

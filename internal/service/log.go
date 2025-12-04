@@ -23,6 +23,8 @@ type (
 		Video(ctx context.Context, videoLog model.LogVideo, retry ...int)
 		// Midjourney日志
 		Midjourney(ctx context.Context, midjourneyLog model.LogMidjourney, retry ...int)
+		// 通用日志
+		General(ctx context.Context, generalLog model.LogGeneral, retry ...int)
 	}
 )
 

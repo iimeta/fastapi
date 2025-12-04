@@ -5,8 +5,8 @@ import (
 	"github.com/iimeta/fastapi/internal/model/common"
 )
 
-type LogVideo struct {
-	gmeta.Meta           `collection:"log_video" bson:"-"`
+type LogGeneral struct {
+	gmeta.Meta           `collection:"log_general" bson:"-"`
 	TraceId              string                 `bson:"trace_id,omitempty"`                // 日志ID
 	UserId               int                    `bson:"user_id,omitempty"`                 // 用户ID
 	AppId                int                    `bson:"app_id,omitempty"`                  // 应用ID
@@ -32,7 +32,11 @@ type LogVideo struct {
 	RealModel            string                 `bson:"real_model,omitempty"`              // 真实模型
 	RequestData          map[string]any         `bson:"request_data,omitempty"`            // 请求数据
 	ResponseData         map[string]any         `bson:"response_data,omitempty"`           // 响应数据
+	Stream               bool                   `bson:"stream,omitempty"`                  // 流式
+	Completion           string                 `bson:"completion,omitempty"`              // 补全(回答)
 	Spend                common.Spend           `bson:"spend,omitempty"`                   // 花费
+	ConnTime             int64                  `bson:"conn_time,omitempty"`               // 连接时间
+	Duration             int64                  `bson:"duration,omitempty"`                // 持续时间
 	TotalTime            int64                  `bson:"total_time,omitempty"`              // 总时间
 	InternalTime         int64                  `bson:"internal_time,omitempty"`           // 内耗时间
 	ReqTime              int64                  `bson:"req_time,omitempty"`                // 请求时间

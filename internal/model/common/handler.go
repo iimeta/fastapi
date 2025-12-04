@@ -27,8 +27,8 @@ type AfterHandler struct {
 	MidjourneyReqUrl       string
 	MidjourneyTaskId       string
 	MidjourneyPrompt       string
-	Request                map[string]any
-	Response               map[string]any
+	RequestData            map[string]any
+	ResponseData           map[string]any
 	Usage                  *smodel.Usage
 	Error                  error
 	RetryInfo              *Retry

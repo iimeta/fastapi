@@ -726,8 +726,8 @@ func (s *sLog) Video(ctx context.Context, videoLog model.LogVideo, retry ...int)
 		TraceId:      gctx.CtxId(ctx),
 		UserId:       service.Session().GetUserId(ctx),
 		AppId:        service.Session().GetAppId(ctx),
-		Request:      videoLog.VideoReq.Request,
-		Response:     videoLog.VideoRes.Response,
+		RequestData:  videoLog.VideoReq.RequestData,
+		ResponseData: videoLog.VideoRes.ResponseData,
 		Spend:        videoLog.Spend,
 		TotalTime:    videoLog.VideoRes.TotalTime,
 		InternalTime: videoLog.VideoRes.InternalTime,
@@ -833,7 +833,7 @@ func (s *sLog) Video(ctx context.Context, videoLog model.LogVideo, retry ...int)
 		logger.Errorf(ctx, "sLog Video error: %v", err)
 
 		if err.Error() == "an inserted document is too large" {
-			videoLog.VideoReq.Request = map[string]any{"error": err.Error()}
+			videoLog.VideoReq.RequestData = map[string]any{"error": err.Error()}
 		}
 
 		if len(retry) == 10 {
@@ -995,6 +995,151 @@ func (s *sLog) Midjourney(ctx context.Context, midjourneyLog model.LogMidjourney
 		logger.Errorf(ctx, "sLog Midjourney retry: %d", len(retry))
 
 		s.Midjourney(ctx, midjourneyLog, retry...)
+	}
+}
+
+// 通用日志
+func (s *sLog) General(ctx context.Context, generalLog model.LogGeneral, retry ...int) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sLog General time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	// 不记录此错误日志
+	if generalLog.GeneralRes.Error != nil && checkError(generalLog.GeneralRes.Error) {
+		return
+	}
+
+	general := do.LogGeneral{
+		TraceId:      gctx.CtxId(ctx),
+		UserId:       service.Session().GetUserId(ctx),
+		AppId:        service.Session().GetAppId(ctx),
+		RequestData:  generalLog.GeneralReq.RequestData,
+		ResponseData: generalLog.GeneralRes.ResponseData,
+		Stream:       generalLog.GeneralReq.Stream,
+		Completion:   generalLog.GeneralRes.Completion,
+		Spend:        generalLog.Spend,
+		ConnTime:     generalLog.GeneralRes.ConnTime,
+		Duration:     generalLog.GeneralRes.Duration,
+		TotalTime:    generalLog.GeneralRes.TotalTime,
+		InternalTime: generalLog.GeneralRes.InternalTime,
+		ReqTime:      generalLog.GeneralRes.EnterTime,
+		ReqDate:      gtime.NewFromTimeStamp(generalLog.GeneralRes.EnterTime).Format("Y-m-d"),
+		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
+		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
+		LocalIp:      util.GetLocalIp(),
+		Status:       1,
+		Host:         g.RequestFromCtx(ctx).GetHost(),
+		Rid:          service.Session().GetRid(ctx),
+	}
+
+	if generalLog.ReqModel != nil {
+		general.ProviderId = generalLog.ReqModel.ProviderId
+		if provider, err := service.Provider().GetCache(ctx, generalLog.ReqModel.ProviderId); err != nil {
+			logger.Error(ctx, err)
+		} else {
+			general.ProviderName = provider.Name
+		}
+		general.ModelId = generalLog.ReqModel.Id
+		general.ModelName = generalLog.ReqModel.Name
+		general.Model = generalLog.ReqModel.Model
+		general.ModelType = generalLog.ReqModel.Type
+	}
+
+	if generalLog.RealModel != nil {
+		general.IsEnablePresetConfig = generalLog.RealModel.IsEnablePresetConfig
+		general.PresetConfig = generalLog.RealModel.PresetConfig
+		general.IsEnableForward = generalLog.RealModel.IsEnableForward
+		general.ForwardConfig = generalLog.RealModel.ForwardConfig
+		general.IsEnableModelAgent = generalLog.RealModel.IsEnableModelAgent
+		general.RealModelId = generalLog.RealModel.Id
+		general.RealModelName = generalLog.RealModel.Name
+		general.RealModel = generalLog.RealModel.Model
+	}
+
+	if general.IsEnableModelAgent && generalLog.ModelAgent != nil {
+		general.ModelAgentId = generalLog.ModelAgent.Id
+		general.ModelAgent = &do.ModelAgent{
+			ProviderId: generalLog.ModelAgent.ProviderId,
+			Name:       generalLog.ModelAgent.Name,
+			BaseUrl:    generalLog.ModelAgent.BaseUrl,
+			Path:       generalLog.ModelAgent.Path,
+			Weight:     generalLog.ModelAgent.Weight,
+			Remark:     generalLog.ModelAgent.Remark,
+			Status:     generalLog.ModelAgent.Status,
+		}
+	}
+
+	if generalLog.FallbackModelAgent != nil {
+		general.IsEnableFallback = true
+		general.FallbackConfig = &mcommon.FallbackConfig{
+			ModelAgent:     generalLog.FallbackModelAgent.Id,
+			ModelAgentName: generalLog.FallbackModelAgent.Name,
+		}
+	}
+
+	if generalLog.FallbackModel != nil {
+		general.IsEnableFallback = true
+		if general.FallbackConfig == nil {
+			general.FallbackConfig = new(mcommon.FallbackConfig)
+		}
+		general.FallbackConfig.Model = generalLog.FallbackModel.Model
+		general.FallbackConfig.ModelName = generalLog.FallbackModel.Name
+	}
+
+	if generalLog.Key != nil {
+		general.Key = generalLog.Key.Key
+	}
+
+	if generalLog.GeneralRes.Error != nil {
+
+		general.ErrMsg = generalLog.GeneralRes.Error.Error()
+		openaiApiError := &serrors.ApiError{}
+		if errors.As(generalLog.GeneralRes.Error, &openaiApiError) {
+			general.ErrMsg = openaiApiError.Message
+		}
+
+		if common.IsAborted(generalLog.GeneralRes.Error) {
+			general.Status = 2
+		} else {
+			general.Status = -1
+		}
+	}
+
+	if generalLog.RetryInfo != nil {
+
+		general.IsRetry = generalLog.RetryInfo.IsRetry
+		general.Retry = &mcommon.Retry{
+			IsRetry:    generalLog.RetryInfo.IsRetry,
+			RetryCount: generalLog.RetryInfo.RetryCount,
+			ErrMsg:     generalLog.RetryInfo.ErrMsg,
+		}
+
+		if general.IsRetry {
+			general.Status = 3
+			general.ErrMsg = generalLog.RetryInfo.ErrMsg
+		}
+	}
+
+	if _, err := dao.LogGeneral.Insert(ctx, general); err != nil {
+		logger.Errorf(ctx, "sLog General error: %v", err)
+
+		if err.Error() == "an inserted document is too large" {
+			generalLog.GeneralReq.RequestData = map[string]any{"error": err.Error()}
+		}
+
+		if len(retry) == 10 {
+			panic(err)
+		}
+
+		retry = append(retry, 1)
+
+		time.Sleep(time.Duration(len(retry)*5) * time.Second)
+
+		logger.Errorf(ctx, "sLog General retry: %d", len(retry))
+
+		s.General(ctx, generalLog, retry...)
 	}
 }
 

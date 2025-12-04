@@ -29,8 +29,8 @@ type LogVideo struct {
 	RealModelId          string                 `bson:"real_model_id,omitempty"`           // 真实模型ID
 	RealModelName        string                 `bson:"real_model_name,omitempty"`         // 真实模型名称
 	RealModel            string                 `bson:"real_model,omitempty"`              // 真实模型
-	Request              map[string]any         `bson:"request,omitempty"`                 // 请求
-	Response             map[string]any         `bson:"response,omitempty"`                // 响应
+	RequestData          map[string]any         `bson:"request_data,omitempty"`            // 请求数据
+	ResponseData         map[string]any         `bson:"response_data,omitempty"`           // 响应数据
 	Spend                common.Spend           `bson:"spend,omitempty"`                   // 花费
 	TotalTime            int64                  `bson:"total_time,omitempty"`              // 总时间
 	InternalTime         int64                  `bson:"internal_time,omitempty"`           // 内耗时间
