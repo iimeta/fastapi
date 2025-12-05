@@ -79,7 +79,7 @@ func NewError(status int, code any, message, typ string, param any) error {
 	}
 }
 
-func NewErrorf(status int, code any, message, typ string, param any, args ...interface{}) error {
+func NewErrorf(status int, code any, message, typ string, param any, args ...any) error {
 	return &FastApiError{
 		Err: &serrors.ApiError{
 			HttpStatusCode: status,
@@ -184,7 +184,7 @@ func New(text string) error {
 	return errors.New(text)
 }
 
-func Newf(format string, args ...interface{}) error {
+func Newf(format string, args ...any) error {
 	return errors.New(fmt.Sprintf(format, args...))
 }
 

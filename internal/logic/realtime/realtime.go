@@ -17,6 +17,7 @@ import (
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/gorilla/websocket"
 	smodel "github.com/iimeta/fastapi-sdk/model"
+	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
@@ -54,7 +55,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 	}()
 
 	header := http.Header{
-		"Trace-Id": {gtrace.GetTraceID(ctx)},
+		consts.TRACE_ID: {gtrace.GetTraceID(ctx)},
 	}
 
 	if swp := r.Header.Values("Sec-Websocket-Protocol"); len(swp) > 0 && gstr.Contains(swp[0], "realtime") {

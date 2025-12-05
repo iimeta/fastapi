@@ -71,7 +71,7 @@ func Reload(ctx context.Context, sysConfig *entity.SysConfig) {
 	logger.Infof(ctx, "加载配置成功, 当前配置信息: %s", gjson.MustEncodeString(Cfg))
 }
 
-func Get(ctx context.Context, pattern string, def ...interface{}) (*gvar.Var, error) {
+func Get(ctx context.Context, pattern string, def ...any) (*gvar.Var, error) {
 
 	value, err := g.Cfg().Get(ctx, pattern, def...)
 	if err != nil {
@@ -81,7 +81,7 @@ func Get(ctx context.Context, pattern string, def ...interface{}) (*gvar.Var, er
 	return value, nil
 }
 
-func GetString(ctx context.Context, pattern string, def ...interface{}) string {
+func GetString(ctx context.Context, pattern string, def ...any) string {
 
 	value, err := Get(ctx, pattern, def...)
 	if err != nil {
@@ -91,7 +91,7 @@ func GetString(ctx context.Context, pattern string, def ...interface{}) string {
 	return value.String()
 }
 
-func GetInt(ctx context.Context, pattern string, def ...interface{}) int {
+func GetInt(ctx context.Context, pattern string, def ...any) int {
 
 	value, err := Get(ctx, pattern, def...)
 	if err != nil {
@@ -101,7 +101,7 @@ func GetInt(ctx context.Context, pattern string, def ...interface{}) int {
 	return value.Int()
 }
 
-func GetBool(ctx context.Context, pattern string, def ...interface{}) (bool, error) {
+func GetBool(ctx context.Context, pattern string, def ...any) (bool, error) {
 
 	value, err := Get(ctx, pattern, def...)
 	if err != nil {
@@ -111,7 +111,7 @@ func GetBool(ctx context.Context, pattern string, def ...interface{}) (bool, err
 	return value.Bool(), nil
 }
 
-func GetMapStrStr(ctx context.Context, pattern string, def ...interface{}) map[string]string {
+func GetMapStrStr(ctx context.Context, pattern string, def ...any) map[string]string {
 
 	value, err := Get(ctx, pattern, def...)
 	if err != nil {

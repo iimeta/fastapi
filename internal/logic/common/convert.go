@@ -59,7 +59,7 @@ func ConvResponsesToChatCompletionsRequest(request *ghttp.Request, isChatComplet
 	}
 
 	if responsesReq.Input != nil {
-		if value, ok := responsesReq.Input.([]interface{}); ok {
+		if value, ok := responsesReq.Input.([]any); ok {
 
 			inputs := make([]smodel.OpenAIResponsesInput, 0)
 			if err := gjson.Unmarshal(gjson.MustEncode(value), &inputs); err != nil {
@@ -256,9 +256,9 @@ func ConvChatCompletionsToResponsesRequest(ctx context.Context, body []byte) smo
 
 		responsesContent := make([]smodel.OpenAIResponsesContent, 0)
 
-		if multiContent, ok := message.Content.([]interface{}); ok {
+		if multiContent, ok := message.Content.([]any); ok {
 			for _, value := range multiContent {
-				if content, ok := value.(map[string]interface{}); ok {
+				if content, ok := value.(map[string]any); ok {
 
 					if content["type"] == "text" {
 						responsesContent = append(responsesContent, smodel.OpenAIResponsesContent{
@@ -271,7 +271,7 @@ func ConvChatCompletionsToResponsesRequest(ctx context.Context, body []byte) smo
 							Type: "input_image",
 						}
 
-						if imageUrl, ok := content["image_url"].(map[string]interface{}); ok {
+						if imageUrl, ok := content["image_url"].(map[string]any); ok {
 							imageContent.ImageUrl = gconv.String(imageUrl["url"])
 						}
 

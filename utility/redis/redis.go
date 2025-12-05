@@ -112,7 +112,7 @@ func Incr(ctx context.Context, key string) (int64, error) {
 	return master.Incr(ctx, key)
 }
 
-func Set(ctx context.Context, key string, value interface{}, option ...gredis.SetOption) (*gvar.Var, error) {
+func Set(ctx context.Context, key string, value any, option ...gredis.SetOption) (*gvar.Var, error) {
 	return master.Set(ctx, key, value, option...)
 }
 
@@ -140,7 +140,7 @@ func Del(ctx context.Context, keys ...string) (int64, error) {
 	return master.Del(ctx, keys...)
 }
 
-func HSet(ctx context.Context, key string, fields map[string]interface{}) (int64, error) {
+func HSet(ctx context.Context, key string, fields map[string]any) (int64, error) {
 	return master.HSet(ctx, key, fields)
 }
 
@@ -160,7 +160,7 @@ func HSetStrStr(ctx context.Context, key string, field, value string) (int64, er
 	return HSet(ctx, key, g.MapStrAny{field: value})
 }
 
-func HSetStrAny(ctx context.Context, key string, field string, value interface{}) (int64, error) {
+func HSetStrAny(ctx context.Context, key string, field string, value any) (int64, error) {
 	return HSet(ctx, key, g.MapStrAny{field: value})
 }
 
@@ -188,11 +188,11 @@ func HDel(ctx context.Context, key string, fields ...string) (int64, error) {
 	return master.HDel(ctx, key, fields...)
 }
 
-func SetEX(ctx context.Context, key string, value interface{}, ttlInSeconds int64) error {
+func SetEX(ctx context.Context, key string, value any, ttlInSeconds int64) error {
 	return master.SetEX(ctx, key, value, ttlInSeconds)
 }
 
-func SetNX(ctx context.Context, key string, value interface{}) (bool, error) {
+func SetNX(ctx context.Context, key string, value any) (bool, error) {
 	return master.SetNX(ctx, key, value)
 }
 
@@ -215,7 +215,7 @@ func Pipelined(ctx context.Context, pipe pipeliner) ([]redis.Cmder, error) {
 	})
 }
 
-func Publish(ctx context.Context, channel string, message interface{}) (int64, error) {
+func Publish(ctx context.Context, channel string, message any) (int64, error) {
 	return master.Publish(ctx, config.Cfg.Core.ChannelPrefix+channel, message)
 }
 
@@ -240,11 +240,11 @@ func PSubscribe(ctx context.Context, pattern string, patterns ...string) (gredis
 	return slave.PSubscribe(ctx, pattern, patterns...)
 }
 
-func RPush(ctx context.Context, key string, values ...interface{}) (int64, error) {
+func RPush(ctx context.Context, key string, values ...any) (int64, error) {
 	return master.RPush(ctx, key, values...)
 }
 
-func LPush(ctx context.Context, key string, values ...interface{}) (int64, error) {
+func LPush(ctx context.Context, key string, values ...any) (int64, error) {
 	return master.LPush(ctx, key, values...)
 }
 

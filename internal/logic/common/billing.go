@@ -174,10 +174,10 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 		billingData.Usage = new(smodel.Usage)
 
 		if mak.ReqModel.Type == 100 {
-			if multiContent, ok := billingData.ChatCompletionRequest.Messages[len(billingData.ChatCompletionRequest.Messages)-1].Content.([]interface{}); ok {
+			if multiContent, ok := billingData.ChatCompletionRequest.Messages[len(billingData.ChatCompletionRequest.Messages)-1].Content.([]any); ok {
 
 				for _, value := range multiContent {
-					if content, ok := value.(map[string]interface{}); ok {
+					if content, ok := value.(map[string]any); ok {
 						if content["type"] == "text" {
 							billingData.Usage.PromptTokens += TokensFromString(ctx, mak.ReqModel.Model, gconv.String(content))
 						}
@@ -444,7 +444,7 @@ func vision(ctx context.Context, mak *MAK, billingData *common.BillingData, spen
 		model = consts.DEFAULT_MODEL
 	}
 
-	if multiContent, ok := billingData.ChatCompletionRequest.Messages[len(billingData.ChatCompletionRequest.Messages)-1].Content.([]interface{}); ok {
+	if multiContent, ok := billingData.ChatCompletionRequest.Messages[len(billingData.ChatCompletionRequest.Messages)-1].Content.([]any); ok {
 
 		if spend.Vision == nil {
 			spend.Vision = new(common.VisionSpend)
@@ -452,9 +452,9 @@ func vision(ctx context.Context, mak *MAK, billingData *common.BillingData, spen
 
 		for _, value := range multiContent {
 
-			if content, ok := value.(map[string]interface{}); ok && content["type"] == "image_url" {
+			if content, ok := value.(map[string]any); ok && content["type"] == "image_url" {
 
-				if imageUrl, ok := content["image_url"].(map[string]interface{}); ok {
+				if imageUrl, ok := content["image_url"].(map[string]any); ok {
 
 					detail := imageUrl["detail"]
 
@@ -604,7 +604,7 @@ func search(ctx context.Context, mak *MAK, billingData *common.BillingData, spen
 
 	var searchContextSize string
 	if billingData.ChatCompletionRequest.WebSearchOptions != nil {
-		if content, ok := billingData.ChatCompletionRequest.WebSearchOptions.(map[string]interface{}); ok {
+		if content, ok := billingData.ChatCompletionRequest.WebSearchOptions.(map[string]any); ok {
 			searchContextSize = gconv.String(content["search_context_size"])
 		}
 	}

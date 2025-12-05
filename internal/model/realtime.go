@@ -57,20 +57,20 @@ type RealtimeResponse struct {
 			PrefixPaddingMs   int     `json:"prefix_padding_ms"`
 			SilenceDurationMs int     `json:"silence_duration_ms"`
 		} `json:"turn_detection"`
-		InputAudioFormat        string        `json:"input_audio_format"`
-		OutputAudioFormat       string        `json:"output_audio_format"`
-		InputAudioTranscription interface{}   `json:"input_audio_transcription"`
-		ToolChoice              string        `json:"tool_choice"`
-		Temperature             float64       `json:"temperature"`
-		MaxResponseOutputTokens any           `json:"max_response_output_tokens"`
-		Tools                   []interface{} `json:"tools"`
+		InputAudioFormat        string  `json:"input_audio_format"`
+		OutputAudioFormat       string  `json:"output_audio_format"`
+		InputAudioTranscription any     `json:"input_audio_transcription"`
+		ToolChoice              string  `json:"tool_choice"`
+		Temperature             float64 `json:"temperature"`
+		MaxResponseOutputTokens any     `json:"max_response_output_tokens"`
+		Tools                   []any   `json:"tools"`
 	} `json:"session"`
 
 	Response struct {
-		Object        string      `json:"object"`
-		Id            string      `json:"id"`
-		Status        string      `json:"status"`
-		StatusDetails interface{} `json:"status_details"`
+		Object        string `json:"object"`
+		Id            string `json:"id"`
+		Status        string `json:"status"`
+		StatusDetails any    `json:"status_details"`
 		Output        []struct {
 			Id      string `json:"id"`
 			Object  string `json:"object"`
@@ -110,10 +110,10 @@ type RealtimeResponse struct {
 	} `json:"rate_limits"`
 
 	Error struct {
-		Type    string      `json:"type"`
-		Code    string      `json:"code"`
-		Message string      `json:"message"`
-		Param   interface{} `json:"param"`
-		EventId interface{} `json:"event_id"`
+		Type    string `json:"type"`
+		Code    string `json:"code"`
+		Message string `json:"message"`
+		Param   any    `json:"param"`
+		EventId any    `json:"event_id"`
 	} `json:"error"`
 }

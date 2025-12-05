@@ -1,6 +1,7 @@
 package consts
 
 const (
+	TRACE_ID               = "Trace-Id"
 	HOST_KEY               = "host"
 	RID_KEY                = "rid"
 	USER_ID_KEY            = "user_id"

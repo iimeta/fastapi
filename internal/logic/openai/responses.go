@@ -106,7 +106,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 				params.Model = mak.ModelAgent.TargetModels[i]
 				mak.RealModel.Model = params.Model
 
-				data := make(map[string]interface{})
+				data := make(map[string]any)
 				if err = json.Unmarshal(body, &data); err != nil {
 					logger.Error(ctx, err)
 					return response, err
@@ -316,7 +316,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 				params.Model = mak.ModelAgent.TargetModels[i]
 				mak.RealModel.Model = params.Model
 
-				data := make(map[string]interface{})
+				data := make(map[string]any)
 				if err = json.Unmarshal(body, &data); err != nil {
 					logger.Error(ctx, err)
 					return err

@@ -10,7 +10,7 @@ import (
 type MongoDB struct {
 	Database      string
 	Collection    string
-	Filter        map[string]interface{}
+	Filter        map[string]any
 	SortFields    []string // 排序字段
 	Index         string   // 查询索引
 	IncludeFields []string // 包含字段
@@ -19,7 +19,7 @@ type MongoDB struct {
 	Pipeline      []bson.M // Aggregate/AggregateByPage
 }
 
-func (m *MongoDB) Find(ctx context.Context, result interface{}) error {
+func (m *MongoDB) Find(ctx context.Context, result any) error {
 
 	allowDiskUse := true
 	findOptions := []*options.FindOptions{{
@@ -46,7 +46,7 @@ func (m *MongoDB) Find(ctx context.Context, result interface{}) error {
 
 	if len(m.IncludeFields) > 0 {
 
-		projection := make(map[string]interface{})
+		projection := make(map[string]any)
 		for _, field := range m.IncludeFields {
 			projection[field] = 1
 		}
@@ -56,7 +56,7 @@ func (m *MongoDB) Find(ctx context.Context, result interface{}) error {
 
 	if len(m.ExcludeFields) > 0 {
 
-		projection := make(map[string]interface{})
+		projection := make(map[string]any)
 		for _, field := range m.ExcludeFields {
 			projection[field] = 0
 		}
@@ -72,7 +72,7 @@ func (m *MongoDB) Find(ctx context.Context, result interface{}) error {
 	return cursor.All(ctx, result)
 }
 
-func (m *MongoDB) FindOne(ctx context.Context, result interface{}) error {
+func (m *MongoDB) FindOne(ctx context.Context, result any) error {
 
 	var findOneOptions []*options.FindOneOptions
 
@@ -96,7 +96,7 @@ func (m *MongoDB) FindOne(ctx context.Context, result interface{}) error {
 
 	if len(m.IncludeFields) > 0 {
 
-		projection := make(map[string]interface{})
+		projection := make(map[string]any)
 		for _, field := range m.IncludeFields {
 			projection[field] = 1
 		}
@@ -106,7 +106,7 @@ func (m *MongoDB) FindOne(ctx context.Context, result interface{}) error {
 
 	if len(m.ExcludeFields) > 0 {
 
-		projection := make(map[string]interface{})
+		projection := make(map[string]any)
 		for _, field := range m.ExcludeFields {
 			projection[field] = 0
 		}
@@ -117,7 +117,7 @@ func (m *MongoDB) FindOne(ctx context.Context, result interface{}) error {
 	return client.Database(m.Database).Collection(m.Collection).FindOne(ctx, m.Filter, findOneOptions...).Decode(result)
 }
 
-func (m *MongoDB) FindByPage(ctx context.Context, paging *Paging, result interface{}) (err error) {
+func (m *MongoDB) FindByPage(ctx context.Context, paging *Paging, result any) (err error) {
 
 	collection := client.Database(m.Database).Collection(m.Collection)
 
@@ -161,7 +161,7 @@ func (m *MongoDB) FindByPage(ctx context.Context, paging *Paging, result interfa
 
 	if len(m.IncludeFields) > 0 {
 
-		projection := make(map[string]interface{})
+		projection := make(map[string]any)
 		for _, field := range m.IncludeFields {
 			projection[field] = 1
 		}
@@ -171,7 +171,7 @@ func (m *MongoDB) FindByPage(ctx context.Context, paging *Paging, result interfa
 
 	if len(m.ExcludeFields) > 0 {
 
-		projection := make(map[string]interface{})
+		projection := make(map[string]any)
 		for _, field := range m.ExcludeFields {
 			projection[field] = 0
 		}
@@ -187,7 +187,7 @@ func (m *MongoDB) FindByPage(ctx context.Context, paging *Paging, result interfa
 	return cursor.All(ctx, result)
 }
 
-func (m *MongoDB) InsertOne(ctx context.Context, document interface{}) (interface{}, error) {
+func (m *MongoDB) InsertOne(ctx context.Context, document any) (any, error) {
 
 	oneResult, err := client.Database(m.Database).Collection(m.Collection).InsertOne(ctx, document)
 	if err != nil {
@@ -197,7 +197,7 @@ func (m *MongoDB) InsertOne(ctx context.Context, document interface{}) (interfac
 	return oneResult.InsertedID, nil
 }
 
-func (m *MongoDB) InsertMany(ctx context.Context, documents []interface{}) ([]interface{}, error) {
+func (m *MongoDB) InsertMany(ctx context.Context, documents []any) ([]any, error) {
 
 	manyResult, err := client.Database(m.Database).Collection(m.Collection).InsertMany(ctx, documents)
 	if err != nil {
@@ -227,26 +227,26 @@ func (m *MongoDB) DeleteMany(ctx context.Context) (int64, error) {
 	return deleteResult.DeletedCount, nil
 }
 
-func (m *MongoDB) FindOneAndDelete(ctx context.Context, result interface{}) error {
+func (m *MongoDB) FindOneAndDelete(ctx context.Context, result any) error {
 	return client.Database(m.Database).Collection(m.Collection).FindOneAndDelete(ctx, m.Filter).Decode(result)
 }
 
-func (m *MongoDB) UpdateById(ctx context.Context, id, update interface{}, opts ...*options.UpdateOptions) error {
+func (m *MongoDB) UpdateById(ctx context.Context, id, update any, opts ...*options.UpdateOptions) error {
 	_, err := client.Database(m.Database).Collection(m.Collection).UpdateByID(ctx, id, update, opts...)
 	return err
 }
 
-func (m *MongoDB) UpdateOne(ctx context.Context, update interface{}, opts ...*options.UpdateOptions) error {
+func (m *MongoDB) UpdateOne(ctx context.Context, update any, opts ...*options.UpdateOptions) error {
 	_, err := client.Database(m.Database).Collection(m.Collection).UpdateOne(ctx, m.Filter, update, opts...)
 	return err
 }
 
-func (m *MongoDB) UpdateMany(ctx context.Context, update interface{}, opts ...*options.UpdateOptions) error {
+func (m *MongoDB) UpdateMany(ctx context.Context, update any, opts ...*options.UpdateOptions) error {
 	_, err := client.Database(m.Database).Collection(m.Collection).UpdateMany(ctx, m.Filter, update, opts...)
 	return err
 }
 
-func (m *MongoDB) FindOneAndUpdate(ctx context.Context, update interface{}, result interface{}, opts ...*options.FindOneAndUpdateOptions) error {
+func (m *MongoDB) FindOneAndUpdate(ctx context.Context, update any, result any, opts ...*options.FindOneAndUpdateOptions) error {
 	return client.Database(m.Database).Collection(m.Collection).FindOneAndUpdate(ctx, m.Filter, update, opts...).Decode(result)
 }
 
@@ -258,7 +258,7 @@ func (m *MongoDB) EstimatedDocumentCount(ctx context.Context) (int64, error) {
 	return client.Database(m.Database).Collection(m.Collection).EstimatedDocumentCount(ctx)
 }
 
-func (m *MongoDB) Aggregate(ctx context.Context, result interface{}, opts ...*options.AggregateOptions) error {
+func (m *MongoDB) Aggregate(ctx context.Context, result any, opts ...*options.AggregateOptions) error {
 
 	cursor, err := client.Database(m.Database).Collection(m.Collection).Aggregate(ctx, m.Pipeline, opts...)
 	if err != nil {
@@ -268,7 +268,7 @@ func (m *MongoDB) Aggregate(ctx context.Context, result interface{}, opts ...*op
 	return cursor.All(ctx, result)
 }
 
-func (m *MongoDB) AggregateByPage(ctx context.Context, countResult, result interface{}, opts ...*options.AggregateOptions) error {
+func (m *MongoDB) AggregateByPage(ctx context.Context, countResult, result any, opts ...*options.AggregateOptions) error {
 
 	countCursor, err := client.Database(m.Database).Collection(m.Collection).Aggregate(ctx, m.CountPipeline, opts...)
 	if err != nil {

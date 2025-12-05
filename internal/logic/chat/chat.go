@@ -479,7 +479,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 
 			if mak.ReqModel.IsEnableForward {
 
-				data := make(map[string]interface{})
+				data := make(map[string]any)
 				if err = gjson.Unmarshal(response.ResponseBytes, &data); err != nil {
 					logger.Error(ctx, err)
 					return err

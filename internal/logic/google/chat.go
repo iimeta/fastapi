@@ -136,7 +136,7 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 				params.Model = mak.ModelAgent.TargetModels[i]
 				mak.RealModel.Model = params.Model
 
-				data := make(map[string]interface{})
+				data := make(map[string]any)
 				if err = json.Unmarshal(body, &data); err != nil {
 					logger.Error(ctx, err)
 					return response, err
@@ -328,7 +328,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 				params.Model = mak.ModelAgent.TargetModels[i]
 				mak.RealModel.Model = params.Model
 
-				data := make(map[string]interface{})
+				data := make(map[string]any)
 				if err = json.Unmarshal(body, &data); err != nil {
 					logger.Error(ctx, err)
 					return err
@@ -544,7 +544,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 			}
 		}
 
-		data := make(map[string]interface{})
+		data := make(map[string]any)
 		if err = gjson.Unmarshal(response.ResponseBytes, &data); err != nil {
 			logger.Error(ctx, err)
 			return err
@@ -568,7 +568,7 @@ func convToChatCompletionRequest(request *ghttp.Request) smodel.ChatCompletionRe
 	messages := make([]smodel.ChatCompletionMessage, 0)
 	for _, content := range googleChatCompletionReq.Contents {
 
-		contents := make([]interface{}, 0)
+		contents := make([]any, 0)
 		for _, part := range content.Parts {
 
 			if part.Text != "" {

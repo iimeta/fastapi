@@ -136,7 +136,7 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 				params.Model = mak.ModelAgent.TargetModels[i]
 				mak.RealModel.Model = params.Model
 
-				data := make(map[string]interface{})
+				data := make(map[string]any)
 				if err = json.Unmarshal(body, &data); err != nil {
 					logger.Error(ctx, err)
 					return response, err
@@ -328,7 +328,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 				params.Model = mak.ModelAgent.TargetModels[i]
 				mak.RealModel.Model = params.Model
 
-				data := make(map[string]interface{})
+				data := make(map[string]any)
 				if err = json.Unmarshal(body, &data); err != nil {
 					logger.Error(ctx, err)
 					return err
@@ -562,12 +562,12 @@ func convToChatCompletionRequest(request *ghttp.Request) smodel.ChatCompletionRe
 	messages := make([]smodel.ChatCompletionMessage, 0)
 	for _, message := range anthropicChatCompletionReq.Messages {
 
-		if contents, ok := message.Content.([]interface{}); ok {
+		if contents, ok := message.Content.([]any); ok {
 
 			for _, value := range contents {
-				if content, ok := value.(map[string]interface{}); ok {
+				if content, ok := value.(map[string]any); ok {
 					if content["type"] == "image" {
-						if source, ok := content["source"].(map[string]interface{}); ok {
+						if source, ok := content["source"].(map[string]any); ok {
 							if source["data"] != nil {
 								content["type"] = "image_url"
 								content["image_url"] = g.MapStrAny{

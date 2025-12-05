@@ -84,17 +84,17 @@ func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 					if slices.Contains(config.Cfg.Log.TextRecords, "audio") {
 						text.Prompt = gconv.String(prompt)
 					} else {
-						if multiContent, ok := prompt.([]interface{}); ok {
+						if multiContent, ok := prompt.([]any); ok {
 
-							multiContents := make([]interface{}, 0)
+							multiContents := make([]any, 0)
 
 							for _, value := range multiContent {
 
-								if content, ok := value.(map[string]interface{}); ok {
+								if content, ok := value.(map[string]any); ok {
 
 									if content["type"] == "input_audio" {
 
-										if inputAudio, ok := content["input_audio"].(map[string]interface{}); ok {
+										if inputAudio, ok := content["input_audio"].(map[string]any); ok {
 
 											inputAudio = gmap.NewStrAnyMapFrom(inputAudio).MapCopy()
 											inputAudio["data"] = "[BASE64音频数据]"
@@ -122,17 +122,17 @@ func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 					if slices.Contains(config.Cfg.Log.TextRecords, "image") {
 						text.Prompt = gconv.String(prompt)
 					} else {
-						if multiContent, ok := prompt.([]interface{}); ok {
+						if multiContent, ok := prompt.([]any); ok {
 
-							multiContents := make([]interface{}, 0)
+							multiContents := make([]any, 0)
 
 							for _, value := range multiContent {
 
-								if content, ok := value.(map[string]interface{}); ok {
+								if content, ok := value.(map[string]any); ok {
 
 									if content["type"] == "image_url" {
 
-										if imageUrl, ok := content["image_url"].(map[string]interface{}); ok {
+										if imageUrl, ok := content["image_url"].(map[string]any); ok {
 
 											if !gstr.HasPrefix(gconv.String(imageUrl["url"]), "http") {
 
@@ -272,17 +272,17 @@ func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 
 			if !slices.Contains(config.Cfg.Log.TextRecords, "image") {
 
-				if multiContent, ok := content.([]interface{}); ok {
+				if multiContent, ok := content.([]any); ok {
 
-					multiContents := make([]interface{}, 0)
+					multiContents := make([]any, 0)
 
 					for _, value := range multiContent {
 
-						if content, ok := value.(map[string]interface{}); ok {
+						if content, ok := value.(map[string]any); ok {
 
 							if content["type"] == "image_url" {
 
-								if imageUrl, ok := content["image_url"].(map[string]interface{}); ok {
+								if imageUrl, ok := content["image_url"].(map[string]any); ok {
 
 									if !gstr.HasPrefix(gconv.String(imageUrl["url"]), "http") {
 
@@ -328,17 +328,17 @@ func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 
 			if !slices.Contains(config.Cfg.Log.TextRecords, "audio") {
 
-				if multiContent, ok := content.([]interface{}); ok {
+				if multiContent, ok := content.([]any); ok {
 
-					multiContents := make([]interface{}, 0)
+					multiContents := make([]any, 0)
 
 					for _, value := range multiContent {
 
-						if content, ok := value.(map[string]interface{}); ok {
+						if content, ok := value.(map[string]any); ok {
 
 							if content["type"] == "input_audio" {
 
-								if inputAudio, ok := content["input_audio"].(map[string]interface{}); ok {
+								if inputAudio, ok := content["input_audio"].(map[string]any); ok {
 
 									inputAudio = gmap.NewStrAnyMapFrom(inputAudio).MapCopy()
 									inputAudio["data"] = "[BASE64音频数据]"

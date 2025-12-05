@@ -12,6 +12,7 @@ import (
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/gogf/gf/v2/os/gcmd"
+	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
@@ -149,14 +150,17 @@ var (
 
 func beforeServeHook(r *ghttp.Request) {
 
-	if traceId := r.Header.Get("Trace-Id"); traceId != "" {
-		if ctx, _ := gtrace.WithTraceID(r.GetCtx(), traceId); ctx != nil {
-			r.SetCtx(ctx)
-		}
+	ctx := gctx.WithSpan(r.GetCtx(), "gctx.WithSpan")
+
+	if traceId := r.Header.Get(consts.TRACE_ID); traceId != "" {
+		ctx, _ = gtrace.WithTraceID(ctx, traceId)
 	}
 
+	r.SetCtx(ctx)
 	r.SetCtxVar(consts.HOST_KEY, r.GetHost())
+
 	logger.Infof(r.GetCtx(), "beforeServeHook ClientIp: %s, RemoteIp: %s, IsFile: %t, URI: %s", r.GetClientIp(), r.GetRemoteIp(), r.IsFileRequest(), r.RequestURI)
+
 	r.Response.CORSDefault()
 }
 
@@ -236,9 +240,9 @@ func middleware(r *ghttp.Request) {
 }
 
 type defaultHandlerResponse struct {
-	Code    any         `json:"code"    dc:"Error code"`
-	Message string      `json:"message" dc:"Error message"`
-	Data    interface{} `json:"data"    dc:"Result data for certain request according API definition"`
+	Code    any    `json:"code"    dc:"Error code"`
+	Message string `json:"message" dc:"Error message"`
+	Data    any    `json:"data"    dc:"Result data for certain request according API definition"`
 }
 
 func middlewareHandlerResponse(r *ghttp.Request) {

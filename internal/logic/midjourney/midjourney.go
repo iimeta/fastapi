@@ -175,7 +175,7 @@ func (s *sMidjourney) Submit(ctx context.Context, request *ghttp.Request, fallba
 		return response, err
 	}
 
-	data := map[string]interface{}{}
+	data := map[string]any{}
 	if err = gjson.Unmarshal(response.Response, &data); err != nil {
 		logger.Error(ctx, err)
 		return response, err
@@ -326,7 +326,7 @@ func (s *sMidjourney) Task(ctx context.Context, request *ghttp.Request, fallback
 		return response, err
 	}
 
-	data := map[string]interface{}{}
+	data := map[string]any{}
 	if err = gjson.Unmarshal(response.Response, &data); err != nil {
 		logger.Error(ctx, err)
 		return response, err
