@@ -7,7 +7,7 @@ import (
 type Pricing struct {
 	BillingRule     int                       `bson:"billing_rule,omitempty"      json:"billing_rule,omitempty"`      // 计费规则[1:按官方, 2:按系统]
 	BillingMethods  []int                     `bson:"billing_methods,omitempty"   json:"billing_methods,omitempty"`   // 计费方式[1:按Tokens, 2:按次]
-	BillingItems    []string                  `bson:"billing_items,omitempty"     json:"billing_items,omitempty"`     // 计费项[text:文本, text_cache:文本缓存, tiered_text:阶梯文本, tiered_text_cache:阶梯文本缓存, image:图像, image_generation:图像生成, image_cache:图像缓存, vision:识图, audio:音频, audio_cache:音频缓存, video:视频, search:搜索, midjourney:Midjourney, once:一次]
+	BillingItems    []string                  `bson:"billing_items,omitempty"     json:"billing_items,omitempty"`     // 计费项[text:文本, text_cache:文本缓存, tiered_text:阶梯文本, tiered_text_cache:阶梯文本缓存, image:图像, image_generation:图像生成, image_cache:图像缓存, vision:识图, audio:音频, audio_cache:音频缓存, video:视频, video_generation:视频生成, video_cache:视频缓存, search:搜索, midjourney:Midjourney, once:一次]
 	Text            []*TextPricing            `bson:"text,omitempty"              json:"text,omitempty"`              // 文本
 	TextCache       []*CachePricing           `bson:"text_cache,omitempty"        json:"text_cache,omitempty"`        // 文本缓存
 	TieredText      []*TextPricing            `bson:"tiered_text,omitempty"       json:"tiered_text,omitempty"`       // 阶梯文本
@@ -18,7 +18,9 @@ type Pricing struct {
 	Vision          []*VisionPricing          `bson:"vision,omitempty"            json:"vision,omitempty"`            // 识图
 	Audio           *AudioPricing             `bson:"audio,omitempty"             json:"audio,omitempty"`             // 音频
 	AudioCache      *CachePricing             `bson:"audio_cache,omitempty"       json:"audio_cache,omitempty"`       // 音频缓存
-	Video           []*VideoPricing           `bson:"video,omitempty"             json:"video,omitempty"`             // 视频
+	Video           *VideoPricing             `bson:"video,omitempty"             json:"video,omitempty"`             // 视频
+	VideoGeneration []*VideoGenerationPricing `bson:"video_generation,omitempty"  json:"video_generation,omitempty"`  // 视频生成
+	VideoCache      *CachePricing             `bson:"video_cache,omitempty"       json:"video_cache,omitempty"`       // 视频缓存
 	Search          []*SearchPricing          `bson:"search,omitempty"            json:"search,omitempty"`            // 搜索
 	Midjourney      []*MidjourneyPricing      `bson:"midjourney,omitempty"        json:"midjourney,omitempty"`        // Midjourney
 	Once            *OncePricing              `bson:"once,omitempty"              json:"once,omitempty"`              // 一次
@@ -67,6 +69,11 @@ type AudioPricing struct {
 }
 
 type VideoPricing struct {
+	InputRatio  float64 `bson:"input_ratio"  json:"input_ratio,omitempty"`  // 输入倍率
+	OutputRatio float64 `bson:"output_ratio" json:"output_ratio,omitempty"` // 输出倍率
+}
+
+type VideoGenerationPricing struct {
 	Width     int     `bson:"width,omitempty"      json:"width,omitempty"`      // 宽度
 	Height    int     `bson:"height,omitempty"     json:"height,omitempty"`     // 高度
 	OnceRatio float64 `bson:"once_ratio"           json:"once_ratio,omitempty"` // 一次倍率
@@ -109,7 +116,7 @@ type BillingData struct {
 type Spend struct {
 	BillingRule      int                   `bson:"billing_rule,omitempty"       json:"billing_rule,omitempty"`       // 计费规则[1:按官方, 2:按系统]
 	BillingMethods   []int                 `bson:"billing_methods,omitempty"    json:"billing_methods,omitempty"`    // 计费方式[1:按Tokens, 2:按次]
-	BillingItems     []string              `bson:"billing_items,omitempty"      json:"billing_items,omitempty"`      // 计费项[text:文本, text_cache:文本缓存, tiered_text:阶梯文本, tiered_text_cache:阶梯文本缓存, image:图像, image_generation:图像生成, image_cache:图像缓存, vision:识图, audio:音频, audio_cache:音频缓存, video:视频, search:搜索, midjourney:Midjourney, once:一次]
+	BillingItems     []string              `bson:"billing_items,omitempty"      json:"billing_items,omitempty"`      // 计费项[text:文本, text_cache:文本缓存, tiered_text:阶梯文本, tiered_text_cache:阶梯文本缓存, image:图像, image_generation:图像生成, image_cache:图像缓存, vision:识图, audio:音频, audio_cache:音频缓存, video:视频, video_generation:视频生成, video_cache:视频缓存, search:搜索, midjourney:Midjourney, once:一次]
 	Text             *TextSpend            `bson:"text,omitempty"               json:"text,omitempty"`               // 文本
 	TextCache        *CacheSpend           `bson:"text_cache,omitempty"         json:"text_cache,omitempty"`         // 文本缓存
 	TieredText       *TextSpend            `bson:"tiered_text,omitempty"        json:"tiered_text,omitempty"`        // 阶梯文本
@@ -121,6 +128,8 @@ type Spend struct {
 	Audio            *AudioSpend           `bson:"audio,omitempty"              json:"audio,omitempty"`              // 音频
 	AudioCache       *CacheSpend           `bson:"audio_cache,omitempty"        json:"audio_cache,omitempty"`        // 音频缓存
 	Video            *VideoSpend           `bson:"video,omitempty"              json:"video,omitempty"`              // 视频
+	VideoGeneration  *VideoGenerationSpend `bson:"video_generation,omitempty"   json:"video_generation,omitempty"`   // 视频生成
+	VideoCache       *CacheSpend           `bson:"video_cache,omitempty"        json:"video_cache,omitempty"`        // 视频缓存
 	Search           *SearchSpend          `bson:"search,omitempty"             json:"search,omitempty"`             // 搜索
 	Midjourney       *MidjourneySpend      `bson:"midjourney,omitempty"         json:"midjourney,omitempty"`         // Midjourney
 	Once             *OnceSpend            `bson:"once,omitempty"               json:"once,omitempty"`               // 一次
@@ -170,9 +179,16 @@ type AudioSpend struct {
 }
 
 type VideoSpend struct {
-	Pricing     *VideoPricing `bson:"pricing,omitempty"      json:"pricing,omitempty"`      // 定价
-	Seconds     int           `bson:"seconds,omitempty"      json:"seconds,omitempty"`      // 秒数
-	SpendTokens int           `bson:"spend_tokens,omitempty" json:"spend_tokens,omitempty"` // 花费Token数
+	Pricing      *VideoPricing `bson:"pricing,omitempty"       json:"pricing,omitempty"`       // 定价
+	InputTokens  int           `bson:"input_tokens,omitempty"  json:"input_tokens,omitempty"`  // 输入Token数
+	OutputTokens int           `bson:"output_tokens,omitempty" json:"output_tokens,omitempty"` // 输出Token数
+	SpendTokens  float64       `bson:"spend_tokens,omitempty"  json:"spend_tokens,omitempty"`  // 花费Token数
+}
+
+type VideoGenerationSpend struct {
+	Pricing     *VideoGenerationPricing `bson:"pricing,omitempty"      json:"pricing,omitempty"`      // 定价
+	Seconds     int                     `bson:"seconds,omitempty"      json:"seconds,omitempty"`      // 秒数
+	SpendTokens int                     `bson:"spend_tokens,omitempty" json:"spend_tokens,omitempty"` // 花费Token数
 }
 
 type SearchSpend struct {

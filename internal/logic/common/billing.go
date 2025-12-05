@@ -46,8 +46,8 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 			audio(ctx, mak, billingData, &spend)
 		case "audio_cache":
 			audioCache(ctx, mak, billingData, &spend)
-		case "video":
-			video(ctx, mak, billingData, &spend)
+		case "video_generation":
+			videoGeneration(ctx, mak, billingData, &spend)
 		case "search":
 			search(ctx, mak, billingData, &spend)
 		case "midjourney":
@@ -97,8 +97,8 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 		spend.TotalSpendTokens += spend.AudioCache.SpendTokens
 	}
 
-	if spend.Video != nil {
-		spend.TotalSpendTokens += spend.Video.SpendTokens
+	if spend.VideoGeneration != nil {
+		spend.TotalSpendTokens += spend.VideoGeneration.SpendTokens
 	}
 
 	if spend.Search != nil {
@@ -536,11 +536,11 @@ func audioCache(ctx context.Context, mak *MAK, billingData *common.BillingData, 
 	spend.AudioCache.SpendTokens = int(math.Ceil(float64(spend.AudioCache.ReadTokens) * spend.AudioCache.Pricing.ReadRatio))
 }
 
-// 视频
-func video(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
+// 视频生成
+func videoGeneration(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
 
-	if spend.Video == nil {
-		spend.Video = new(common.VideoSpend)
+	if spend.VideoGeneration == nil {
+		spend.VideoGeneration = new(common.VideoGenerationSpend)
 	}
 
 	var (
@@ -575,20 +575,20 @@ func video(ctx context.Context, mak *MAK, billingData *common.BillingData, spend
 		}
 	}
 
-	for _, video := range mak.ReqModel.Pricing.Video {
+	for _, videoGeneration := range mak.ReqModel.Pricing.VideoGeneration {
 
-		if video.Width == width && video.Height == height {
-			spend.Video.Pricing = video
+		if videoGeneration.Width == width && videoGeneration.Height == height {
+			spend.VideoGeneration.Pricing = videoGeneration
 			break
 		}
 
-		if video.IsDefault {
-			spend.Video.Pricing = video
+		if videoGeneration.IsDefault {
+			spend.VideoGeneration.Pricing = videoGeneration
 		}
 	}
 
-	spend.Video.Seconds = billingData.Seconds
-	spend.Video.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT*spend.Video.Pricing.OnceRatio)) * spend.Video.Seconds
+	spend.VideoGeneration.Seconds = billingData.Seconds
+	spend.VideoGeneration.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT*spend.VideoGeneration.Pricing.OnceRatio)) * spend.VideoGeneration.Seconds
 }
 
 // 搜索
