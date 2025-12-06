@@ -12,7 +12,6 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
-	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	sconsts "github.com/iimeta/fastapi-sdk/consts"
 	smodel "github.com/iimeta/fastapi-sdk/model"
@@ -150,13 +149,6 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 
 				break
 			}
-		}
-	}
-
-	if mak.Path == "" {
-		mak.Path = request.RequestURI
-		if gstr.HasSuffix(mak.BaseUrl, "/v1") {
-			mak.Path = mak.Path[3:]
 		}
 	}
 
@@ -342,13 +334,6 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 
 				break
 			}
-		}
-	}
-
-	if mak.Path == "" {
-		mak.Path = request.RequestURI
-		if gstr.HasSuffix(mak.BaseUrl, "/v1") {
-			mak.Path = mak.Path[3:]
 		}
 	}
 

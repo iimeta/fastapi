@@ -12,7 +12,6 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
-	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/errors"
@@ -125,13 +124,6 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 
 	if isChatCompletions {
 		body = gjson.MustEncode(common.ConvChatCompletionsToResponsesRequest(ctx, body))
-	}
-
-	if mak.Path == "" {
-		mak.Path = request.RequestURI
-		if gstr.HasSuffix(mak.BaseUrl, "/v1") {
-			mak.Path = mak.Path[3:]
-		}
 	}
 
 	response, err = common.NewOpenAIAdapter(ctx, mak, false).Responses(ctx, body)
@@ -335,13 +327,6 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 
 	if isChatCompletions {
 		body = gjson.MustEncode(common.ConvChatCompletionsToResponsesRequest(ctx, body))
-	}
-
-	if mak.Path == "" {
-		mak.Path = request.RequestURI
-		if gstr.HasSuffix(mak.BaseUrl, "/v1") {
-			mak.Path = mak.Path[3:]
-		}
 	}
 
 	response, err := common.NewOpenAIAdapter(ctx, mak, true).ResponsesStream(ctx, body)

@@ -43,10 +43,6 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool, isOfficialFormat ...
 
 func NewOpenAIAdapter(ctx context.Context, mak *MAK, isLong bool) *openai.OpenAI {
 
-	if mak.Path == "" {
-		mak.Path = "/responses"
-	}
-
 	options := &options.AdapterOptions{
 		Provider:                GetProviderCode(ctx, mak.Provider),
 		Model:                   mak.RealModel.Model,

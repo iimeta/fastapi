@@ -7,7 +7,6 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
-	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	smodel "github.com/iimeta/fastapi-sdk/model"
 	"github.com/iimeta/fastapi/internal/logic/common"
@@ -95,13 +94,6 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 				mak.RealModel.Model = request.Model
 				break
 			}
-		}
-	}
-
-	if mak.Path == "" {
-		mak.Path = g.RequestFromCtx(ctx).RequestURI
-		if gstr.HasSuffix(mak.BaseUrl, "/v1") {
-			mak.Path = mak.Path[3:]
 		}
 	}
 
