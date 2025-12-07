@@ -152,7 +152,7 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 		}
 	}
 
-	response, err = common.NewAdapter(ctx, mak, false, true).ChatCompletions(ctx, body)
+	response, err = common.NewOfficialAdapter(ctx, mak, false, sconsts.PROVIDER_GOOGLE).ChatCompletions(ctx, body)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -337,7 +337,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 		}
 	}
 
-	response, err := common.NewAdapter(ctx, mak, true, true).ChatCompletionsStream(ctx, body)
+	response, err := common.NewOfficialAdapter(ctx, mak, true, sconsts.PROVIDER_GOOGLE).ChatCompletionsStream(ctx, body)
 	if err != nil {
 		logger.Error(ctx, err)
 

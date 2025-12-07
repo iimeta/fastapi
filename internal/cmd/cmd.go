@@ -82,11 +82,12 @@ var (
 				v1.Group("/", func(g *ghttp.RouterGroup) {
 					g.Bind(
 						dashboard.NewV1(),
+						openai.NewV1(),
+						anthropic.NewV1(),
+						google.NewV1(),
 						embedding.NewV1(),
 						moderation.NewV1(),
 						file.NewV1(),
-						anthropic.NewV1(),
-						openai.NewV1(),
 						general.NewV1(),
 					)
 				})
@@ -122,19 +123,19 @@ var (
 				})
 			})
 
-			s.Group("/mj**", func(v1 *ghttp.RouterGroup) {
-				v1.Middleware(middlewareHandlerResponse)
-				v1.Middleware(middleware)
-				v1.Bind(
-					midjourney.NewV1(),
-				)
-			})
-
 			s.Group("/v1beta", func(v1 *ghttp.RouterGroup) {
 				v1.Middleware(middlewareHandlerResponse)
 				v1.Middleware(middleware)
 				v1.Bind(
 					google.NewV1(),
+				)
+			})
+
+			s.Group("/mj**", func(v1 *ghttp.RouterGroup) {
+				v1.Middleware(middlewareHandlerResponse)
+				v1.Middleware(middleware)
+				v1.Bind(
+					midjourney.NewV1(),
 				)
 			})
 
@@ -177,20 +178,25 @@ func middleware(r *ghttp.Request) {
 	logger.Debugf(r.GetCtx(), "r.Header: %v", r.Header)
 
 	secretKey := strings.TrimPrefix(r.GetHeader("Authorization"), "Bearer ")
+
 	if secretKey == "" {
-		secretKey = r.GetHeader(config.Cfg.Midjourney.ApiSecretHeader)
+		if key := r.Get("key"); key != nil {
+			secretKey = key.String()
+		}
 	}
 
 	if secretKey == "" {
-		secretKey = r.Get("token").String()
-	}
-
-	if secretKey == "" {
-		secretKey = r.Get("key").String()
+		if token := r.Get("token"); token != nil {
+			secretKey = token.String()
+		}
 	}
 
 	if secretKey == "" {
 		secretKey = r.Header.Get("x-api-key")
+	}
+
+	if secretKey == "" {
+		secretKey = r.GetHeader(config.Cfg.Midjourney.ApiSecretHeader)
 	}
 
 	if secretKey == "" {

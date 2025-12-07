@@ -6,6 +6,7 @@ import (
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/iimeta/fastapi-sdk"
+	sconsts "github.com/iimeta/fastapi-sdk/consts"
 	"github.com/iimeta/fastapi-sdk/openai"
 	"github.com/iimeta/fastapi-sdk/options"
 	"github.com/iimeta/fastapi/internal/config"
@@ -14,7 +15,7 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 )
 
-func NewAdapter(ctx context.Context, mak *MAK, isLong bool, isOfficialFormat ...bool) sdk.Adapter {
+func NewAdapter(ctx context.Context, mak *MAK, isLong bool) sdk.Adapter {
 
 	options := &options.AdapterOptions{
 		Provider:                GetProviderCode(ctx, mak.Provider),
@@ -24,7 +25,7 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool, isOfficialFormat ...
 		Path:                    mak.Path,
 		Timeout:                 config.Cfg.Base.ShortTimeout * time.Second,
 		ProxyUrl:                config.Cfg.Http.ProxyUrl,
-		IsOfficialFormatRequest: (len(isOfficialFormat) > 0 && isOfficialFormat[0]) || mak.ReqModel.RequestDataFormat == 2,
+		IsOfficialFormatRequest: mak.ReqModel.RequestDataFormat == 2,
 	}
 
 	if isLong {
@@ -36,7 +37,34 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool, isOfficialFormat ...
 		options.IsSupportStream = &mak.RealModel.PresetConfig.IsSupportStream
 	}
 
-	g.RequestFromCtx(ctx).SetCtxVar("is_official_format_response", (len(isOfficialFormat) > 0 && isOfficialFormat[0]) || mak.ReqModel.ResponseDataFormat == 2)
+	g.RequestFromCtx(ctx).SetCtxVar("is_official_format_response", mak.ReqModel.ResponseDataFormat == 2)
+
+	return sdk.NewAdapter(ctx, options)
+}
+
+func NewOfficialAdapter(ctx context.Context, mak *MAK, isLong bool, provider string) sdk.Adapter {
+
+	options := &options.AdapterOptions{
+		Provider:                provider,
+		Model:                   mak.RealModel.Model,
+		Key:                     mak.RealKey,
+		BaseUrl:                 mak.BaseUrl,
+		Path:                    mak.Path,
+		Timeout:                 config.Cfg.Base.ShortTimeout * time.Second,
+		ProxyUrl:                config.Cfg.Http.ProxyUrl,
+		IsOfficialFormatRequest: true,
+	}
+
+	if isLong {
+		options.Timeout = config.Cfg.Base.LongTimeout * time.Second
+	}
+
+	if mak.RealModel.IsEnablePresetConfig {
+		options.IsSupportSystemRole = &mak.RealModel.PresetConfig.IsSupportSystemRole
+		options.IsSupportStream = &mak.RealModel.PresetConfig.IsSupportStream
+	}
+
+	g.RequestFromCtx(ctx).SetCtxVar("is_official_format_response", true)
 
 	return sdk.NewAdapter(ctx, options)
 }
@@ -44,7 +72,7 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool, isOfficialFormat ...
 func NewOpenAIAdapter(ctx context.Context, mak *MAK, isLong bool) *openai.OpenAI {
 
 	options := &options.AdapterOptions{
-		Provider:                GetProviderCode(ctx, mak.Provider),
+		Provider:                sconsts.PROVIDER_OPENAI,
 		Model:                   mak.RealModel.Model,
 		Key:                     mak.RealKey,
 		BaseUrl:                 mak.BaseUrl,
