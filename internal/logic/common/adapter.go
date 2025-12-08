@@ -5,8 +5,10 @@ import (
 	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi-sdk"
 	sconsts "github.com/iimeta/fastapi-sdk/consts"
+	"github.com/iimeta/fastapi-sdk/general"
 	"github.com/iimeta/fastapi-sdk/openai"
 	"github.com/iimeta/fastapi-sdk/options"
 	"github.com/iimeta/fastapi/internal/config"
@@ -15,7 +17,22 @@ import (
 	"github.com/iimeta/fastapi/utility/logger"
 )
 
-func NewAdapter(ctx context.Context, mak *MAK, isLong bool) sdk.Adapter {
+func NewAdapter(ctx context.Context, mak *MAK, isLong bool) (adapter sdk.Adapter) {
+
+	if mak.Path == "" {
+		defer func() {
+			if general, isGeneral := adapter.(*general.General); isGeneral {
+				if general.Path == "" {
+					general.Path = g.RequestFromCtx(ctx).RequestURI
+					if gstr.HasSuffix(general.BaseUrl, "/v1beta") {
+						general.Path = general.Path[7:]
+					} else if gstr.HasSuffix(general.BaseUrl, "/v1") {
+						general.Path = general.Path[3:]
+					}
+				}
+			}
+		}()
+	}
 
 	options := &options.AdapterOptions{
 		Provider:                GetProviderCode(ctx, mak.Provider),
