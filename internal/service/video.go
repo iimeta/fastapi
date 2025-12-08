@@ -16,7 +16,7 @@ import (
 type (
 	IVideo interface {
 		// Create
-		Create(ctx context.Context, params *v1.CreateReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.VideoResponse, err error)
+		Create(ctx context.Context, params *v1.CreateReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.VideoJobResponse, err error)
 	}
 )
 

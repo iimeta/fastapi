@@ -28,7 +28,7 @@ func New() service.IVideo {
 }
 
 // Create
-func (s *sVideo) Create(ctx context.Context, params *v1.CreateReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.VideoResponse, err error) {
+func (s *sVideo) Create(ctx context.Context, params *v1.CreateReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.VideoJobResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -53,7 +53,7 @@ func (s *sVideo) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				afterHandler := &mcommon.AfterHandler{
-					RequestData:  gconv.Map(params.VideoRequest),
+					RequestData:  gconv.Map(params.VideoCreateRequest),
 					ResponseData: gconv.Map(response),
 					Seconds:      gconv.Int(params.Seconds),
 					Error:        err,
@@ -89,7 +89,7 @@ func (s *sVideo) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 		}
 	}
 
-	response, err = common.NewAdapter(ctx, mak, false).VideoCreate(ctx, request.VideoRequest)
+	response, err = common.NewAdapter(ctx, mak, false).VideoCreate(ctx, request.VideoCreateRequest)
 	if err != nil {
 		logger.Error(ctx, err)
 
