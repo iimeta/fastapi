@@ -244,6 +244,8 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 		retryInfo  *mcommon.Retry
 	)
 
+	params.Stream = true
+
 	defer func() {
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
