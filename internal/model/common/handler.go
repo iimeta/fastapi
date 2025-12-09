@@ -20,6 +20,8 @@ type AfterHandler struct {
 	ChatCompletionRes      smodel.ChatCompletionResponse
 	Completion             string
 	ServiceTier            string
+	Action                 string
+	VideoId                string
 	Seconds                int
 	Size                   string
 	MidjourneyPath         string

@@ -10,6 +10,7 @@ import (
 	"github.com/gogf/gf/v2/util/gconv"
 	smodel "github.com/iimeta/fastapi-sdk/model"
 	v1 "github.com/iimeta/fastapi/api/video/v1"
+	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
@@ -55,9 +56,12 @@ func (s *sVideo) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				afterHandler := &mcommon.AfterHandler{
+					Action:       consts.ACTION_CREATE,
+					VideoId:      response.Id,
+					Seconds:      gconv.Int(params.Seconds),
+					Size:         params.Size,
 					RequestData:  gconv.Map(params.VideoCreateRequest),
 					ResponseData: gconv.Map(response),
-					Seconds:      gconv.Int(params.Seconds),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,

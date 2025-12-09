@@ -4,12 +4,16 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
+	"github.com/iimeta/fastapi/internal/consts"
+	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/model"
 	mcommon "github.com/iimeta/fastapi/internal/model/common"
+	"github.com/iimeta/fastapi/internal/model/do"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 )
@@ -273,6 +277,31 @@ func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 			}
 		}); err != nil {
 			logger.Error(ctx, err)
+		}
+
+		if after.Action == consts.ACTION_CREATE || after.Action == consts.ACTION_REMIX {
+
+			taskVideo := do.TaskVideo{
+				TraceId: gtrace.GetTraceID(ctx),
+				UserId:  service.Session().GetUserId(ctx),
+				AppId:   service.Session().GetAppId(ctx),
+				Model:   mak.ReqModel.Name,
+				VideoId: after.VideoId,
+				Status:  "queued",
+				Rid:     service.Session().GetRid(ctx),
+			}
+
+			if after.Spend.VideoGeneration != nil {
+				taskVideo.Seconds = after.Spend.VideoGeneration.Seconds
+				if after.Spend.VideoGeneration.Pricing != nil {
+					taskVideo.Width = after.Spend.VideoGeneration.Pricing.Width
+					taskVideo.Height = after.Spend.VideoGeneration.Pricing.Height
+				}
+			}
+
+			if _, err := dao.TaskVideo.Insert(ctx, taskVideo); err != nil {
+				logger.Error(ctx, err)
+			}
 		}
 	}
 

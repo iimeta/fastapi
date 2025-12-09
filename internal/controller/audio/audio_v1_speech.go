@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/api/audio/v1"
 	"github.com/iimeta/fastapi/internal/service"
@@ -24,7 +25,7 @@ func (c *ControllerV1) Speech(ctx context.Context, req *v1.SpeechReq) (res *v1.S
 		return nil, err
 	}
 
-	g.RequestFromCtx(ctx).Response.ServeContent("speech.mp3", time.Now(), bytes.NewReader(response.Data))
+	g.RequestFromCtx(ctx).Response.ServeContent(gtrace.GetTraceID(ctx)+"_speech.mp3", time.Now(), bytes.NewReader(response.Data))
 
 	return
 }

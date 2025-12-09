@@ -24,7 +24,7 @@ func (c *ControllerV1) Content(ctx context.Context, req *v1.ContentReq) (res *v1
 		return nil, err
 	}
 
-	g.RequestFromCtx(ctx).Response.ServeContent("video.mp4", time.Now(), bytes.NewReader(response.Data))
+	g.RequestFromCtx(ctx).Response.ServeContent(req.VideoId+"_video.mp4", time.Now(), bytes.NewReader(response.Data))
 
 	return
 }
