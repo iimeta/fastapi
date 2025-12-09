@@ -27,12 +27,13 @@ type Pricing struct {
 }
 
 type TextPricing struct {
-	ServiceTier string  `bson:"service_tier,omitempty" json:"service_tier,omitempty"` // 服务层[all:全部, default:默认, priority:优先, flex:弹性]
-	InputRatio  float64 `bson:"input_ratio,omitempty"  json:"input_ratio,omitempty"`  // 输入倍率
-	OutputRatio float64 `bson:"output_ratio,omitempty" json:"output_ratio,omitempty"` // 输出倍率
-	Mode        string  `bson:"mode,omitempty"         json:"mode,omitempty"`         // 模式[all:全部, thinking:思考, non_thinking:非思考]
-	Gt          int     `bson:"gt,omitempty"           json:"gt,omitempty"`           // 大于, 单位: k
-	Lte         int     `bson:"lte,omitempty"          json:"lte,omitempty"`          // 小于等于, 单位: k
+	ServiceTier    string  `bson:"service_tier,omitempty"    json:"service_tier,omitempty"`    // 服务层[all:全部, default:默认, priority:优先, flex:弹性]
+	InputRatio     float64 `bson:"input_ratio,omitempty"     json:"input_ratio,omitempty"`     // 输入倍率
+	OutputRatio    float64 `bson:"output_ratio,omitempty"    json:"output_ratio,omitempty"`    // 输出倍率
+	ReasoningRatio float64 `bson:"reasoning_ratio,omitempty" json:"reasoning_ratio,omitempty"` // 思考倍率
+	Mode           string  `bson:"mode,omitempty"            json:"mode,omitempty"`            // 模式[all:全部, thinking:思考, non_thinking:非思考]
+	Gt             int     `bson:"gt,omitempty"              json:"gt,omitempty"`              // 大于, 单位: k
+	Lte            int     `bson:"lte,omitempty"             json:"lte,omitempty"`             // 小于等于, 单位: k
 }
 
 type CachePricing struct {
@@ -140,10 +141,11 @@ type Spend struct {
 }
 
 type TextSpend struct {
-	Pricing      *TextPricing `bson:"pricing,omitempty"       json:"pricing,omitempty"`       // 定价
-	InputTokens  int          `bson:"input_tokens,omitempty"  json:"input_tokens,omitempty"`  // 输入Token数
-	OutputTokens int          `bson:"output_tokens,omitempty" json:"output_tokens,omitempty"` // 输出Token数
-	SpendTokens  int          `bson:"spend_tokens,omitempty"  json:"spend_tokens,omitempty"`  // 花费Token数
+	Pricing         *TextPricing `bson:"pricing,omitempty"          json:"pricing,omitempty"`          // 定价
+	InputTokens     int          `bson:"input_tokens,omitempty"     json:"input_tokens,omitempty"`     // 输入Token数
+	OutputTokens    int          `bson:"output_tokens,omitempty"    json:"output_tokens,omitempty"`    // 输出Token数
+	ReasoningTokens int          `bson:"reasoning_tokens,omitempty" json:"reasoning_tokens,omitempty"` // 思考Token数
+	SpendTokens     int          `bson:"spend_tokens,omitempty"     json:"spend_tokens,omitempty"`     // 花费Token数
 }
 
 type CacheSpend struct {

@@ -59,10 +59,25 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool) (adapter sdk.Adapter
 	return sdk.NewAdapter(ctx, options)
 }
 
-func NewOfficialAdapter(ctx context.Context, mak *MAK, isLong bool, provider string) sdk.Adapter {
+func NewOfficialAdapter(ctx context.Context, mak *MAK, isLong bool) (adapter sdk.Adapter) {
+
+	if mak.Path == "" {
+		defer func() {
+			if general, isGeneral := adapter.(*general.General); isGeneral {
+				if general.Path == "" {
+					general.Path = g.RequestFromCtx(ctx).RequestURI
+					if gstr.HasSuffix(general.BaseUrl, "/v1beta") {
+						general.Path = general.Path[7:]
+					} else if gstr.HasSuffix(general.BaseUrl, "/v1") {
+						general.Path = general.Path[3:]
+					}
+				}
+			}
+		}()
+	}
 
 	options := &options.AdapterOptions{
-		Provider:                provider,
+		Provider:                GetProviderCode(ctx, mak.Provider),
 		Model:                   mak.RealModel.Model,
 		Key:                     mak.RealKey,
 		BaseUrl:                 mak.BaseUrl,

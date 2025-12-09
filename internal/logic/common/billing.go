@@ -215,7 +215,8 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 
 	spend.Text.InputTokens = billingData.Usage.PromptTokens
 	spend.Text.OutputTokens = billingData.Usage.CompletionTokens
-	spend.Text.SpendTokens = int(math.Ceil(float64(spend.Text.InputTokens)*spend.Text.Pricing.InputRatio)) + int(math.Ceil(float64(spend.Text.OutputTokens)*spend.Text.Pricing.OutputRatio))
+	spend.Text.ReasoningTokens = billingData.Usage.OutputTokensDetails.ReasoningTokens
+	spend.Text.SpendTokens = int(math.Ceil(float64(spend.Text.InputTokens)*spend.Text.Pricing.InputRatio)) + int(math.Ceil(float64(spend.Text.OutputTokens)*spend.Text.Pricing.OutputRatio)) + int(math.Ceil(float64(spend.Text.ReasoningTokens)*spend.Text.Pricing.ReasoningRatio))
 }
 
 // 文本缓存
@@ -289,7 +290,8 @@ func tieredText(ctx context.Context, mak *MAK, billingData *common.BillingData, 
 			spend.TieredText.Pricing = tieredText
 			spend.TieredText.InputTokens = billingData.Usage.PromptTokens
 			spend.TieredText.OutputTokens = billingData.Usage.CompletionTokens
-			spend.TieredText.SpendTokens = int(math.Ceil(float64(spend.TieredText.InputTokens)*spend.TieredText.Pricing.InputRatio)) + int(math.Ceil(float64(spend.TieredText.OutputTokens)*spend.TieredText.Pricing.OutputRatio))
+			spend.TieredText.ReasoningTokens = billingData.Usage.OutputTokensDetails.ReasoningTokens
+			spend.TieredText.SpendTokens = int(math.Ceil(float64(spend.TieredText.InputTokens)*spend.TieredText.Pricing.InputRatio)) + int(math.Ceil(float64(spend.TieredText.OutputTokens)*spend.TieredText.Pricing.OutputRatio)) + int(math.Ceil(float64(spend.TieredText.ReasoningTokens)*spend.TieredText.Pricing.ReasoningRatio))
 			return
 		}
 	}
@@ -446,15 +448,15 @@ func vision(ctx context.Context, mak *MAK, billingData *common.BillingData, spen
 
 	if multiContent, ok := billingData.ChatCompletionRequest.Messages[len(billingData.ChatCompletionRequest.Messages)-1].Content.([]any); ok {
 
-		if spend.Vision == nil {
-			spend.Vision = new(common.VisionSpend)
-		}
-
 		for _, value := range multiContent {
 
 			if content, ok := value.(map[string]any); ok && content["type"] == "image_url" {
 
 				if imageUrl, ok := content["image_url"].(map[string]any); ok {
+
+					if spend.Vision == nil {
+						spend.Vision = new(common.VisionSpend)
+					}
 
 					detail := imageUrl["detail"]
 
