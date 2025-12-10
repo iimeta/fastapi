@@ -120,7 +120,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 
 	requestChan := make(chan *smodel.RealtimeRequest)
 
-	response, err := common.NewRealtimeAdapter(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).Realtime(ctx, requestChan)
+	response, err := common.NewRealtimeClient(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).Realtime(ctx, requestChan)
 	if err != nil {
 		logger.Error(ctx, err)
 

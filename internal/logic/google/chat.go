@@ -43,8 +43,9 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 	}()
 
 	var (
-		params = convToChatCompletionRequest(request)
-		mak    = &common.MAK{
+		converter = common.NewConverter(ctx, sconsts.PROVIDER_GOOGLE)
+		params    = convToChatCompletionRequest(request)
+		mak       = &common.MAK{
 			Model:              params.Model,
 			Messages:           params.Messages,
 			FallbackModelAgent: fallbackModelAgent,
@@ -152,7 +153,7 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 		}
 	}
 
-	response, err = common.NewOfficialAdapter(ctx, mak, false).ChatCompletions(ctx, body)
+	res, err := common.NewAdapterOfficial(ctx, mak, false).ChatCompletionsOfficial(ctx, body)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -217,6 +218,41 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 		return response, err
 	}
 
+	if r, ok := res.(*smodel.GoogleChatCompletionRes); ok {
+
+		if r.Err == nil && r.ResponseBytes != nil {
+			if response, err = converter.ConvChatCompletionsResponse(ctx, r.ResponseBytes); err != nil {
+				logger.Error(ctx, err)
+				return response, err
+			}
+		} else {
+			response.ResponseBytes = r.ResponseBytes
+			response.Error = r.Err
+		}
+
+		response.TotalTime = r.TotalTime
+
+	} else if r, ok := res.(*smodel.ChatCompletionResponse); ok {
+
+		if r.Error == nil && r.ResponseBytes != nil {
+			if response, err = converter.ConvChatCompletionsResponse(ctx, r.ResponseBytes); err != nil {
+				logger.Error(ctx, err)
+				return response, err
+			}
+		} else {
+			response.ResponseBytes = r.ResponseBytes
+			response.Error = r.Error
+		}
+
+		response.TotalTime = r.TotalTime
+
+	} else {
+		if err = json.Unmarshal(gjson.MustEncode(res), &response); err != nil {
+			logger.Error(ctx, err)
+			return response, err
+		}
+	}
+
 	return response, nil
 }
 
@@ -229,8 +265,9 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 	}()
 
 	var (
-		params = convToChatCompletionRequest(request)
-		mak    = &common.MAK{
+		converter = common.NewConverter(ctx, sconsts.PROVIDER_GOOGLE)
+		params    = convToChatCompletionRequest(request)
+		mak       = &common.MAK{
 			Model:              params.Model,
 			Messages:           params.Messages,
 			FallbackModelAgent: fallbackModelAgent,
@@ -339,7 +376,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 		}
 	}
 
-	response, err := common.NewOfficialAdapter(ctx, mak, true).ChatCompletionsStream(ctx, body)
+	response, err := common.NewAdapterOfficial(ctx, mak, true).ChatCompletionsStreamOfficial(ctx, body)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -408,7 +445,48 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 
 	for {
 
-		response := <-response
+		res := <-response
+
+		var response smodel.ChatCompletionResponse
+
+		if r, ok := res.(*smodel.GoogleChatCompletionRes); ok {
+
+			if r.Err == nil && r.ResponseBytes != nil {
+				if response, err = converter.ConvChatCompletionsStreamResponse(ctx, r.ResponseBytes); err != nil {
+					logger.Error(ctx, err)
+					return err
+				}
+			} else {
+				response.ResponseBytes = r.ResponseBytes
+				response.Error = r.Err
+			}
+
+			response.ConnTime = r.ConnTime
+			response.Duration = r.Duration
+			response.TotalTime = r.TotalTime
+
+		} else if r, ok := res.(*smodel.ChatCompletionResponse); ok {
+
+			if r.Error == nil && r.ResponseBytes != nil {
+				if response, err = converter.ConvChatCompletionsStreamResponse(ctx, r.ResponseBytes); err != nil {
+					logger.Error(ctx, err)
+					return err
+				}
+			} else {
+				response.ResponseBytes = r.ResponseBytes
+				response.Error = r.Error
+			}
+
+			response.ConnTime = r.ConnTime
+			response.Duration = r.Duration
+			response.TotalTime = r.TotalTime
+
+		} else {
+			if err = json.Unmarshal(gjson.MustEncode(res), &response); err != nil {
+				logger.Error(ctx, err)
+				return err
+			}
+		}
 
 		connTime = response.ConnTime
 		duration = response.Duration

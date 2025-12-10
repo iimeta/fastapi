@@ -59,7 +59,7 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool) (adapter sdk.Adapter
 	return sdk.NewAdapter(ctx, options)
 }
 
-func NewOfficialAdapter(ctx context.Context, mak *MAK, isLong bool) (adapter sdk.Adapter) {
+func NewAdapterOfficial(ctx context.Context, mak *MAK, isLong bool) (adapter sdk.AdapterOfficial) {
 
 	if mak.Path == "" {
 		defer func() {
@@ -98,10 +98,10 @@ func NewOfficialAdapter(ctx context.Context, mak *MAK, isLong bool) (adapter sdk
 
 	g.RequestFromCtx(ctx).SetCtxVar("is_official_format_response", true)
 
-	return sdk.NewAdapter(ctx, options)
+	return sdk.NewAdapterOfficial(ctx, options)
 }
 
-func NewOpenAIAdapter(ctx context.Context, mak *MAK, isLong bool) *openai.OpenAI {
+func NewAdapterOpenAI(ctx context.Context, mak *MAK, isLong bool) *openai.OpenAI {
 
 	options := &options.AdapterOptions{
 		Provider:                sconsts.PROVIDER_OPENAI,
@@ -128,7 +128,7 @@ func NewOpenAIAdapter(ctx context.Context, mak *MAK, isLong bool) *openai.OpenAI
 	return openai.NewAdapter(ctx, options)
 }
 
-func NewRealtimeAdapter(ctx context.Context, model *model.Model, key, baseUrl, path string) *sdk.RealtimeClient {
+func NewRealtimeClient(ctx context.Context, model *model.Model, key, baseUrl, path string) *sdk.RealtimeClient {
 	return sdk.NewRealtimeClient(ctx, model.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
 }
 
