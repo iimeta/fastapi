@@ -265,7 +265,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 	}()
 
 	var (
-		converter = common.NewConverter(ctx, sconsts.PROVIDER_GOOGLE)
+		converter = common.NewConverter(ctx, sconsts.PROVIDER_ANTHROPIC)
 		params    = convToChatCompletionRequest(request)
 		mak       = &common.MAK{
 			Model:              params.Model,
