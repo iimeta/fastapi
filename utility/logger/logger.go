@@ -25,6 +25,17 @@ func Debug(ctx context.Context, v ...any) {
 				} else {
 					compactV = append(compactV, val)
 				}
+			case []byte:
+				var jsonObj any
+				if err := json.Unmarshal(val, &jsonObj); err == nil {
+					if compactJSON, err := json.Marshal(jsonObj); err == nil {
+						compactV = append(compactV, string(compactJSON))
+					} else {
+						compactV = append(compactV, val)
+					}
+				} else {
+					compactV = append(compactV, val)
+				}
 			default:
 				compactV = append(compactV, item)
 			}
@@ -49,6 +60,17 @@ func Debugf(ctx context.Context, format string, v ...any) {
 			case string:
 				var jsonObj any
 				if err := json.Unmarshal([]byte(val), &jsonObj); err == nil {
+					if compactJSON, err := json.Marshal(jsonObj); err == nil {
+						compactV = append(compactV, string(compactJSON))
+					} else {
+						compactV = append(compactV, val)
+					}
+				} else {
+					compactV = append(compactV, val)
+				}
+			case []byte:
+				var jsonObj any
+				if err := json.Unmarshal(val, &jsonObj); err == nil {
 					if compactJSON, err := json.Marshal(jsonObj); err == nil {
 						compactV = append(compactV, string(compactJSON))
 					} else {
