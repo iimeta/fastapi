@@ -112,6 +112,7 @@ type BillingData struct {
 	Seconds                int
 	Size                   string
 	Usage                  *smodel.Usage
+	IsAborted              bool
 }
 
 type Spend struct {
@@ -184,7 +185,7 @@ type VideoSpend struct {
 	Pricing      *VideoPricing `bson:"pricing,omitempty"       json:"pricing,omitempty"`       // 定价
 	InputTokens  int           `bson:"input_tokens,omitempty"  json:"input_tokens,omitempty"`  // 输入Token数
 	OutputTokens int           `bson:"output_tokens,omitempty" json:"output_tokens,omitempty"` // 输出Token数
-	SpendTokens  float64       `bson:"spend_tokens,omitempty"  json:"spend_tokens,omitempty"`  // 花费Token数
+	SpendTokens  int           `bson:"spend_tokens,omitempty"  json:"spend_tokens,omitempty"`  // 花费Token数
 }
 
 type VideoGenerationSpend struct {

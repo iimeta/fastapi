@@ -60,6 +60,7 @@ func textHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 			Completion:            after.Completion,
 			ServiceTier:           after.ServiceTier,
 			Usage:                 after.Usage,
+			IsAborted:             IsAborted(after.Error),
 		}
 
 		if billingData.Completion == "" && len(after.ChatCompletionRes.Choices) > 0 && after.ChatCompletionRes.Choices[0].Message != nil {
@@ -157,6 +158,7 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		billingData := &mcommon.BillingData{
 			ImageGenerationRequest: after.ImageGenerationRequest,
 			Usage:                  after.Usage,
+			IsAborted:              IsAborted(after.Error),
 		}
 
 		// 计算花费
@@ -208,6 +210,7 @@ func audioHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		billingData := &mcommon.BillingData{
 			AudioInput:  after.AudioInput,
 			AudioMinute: after.AudioMinute,
+			IsAborted:   IsAborted(after.Error),
 		}
 
 		// 计算花费
@@ -262,8 +265,9 @@ func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
 
 		billingData := &mcommon.BillingData{
-			Seconds: after.Seconds,
-			Size:    after.Size,
+			Seconds:   after.Seconds,
+			Size:      after.Size,
+			IsAborted: IsAborted(after.Error),
 		}
 
 		// 计算花费
@@ -342,7 +346,8 @@ func midjourneyHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandle
 	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
 
 		billingData := &mcommon.BillingData{
-			Path: after.MidjourneyPath,
+			Path:      after.MidjourneyPath,
+			IsAborted: IsAborted(after.Error),
 		}
 
 		// 计算花费
@@ -412,6 +417,7 @@ func generalHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) 
 			Seconds:                after.Seconds,
 			Size:                   after.Size,
 			Usage:                  after.Usage,
+			IsAborted:              IsAborted(after.Error),
 		}
 
 		// 计算花费

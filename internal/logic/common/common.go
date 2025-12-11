@@ -80,6 +80,9 @@ func (s *sCommon) RecordError(ctx context.Context, model *model.Model, key *mode
 }
 
 func IsAborted(err error) bool {
+	if err == nil {
+		return false
+	}
 	return errors.Is(err, context.Canceled) ||
 		gstr.Contains(err.Error(), "context deadline exceeded") ||
 		gstr.Contains(err.Error(), "broken pipe") ||

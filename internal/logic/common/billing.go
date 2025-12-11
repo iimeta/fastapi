@@ -97,8 +97,16 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 		spend.TotalSpendTokens += spend.AudioCache.SpendTokens
 	}
 
+	if spend.Video != nil {
+		spend.TotalSpendTokens += spend.Video.SpendTokens
+	}
+
 	if spend.VideoGeneration != nil {
 		spend.TotalSpendTokens += spend.VideoGeneration.SpendTokens
+	}
+
+	if spend.VideoCache != nil {
+		spend.TotalSpendTokens += spend.VideoCache.SpendTokens
 	}
 
 	if spend.Search != nil {
@@ -169,33 +177,49 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 		spend.Text = new(common.TextSpend)
 	}
 
-	if billingData.Usage.TotalTokens == 0 || mak.ReqModel.Pricing.BillingRule == 2 {
+	if billingData.Usage.TotalTokens == 0 || mak.ReqModel.Pricing.BillingRule == 2 || billingData.IsAborted {
 
-		billingData.Usage = new(smodel.Usage)
+		var (
+			promptTokens     int
+			completionTokens int
+		)
 
 		if mak.ReqModel.Type == 100 {
+
 			if multiContent, ok := billingData.ChatCompletionRequest.Messages[len(billingData.ChatCompletionRequest.Messages)-1].Content.([]any); ok {
 
 				for _, value := range multiContent {
 					if content, ok := value.(map[string]any); ok {
 						if content["type"] == "text" {
-							billingData.Usage.PromptTokens += TokensFromString(ctx, mak.ReqModel.Model, gconv.String(content))
+							promptTokens += TokensFromString(ctx, mak.ReqModel.Model, gconv.String(content))
 						}
 					} else {
-						billingData.Usage.PromptTokens += TokensFromString(ctx, mak.ReqModel.Model, gconv.String(value))
+						promptTokens += TokensFromString(ctx, mak.ReqModel.Model, gconv.String(value))
 					}
 				}
 
 			} else {
-				billingData.Usage.PromptTokens = TokensFromMessages(ctx, model, billingData.ChatCompletionRequest.Messages)
+				promptTokens = TokensFromMessages(ctx, model, billingData.ChatCompletionRequest.Messages)
 			}
 
 		} else {
-			billingData.Usage.PromptTokens = TokensFromMessages(ctx, model, billingData.ChatCompletionRequest.Messages)
+			promptTokens = TokensFromMessages(ctx, model, billingData.ChatCompletionRequest.Messages)
 		}
 
 		if billingData.Completion != "" {
-			billingData.Usage.CompletionTokens = TokensFromString(ctx, model, billingData.Completion)
+			completionTokens = TokensFromString(ctx, model, billingData.Completion)
+		}
+
+		if promptTokens > billingData.Usage.PromptTokens {
+			billingData.Usage.PromptTokens = promptTokens
+		}
+
+		if completionTokens > billingData.Usage.CompletionTokens {
+			billingData.Usage.CompletionTokens = completionTokens
+		}
+
+		if promptTokens+completionTokens > billingData.Usage.TotalTokens {
+			billingData.Usage.TotalTokens = promptTokens + completionTokens
 		}
 	}
 
@@ -268,8 +292,59 @@ func textCache(ctx context.Context, mak *MAK, billingData *common.BillingData, s
 // 阶梯文本
 func tieredText(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
 
-	if billingData.Usage == nil || billingData.Usage.PromptTokens+billingData.Usage.CompletionTokens == 0 {
-		return
+	model := mak.ReqModel.Model
+	if !tiktoken.IsEncodingForModel(model) {
+		model = consts.DEFAULT_MODEL
+	}
+
+	if billingData.Usage == nil {
+		billingData.Usage = new(smodel.Usage)
+	}
+
+	if billingData.Usage.TotalTokens == 0 || mak.ReqModel.Pricing.BillingRule == 2 || billingData.IsAborted {
+
+		var (
+			promptTokens     int
+			completionTokens int
+		)
+
+		if mak.ReqModel.Type == 100 {
+
+			if multiContent, ok := billingData.ChatCompletionRequest.Messages[len(billingData.ChatCompletionRequest.Messages)-1].Content.([]any); ok {
+
+				for _, value := range multiContent {
+					if content, ok := value.(map[string]any); ok {
+						if content["type"] == "text" {
+							promptTokens += TokensFromString(ctx, mak.ReqModel.Model, gconv.String(content))
+						}
+					} else {
+						promptTokens += TokensFromString(ctx, mak.ReqModel.Model, gconv.String(value))
+					}
+				}
+
+			} else {
+				promptTokens = TokensFromMessages(ctx, model, billingData.ChatCompletionRequest.Messages)
+			}
+
+		} else {
+			promptTokens = TokensFromMessages(ctx, model, billingData.ChatCompletionRequest.Messages)
+		}
+
+		if billingData.Completion != "" {
+			completionTokens = TokensFromString(ctx, model, billingData.Completion)
+		}
+
+		if promptTokens > billingData.Usage.PromptTokens {
+			billingData.Usage.PromptTokens = promptTokens
+		}
+
+		if completionTokens > billingData.Usage.CompletionTokens {
+			billingData.Usage.CompletionTokens = completionTokens
+		}
+
+		if promptTokens+completionTokens > billingData.Usage.TotalTokens {
+			billingData.Usage.TotalTokens = promptTokens + completionTokens
+		}
 	}
 
 	if spend.TieredText == nil {
