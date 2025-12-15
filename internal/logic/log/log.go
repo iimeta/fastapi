@@ -726,6 +726,7 @@ func (s *sLog) Video(ctx context.Context, videoLog model.LogVideo, retry ...int)
 		TraceId:      gtrace.GetTraceID(ctx),
 		UserId:       service.Session().GetUserId(ctx),
 		AppId:        service.Session().GetAppId(ctx),
+		Action:       videoLog.VideoReq.Action,
 		RequestData:  videoLog.VideoReq.RequestData,
 		ResponseData: videoLog.VideoRes.ResponseData,
 		Spend:        videoLog.Spend,

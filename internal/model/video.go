@@ -1,6 +1,7 @@
 package model
 
 type VideoReq struct {
+	Action      string         // 接口
 	RequestData map[string]any // 请求数据
 }
 

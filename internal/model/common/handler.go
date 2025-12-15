@@ -22,6 +22,7 @@ type AfterHandler struct {
 	ServiceTier            string
 	Action                 string
 	VideoId                string
+	Prompt                 string
 	Seconds                int
 	Size                   string
 	MidjourneyPath         string

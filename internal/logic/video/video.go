@@ -5,6 +5,7 @@ import (
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
@@ -12,12 +13,14 @@ import (
 	v1 "github.com/iimeta/fastapi/api/video/v1"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
+	"github.com/iimeta/fastapi/internal/errors"
 	"github.com/iimeta/fastapi/internal/logic/common"
 	"github.com/iimeta/fastapi/internal/model"
 	mcommon "github.com/iimeta/fastapi/internal/model/common"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type sVideo struct{}
@@ -58,6 +61,7 @@ func (s *sVideo) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_CREATE,
 					VideoId:      response.Id,
+					Prompt:       params.Prompt,
 					Seconds:      gconv.Int(params.Seconds),
 					Size:         params.Size,
 					RequestData:  gconv.Map(params.VideoCreateRequest),
@@ -188,6 +192,7 @@ func (s *sVideo) Remix(ctx context.Context, params *v1.RemixReq, fallbackModelAg
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				afterHandler := &mcommon.AfterHandler{
+					Action:       consts.ACTION_REMIX,
 					RequestData:  gconv.Map(params.VideoRemixRequest),
 					ResponseData: gconv.Map(response),
 					Error:        err,
@@ -205,8 +210,11 @@ func (s *sVideo) Remix(ctx context.Context, params *v1.RemixReq, fallbackModelAg
 		}
 	}()
 
-	taskVideo, err := dao.TaskVideo.FindOne(ctx, bson.M{"video_id": params.VideoId})
+	taskVideo, err := dao.TaskVideo.FindOne(ctx, bson.M{"video_id": params.VideoId, "creator": service.Session().GetSecretKey(ctx)})
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			err = errors.NewError(404, "invalid_request_error", "Video with id '"+params.VideoId+"' not found.", "invalid_request_error", nil)
+		}
 		logger.Error(ctx, err)
 		return response, err
 	}
@@ -311,6 +319,7 @@ func (s *sVideo) List(ctx context.Context, params *v1.ListReq, fallbackModelAgen
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				afterHandler := &mcommon.AfterHandler{
+					Action:       consts.ACTION_LIST,
 					RequestData:  gconv.Map(params.VideoListRequest),
 					ResponseData: gconv.Map(response),
 					Error:        err,
@@ -426,6 +435,7 @@ func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq, fallbackM
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				afterHandler := &mcommon.AfterHandler{
+					Action:       consts.ACTION_RETRIEVE,
 					RequestData:  gconv.Map(params.VideoRetrieveRequest),
 					ResponseData: gconv.Map(response),
 					Error:        err,
@@ -443,8 +453,11 @@ func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq, fallbackM
 		}
 	}()
 
-	taskVideo, err := dao.TaskVideo.FindOne(ctx, bson.M{"video_id": params.VideoId})
+	taskVideo, err := dao.TaskVideo.FindOne(ctx, bson.M{"video_id": params.VideoId, "creator": service.Session().GetSecretKey(ctx)})
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			err = errors.NewError(404, "invalid_request_error", "Video with id '"+params.VideoId+"' not found.", "invalid_request_error", nil)
+		}
 		logger.Error(ctx, err)
 		return response, err
 	}
@@ -549,6 +562,7 @@ func (s *sVideo) Delete(ctx context.Context, params *v1.DeleteReq, fallbackModel
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				afterHandler := &mcommon.AfterHandler{
+					Action:       consts.ACTION_DELETE,
 					RequestData:  gconv.Map(params.VideoDeleteRequest),
 					ResponseData: gconv.Map(response),
 					Error:        err,
@@ -566,8 +580,11 @@ func (s *sVideo) Delete(ctx context.Context, params *v1.DeleteReq, fallbackModel
 		}
 	}()
 
-	taskVideo, err := dao.TaskVideo.FindOne(ctx, bson.M{"video_id": params.VideoId})
+	taskVideo, err := dao.TaskVideo.FindOne(ctx, bson.M{"video_id": params.VideoId, "creator": service.Session().GetSecretKey(ctx)})
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			err = errors.NewError(404, "invalid_request_error", "Video with id '"+params.VideoId+"' not found.", "invalid_request_error", nil)
+		}
 		logger.Error(ctx, err)
 		return response, err
 	}
@@ -672,6 +689,7 @@ func (s *sVideo) Content(ctx context.Context, params *v1.ContentReq, fallbackMod
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				afterHandler := &mcommon.AfterHandler{
+					Action:       consts.ACTION_CONTENT,
 					RequestData:  gconv.Map(params.VideoContentRequest),
 					Error:        err,
 					RetryInfo:    retryInfo,
@@ -688,13 +706,28 @@ func (s *sVideo) Content(ctx context.Context, params *v1.ContentReq, fallbackMod
 		}
 	}()
 
-	taskVideo, err := dao.TaskVideo.FindOne(ctx, bson.M{"video_id": params.VideoId})
+	taskVideo, err := dao.TaskVideo.FindOne(ctx, bson.M{"video_id": params.VideoId, "creator": service.Session().GetSecretKey(ctx)})
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			err = errors.NewError(404, "invalid_request_error", "Video with id '"+params.VideoId+"' not found.", "invalid_request_error", nil)
+		}
 		logger.Error(ctx, err)
 		return response, err
 	}
 
 	mak.Model = taskVideo.Model
+
+	if taskVideo.Status != "completed" {
+		err = errors.NewError(404, "invalid_request_error", "Video is not ready yet, use GET /v1/videos/{video_id} to check status.", "invalid_request_error", nil)
+		return response, err
+	}
+
+	if taskVideo.FilePath != "" {
+		if bytes := gfile.GetBytes(taskVideo.FilePath); bytes != nil {
+			response = smodel.VideoContentResponse{Data: bytes}
+			return response, nil
+		}
+	}
 
 	if err = mak.InitMAK(ctx); err != nil {
 		logger.Error(ctx, err)

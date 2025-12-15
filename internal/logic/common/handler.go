@@ -291,6 +291,7 @@ func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 				AppId:   service.Session().GetAppId(ctx),
 				Model:   mak.ReqModel.Name,
 				VideoId: after.VideoId,
+				Prompt:  after.Prompt,
 				Status:  "queued",
 				Rid:     service.Session().GetRid(ctx),
 			}
@@ -310,6 +311,7 @@ func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	}
 
 	videoReq := &model.VideoReq{
+		Action:      after.Action,
 		RequestData: after.RequestData,
 	}
 
