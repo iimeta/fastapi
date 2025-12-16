@@ -46,7 +46,7 @@ func RecordSpend(ctx context.Context, spend common.Spend, mak *MAK) error {
 		logger.Error(ctx, err)
 	}
 
-	if currentQuota <= config.Cfg.QuotaWarning.Threshold {
+	if currentQuota <= config.Cfg.Quota.Threshold {
 		if _, err = redis.Publish(ctx, consts.CHANGE_CHANNEL_USER, model.PubMessage{
 			Action: consts.ACTION_CACHE,
 			NewData: &model.UserQuota{
