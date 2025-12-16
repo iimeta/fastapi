@@ -114,6 +114,15 @@ type QuotaWarning struct {
 	ExpireNotice     bool          `bson:"expire_notice"     json:"expire_notice"`     // 额度过期通知开关
 }
 
+type VideoTask struct {
+	Open            bool          `bson:"open"              json:"open"`              // 开关
+	Cron            string        `bson:"cron"              json:"cron"`              // CRON表达式
+	LockMinutes     time.Duration `bson:"lock_minutes"      json:"lock_minutes"`      // 锁定时长, 单位: 分钟
+	IsEnableStorage bool          `bson:"is_enable_storage" json:"is_enable_storage"` // 是否启用存储
+	StorageDir      string        `bson:"storage_dir"       json:"storage_dir"`       // 存储目录
+	StorageBaseUrl  string        `bson:"storage_base_url"  json:"storage_base_url"`  // 访问地址
+}
+
 type ServiceUnavailable struct {
 	Open        bool     `bson:"open"         json:"open"`         // 开关
 	IpWhitelist []string `bson:"ip_whitelist" json:"ip_whitelist"` // IP白名单

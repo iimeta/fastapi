@@ -18,7 +18,7 @@ type TaskVideo struct {
 	Prompt             string             `bson:"prompt,omitempty"`                // 提示
 	Progress           int                `bson:"progress,omitempty"`              // 进度
 	RemixedFromVideoId string             `bson:"remixed_from_video_id,omitempty"` // 混合ID
-	Status             string             `bson:"status,omitempty"`                // 状态[queued:排队中, in_progress:进行中, completed:已完成, failed:已失败, expired:已过期]
+	Status             string             `bson:"status,omitempty"`                // 状态[queued:排队中, in_progress:进行中, completed:已完成, failed:已失败, expired:已过期, deleted:已删除]
 	CompletedAt        int64              `bson:"completed_at,omitempty"`          // 完成时间
 	ExpiresAt          int64              `bson:"expires_at,omitempty"`            // 过期时间
 	VideoUrl           string             `bson:"video_url,omitempty"`             // 视频地址

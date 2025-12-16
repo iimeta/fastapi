@@ -2,6 +2,8 @@ package video
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
@@ -9,8 +11,11 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
+	sdk "github.com/iimeta/fastapi-sdk"
 	smodel "github.com/iimeta/fastapi-sdk/model"
+	"github.com/iimeta/fastapi-sdk/options"
 	v1 "github.com/iimeta/fastapi/api/video/v1"
+	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
@@ -18,6 +23,7 @@ import (
 	"github.com/iimeta/fastapi/internal/model"
 	mcommon "github.com/iimeta/fastapi/internal/model/common"
 	"github.com/iimeta/fastapi/internal/service"
+	"github.com/iimeta/fastapi/utility/db"
 	"github.com/iimeta/fastapi/utility/logger"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -337,74 +343,111 @@ func (s *sVideo) List(ctx context.Context, params *v1.ListReq, fallbackModelAgen
 		}
 	}()
 
+	limit := params.Limit
+
+	if limit > 1000 {
+		err = errors.NewError(404, "integer_above_max_value", fmt.Sprintf("Invalid 'limit': integer above maximum value. Expected a value <= 1000, but got %d instead.", params.Limit), "invalid_request_error", "limit")
+		return response, err
+	} else if limit == 0 {
+		limit = 1000
+	}
+
+	filter := bson.M{
+		"creator":    service.Session().GetSecretKey(ctx),
+		"status":     bson.M{"$nin": []string{"deleted", "expired"}},
+		"created_at": bson.M{"$gt": time.Now().Add(-24 * time.Hour).UnixMilli()},
+	}
+
+	if params.After != "" {
+
+		taskVideo, err := dao.TaskVideo.FindOne(ctx, bson.M{"video_id": params.After, "creator": service.Session().GetSecretKey(ctx)})
+		if err != nil {
+			if errors.Is(err, mongo.ErrNoDocuments) {
+				err = errors.NewError(404, "invalid_request_error", "Video with id '"+params.After+"' not found.", "invalid_request_error", nil)
+			}
+			logger.Error(ctx, err)
+			return response, err
+		}
+
+		filter["created_at"] = bson.M{"$lte": taskVideo.CreatedAt}
+
+		if params.Order == "asc" {
+			filter["created_at"] = bson.M{"$gte": taskVideo.CreatedAt}
+		}
+
+		filter["_id"] = bson.M{"$ne": taskVideo.Id}
+	}
+
+	sort := "-created_at"
+	if params.Order == "asc" {
+		sort = "created_at"
+	}
+
+	paging := &db.Paging{
+		Page:     1,
+		PageSize: limit,
+	}
+
+	results, err := dao.TaskVideo.FindByPage(ctx, paging, filter, &dao.FindOptions{SortFields: []string{sort}})
+	if err != nil {
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	if len(results) == 0 {
+		response = smodel.VideoListResponse{
+			Object: "list",
+			Data:   make([]smodel.VideoJobResponse, 0),
+		}
+		return response, nil
+	}
+
+	mak.Model = results[0].Model
+
 	if err = mak.InitMAK(ctx); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
-	response, err = common.NewAdapter(ctx, mak, false).VideoList(ctx, params.VideoListRequest)
-	if err != nil {
-		logger.Error(ctx, err)
+	response = smodel.VideoListResponse{
+		Object:  "list",
+		FirstId: &results[0].VideoId,
+		LastId:  &results[len(results)-1].VideoId,
+		HasMore: paging.PageCount > 1,
+	}
 
-		// 记录错误次数和禁用
-		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
+	for _, result := range results {
 
-		isRetry, isDisabled := common.IsNeedRetry(err)
-
-		if isDisabled {
-			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if mak.RealModel.IsEnableModelAgent {
-					service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
-				} else {
-					service.Key().Disabled(ctx, mak.Key, err.Error())
-				}
-			}, nil); err != nil {
-				logger.Error(ctx, err)
-			}
+		videoJobResponse := smodel.VideoJobResponse{
+			Id:        result.VideoId,
+			Object:    "video",
+			Model:     result.Model,
+			Status:    result.Status,
+			Progress:  result.Progress,
+			CreatedAt: result.CreatedAt / 1000,
+			Size:      fmt.Sprintf("%dx%d", result.Width, result.Height),
+			Prompt:    result.Prompt,
+			Seconds:   gconv.String(result.Seconds),
+			Error:     result.Error,
 		}
 
-		if isRetry {
-
-			if common.IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
-
-				if mak.RealModel.IsEnableFallback {
-
-					if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.List(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
-						}
-					}
-
-					if mak.RealModel.FallbackConfig.Model != "" {
-						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.List(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
-						}
-					}
-				}
-
-				return response, err
-			}
-
-			retryInfo = &mcommon.Retry{
-				IsRetry:    true,
-				RetryCount: len(retry),
-				ErrMsg:     err.Error(),
-			}
-
-			return s.List(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+		if result.CompletedAt != 0 {
+			videoJobResponse.CompletedAt = &result.CompletedAt
 		}
 
-		return response, err
+		if result.ExpiresAt != 0 {
+			videoJobResponse.ExpiresAt = &result.ExpiresAt
+		}
+
+		if result.RemixedFromVideoId != "" {
+			videoJobResponse.RemixedFromVideoId = &result.RemixedFromVideoId
+		}
+
+		if config.Cfg.VideoTask.IsEnableStorage && result.VideoUrl != "" {
+			videoJobResponse.VideoUrl = config.Cfg.VideoTask.StorageBaseUrl + result.VideoUrl
+		}
+
+		response.Data = append(response.Data, videoJobResponse)
 	}
 
 	return response, nil
@@ -469,69 +512,33 @@ func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq, fallbackM
 		return response, err
 	}
 
-	response, err = common.NewAdapter(ctx, mak, false).VideoRetrieve(ctx, params.VideoRetrieveRequest)
-	if err != nil {
-		logger.Error(ctx, err)
+	response = smodel.VideoJobResponse{
+		Id:        taskVideo.VideoId,
+		Object:    "video",
+		Model:     taskVideo.Model,
+		Status:    taskVideo.Status,
+		Progress:  taskVideo.Progress,
+		CreatedAt: taskVideo.CreatedAt / 1000,
+		Size:      fmt.Sprintf("%dx%d", taskVideo.Width, taskVideo.Height),
+		Prompt:    taskVideo.Prompt,
+		Seconds:   gconv.String(taskVideo.Seconds),
+		Error:     taskVideo.Error,
+	}
 
-		// 记录错误次数和禁用
-		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
+	if taskVideo.CompletedAt != 0 {
+		response.CompletedAt = &taskVideo.CompletedAt
+	}
 
-		isRetry, isDisabled := common.IsNeedRetry(err)
+	if taskVideo.ExpiresAt != 0 {
+		response.ExpiresAt = &taskVideo.ExpiresAt
+	}
 
-		if isDisabled {
-			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if mak.RealModel.IsEnableModelAgent {
-					service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
-				} else {
-					service.Key().Disabled(ctx, mak.Key, err.Error())
-				}
-			}, nil); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
+	if taskVideo.RemixedFromVideoId != "" {
+		response.RemixedFromVideoId = &taskVideo.RemixedFromVideoId
+	}
 
-		if isRetry {
-
-			if common.IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
-
-				if mak.RealModel.IsEnableFallback {
-
-					if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.Retrieve(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
-						}
-					}
-
-					if mak.RealModel.FallbackConfig.Model != "" {
-						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.Retrieve(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
-						}
-					}
-				}
-
-				return response, err
-			}
-
-			retryInfo = &mcommon.Retry{
-				IsRetry:    true,
-				RetryCount: len(retry),
-				ErrMsg:     err.Error(),
-			}
-
-			return s.Retrieve(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
-		}
-
-		return response, err
+	if config.Cfg.VideoTask.IsEnableStorage && taskVideo.VideoUrl != "" {
+		response.VideoUrl = config.Cfg.VideoTask.StorageBaseUrl + taskVideo.VideoUrl
 	}
 
 	return response, nil
@@ -596,69 +603,34 @@ func (s *sVideo) Delete(ctx context.Context, params *v1.DeleteReq, fallbackModel
 		return response, err
 	}
 
-	response, err = common.NewAdapter(ctx, mak, false).VideoDelete(ctx, params.VideoDeleteRequest)
-	if err != nil {
+	if err := dao.TaskVideo.UpdateById(ctx, taskVideo.Id, bson.M{"status": "deleted"}); err != nil {
 		logger.Error(ctx, err)
+	}
 
-		// 记录错误次数和禁用
-		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
+	response = smodel.VideoJobResponse{
+		Id:        taskVideo.VideoId,
+		Object:    "video.deleted",
+		Model:     taskVideo.Model,
+		Status:    taskVideo.Status,
+		Progress:  taskVideo.Progress,
+		CreatedAt: taskVideo.CreatedAt / 1000,
+		Size:      fmt.Sprintf("%dx%d", taskVideo.Width, taskVideo.Height),
+		Prompt:    taskVideo.Prompt,
+		Seconds:   gconv.String(taskVideo.Seconds),
+		Error:     taskVideo.Error,
+		Deleted:   true,
+	}
 
-		isRetry, isDisabled := common.IsNeedRetry(err)
+	if taskVideo.CompletedAt != 0 {
+		response.CompletedAt = &taskVideo.CompletedAt
+	}
 
-		if isDisabled {
-			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if mak.RealModel.IsEnableModelAgent {
-					service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
-				} else {
-					service.Key().Disabled(ctx, mak.Key, err.Error())
-				}
-			}, nil); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
+	if taskVideo.ExpiresAt != 0 {
+		response.ExpiresAt = &taskVideo.ExpiresAt
+	}
 
-		if isRetry {
-
-			if common.IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
-
-				if mak.RealModel.IsEnableFallback {
-
-					if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.Delete(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
-						}
-					}
-
-					if mak.RealModel.FallbackConfig.Model != "" {
-						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.Delete(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
-						}
-					}
-				}
-
-				return response, err
-			}
-
-			retryInfo = &mcommon.Retry{
-				IsRetry:    true,
-				RetryCount: len(retry),
-				ErrMsg:     err.Error(),
-			}
-
-			return s.Delete(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
-		}
-
-		return response, err
+	if taskVideo.RemixedFromVideoId != "" {
+		response.RemixedFromVideoId = &taskVideo.RemixedFromVideoId
 	}
 
 	return response, nil
@@ -715,87 +687,43 @@ func (s *sVideo) Content(ctx context.Context, params *v1.ContentReq, fallbackMod
 		return response, err
 	}
 
-	mak.Model = taskVideo.Model
-
 	if taskVideo.Status != "completed" {
 		err = errors.NewError(404, "invalid_request_error", "Video is not ready yet, use GET /v1/videos/{video_id} to check status.", "invalid_request_error", nil)
 		return response, err
 	}
 
-	if taskVideo.FilePath != "" {
-		if bytes := gfile.GetBytes(taskVideo.FilePath); bytes != nil {
-			response = smodel.VideoContentResponse{Data: bytes}
-			return response, nil
-		}
-	}
+	mak.Model = taskVideo.Model
 
 	if err = mak.InitMAK(ctx); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
-	response, err = common.NewAdapter(ctx, mak, false).VideoContent(ctx, params.VideoContentRequest)
+	if config.Cfg.VideoTask.IsEnableStorage && taskVideo.FilePath != "" {
+		if bytes := gfile.GetBytes(taskVideo.FilePath); bytes != nil {
+			response = smodel.VideoContentResponse{Data: bytes}
+			return response, nil
+		}
+	}
+
+	logVideo, err := dao.LogVideo.FindOne(ctx, bson.M{"trace_id": taskVideo.TraceId})
 	if err != nil {
 		logger.Error(ctx, err)
+		return response, err
+	}
 
-		// 记录错误次数和禁用
-		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
+	adapter := sdk.NewAdapter(ctx, &options.AdapterOptions{
+		Provider: common.GetProviderCode(ctx, logVideo.ModelAgent.ProviderId),
+		Model:    logVideo.Model,
+		Key:      logVideo.Key,
+		BaseUrl:  logVideo.ModelAgent.BaseUrl,
+		Path:     logVideo.ModelAgent.Path,
+		Timeout:  config.Cfg.Base.ShortTimeout * time.Second,
+		ProxyUrl: config.Cfg.Http.ProxyUrl,
+	})
 
-		isRetry, isDisabled := common.IsNeedRetry(err)
-
-		if isDisabled {
-			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if mak.RealModel.IsEnableModelAgent {
-					service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
-				} else {
-					service.Key().Disabled(ctx, mak.Key, err.Error())
-				}
-			}, nil); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
-
-		if isRetry {
-
-			if common.IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
-
-				if mak.RealModel.IsEnableFallback {
-
-					if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.Content(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
-						}
-					}
-
-					if mak.RealModel.FallbackConfig.Model != "" {
-						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.Content(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
-						}
-					}
-				}
-
-				return response, err
-			}
-
-			retryInfo = &mcommon.Retry{
-				IsRetry:    true,
-				RetryCount: len(retry),
-				ErrMsg:     err.Error(),
-			}
-
-			return s.Content(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
-		}
-
+	if response, err = adapter.VideoContent(ctx, smodel.VideoContentRequest{VideoId: taskVideo.VideoId}); err != nil {
+		logger.Error(ctx, err)
 		return response, err
 	}
 
