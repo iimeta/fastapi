@@ -10,6 +10,7 @@ import (
 	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	sdk "github.com/iimeta/fastapi-sdk"
 	smodel "github.com/iimeta/fastapi-sdk/model"
@@ -444,6 +445,15 @@ func (s *sVideo) List(ctx context.Context, params *v1.ListReq, fallbackModelAgen
 		}
 
 		if config.Cfg.VideoTask.IsEnableStorage && result.VideoUrl != "" {
+
+			if config.Cfg.VideoTask.StorageBaseUrl != "" {
+				if gstr.HasSuffix(config.Cfg.VideoTask.StorageBaseUrl, "/") {
+					result.VideoUrl = gstr.TrimLeft(result.VideoUrl, "/")
+				} else if !gstr.HasPrefix(result.VideoUrl, "/") {
+					result.VideoUrl = "/" + result.VideoUrl
+				}
+			}
+
 			videoJobResponse.VideoUrl = config.Cfg.VideoTask.StorageBaseUrl + result.VideoUrl
 		}
 
@@ -538,6 +548,15 @@ func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq, fallbackM
 	}
 
 	if config.Cfg.VideoTask.IsEnableStorage && taskVideo.VideoUrl != "" {
+
+		if config.Cfg.VideoTask.StorageBaseUrl != "" {
+			if gstr.HasSuffix(config.Cfg.VideoTask.StorageBaseUrl, "/") {
+				taskVideo.VideoUrl = gstr.TrimLeft(taskVideo.VideoUrl, "/")
+			} else if !gstr.HasPrefix(taskVideo.VideoUrl, "/") {
+				taskVideo.VideoUrl = "/" + taskVideo.VideoUrl
+			}
+		}
+
 		response.VideoUrl = config.Cfg.VideoTask.StorageBaseUrl + taskVideo.VideoUrl
 	}
 
@@ -706,7 +725,7 @@ func (s *sVideo) Content(ctx context.Context, params *v1.ContentReq, fallbackMod
 		}
 	}
 
-	logVideo, err := dao.LogVideo.FindOne(ctx, bson.M{"trace_id": taskVideo.TraceId})
+	logVideo, err := dao.LogVideo.FindOne(ctx, bson.M{"trace_id": taskVideo.TraceId, "status": 1})
 	if err != nil {
 		logger.Error(ctx, err)
 		return response, err
