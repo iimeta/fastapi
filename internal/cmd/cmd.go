@@ -196,6 +196,14 @@ func middleware(r *ghttp.Request) {
 	}
 
 	if secretKey == "" {
+		secretKey = r.Header.Get("api-key")
+	}
+
+	if secretKey == "" {
+		secretKey = r.Header.Get("x-goog-api-key")
+	}
+
+	if secretKey == "" {
 		secretKey = r.GetHeader(config.Cfg.Midjourney.ApiSecretHeader)
 	}
 
