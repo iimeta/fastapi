@@ -121,6 +121,12 @@ var (
 						video.NewV1(),
 					)
 				})
+
+				v1.Group("/files", func(g *ghttp.RouterGroup) {
+					g.Bind(
+						video.NewV1(),
+					)
+				})
 			})
 
 			s.Group("/v1beta", func(v1 *ghttp.RouterGroup) {

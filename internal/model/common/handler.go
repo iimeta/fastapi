@@ -22,6 +22,8 @@ type AfterHandler struct {
 	ServiceTier            string
 	Action                 string
 	VideoId                string
+	FileId                 string
+	BatchId                string
 	Prompt                 string
 	Seconds                int
 	Size                   string
