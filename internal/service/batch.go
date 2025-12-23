@@ -18,11 +18,11 @@ type (
 		// Create
 		Create(ctx context.Context, params *v1.CreateReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.BatchResponse, err error)
 		// List
-		List(ctx context.Context, params *v1.ListReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.BatchListResponse, err error)
+		List(ctx context.Context, params *v1.ListReq) (response smodel.BatchListResponse, err error)
 		// Retrieve
-		Retrieve(ctx context.Context, params *v1.RetrieveReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.BatchResponse, err error)
+		Retrieve(ctx context.Context, params *v1.RetrieveReq) (response smodel.BatchResponse, err error)
 		// Cancel
-		Cancel(ctx context.Context, params *v1.CancelReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.BatchResponse, err error)
+		Cancel(ctx context.Context, params *v1.CancelReq) (response smodel.BatchResponse, err error)
 	}
 )
 

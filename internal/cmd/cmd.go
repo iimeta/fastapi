@@ -18,6 +18,7 @@ import (
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/controller/anthropic"
 	"github.com/iimeta/fastapi/internal/controller/audio"
+	"github.com/iimeta/fastapi/internal/controller/batch"
 	"github.com/iimeta/fastapi/internal/controller/chat"
 	"github.com/iimeta/fastapi/internal/controller/dashboard"
 	"github.com/iimeta/fastapi/internal/controller/embedding"
@@ -87,7 +88,6 @@ var (
 						google.NewV1(),
 						embedding.NewV1(),
 						moderation.NewV1(),
-						file.NewV1(),
 						general.NewV1(),
 					)
 				})
@@ -124,7 +124,13 @@ var (
 
 				v1.Group("/files", func(g *ghttp.RouterGroup) {
 					g.Bind(
-						video.NewV1(),
+						file.NewV1(),
+					)
+				})
+
+				v1.Group("/batches", func(g *ghttp.RouterGroup) {
+					g.Bind(
+						batch.NewV1(),
 					)
 				})
 			})
@@ -143,6 +149,24 @@ var (
 				v1.Bind(
 					midjourney.NewV1(),
 				)
+			})
+
+			s.Group("/{provider}/v1", func(v1 *ghttp.RouterGroup) {
+
+				v1.Middleware(middlewareHandlerResponse)
+				v1.Middleware(middleware)
+
+				v1.Group("/files", func(g *ghttp.RouterGroup) {
+					g.Bind(
+						file.NewV1(),
+					)
+				})
+
+				v1.Group("/batches", func(g *ghttp.RouterGroup) {
+					g.Bind(
+						batch.NewV1(),
+					)
+				})
 			})
 
 			if config.Cfg.ApiServerAddress != "" {

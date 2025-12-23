@@ -22,7 +22,10 @@ type AfterHandler struct {
 	ServiceTier            string
 	Action                 string
 	VideoId                string
+	IsFile                 bool
 	FileId                 string
+	FileRes                smodel.FileResponse
+	IsBatch                bool
 	BatchId                string
 	Prompt                 string
 	Seconds                int

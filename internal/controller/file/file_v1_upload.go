@@ -17,6 +17,18 @@ func (c *ControllerV1) Upload(ctx context.Context, req *v1.UploadReq) (res *v1.U
 		logger.Debugf(ctx, "Controller Upload time: %d", gtime.TimestampMilli()-now)
 	}()
 
+	_, fileHeader, err := g.RequestFromCtx(ctx).FormFile("file")
+	if err != nil {
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	req.File = fileHeader
+
+	if req.Model == "" {
+		req.Model = req.Provider + "-files"
+	}
+
 	response, err := service.File().Upload(ctx, req, nil, nil)
 	if err != nil {
 		return nil, err

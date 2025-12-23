@@ -43,7 +43,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 
 	var (
 		mak = &common.MAK{
-			Model:              gconv.String(params.Model),
+			Model:              params.Model,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}

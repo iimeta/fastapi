@@ -58,4 +58,6 @@ const (
 	ACTION_LIST     = "list"
 	ACTION_RETRIEVE = "retrieve"
 	ACTION_CONTENT  = "content"
+	ACTION_UPLOAD   = "upload"
+	ACTION_CANCEL   = "cancel"
 )

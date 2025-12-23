@@ -84,3 +84,29 @@ type LogGeneral struct {
 	RetryInfo          *mcommon.Retry
 	Spend              mcommon.Spend
 }
+
+type LogFile struct {
+	ReqModel           *Model
+	RealModel          *Model
+	ModelAgent         *ModelAgent
+	FallbackModelAgent *ModelAgent
+	FallbackModel      *Model
+	Key                *Key
+	FileReq            *FileReq
+	FileRes            *FileRes
+	RetryInfo          *mcommon.Retry
+	Spend              mcommon.Spend
+}
+
+type LogBatch struct {
+	ReqModel           *Model
+	RealModel          *Model
+	ModelAgent         *ModelAgent
+	FallbackModelAgent *ModelAgent
+	FallbackModel      *Model
+	Key                *Key
+	BatchReq           *BatchReq
+	BatchRes           *BatchRes
+	RetryInfo          *mcommon.Retry
+	Spend              mcommon.Spend
+}

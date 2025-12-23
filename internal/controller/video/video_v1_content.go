@@ -19,7 +19,7 @@ func (c *ControllerV1) Content(ctx context.Context, req *v1.ContentReq) (res *v1
 		logger.Debugf(ctx, "Controller Content time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	response, err := service.Video().Content(ctx, req, nil, nil)
+	response, err := service.Video().Content(ctx, req)
 	if err != nil {
 		return nil, err
 	}

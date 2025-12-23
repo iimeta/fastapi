@@ -7,7 +7,8 @@ import (
 
 // Create接口请求参数
 type CreateReq struct {
-	g.Meta `path:"/" tags:"batch" method:"post" summary:"Create接口"`
+	g.Meta   `path:"/" tags:"batch" method:"post" summary:"Create接口"`
+	Provider string `json:"provider"`
 	smodel.BatchCreateRequest
 }
 

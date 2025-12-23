@@ -7,7 +7,8 @@ import (
 
 // Upload接口请求参数
 type UploadReq struct {
-	g.Meta `path:"/" tags:"file" method:"post" summary:"Upload接口"`
+	g.Meta   `path:"/" tags:"file" method:"post" summary:"Upload接口"`
+	Provider string `json:"provider"`
 	smodel.FileUploadRequest
 }
 

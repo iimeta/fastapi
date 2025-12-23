@@ -1,20 +1,12 @@
 package file
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
-	"mime/multipart"
-	"net/http"
-	"net/textproto"
-	"net/url"
-	"os"
 	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
-	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
@@ -56,7 +48,7 @@ func (s *sFile) Upload(ctx context.Context, params *v1.UploadReq, fallbackModelA
 
 	var (
 		mak = &common.MAK{
-			Model:              gconv.String(params.Model),
+			Model:              params.Model,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
@@ -72,8 +64,10 @@ func (s *sFile) Upload(ctx context.Context, params *v1.UploadReq, fallbackModelA
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				afterHandler := &mcommon.AfterHandler{
-					Action:       consts.ACTION_CREATE,
+					Action:       consts.ACTION_UPLOAD,
+					IsFile:       true,
 					FileId:       response.Id,
+					FileRes:      response,
 					RequestData:  gconv.Map(params.FileUploadRequest),
 					ResponseData: gconv.Map(response),
 					Error:        err,
@@ -178,7 +172,7 @@ func (s *sFile) Upload(ctx context.Context, params *v1.UploadReq, fallbackModelA
 }
 
 // List
-func (s *sFile) List(ctx context.Context, params *v1.ListReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.FileListResponse, err error) {
+func (s *sFile) List(ctx context.Context, params *v1.ListReq) (response smodel.FileListResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -186,10 +180,7 @@ func (s *sFile) List(ctx context.Context, params *v1.ListReq, fallbackModelAgent
 	}()
 
 	var (
-		mak = &common.MAK{
-			FallbackModelAgent: fallbackModelAgent,
-			FallbackModel:      fallbackModel,
-		}
+		mak       = &common.MAK{}
 		retryInfo *mcommon.Retry
 	)
 
@@ -203,6 +194,7 @@ func (s *sFile) List(ctx context.Context, params *v1.ListReq, fallbackModelAgent
 
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_LIST,
+					IsFile:       true,
 					RequestData:  gconv.Map(params.FileListRequest),
 					ResponseData: gconv.Map(response),
 					Error:        err,
@@ -222,8 +214,8 @@ func (s *sFile) List(ctx context.Context, params *v1.ListReq, fallbackModelAgent
 
 	limit := params.Limit
 
-	if limit > 1000 {
-		err = errors.NewError(404, "integer_above_max_value", fmt.Sprintf("Invalid 'limit': integer above maximum value. Expected a value <= 1000, but got %d instead.", params.Limit), "invalid_request_error", "limit")
+	if limit > 10000 {
+		err = errors.NewError(404, "integer_above_max_value", fmt.Sprintf("Invalid 'limit': integer above maximum value. Expected a value <= 10000, but got %d instead.", params.Limit), "invalid_request_error", "limit")
 		return response, err
 	} else if limit == 0 {
 		limit = 1000
@@ -235,12 +227,25 @@ func (s *sFile) List(ctx context.Context, params *v1.ListReq, fallbackModelAgent
 		"created_at": bson.M{"$gt": time.Now().Add(-24 * time.Hour).UnixMilli()},
 	}
 
+	if params.Purpose != "" {
+		filter["purpose"] = params.Purpose
+	}
+
 	if params.After != "" {
 
-		taskFile, err := dao.LogFile.FindOne(ctx, bson.M{"file_id": params.After, "creator": service.Session().GetSecretKey(ctx)})
+		taskFileFilter := bson.M{
+			"file_id": params.After,
+			"creator": service.Session().GetSecretKey(ctx),
+		}
+
+		if params.Purpose != "" {
+			taskFileFilter["purpose"] = params.Purpose
+		}
+
+		taskFile, err := dao.TaskFile.FindOne(ctx, taskFileFilter)
 		if err != nil {
 			if errors.Is(err, mongo.ErrNoDocuments) {
-				err = errors.NewError(404, "invalid_request_error", "File with id '"+params.After+"' not found.", "invalid_request_error", nil)
+				err = errors.NewError(404, "invalid_request_error", "No such File object: "+params.After, "invalid_request_error", "id")
 			}
 			logger.Error(ctx, err)
 			return response, err
@@ -265,7 +270,7 @@ func (s *sFile) List(ctx context.Context, params *v1.ListReq, fallbackModelAgent
 		PageSize: limit,
 	}
 
-	results, err := dao.LogFile.FindByPage(ctx, paging, filter, &dao.FindOptions{SortFields: []string{sort}})
+	results, err := dao.TaskFile.FindByPage(ctx, paging, filter, &dao.FindOptions{SortFields: []string{sort}})
 	if err != nil {
 		logger.Error(ctx, err)
 		return response, err
@@ -295,21 +300,25 @@ func (s *sFile) List(ctx context.Context, params *v1.ListReq, fallbackModelAgent
 
 	for _, result := range results {
 
-		fileJobResponse := smodel.FileResponse{
-			Id:     result.FileId,
-			Object: "file",
+		fileResponse := smodel.FileResponse{
+			Id:        result.FileId,
+			Object:    "file",
+			Purpose:   result.Purpose,
+			Filename:  result.FileName,
+			Bytes:     result.Bytes,
+			CreatedAt: result.CreatedAt / 1000,
+			ExpiresAt: result.ExpiresAt,
+			Status:    result.Status,
 		}
 
-		// todo
-
-		response.Data = append(response.Data, fileJobResponse)
+		response.Data = append(response.Data, fileResponse)
 	}
 
 	return response, nil
 }
 
 // Retrieve
-func (s *sFile) Retrieve(ctx context.Context, params *v1.RetrieveReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.FileResponse, err error) {
+func (s *sFile) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response smodel.FileResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -317,10 +326,7 @@ func (s *sFile) Retrieve(ctx context.Context, params *v1.RetrieveReq, fallbackMo
 	}()
 
 	var (
-		mak = &common.MAK{
-			FallbackModelAgent: fallbackModelAgent,
-			FallbackModel:      fallbackModel,
-		}
+		mak       = &common.MAK{}
 		retryInfo *mcommon.Retry
 	)
 
@@ -334,6 +340,7 @@ func (s *sFile) Retrieve(ctx context.Context, params *v1.RetrieveReq, fallbackMo
 
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_RETRIEVE,
+					IsFile:       true,
 					RequestData:  gconv.Map(params.FileRetrieveRequest),
 					ResponseData: gconv.Map(response),
 					Error:        err,
@@ -351,10 +358,10 @@ func (s *sFile) Retrieve(ctx context.Context, params *v1.RetrieveReq, fallbackMo
 		}
 	}()
 
-	taskFile, err := dao.LogFile.FindOne(ctx, bson.M{"file_id": params.FileId, "creator": service.Session().GetSecretKey(ctx)})
+	taskFile, err := dao.TaskFile.FindOne(ctx, bson.M{"file_id": params.FileId, "creator": service.Session().GetSecretKey(ctx)})
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			err = errors.NewError(404, "invalid_request_error", "File with id '"+params.FileId+"' not found.", "invalid_request_error", nil)
+			err = errors.NewError(404, "invalid_request_error", "No such File object: "+params.FileId, "invalid_request_error", "id")
 		}
 		logger.Error(ctx, err)
 		return response, err
@@ -368,17 +375,21 @@ func (s *sFile) Retrieve(ctx context.Context, params *v1.RetrieveReq, fallbackMo
 	}
 
 	response = smodel.FileResponse{
-		Id:     taskFile.FileId,
-		Object: "file",
+		Id:        taskFile.FileId,
+		Object:    "file",
+		Purpose:   taskFile.Purpose,
+		Filename:  taskFile.FileName,
+		Bytes:     taskFile.Bytes,
+		CreatedAt: taskFile.CreatedAt / 1000,
+		ExpiresAt: taskFile.ExpiresAt,
+		Status:    taskFile.Status,
 	}
-
-	// todo
 
 	return response, nil
 }
 
 // Delete
-func (s *sFile) Delete(ctx context.Context, params *v1.DeleteReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.FileResponse, err error) {
+func (s *sFile) Delete(ctx context.Context, params *v1.DeleteReq) (response smodel.FileResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -386,10 +397,7 @@ func (s *sFile) Delete(ctx context.Context, params *v1.DeleteReq, fallbackModelA
 	}()
 
 	var (
-		mak = &common.MAK{
-			FallbackModelAgent: fallbackModelAgent,
-			FallbackModel:      fallbackModel,
-		}
+		mak       = &common.MAK{}
 		retryInfo *mcommon.Retry
 	)
 
@@ -403,6 +411,7 @@ func (s *sFile) Delete(ctx context.Context, params *v1.DeleteReq, fallbackModelA
 
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_DELETE,
+					IsFile:       true,
 					RequestData:  gconv.Map(params.FileDeleteRequest),
 					ResponseData: gconv.Map(response),
 					Error:        err,
@@ -420,10 +429,10 @@ func (s *sFile) Delete(ctx context.Context, params *v1.DeleteReq, fallbackModelA
 		}
 	}()
 
-	taskFile, err := dao.LogFile.FindOne(ctx, bson.M{"file_id": params.FileId, "creator": service.Session().GetSecretKey(ctx)})
+	taskFile, err := dao.TaskFile.FindOne(ctx, bson.M{"file_id": params.FileId, "creator": service.Session().GetSecretKey(ctx)})
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			err = errors.NewError(404, "invalid_request_error", "File with id '"+params.FileId+"' not found.", "invalid_request_error", nil)
+			err = errors.NewError(404, "invalid_request_error", "No such File object: "+params.FileId, "invalid_request_error", "id")
 		}
 		logger.Error(ctx, err)
 		return response, err
@@ -436,22 +445,27 @@ func (s *sFile) Delete(ctx context.Context, params *v1.DeleteReq, fallbackModelA
 		return response, err
 	}
 
-	if err := dao.LogFile.UpdateById(ctx, taskFile.Id, bson.M{"status": "deleted"}); err != nil {
+	if err := dao.TaskFile.UpdateById(ctx, taskFile.Id, bson.M{"status": "deleted"}); err != nil {
 		logger.Error(ctx, err)
 	}
 
 	response = smodel.FileResponse{
-		Id:     taskFile.FileId,
-		Object: "file.deleted",
+		Id:        taskFile.FileId,
+		Object:    "file",
+		Purpose:   taskFile.Purpose,
+		Filename:  taskFile.FileName,
+		Bytes:     taskFile.Bytes,
+		CreatedAt: taskFile.CreatedAt / 1000,
+		ExpiresAt: taskFile.ExpiresAt,
+		Status:    "deleted",
+		Deleted:   true,
 	}
-
-	// todo
 
 	return response, nil
 }
 
 // Content
-func (s *sFile) Content(ctx context.Context, params *v1.ContentReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.FileContentResponse, err error) {
+func (s *sFile) Content(ctx context.Context, params *v1.ContentReq) (response smodel.FileContentResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -459,10 +473,7 @@ func (s *sFile) Content(ctx context.Context, params *v1.ContentReq, fallbackMode
 	}()
 
 	var (
-		mak = &common.MAK{
-			FallbackModelAgent: fallbackModelAgent,
-			FallbackModel:      fallbackModel,
-		}
+		mak       = &common.MAK{}
 		retryInfo *mcommon.Retry
 	)
 
@@ -476,6 +487,7 @@ func (s *sFile) Content(ctx context.Context, params *v1.ContentReq, fallbackMode
 
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_CONTENT,
+					IsFile:       true,
 					RequestData:  gconv.Map(params.FileContentRequest),
 					Error:        err,
 					RetryInfo:    retryInfo,
@@ -492,10 +504,10 @@ func (s *sFile) Content(ctx context.Context, params *v1.ContentReq, fallbackMode
 		}
 	}()
 
-	taskFile, err := dao.LogFile.FindOne(ctx, bson.M{"file_id": params.FileId, "creator": service.Session().GetSecretKey(ctx)})
+	taskFile, err := dao.TaskFile.FindOne(ctx, bson.M{"file_id": params.FileId, "creator": service.Session().GetSecretKey(ctx)})
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			err = errors.NewError(404, "invalid_request_error", "File with id '"+params.FileId+"' not found.", "invalid_request_error", nil)
+			err = errors.NewError(404, "invalid_request_error", "No such File object: "+params.FileId, "invalid_request_error", "id")
 		}
 		logger.Error(ctx, err)
 		return response, err
@@ -530,129 +542,4 @@ func (s *sFile) Content(ctx context.Context, params *v1.ContentReq, fallbackMode
 	}
 
 	return response, nil
-}
-
-// Files
-func (s *sFile) Files(ctx context.Context, params model.FileFilesReq) ([]byte, error) {
-
-	now := gtime.TimestampMilli()
-	defer func() {
-		logger.Debugf(ctx, "sFile Files time: %d", gtime.TimestampMilli()-now)
-	}()
-
-	var (
-		mak = &common.MAK{
-			Model: params.Model,
-		}
-	)
-
-	if err := mak.InitMAK(ctx); err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	bytes, err := uploadFile(ctx, params.FilePath, fmt.Sprintf("https://generativelanguage.googleapis.com/upload/v1beta/files?key=%s", mak.RealKey))
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	logger.Infof(ctx, "sFile Files response: %s", string(bytes))
-
-	return bytes, nil
-}
-
-func uploadFile(ctx context.Context, filename string, targetUrl string) ([]byte, error) {
-
-	// 打开文件
-	file, err := os.Open(filename)
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	defer func() {
-		if err := file.Close(); err != nil {
-			logger.Error(ctx, err)
-		}
-		// 删除文件
-		if err := os.Remove(filename); err != nil {
-			logger.Error(ctx, err)
-		}
-	}()
-
-	// 创建一个缓冲区
-	var buffer bytes.Buffer
-	// 创建一个multipart/form-data的Writer
-	writer := multipart.NewWriter(&buffer)
-
-	h := make(textproto.MIMEHeader)
-	h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"; filename="%s"`, "file", gfile.Basename(filename)))
-
-	// 添加文件字段
-	formFile, err := writer.CreatePart(h)
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	// 从文件中读取内容并写入到formFile中
-	if _, err := io.Copy(formFile, file); err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	// 关闭multipart writer
-	if err = writer.Close(); err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	// 创建HTTP请求
-	req, err := http.NewRequest("POST", targetUrl, &buffer)
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	// 设置Content-Type
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	client := http.Client{Timeout: time.Second * 60}
-
-	if config.Cfg.Http.ProxyUrl != "" {
-
-		proxyUrl, err := url.Parse(config.Cfg.Http.ProxyUrl)
-		if err != nil {
-			logger.Error(ctx, err)
-			return nil, err
-		}
-
-		client.Transport = &http.Transport{
-			Proxy: http.ProxyURL(proxyUrl),
-		}
-	}
-
-	// 发送请求
-	resp, err := client.Do(req)
-	if resp != nil {
-		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				logger.Error(ctx, err)
-			}
-		}()
-	}
-
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
-	}
-
-	return body, nil
 }

@@ -50,7 +50,7 @@ func (s *sVideo) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 
 	var (
 		mak = &common.MAK{
-			Model:              gconv.String(params.Model),
+			Model:              params.Model,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
@@ -302,7 +302,7 @@ func (s *sVideo) Remix(ctx context.Context, params *v1.RemixReq, fallbackModelAg
 }
 
 // List
-func (s *sVideo) List(ctx context.Context, params *v1.ListReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.VideoListResponse, err error) {
+func (s *sVideo) List(ctx context.Context, params *v1.ListReq) (response smodel.VideoListResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -310,10 +310,7 @@ func (s *sVideo) List(ctx context.Context, params *v1.ListReq, fallbackModelAgen
 	}()
 
 	var (
-		mak = &common.MAK{
-			FallbackModelAgent: fallbackModelAgent,
-			FallbackModel:      fallbackModel,
-		}
+		mak       = &common.MAK{}
 		retryInfo *mcommon.Retry
 	)
 
@@ -464,7 +461,7 @@ func (s *sVideo) List(ctx context.Context, params *v1.ListReq, fallbackModelAgen
 }
 
 // Retrieve
-func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.VideoJobResponse, err error) {
+func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response smodel.VideoJobResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -472,10 +469,7 @@ func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq, fallbackM
 	}()
 
 	var (
-		mak = &common.MAK{
-			FallbackModelAgent: fallbackModelAgent,
-			FallbackModel:      fallbackModel,
-		}
+		mak       = &common.MAK{}
 		retryInfo *mcommon.Retry
 	)
 
@@ -564,7 +558,7 @@ func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq, fallbackM
 }
 
 // Delete
-func (s *sVideo) Delete(ctx context.Context, params *v1.DeleteReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.VideoJobResponse, err error) {
+func (s *sVideo) Delete(ctx context.Context, params *v1.DeleteReq) (response smodel.VideoJobResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -572,10 +566,7 @@ func (s *sVideo) Delete(ctx context.Context, params *v1.DeleteReq, fallbackModel
 	}()
 
 	var (
-		mak = &common.MAK{
-			FallbackModelAgent: fallbackModelAgent,
-			FallbackModel:      fallbackModel,
-		}
+		mak       = &common.MAK{}
 		retryInfo *mcommon.Retry
 	)
 
@@ -630,7 +621,7 @@ func (s *sVideo) Delete(ctx context.Context, params *v1.DeleteReq, fallbackModel
 		Id:        taskVideo.VideoId,
 		Object:    "video.deleted",
 		Model:     taskVideo.Model,
-		Status:    taskVideo.Status,
+		Status:    "deleted",
 		Progress:  taskVideo.Progress,
 		CreatedAt: taskVideo.CreatedAt / 1000,
 		Size:      fmt.Sprintf("%dx%d", taskVideo.Width, taskVideo.Height),
@@ -656,7 +647,7 @@ func (s *sVideo) Delete(ctx context.Context, params *v1.DeleteReq, fallbackModel
 }
 
 // Content
-func (s *sVideo) Content(ctx context.Context, params *v1.ContentReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.VideoContentResponse, err error) {
+func (s *sVideo) Content(ctx context.Context, params *v1.ContentReq) (response smodel.VideoContentResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -664,10 +655,7 @@ func (s *sVideo) Content(ctx context.Context, params *v1.ContentReq, fallbackMod
 	}()
 
 	var (
-		mak = &common.MAK{
-			FallbackModelAgent: fallbackModelAgent,
-			FallbackModel:      fallbackModel,
-		}
+		mak       = &common.MAK{}
 		retryInfo *mcommon.Retry
 	)
 

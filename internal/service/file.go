@@ -18,15 +18,13 @@ type (
 		// Upload
 		Upload(ctx context.Context, params *v1.UploadReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.FileResponse, err error)
 		// List
-		List(ctx context.Context, params *v1.ListReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.FileListResponse, err error)
+		List(ctx context.Context, params *v1.ListReq) (response smodel.FileListResponse, err error)
 		// Retrieve
-		Retrieve(ctx context.Context, params *v1.RetrieveReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.FileResponse, err error)
+		Retrieve(ctx context.Context, params *v1.RetrieveReq) (response smodel.FileResponse, err error)
 		// Delete
-		Delete(ctx context.Context, params *v1.DeleteReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.FileResponse, err error)
+		Delete(ctx context.Context, params *v1.DeleteReq) (response smodel.FileResponse, err error)
 		// Content
-		Content(ctx context.Context, params *v1.ContentReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.FileContentResponse, err error)
-		// Files
-		Files(ctx context.Context, params model.FileFilesReq) ([]byte, error)
+		Content(ctx context.Context, params *v1.ContentReq) (response smodel.FileContentResponse, err error)
 	}
 )
 

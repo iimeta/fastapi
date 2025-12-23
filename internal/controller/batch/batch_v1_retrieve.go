@@ -17,7 +17,7 @@ func (c *ControllerV1) Retrieve(ctx context.Context, req *v1.RetrieveReq) (res *
 		logger.Debugf(ctx, "Controller Retrieve time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	response, err := service.Batch().Retrieve(ctx, req, nil, nil)
+	response, err := service.Batch().Retrieve(ctx, req)
 	if err != nil {
 		return nil, err
 	}

@@ -630,26 +630,31 @@ func (s *sModel) GetTargetModel(ctx context.Context, model *model.Model, message
 
 	} else {
 
-		prompt := gconv.String(messages[len(messages)-1].Content)
-
 		keywords := model.ForwardConfig.Keywords
-		if slices.Contains(model.ForwardConfig.MatchRule, 2) {
+		prompt := ""
 
-			prompt := gstr.ToLower(gstr.TrimAll(prompt))
+		if len(messages) > 0 {
 
-			for i, keyword := range keywords {
+			prompt = gconv.String(messages[len(messages)-1].Content)
 
-				if gregex.IsMatchString(gstr.ToLower(gstr.TrimAll(keyword)), prompt) {
+			if slices.Contains(model.ForwardConfig.MatchRule, 2) {
 
-					if targetModel, err = s.GetCacheModel(ctx, model.ForwardConfig.TargetModels[i]); err != nil || targetModel == nil {
-						if targetModel, err = s.GetModelAndSaveCache(ctx, model.ForwardConfig.TargetModels[i]); err != nil {
-							logger.Error(ctx, err)
-							return nil, err
+				prompt := gstr.ToLower(gstr.TrimAll(prompt))
+
+				for i, keyword := range keywords {
+
+					if gregex.IsMatchString(gstr.ToLower(gstr.TrimAll(keyword)), prompt) {
+
+						if targetModel, err = s.GetCacheModel(ctx, model.ForwardConfig.TargetModels[i]); err != nil || targetModel == nil {
+							if targetModel, err = s.GetModelAndSaveCache(ctx, model.ForwardConfig.TargetModels[i]); err != nil {
+								logger.Error(ctx, err)
+								return nil, err
+							}
 						}
-					}
 
-					if targetModel != nil {
-						break
+						if targetModel != nil {
+							break
+						}
 					}
 				}
 			}
@@ -785,26 +790,31 @@ func (s *sModel) GetGroupTargetModel(ctx context.Context, group *model.Group, mo
 
 	} else {
 
-		prompt := gconv.String(messages[len(messages)-1].Content)
-
 		keywords := group.ForwardConfig.Keywords
-		if slices.Contains(group.ForwardConfig.MatchRule, 2) {
+		prompt := ""
 
-			prompt := gstr.ToLower(gstr.TrimAll(prompt))
+		if len(messages) > 0 {
 
-			for i, keyword := range keywords {
+			prompt = gconv.String(messages[len(messages)-1].Content)
 
-				if gregex.IsMatchString(gstr.ToLower(gstr.TrimAll(keyword)), prompt) {
+			if slices.Contains(group.ForwardConfig.MatchRule, 2) {
 
-					if targetModel, err = s.GetCacheModel(ctx, group.ForwardConfig.TargetModels[i]); err != nil || targetModel == nil {
-						if targetModel, err = s.GetModelAndSaveCache(ctx, group.ForwardConfig.TargetModels[i]); err != nil {
-							logger.Error(ctx, err)
-							return nil, err
+				prompt := gstr.ToLower(gstr.TrimAll(prompt))
+
+				for i, keyword := range keywords {
+
+					if gregex.IsMatchString(gstr.ToLower(gstr.TrimAll(keyword)), prompt) {
+
+						if targetModel, err = s.GetCacheModel(ctx, group.ForwardConfig.TargetModels[i]); err != nil || targetModel == nil {
+							if targetModel, err = s.GetModelAndSaveCache(ctx, group.ForwardConfig.TargetModels[i]); err != nil {
+								logger.Error(ctx, err)
+								return nil, err
+							}
 						}
-					}
 
-					if targetModel != nil {
-						break
+						if targetModel != nil {
+							break
+						}
 					}
 				}
 			}

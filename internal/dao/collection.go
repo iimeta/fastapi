@@ -11,6 +11,7 @@ const (
 	KEY            = "key"
 	GROUP          = "group"
 	TASK_VIDEO     = "task_video"
+	TASK_FILE      = "task_file"
 	TASK_BATCH     = "task_batch"
 	LOG_TEXT       = "log_text"
 	LOG_IMAGE      = "log_image"

@@ -45,7 +45,7 @@ func (s *sBatch) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 
 	var (
 		mak = &common.MAK{
-			//Model:              gconv.String(params.Model),
+			Model:              params.Model,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
@@ -62,6 +62,7 @@ func (s *sBatch) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_CREATE,
+					IsBatch:      true,
 					BatchId:      response.Id,
 					RequestData:  gconv.Map(params.BatchCreateRequest),
 					ResponseData: gconv.Map(response),
@@ -154,7 +155,7 @@ func (s *sBatch) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 }
 
 // List
-func (s *sBatch) List(ctx context.Context, params *v1.ListReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.BatchListResponse, err error) {
+func (s *sBatch) List(ctx context.Context, params *v1.ListReq) (response smodel.BatchListResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -162,10 +163,7 @@ func (s *sBatch) List(ctx context.Context, params *v1.ListReq, fallbackModelAgen
 	}()
 
 	var (
-		mak = &common.MAK{
-			FallbackModelAgent: fallbackModelAgent,
-			FallbackModel:      fallbackModel,
-		}
+		mak       = &common.MAK{}
 		retryInfo *mcommon.Retry
 	)
 
@@ -179,6 +177,7 @@ func (s *sBatch) List(ctx context.Context, params *v1.ListReq, fallbackModelAgen
 
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_LIST,
+					IsBatch:      true,
 					RequestData:  gconv.Map(params.BatchListRequest),
 					ResponseData: gconv.Map(response),
 					Error:        err,
@@ -288,7 +287,7 @@ func (s *sBatch) List(ctx context.Context, params *v1.ListReq, fallbackModelAgen
 }
 
 // Retrieve
-func (s *sBatch) Retrieve(ctx context.Context, params *v1.RetrieveReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.BatchResponse, err error) {
+func (s *sBatch) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response smodel.BatchResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -296,10 +295,7 @@ func (s *sBatch) Retrieve(ctx context.Context, params *v1.RetrieveReq, fallbackM
 	}()
 
 	var (
-		mak = &common.MAK{
-			FallbackModelAgent: fallbackModelAgent,
-			FallbackModel:      fallbackModel,
-		}
+		mak       = &common.MAK{}
 		retryInfo *mcommon.Retry
 	)
 
@@ -313,6 +309,8 @@ func (s *sBatch) Retrieve(ctx context.Context, params *v1.RetrieveReq, fallbackM
 
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_RETRIEVE,
+					IsBatch:      true,
+					BatchId:      response.Id,
 					RequestData:  gconv.Map(params.BatchRetrieveRequest),
 					ResponseData: gconv.Map(response),
 					Error:        err,
@@ -367,7 +365,7 @@ func (s *sBatch) Retrieve(ctx context.Context, params *v1.RetrieveReq, fallbackM
 }
 
 // Cancel
-func (s *sBatch) Cancel(ctx context.Context, params *v1.CancelReq, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.BatchResponse, err error) {
+func (s *sBatch) Cancel(ctx context.Context, params *v1.CancelReq) (response smodel.BatchResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -375,10 +373,7 @@ func (s *sBatch) Cancel(ctx context.Context, params *v1.CancelReq, fallbackModel
 	}()
 
 	var (
-		mak = &common.MAK{
-			FallbackModelAgent: fallbackModelAgent,
-			FallbackModel:      fallbackModel,
-		}
+		mak       = &common.MAK{}
 		retryInfo *mcommon.Retry
 	)
 
@@ -391,7 +386,9 @@ func (s *sBatch) Cancel(ctx context.Context, params *v1.CancelReq, fallbackModel
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				afterHandler := &mcommon.AfterHandler{
-					Action:       consts.ACTION_DELETE,
+					Action:       consts.ACTION_CANCEL,
+					IsBatch:      true,
+					BatchId:      response.Id,
 					RequestData:  gconv.Map(params.BatchCancelRequest),
 					ResponseData: gconv.Map(response),
 					Error:        err,

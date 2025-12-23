@@ -186,20 +186,23 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 
 		if mak.ReqModel.Type == 100 {
 
-			if multiContent, ok := billingData.ChatCompletionRequest.Messages[len(billingData.ChatCompletionRequest.Messages)-1].Content.([]any); ok {
+			if len(billingData.ChatCompletionRequest.Messages) > 0 {
 
-				for _, value := range multiContent {
-					if content, ok := value.(map[string]any); ok {
-						if content["type"] == "text" {
-							promptTokens += TokensFromString(ctx, mak.ReqModel.Model, gconv.String(content))
+				if multiContent, ok := billingData.ChatCompletionRequest.Messages[len(billingData.ChatCompletionRequest.Messages)-1].Content.([]any); ok {
+
+					for _, value := range multiContent {
+						if content, ok := value.(map[string]any); ok {
+							if content["type"] == "text" {
+								promptTokens += TokensFromString(ctx, mak.ReqModel.Model, gconv.String(content))
+							}
+						} else {
+							promptTokens += TokensFromString(ctx, mak.ReqModel.Model, gconv.String(value))
 						}
-					} else {
-						promptTokens += TokensFromString(ctx, mak.ReqModel.Model, gconv.String(value))
 					}
-				}
 
-			} else {
-				promptTokens = TokensFromMessages(ctx, model, billingData.ChatCompletionRequest.Messages)
+				} else {
+					promptTokens = TokensFromMessages(ctx, model, billingData.ChatCompletionRequest.Messages)
+				}
 			}
 
 		} else {
@@ -310,20 +313,23 @@ func tieredText(ctx context.Context, mak *MAK, billingData *common.BillingData, 
 
 		if mak.ReqModel.Type == 100 {
 
-			if multiContent, ok := billingData.ChatCompletionRequest.Messages[len(billingData.ChatCompletionRequest.Messages)-1].Content.([]any); ok {
+			if len(billingData.ChatCompletionRequest.Messages) > 0 {
 
-				for _, value := range multiContent {
-					if content, ok := value.(map[string]any); ok {
-						if content["type"] == "text" {
-							promptTokens += TokensFromString(ctx, mak.ReqModel.Model, gconv.String(content))
+				if multiContent, ok := billingData.ChatCompletionRequest.Messages[len(billingData.ChatCompletionRequest.Messages)-1].Content.([]any); ok {
+
+					for _, value := range multiContent {
+						if content, ok := value.(map[string]any); ok {
+							if content["type"] == "text" {
+								promptTokens += TokensFromString(ctx, mak.ReqModel.Model, gconv.String(content))
+							}
+						} else {
+							promptTokens += TokensFromString(ctx, mak.ReqModel.Model, gconv.String(value))
 						}
-					} else {
-						promptTokens += TokensFromString(ctx, mak.ReqModel.Model, gconv.String(value))
 					}
-				}
 
-			} else {
-				promptTokens = TokensFromMessages(ctx, model, billingData.ChatCompletionRequest.Messages)
+				} else {
+					promptTokens = TokensFromMessages(ctx, model, billingData.ChatCompletionRequest.Messages)
+				}
 			}
 
 		} else {
@@ -521,33 +527,36 @@ func vision(ctx context.Context, mak *MAK, billingData *common.BillingData, spen
 		model = consts.DEFAULT_MODEL
 	}
 
-	if multiContent, ok := billingData.ChatCompletionRequest.Messages[len(billingData.ChatCompletionRequest.Messages)-1].Content.([]any); ok {
+	if len(billingData.ChatCompletionRequest.Messages) > 0 {
 
-		for _, value := range multiContent {
+		if multiContent, ok := billingData.ChatCompletionRequest.Messages[len(billingData.ChatCompletionRequest.Messages)-1].Content.([]any); ok {
 
-			if content, ok := value.(map[string]any); ok && content["type"] == "image_url" {
+			for _, value := range multiContent {
 
-				if imageUrl, ok := content["image_url"].(map[string]any); ok {
+				if content, ok := value.(map[string]any); ok && content["type"] == "image_url" {
 
-					if spend.Vision == nil {
-						spend.Vision = new(common.VisionSpend)
-					}
+					if imageUrl, ok := content["image_url"].(map[string]any); ok {
 
-					detail := imageUrl["detail"]
-
-					for _, vision := range mak.ReqModel.Pricing.Vision {
-
-						if vision.Mode == detail {
-							spend.Vision.Pricing = vision
-							break
+						if spend.Vision == nil {
+							spend.Vision = new(common.VisionSpend)
 						}
 
-						if vision.IsDefault {
-							spend.Vision.Pricing = vision
-						}
-					}
+						detail := imageUrl["detail"]
 
-					spend.Vision.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT * spend.Vision.Pricing.OnceRatio))
+						for _, vision := range mak.ReqModel.Pricing.Vision {
+
+							if vision.Mode == detail {
+								spend.Vision.Pricing = vision
+								break
+							}
+
+							if vision.IsDefault {
+								spend.Vision.Pricing = vision
+							}
+						}
+
+						spend.Vision.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT * spend.Vision.Pricing.OnceRatio))
+					}
 				}
 			}
 		}

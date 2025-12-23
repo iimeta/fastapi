@@ -17,7 +17,7 @@ func (c *ControllerV1) Cancel(ctx context.Context, req *v1.CancelReq) (res *v1.C
 		logger.Debugf(ctx, "Controller Cancel time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	response, err := service.Batch().Cancel(ctx, req, nil, nil)
+	response, err := service.Batch().Cancel(ctx, req)
 	if err != nil {
 		return nil, err
 	}

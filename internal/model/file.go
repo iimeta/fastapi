@@ -6,7 +6,6 @@ import (
 
 type FileReq struct {
 	Action      string         // 接口
-	FileId      string         // 文件ID
 	RequestData map[string]any // 请求数据
 }
 

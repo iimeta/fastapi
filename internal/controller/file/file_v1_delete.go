@@ -17,7 +17,7 @@ func (c *ControllerV1) Delete(ctx context.Context, req *v1.DeleteReq) (res *v1.D
 		logger.Debugf(ctx, "Controller Delete time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	response, err := service.File().Delete(ctx, req, nil, nil)
+	response, err := service.File().Delete(ctx, req)
 	if err != nil {
 		return nil, err
 	}

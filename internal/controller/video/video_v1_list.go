@@ -17,7 +17,7 @@ func (c *ControllerV1) List(ctx context.Context, req *v1.ListReq) (res *v1.ListR
 		logger.Debugf(ctx, "Controller List time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	response, err := service.Video().List(ctx, req, nil, nil)
+	response, err := service.Video().List(ctx, req)
 	if err != nil {
 		return nil, err
 	}
