@@ -41,7 +41,7 @@ type RetrieveRes struct {
 
 // Cancel接口请求参数
 type CancelReq struct {
-	g.Meta `path:"/{batch_id}" tags:"batch" method:"post" summary:"Cancel接口"`
+	g.Meta `path:"/{batch_id}/cancel" tags:"batch" method:"post" summary:"Cancel接口"`
 	smodel.BatchCancelRequest
 }
 

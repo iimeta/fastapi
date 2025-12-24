@@ -22,7 +22,11 @@ func (c *ControllerV1) Retrieve(ctx context.Context, req *v1.RetrieveReq) (res *
 		return nil, err
 	}
 
-	g.RequestFromCtx(ctx).Response.WriteJson(response)
+	if response.ResponseBytes == nil {
+		g.RequestFromCtx(ctx).Response.WriteJson(response)
+	} else {
+		g.RequestFromCtx(ctx).Response.WriteJson(response.ResponseBytes)
+	}
 
 	return
 }

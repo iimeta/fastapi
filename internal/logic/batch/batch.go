@@ -65,7 +65,7 @@ func (s *sBatch) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 					IsBatch:      true,
 					BatchId:      response.Id,
 					RequestData:  gconv.Map(params.BatchCreateRequest),
-					ResponseData: gconv.Map(response),
+					ResponseData: gconv.Map(response.ResponseBytes),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
@@ -215,7 +215,7 @@ func (s *sBatch) List(ctx context.Context, params *v1.ListReq) (response smodel.
 		taskBatch, err := dao.TaskBatch.FindOne(ctx, bson.M{"batch_id": params.After, "creator": service.Session().GetSecretKey(ctx)})
 		if err != nil {
 			if errors.Is(err, mongo.ErrNoDocuments) {
-				err = errors.NewError(404, "invalid_request_error", "Batch with id '"+params.After+"' not found.", "invalid_request_error", nil)
+				err = errors.NewError(404, "invalid_request_error", "No batch found with id '"+params.After+"'.", "invalid_request_error", nil)
 			}
 			logger.Error(ctx, err)
 			return response, err
@@ -312,7 +312,7 @@ func (s *sBatch) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 					IsBatch:      true,
 					BatchId:      response.Id,
 					RequestData:  gconv.Map(params.BatchRetrieveRequest),
-					ResponseData: gconv.Map(response),
+					ResponseData: gconv.Map(response.ResponseBytes),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
@@ -331,7 +331,7 @@ func (s *sBatch) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 	taskBatch, err := dao.TaskBatch.FindOne(ctx, bson.M{"batch_id": params.BatchId, "creator": service.Session().GetSecretKey(ctx)})
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			err = errors.NewError(404, "invalid_request_error", "Batch with id '"+params.BatchId+"' not found.", "invalid_request_error", nil)
+			err = errors.NewError(404, "invalid_request_error", "No batch found with id '"+params.BatchId+"'.", "invalid_request_error", nil)
 		}
 		logger.Error(ctx, err)
 		return response, err
@@ -390,7 +390,7 @@ func (s *sBatch) Cancel(ctx context.Context, params *v1.CancelReq) (response smo
 					IsBatch:      true,
 					BatchId:      response.Id,
 					RequestData:  gconv.Map(params.BatchCancelRequest),
-					ResponseData: gconv.Map(response),
+					ResponseData: gconv.Map(response.ResponseBytes),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
@@ -409,7 +409,7 @@ func (s *sBatch) Cancel(ctx context.Context, params *v1.CancelReq) (response smo
 	taskBatch, err := dao.TaskBatch.FindOne(ctx, bson.M{"batch_id": params.BatchId, "creator": service.Session().GetSecretKey(ctx)})
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			err = errors.NewError(404, "invalid_request_error", "Batch with id '"+params.BatchId+"' not found.", "invalid_request_error", nil)
+			err = errors.NewError(404, "invalid_request_error", "No batch found with id '"+params.BatchId+"'.", "invalid_request_error", nil)
 		}
 		logger.Error(ctx, err)
 		return response, err
@@ -422,15 +422,15 @@ func (s *sBatch) Cancel(ctx context.Context, params *v1.CancelReq) (response smo
 		return response, err
 	}
 
-	if err := dao.TaskBatch.UpdateById(ctx, taskBatch.Id, bson.M{"status": "deleted"}); err != nil {
+	if err := dao.TaskBatch.UpdateById(ctx, taskBatch.Id, bson.M{"status": "cancelling"}); err != nil {
 		logger.Error(ctx, err)
 	}
 
 	response = smodel.BatchResponse{
 		Id:        taskBatch.BatchId,
-		Object:    "batch.deleted",
+		Object:    "batch",
 		Model:     taskBatch.Model,
-		Status:    taskBatch.Status,
+		Status:    "cancelling",
 		CreatedAt: taskBatch.CreatedAt / 1000,
 		Errors:    taskBatch.Error,
 	}
