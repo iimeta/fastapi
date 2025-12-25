@@ -583,12 +583,13 @@ func batchHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		if after.Action == consts.ACTION_CREATE {
 
 			taskBatch := do.TaskBatch{
-				TraceId: gtrace.GetTraceID(ctx),
-				UserId:  service.Session().GetUserId(ctx),
-				AppId:   service.Session().GetAppId(ctx),
-				Model:   mak.ReqModel.Name,
-				BatchId: after.BatchId,
-				Rid:     service.Session().GetRid(ctx),
+				TraceId:      gtrace.GetTraceID(ctx),
+				UserId:       service.Session().GetUserId(ctx),
+				AppId:        service.Session().GetAppId(ctx),
+				Model:        mak.ReqModel.Name,
+				BatchId:      after.BatchId,
+				ResponseData: after.ResponseData,
+				Rid:          service.Session().GetRid(ctx),
 			}
 
 			if _, err := dao.TaskBatch.Insert(ctx, taskBatch); err != nil {

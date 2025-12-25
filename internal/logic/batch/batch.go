@@ -207,7 +207,7 @@ func (s *sBatch) List(ctx context.Context, params *v1.ListReq) (response smodel.
 	filter := bson.M{
 		"creator":    service.Session().GetSecretKey(ctx),
 		"status":     bson.M{"$nin": []string{"deleted", "expired"}},
-		"created_at": bson.M{"$gt": time.Now().Add(-24 * time.Hour).UnixMilli()},
+		"created_at": bson.M{"$gt": time.Now().Add(-720 * time.Hour).UnixMilli()},
 	}
 
 	if params.After != "" {
@@ -242,7 +242,7 @@ func (s *sBatch) List(ctx context.Context, params *v1.ListReq) (response smodel.
 	if len(results) == 0 {
 		response = smodel.BatchListResponse{
 			Object: "list",
-			Data:   make([]smodel.BatchResponse, 0),
+			Data:   make([]any, 0),
 		}
 		return response, nil
 	}
@@ -262,25 +262,7 @@ func (s *sBatch) List(ctx context.Context, params *v1.ListReq) (response smodel.
 	}
 
 	for _, result := range results {
-
-		batchJobResponse := smodel.BatchResponse{
-			Id:        result.BatchId,
-			Object:    "batch",
-			Model:     result.Model,
-			Status:    result.Status,
-			CreatedAt: result.CreatedAt / 1000,
-			Errors:    result.Error,
-		}
-
-		if result.CompletedAt != 0 {
-			batchJobResponse.CompletedAt = result.CompletedAt
-		}
-
-		if result.ExpiresAt != 0 {
-			batchJobResponse.ExpiresAt = result.ExpiresAt
-		}
-
-		response.Data = append(response.Data, batchJobResponse)
+		response.Data = append(response.Data, result.ResponseData)
 	}
 
 	return response, nil
@@ -344,22 +326,7 @@ func (s *sBatch) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 		return response, err
 	}
 
-	response = smodel.BatchResponse{
-		Id:        taskBatch.BatchId,
-		Object:    "batch",
-		Model:     taskBatch.Model,
-		Status:    taskBatch.Status,
-		CreatedAt: taskBatch.CreatedAt / 1000,
-		Errors:    taskBatch.Error,
-	}
-
-	if taskBatch.CompletedAt != 0 {
-		response.CompletedAt = taskBatch.CompletedAt
-	}
-
-	if taskBatch.ExpiresAt != 0 {
-		response.ExpiresAt = taskBatch.ExpiresAt
-	}
+	response.ResponseBytes = gconv.Bytes(taskBatch.ResponseData)
 
 	return response, nil
 }
@@ -426,22 +393,7 @@ func (s *sBatch) Cancel(ctx context.Context, params *v1.CancelReq) (response smo
 		logger.Error(ctx, err)
 	}
 
-	response = smodel.BatchResponse{
-		Id:        taskBatch.BatchId,
-		Object:    "batch",
-		Model:     taskBatch.Model,
-		Status:    "cancelling",
-		CreatedAt: taskBatch.CreatedAt / 1000,
-		Errors:    taskBatch.Error,
-	}
-
-	if taskBatch.CompletedAt != 0 {
-		response.CompletedAt = taskBatch.CompletedAt
-	}
-
-	if taskBatch.ExpiresAt != 0 {
-		response.ExpiresAt = taskBatch.ExpiresAt
-	}
+	response.ResponseBytes = gconv.Bytes(taskBatch.ResponseData)
 
 	return response, nil
 }
