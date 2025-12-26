@@ -852,6 +852,292 @@ func (s *sLog) Video(ctx context.Context, videoLog model.LogVideo, retry ...int)
 	}
 }
 
+// 文件日志
+func (s *sLog) File(ctx context.Context, fileLog model.LogFile, retry ...int) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sLog File time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	// 不记录此错误日志
+	if fileLog.FileRes.Error != nil && checkError(fileLog.FileRes.Error) {
+		return
+	}
+
+	file := do.LogFile{
+		TraceId:      gtrace.GetTraceID(ctx),
+		UserId:       service.Session().GetUserId(ctx),
+		AppId:        service.Session().GetAppId(ctx),
+		Action:       fileLog.FileReq.Action,
+		FileId:       fileLog.FileRes.FileId,
+		RequestData:  fileLog.FileReq.RequestData,
+		ResponseData: fileLog.FileRes.ResponseData,
+		Spend:        fileLog.Spend,
+		TotalTime:    fileLog.FileRes.TotalTime,
+		InternalTime: fileLog.FileRes.InternalTime,
+		ReqTime:      fileLog.FileRes.EnterTime,
+		ReqDate:      gtime.NewFromTimeStamp(fileLog.FileRes.EnterTime).Format("Y-m-d"),
+		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
+		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
+		LocalIp:      util.GetLocalIp(),
+		Status:       1,
+		Host:         g.RequestFromCtx(ctx).GetHost(),
+		Rid:          service.Session().GetRid(ctx),
+	}
+
+	if fileLog.ReqModel != nil {
+		file.ProviderId = fileLog.ReqModel.ProviderId
+		if provider, err := service.Provider().GetCache(ctx, fileLog.ReqModel.ProviderId); err != nil {
+			logger.Error(ctx, err)
+		} else {
+			file.ProviderName = provider.Name
+		}
+		file.ModelId = fileLog.ReqModel.Id
+		file.ModelName = fileLog.ReqModel.Name
+		file.Model = fileLog.ReqModel.Model
+		file.ModelType = fileLog.ReqModel.Type
+	}
+
+	if fileLog.RealModel != nil {
+		file.IsEnablePresetConfig = fileLog.RealModel.IsEnablePresetConfig
+		file.PresetConfig = fileLog.RealModel.PresetConfig
+		file.IsEnableForward = fileLog.RealModel.IsEnableForward
+		file.ForwardConfig = fileLog.RealModel.ForwardConfig
+		file.IsEnableModelAgent = fileLog.RealModel.IsEnableModelAgent
+		file.RealModelId = fileLog.RealModel.Id
+		file.RealModelName = fileLog.RealModel.Name
+		file.RealModel = fileLog.RealModel.Model
+	}
+
+	if file.IsEnableModelAgent && fileLog.ModelAgent != nil {
+		file.ModelAgentId = fileLog.ModelAgent.Id
+		file.ModelAgent = &do.ModelAgent{
+			ProviderId: fileLog.ModelAgent.ProviderId,
+			Name:       fileLog.ModelAgent.Name,
+			BaseUrl:    fileLog.ModelAgent.BaseUrl,
+			Path:       fileLog.ModelAgent.Path,
+			Weight:     fileLog.ModelAgent.Weight,
+			Remark:     fileLog.ModelAgent.Remark,
+			Status:     fileLog.ModelAgent.Status,
+		}
+	}
+
+	if fileLog.FallbackModelAgent != nil {
+		file.IsEnableFallback = true
+		file.FallbackConfig = &mcommon.FallbackConfig{
+			ModelAgent:     fileLog.FallbackModelAgent.Id,
+			ModelAgentName: fileLog.FallbackModelAgent.Name,
+		}
+	}
+
+	if fileLog.FallbackModel != nil {
+		file.IsEnableFallback = true
+		if file.FallbackConfig == nil {
+			file.FallbackConfig = new(mcommon.FallbackConfig)
+		}
+		file.FallbackConfig.Model = fileLog.FallbackModel.Model
+		file.FallbackConfig.ModelName = fileLog.FallbackModel.Name
+	}
+
+	if fileLog.Key != nil {
+		file.Key = fileLog.Key.Key
+	}
+
+	if fileLog.FileRes.Error != nil {
+
+		file.ErrMsg = fileLog.FileRes.Error.Error()
+		openaiApiError := &serrors.ApiError{}
+		if errors.As(fileLog.FileRes.Error, &openaiApiError) {
+			file.ErrMsg = openaiApiError.Message
+		}
+
+		if common.IsAborted(fileLog.FileRes.Error) {
+			file.Status = 2
+		} else {
+			file.Status = -1
+		}
+	}
+
+	if fileLog.RetryInfo != nil {
+
+		file.IsRetry = fileLog.RetryInfo.IsRetry
+		file.Retry = &mcommon.Retry{
+			IsRetry:    fileLog.RetryInfo.IsRetry,
+			RetryCount: fileLog.RetryInfo.RetryCount,
+			ErrMsg:     fileLog.RetryInfo.ErrMsg,
+		}
+
+		if file.IsRetry {
+			file.Status = 3
+			file.ErrMsg = fileLog.RetryInfo.ErrMsg
+		}
+	}
+
+	if _, err := dao.LogFile.Insert(ctx, file); err != nil {
+		logger.Errorf(ctx, "sLog File error: %v", err)
+
+		if err.Error() == "an inserted document is too large" {
+			fileLog.FileReq.RequestData = map[string]any{"error": err.Error()}
+		}
+
+		if len(retry) == 10 {
+			panic(err)
+		}
+
+		retry = append(retry, 1)
+
+		time.Sleep(time.Duration(len(retry)*5) * time.Second)
+
+		logger.Errorf(ctx, "sLog File retry: %d", len(retry))
+
+		s.File(ctx, fileLog, retry...)
+	}
+}
+
+// 批处理日志
+func (s *sLog) Batch(ctx context.Context, batchLog model.LogBatch, retry ...int) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sLog Batch time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	// 不记录此错误日志
+	if batchLog.BatchRes.Error != nil && checkError(batchLog.BatchRes.Error) {
+		return
+	}
+
+	batch := do.LogBatch{
+		TraceId:      gtrace.GetTraceID(ctx),
+		UserId:       service.Session().GetUserId(ctx),
+		AppId:        service.Session().GetAppId(ctx),
+		Action:       batchLog.BatchReq.Action,
+		BatchId:      batchLog.BatchRes.BatchId,
+		RequestData:  batchLog.BatchReq.RequestData,
+		ResponseData: batchLog.BatchRes.ResponseData,
+		Spend:        batchLog.Spend,
+		TotalTime:    batchLog.BatchRes.TotalTime,
+		InternalTime: batchLog.BatchRes.InternalTime,
+		ReqTime:      batchLog.BatchRes.EnterTime,
+		ReqDate:      gtime.NewFromTimeStamp(batchLog.BatchRes.EnterTime).Format("Y-m-d"),
+		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
+		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
+		LocalIp:      util.GetLocalIp(),
+		Status:       1,
+		Host:         g.RequestFromCtx(ctx).GetHost(),
+		Rid:          service.Session().GetRid(ctx),
+	}
+
+	if batchLog.ReqModel != nil {
+		batch.ProviderId = batchLog.ReqModel.ProviderId
+		if provider, err := service.Provider().GetCache(ctx, batchLog.ReqModel.ProviderId); err != nil {
+			logger.Error(ctx, err)
+		} else {
+			batch.ProviderName = provider.Name
+		}
+		batch.ModelId = batchLog.ReqModel.Id
+		batch.ModelName = batchLog.ReqModel.Name
+		batch.Model = batchLog.ReqModel.Model
+		batch.ModelType = batchLog.ReqModel.Type
+	}
+
+	if batchLog.RealModel != nil {
+		batch.IsEnablePresetConfig = batchLog.RealModel.IsEnablePresetConfig
+		batch.PresetConfig = batchLog.RealModel.PresetConfig
+		batch.IsEnableForward = batchLog.RealModel.IsEnableForward
+		batch.ForwardConfig = batchLog.RealModel.ForwardConfig
+		batch.IsEnableModelAgent = batchLog.RealModel.IsEnableModelAgent
+		batch.RealModelId = batchLog.RealModel.Id
+		batch.RealModelName = batchLog.RealModel.Name
+		batch.RealModel = batchLog.RealModel.Model
+	}
+
+	if batch.IsEnableModelAgent && batchLog.ModelAgent != nil {
+		batch.ModelAgentId = batchLog.ModelAgent.Id
+		batch.ModelAgent = &do.ModelAgent{
+			ProviderId: batchLog.ModelAgent.ProviderId,
+			Name:       batchLog.ModelAgent.Name,
+			BaseUrl:    batchLog.ModelAgent.BaseUrl,
+			Path:       batchLog.ModelAgent.Path,
+			Weight:     batchLog.ModelAgent.Weight,
+			Remark:     batchLog.ModelAgent.Remark,
+			Status:     batchLog.ModelAgent.Status,
+		}
+	}
+
+	if batchLog.FallbackModelAgent != nil {
+		batch.IsEnableFallback = true
+		batch.FallbackConfig = &mcommon.FallbackConfig{
+			ModelAgent:     batchLog.FallbackModelAgent.Id,
+			ModelAgentName: batchLog.FallbackModelAgent.Name,
+		}
+	}
+
+	if batchLog.FallbackModel != nil {
+		batch.IsEnableFallback = true
+		if batch.FallbackConfig == nil {
+			batch.FallbackConfig = new(mcommon.FallbackConfig)
+		}
+		batch.FallbackConfig.Model = batchLog.FallbackModel.Model
+		batch.FallbackConfig.ModelName = batchLog.FallbackModel.Name
+	}
+
+	if batchLog.Key != nil {
+		batch.Key = batchLog.Key.Key
+	}
+
+	if batchLog.BatchRes.Error != nil {
+
+		batch.ErrMsg = batchLog.BatchRes.Error.Error()
+		openaiApiError := &serrors.ApiError{}
+		if errors.As(batchLog.BatchRes.Error, &openaiApiError) {
+			batch.ErrMsg = openaiApiError.Message
+		}
+
+		if common.IsAborted(batchLog.BatchRes.Error) {
+			batch.Status = 2
+		} else {
+			batch.Status = -1
+		}
+	}
+
+	if batchLog.RetryInfo != nil {
+
+		batch.IsRetry = batchLog.RetryInfo.IsRetry
+		batch.Retry = &mcommon.Retry{
+			IsRetry:    batchLog.RetryInfo.IsRetry,
+			RetryCount: batchLog.RetryInfo.RetryCount,
+			ErrMsg:     batchLog.RetryInfo.ErrMsg,
+		}
+
+		if batch.IsRetry {
+			batch.Status = 3
+			batch.ErrMsg = batchLog.RetryInfo.ErrMsg
+		}
+	}
+
+	if _, err := dao.LogBatch.Insert(ctx, batch); err != nil {
+		logger.Errorf(ctx, "sLog Batch error: %v", err)
+
+		if err.Error() == "an inserted document is too large" {
+			batchLog.BatchReq.RequestData = map[string]any{"error": err.Error()}
+		}
+
+		if len(retry) == 10 {
+			panic(err)
+		}
+
+		retry = append(retry, 1)
+
+		time.Sleep(time.Duration(len(retry)*5) * time.Second)
+
+		logger.Errorf(ctx, "sLog Batch retry: %d", len(retry))
+
+		s.Batch(ctx, batchLog, retry...)
+	}
+}
+
 // Midjourney日志
 func (s *sLog) Midjourney(ctx context.Context, midjourneyLog model.LogMidjourney, retry ...int) {
 
@@ -1142,292 +1428,6 @@ func (s *sLog) General(ctx context.Context, generalLog model.LogGeneral, retry .
 		logger.Errorf(ctx, "sLog General retry: %d", len(retry))
 
 		s.General(ctx, generalLog, retry...)
-	}
-}
-
-// 文件日志
-func (s *sLog) File(ctx context.Context, fileLog model.LogFile, retry ...int) {
-
-	now := gtime.TimestampMilli()
-	defer func() {
-		logger.Debugf(ctx, "sLog File time: %d", gtime.TimestampMilli()-now)
-	}()
-
-	// 不记录此错误日志
-	if fileLog.FileRes.Error != nil && checkError(fileLog.FileRes.Error) {
-		return
-	}
-
-	file := do.LogFile{
-		TraceId:      gtrace.GetTraceID(ctx),
-		UserId:       service.Session().GetUserId(ctx),
-		AppId:        service.Session().GetAppId(ctx),
-		Action:       fileLog.FileReq.Action,
-		FileId:       fileLog.FileRes.FileId,
-		RequestData:  fileLog.FileReq.RequestData,
-		ResponseData: fileLog.FileRes.ResponseData,
-		Spend:        fileLog.Spend,
-		TotalTime:    fileLog.FileRes.TotalTime,
-		InternalTime: fileLog.FileRes.InternalTime,
-		ReqTime:      fileLog.FileRes.EnterTime,
-		ReqDate:      gtime.NewFromTimeStamp(fileLog.FileRes.EnterTime).Format("Y-m-d"),
-		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
-		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
-		LocalIp:      util.GetLocalIp(),
-		Status:       1,
-		Host:         g.RequestFromCtx(ctx).GetHost(),
-		Rid:          service.Session().GetRid(ctx),
-	}
-
-	if fileLog.ReqModel != nil {
-		file.ProviderId = fileLog.ReqModel.ProviderId
-		if provider, err := service.Provider().GetCache(ctx, fileLog.ReqModel.ProviderId); err != nil {
-			logger.Error(ctx, err)
-		} else {
-			file.ProviderName = provider.Name
-		}
-		file.ModelId = fileLog.ReqModel.Id
-		file.ModelName = fileLog.ReqModel.Name
-		file.Model = fileLog.ReqModel.Model
-		file.ModelType = fileLog.ReqModel.Type
-	}
-
-	if fileLog.RealModel != nil {
-		file.IsEnablePresetConfig = fileLog.RealModel.IsEnablePresetConfig
-		file.PresetConfig = fileLog.RealModel.PresetConfig
-		file.IsEnableForward = fileLog.RealModel.IsEnableForward
-		file.ForwardConfig = fileLog.RealModel.ForwardConfig
-		file.IsEnableModelAgent = fileLog.RealModel.IsEnableModelAgent
-		file.RealModelId = fileLog.RealModel.Id
-		file.RealModelName = fileLog.RealModel.Name
-		file.RealModel = fileLog.RealModel.Model
-	}
-
-	if file.IsEnableModelAgent && fileLog.ModelAgent != nil {
-		file.ModelAgentId = fileLog.ModelAgent.Id
-		file.ModelAgent = &do.ModelAgent{
-			ProviderId: fileLog.ModelAgent.ProviderId,
-			Name:       fileLog.ModelAgent.Name,
-			BaseUrl:    fileLog.ModelAgent.BaseUrl,
-			Path:       fileLog.ModelAgent.Path,
-			Weight:     fileLog.ModelAgent.Weight,
-			Remark:     fileLog.ModelAgent.Remark,
-			Status:     fileLog.ModelAgent.Status,
-		}
-	}
-
-	if fileLog.FallbackModelAgent != nil {
-		file.IsEnableFallback = true
-		file.FallbackConfig = &mcommon.FallbackConfig{
-			ModelAgent:     fileLog.FallbackModelAgent.Id,
-			ModelAgentName: fileLog.FallbackModelAgent.Name,
-		}
-	}
-
-	if fileLog.FallbackModel != nil {
-		file.IsEnableFallback = true
-		if file.FallbackConfig == nil {
-			file.FallbackConfig = new(mcommon.FallbackConfig)
-		}
-		file.FallbackConfig.Model = fileLog.FallbackModel.Model
-		file.FallbackConfig.ModelName = fileLog.FallbackModel.Name
-	}
-
-	if fileLog.Key != nil {
-		file.Key = fileLog.Key.Key
-	}
-
-	if fileLog.FileRes.Error != nil {
-
-		file.ErrMsg = fileLog.FileRes.Error.Error()
-		openaiApiError := &serrors.ApiError{}
-		if errors.As(fileLog.FileRes.Error, &openaiApiError) {
-			file.ErrMsg = openaiApiError.Message
-		}
-
-		if common.IsAborted(fileLog.FileRes.Error) {
-			file.Status = 2
-		} else {
-			file.Status = -1
-		}
-	}
-
-	if fileLog.RetryInfo != nil {
-
-		file.IsRetry = fileLog.RetryInfo.IsRetry
-		file.Retry = &mcommon.Retry{
-			IsRetry:    fileLog.RetryInfo.IsRetry,
-			RetryCount: fileLog.RetryInfo.RetryCount,
-			ErrMsg:     fileLog.RetryInfo.ErrMsg,
-		}
-
-		if file.IsRetry {
-			file.Status = 3
-			file.ErrMsg = fileLog.RetryInfo.ErrMsg
-		}
-	}
-
-	if _, err := dao.LogFile.Insert(ctx, file); err != nil {
-		logger.Errorf(ctx, "sLog File error: %v", err)
-
-		if err.Error() == "an inserted document is too large" {
-			fileLog.FileReq.RequestData = map[string]any{"error": err.Error()}
-		}
-
-		if len(retry) == 10 {
-			panic(err)
-		}
-
-		retry = append(retry, 1)
-
-		time.Sleep(time.Duration(len(retry)*5) * time.Second)
-
-		logger.Errorf(ctx, "sLog File retry: %d", len(retry))
-
-		s.File(ctx, fileLog, retry...)
-	}
-}
-
-// 批处理日志
-func (s *sLog) Batch(ctx context.Context, batchLog model.LogBatch, retry ...int) {
-
-	now := gtime.TimestampMilli()
-	defer func() {
-		logger.Debugf(ctx, "sLog Batch time: %d", gtime.TimestampMilli()-now)
-	}()
-
-	// 不记录此错误日志
-	if batchLog.BatchRes.Error != nil && checkError(batchLog.BatchRes.Error) {
-		return
-	}
-
-	batch := do.LogBatch{
-		TraceId:      gtrace.GetTraceID(ctx),
-		UserId:       service.Session().GetUserId(ctx),
-		AppId:        service.Session().GetAppId(ctx),
-		Action:       batchLog.BatchReq.Action,
-		BatchId:      batchLog.BatchRes.BatchId,
-		RequestData:  batchLog.BatchReq.RequestData,
-		ResponseData: batchLog.BatchRes.ResponseData,
-		Spend:        batchLog.Spend,
-		TotalTime:    batchLog.BatchRes.TotalTime,
-		InternalTime: batchLog.BatchRes.InternalTime,
-		ReqTime:      batchLog.BatchRes.EnterTime,
-		ReqDate:      gtime.NewFromTimeStamp(batchLog.BatchRes.EnterTime).Format("Y-m-d"),
-		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
-		RemoteIp:     g.RequestFromCtx(ctx).GetRemoteIp(),
-		LocalIp:      util.GetLocalIp(),
-		Status:       1,
-		Host:         g.RequestFromCtx(ctx).GetHost(),
-		Rid:          service.Session().GetRid(ctx),
-	}
-
-	if batchLog.ReqModel != nil {
-		batch.ProviderId = batchLog.ReqModel.ProviderId
-		if provider, err := service.Provider().GetCache(ctx, batchLog.ReqModel.ProviderId); err != nil {
-			logger.Error(ctx, err)
-		} else {
-			batch.ProviderName = provider.Name
-		}
-		batch.ModelId = batchLog.ReqModel.Id
-		batch.ModelName = batchLog.ReqModel.Name
-		batch.Model = batchLog.ReqModel.Model
-		batch.ModelType = batchLog.ReqModel.Type
-	}
-
-	if batchLog.RealModel != nil {
-		batch.IsEnablePresetConfig = batchLog.RealModel.IsEnablePresetConfig
-		batch.PresetConfig = batchLog.RealModel.PresetConfig
-		batch.IsEnableForward = batchLog.RealModel.IsEnableForward
-		batch.ForwardConfig = batchLog.RealModel.ForwardConfig
-		batch.IsEnableModelAgent = batchLog.RealModel.IsEnableModelAgent
-		batch.RealModelId = batchLog.RealModel.Id
-		batch.RealModelName = batchLog.RealModel.Name
-		batch.RealModel = batchLog.RealModel.Model
-	}
-
-	if batch.IsEnableModelAgent && batchLog.ModelAgent != nil {
-		batch.ModelAgentId = batchLog.ModelAgent.Id
-		batch.ModelAgent = &do.ModelAgent{
-			ProviderId: batchLog.ModelAgent.ProviderId,
-			Name:       batchLog.ModelAgent.Name,
-			BaseUrl:    batchLog.ModelAgent.BaseUrl,
-			Path:       batchLog.ModelAgent.Path,
-			Weight:     batchLog.ModelAgent.Weight,
-			Remark:     batchLog.ModelAgent.Remark,
-			Status:     batchLog.ModelAgent.Status,
-		}
-	}
-
-	if batchLog.FallbackModelAgent != nil {
-		batch.IsEnableFallback = true
-		batch.FallbackConfig = &mcommon.FallbackConfig{
-			ModelAgent:     batchLog.FallbackModelAgent.Id,
-			ModelAgentName: batchLog.FallbackModelAgent.Name,
-		}
-	}
-
-	if batchLog.FallbackModel != nil {
-		batch.IsEnableFallback = true
-		if batch.FallbackConfig == nil {
-			batch.FallbackConfig = new(mcommon.FallbackConfig)
-		}
-		batch.FallbackConfig.Model = batchLog.FallbackModel.Model
-		batch.FallbackConfig.ModelName = batchLog.FallbackModel.Name
-	}
-
-	if batchLog.Key != nil {
-		batch.Key = batchLog.Key.Key
-	}
-
-	if batchLog.BatchRes.Error != nil {
-
-		batch.ErrMsg = batchLog.BatchRes.Error.Error()
-		openaiApiError := &serrors.ApiError{}
-		if errors.As(batchLog.BatchRes.Error, &openaiApiError) {
-			batch.ErrMsg = openaiApiError.Message
-		}
-
-		if common.IsAborted(batchLog.BatchRes.Error) {
-			batch.Status = 2
-		} else {
-			batch.Status = -1
-		}
-	}
-
-	if batchLog.RetryInfo != nil {
-
-		batch.IsRetry = batchLog.RetryInfo.IsRetry
-		batch.Retry = &mcommon.Retry{
-			IsRetry:    batchLog.RetryInfo.IsRetry,
-			RetryCount: batchLog.RetryInfo.RetryCount,
-			ErrMsg:     batchLog.RetryInfo.ErrMsg,
-		}
-
-		if batch.IsRetry {
-			batch.Status = 3
-			batch.ErrMsg = batchLog.RetryInfo.ErrMsg
-		}
-	}
-
-	if _, err := dao.LogBatch.Insert(ctx, batch); err != nil {
-		logger.Errorf(ctx, "sLog Batch error: %v", err)
-
-		if err.Error() == "an inserted document is too large" {
-			batchLog.BatchReq.RequestData = map[string]any{"error": err.Error()}
-		}
-
-		if len(retry) == 10 {
-			panic(err)
-		}
-
-		retry = append(retry, 1)
-
-		time.Sleep(time.Duration(len(retry)*5) * time.Second)
-
-		logger.Errorf(ctx, "sLog Batch retry: %d", len(retry))
-
-		s.Batch(ctx, batchLog, retry...)
 	}
 }
 

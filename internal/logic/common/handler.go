@@ -590,6 +590,7 @@ func batchHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 				Model:        mak.ReqModel.Name,
 				BatchId:      after.BatchId,
 				InputFileId:  after.FileId,
+				Status:       "validating",
 				ResponseData: after.ResponseData,
 				Rid:          service.Session().GetRid(ctx),
 			}
