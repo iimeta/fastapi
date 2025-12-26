@@ -588,6 +588,7 @@ func batchHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 				AppId:        service.Session().GetAppId(ctx),
 				Model:        mak.ReqModel.Name,
 				BatchId:      after.BatchId,
+				InputFileId:  after.FileId,
 				ResponseData: after.ResponseData,
 				Rid:          service.Session().GetRid(ctx),
 			}

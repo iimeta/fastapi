@@ -520,21 +520,44 @@ func (s *sFile) Content(ctx context.Context, params *v1.ContentReq) (response sm
 		return response, err
 	}
 
-	logFile, err := dao.LogFile.FindOne(ctx, bson.M{"trace_id": taskFile.TraceId, "status": 1})
-	if err != nil {
-		logger.Error(ctx, err)
-		return response, err
-	}
+	var adapter sdk.AdapterGroup
 
-	adapter := sdk.NewAdapter(ctx, &options.AdapterOptions{
-		Provider: common.GetProviderCode(ctx, logFile.ModelAgent.ProviderId),
-		Model:    logFile.Model,
-		Key:      logFile.Key,
-		BaseUrl:  logFile.ModelAgent.BaseUrl,
-		Path:     logFile.ModelAgent.Path,
-		Timeout:  config.Cfg.Base.ShortTimeout * time.Second,
-		ProxyUrl: config.Cfg.Http.ProxyUrl,
-	})
+	if taskFile.Purpose != "batch_output" {
+
+		logFile, err := dao.LogFile.FindOne(ctx, bson.M{"trace_id": taskFile.TraceId, "status": 1})
+		if err != nil {
+			logger.Error(ctx, err)
+			return response, err
+		}
+
+		adapter = sdk.NewAdapter(ctx, &options.AdapterOptions{
+			Provider: common.GetProviderCode(ctx, logFile.ModelAgent.ProviderId),
+			Model:    logFile.Model,
+			Key:      logFile.Key,
+			BaseUrl:  logFile.ModelAgent.BaseUrl,
+			Path:     logFile.ModelAgent.Path,
+			Timeout:  config.Cfg.Base.ShortTimeout * time.Second,
+			ProxyUrl: config.Cfg.Http.ProxyUrl,
+		})
+
+	} else {
+
+		logBatch, err := dao.LogBatch.FindOne(ctx, bson.M{"trace_id": taskFile.TraceId, "status": 1})
+		if err != nil {
+			logger.Error(ctx, err)
+			return response, err
+		}
+
+		adapter = sdk.NewAdapter(ctx, &options.AdapterOptions{
+			Provider: common.GetProviderCode(ctx, logBatch.ModelAgent.ProviderId),
+			Model:    logBatch.Model,
+			Key:      logBatch.Key,
+			BaseUrl:  logBatch.ModelAgent.BaseUrl,
+			Path:     logBatch.ModelAgent.Path,
+			Timeout:  config.Cfg.Base.ShortTimeout * time.Second,
+			ProxyUrl: config.Cfg.Http.ProxyUrl,
+		})
+	}
 
 	if response, err = adapter.FileContent(ctx, smodel.FileContentRequest{FileId: taskFile.FileId}); err != nil {
 		logger.Error(ctx, err)

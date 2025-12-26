@@ -64,6 +64,7 @@ func (s *sBatch) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 					Action:       consts.ACTION_CREATE,
 					IsBatch:      true,
 					BatchId:      response.Id,
+					FileId:       params.InputFileId,
 					RequestData:  gconv.Map(params.BatchCreateRequest),
 					ResponseData: gconv.Map(response.ResponseBytes),
 					Error:        err,
