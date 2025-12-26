@@ -2,7 +2,7 @@ package model
 
 type GeneralReq struct {
 	RequestData map[string]any // 请求数据
-	Stream      bool
+	Stream      bool           // 流式
 }
 
 type GeneralRes struct {

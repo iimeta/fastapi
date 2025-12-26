@@ -6,7 +6,7 @@ type BatchReq struct {
 }
 
 type BatchRes struct {
-	BatchId      string
+	BatchId      string         // 批处理ID
 	ResponseData map[string]any // 响应数据
 	Error        error          // 错误信息
 	TotalTime    int64          // 总时间

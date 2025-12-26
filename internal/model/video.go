@@ -6,6 +6,7 @@ type VideoReq struct {
 }
 
 type VideoRes struct {
+	VideoId      string         // 视频ID
 	ResponseData map[string]any // 响应数据
 	Error        error          // 错误信息
 	TotalTime    int64          // 总时间

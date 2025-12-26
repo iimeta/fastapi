@@ -727,6 +727,7 @@ func (s *sLog) Video(ctx context.Context, videoLog model.LogVideo, retry ...int)
 		UserId:       service.Session().GetUserId(ctx),
 		AppId:        service.Session().GetAppId(ctx),
 		Action:       videoLog.VideoReq.Action,
+		VideoId:      videoLog.VideoRes.VideoId,
 		RequestData:  videoLog.VideoReq.RequestData,
 		ResponseData: videoLog.VideoRes.ResponseData,
 		Spend:        videoLog.Spend,

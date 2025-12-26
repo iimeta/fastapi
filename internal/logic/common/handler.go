@@ -325,6 +325,7 @@ func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	}
 
 	videoRes := &model.VideoRes{
+		VideoId:      after.VideoId,
 		ResponseData: after.ResponseData,
 		Error:        after.Error,
 		TotalTime:    after.TotalTime,
