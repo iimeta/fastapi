@@ -200,6 +200,7 @@ func (s *sVideo) Remix(ctx context.Context, params *v1.RemixReq, fallbackModelAg
 
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_REMIX,
+					VideoId:      response.Id,
 					RequestData:  gconv.Map(params.VideoRemixRequest),
 					ResponseData: gconv.Map(response),
 					Error:        err,
@@ -483,6 +484,7 @@ func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_RETRIEVE,
+					VideoId:      params.VideoId,
 					RequestData:  gconv.Map(params.VideoRetrieveRequest),
 					ResponseData: gconv.Map(response),
 					Error:        err,
@@ -580,6 +582,7 @@ func (s *sVideo) Delete(ctx context.Context, params *v1.DeleteReq) (response smo
 
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_DELETE,
+					VideoId:      params.VideoId,
 					RequestData:  gconv.Map(params.VideoDeleteRequest),
 					ResponseData: gconv.Map(response),
 					Error:        err,
@@ -669,6 +672,7 @@ func (s *sVideo) Content(ctx context.Context, params *v1.ContentReq) (response s
 
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_CONTENT,
+					VideoId:      params.VideoId,
 					RequestData:  gconv.Map(params.VideoContentRequest),
 					Error:        err,
 					RetryInfo:    retryInfo,

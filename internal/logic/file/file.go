@@ -341,6 +341,7 @@ func (s *sFile) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response 
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_RETRIEVE,
 					IsFile:       true,
+					FileId:       params.FileId,
 					RequestData:  gconv.Map(params.FileRetrieveRequest),
 					ResponseData: gconv.Map(response),
 					Error:        err,
@@ -412,6 +413,7 @@ func (s *sFile) Delete(ctx context.Context, params *v1.DeleteReq) (response smod
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_DELETE,
 					IsFile:       true,
+					FileId:       params.FileId,
 					RequestData:  gconv.Map(params.FileDeleteRequest),
 					ResponseData: gconv.Map(response),
 					Error:        err,
@@ -488,6 +490,7 @@ func (s *sFile) Content(ctx context.Context, params *v1.ContentReq) (response sm
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_CONTENT,
 					IsFile:       true,
+					FileId:       params.FileId,
 					RequestData:  gconv.Map(params.FileContentRequest),
 					Error:        err,
 					RetryInfo:    retryInfo,

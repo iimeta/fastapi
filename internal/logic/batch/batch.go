@@ -293,7 +293,7 @@ func (s *sBatch) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_RETRIEVE,
 					IsBatch:      true,
-					BatchId:      response.Id,
+					BatchId:      params.BatchId,
 					RequestData:  gconv.Map(params.BatchRetrieveRequest),
 					ResponseData: gconv.Map(response.ResponseBytes),
 					Error:        err,
@@ -356,7 +356,7 @@ func (s *sBatch) Cancel(ctx context.Context, params *v1.CancelReq) (response smo
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_CANCEL,
 					IsBatch:      true,
-					BatchId:      response.Id,
+					BatchId:      params.BatchId,
 					RequestData:  gconv.Map(params.BatchCancelRequest),
 					ResponseData: gconv.Map(response.ResponseBytes),
 					Error:        err,

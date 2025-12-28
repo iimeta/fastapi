@@ -17,13 +17,9 @@ func (c *ControllerV1) Create(ctx context.Context, req *v1.CreateReq) (res *v1.C
 		logger.Debugf(ctx, "Controller Create time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	_, fileHeader, err := g.RequestFromCtx(ctx).FormFile("input_reference")
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, err
+	if _, fileHeader, err := g.RequestFromCtx(ctx).FormFile("input_reference"); err == nil {
+		req.InputReference = fileHeader
 	}
-
-	req.InputReference = fileHeader
 
 	response, err := service.Video().Create(ctx, req, nil, nil)
 	if err != nil {
