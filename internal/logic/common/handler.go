@@ -353,6 +353,160 @@ func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	})
 }
 
+func fileHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
+
+	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
+
+		billingData := &mcommon.BillingData{
+			Usage:     after.Usage,
+			IsAborted: IsAborted(after.Error),
+		}
+
+		// 计算花费
+		after.Spend = Billing(ctx, mak, billingData)
+
+		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+			// 记录花费
+			if err := RecordSpend(ctx, after.Spend, mak); err != nil {
+				logger.Error(ctx, err)
+				panic(err)
+			}
+		}); err != nil {
+			logger.Error(ctx, err)
+		}
+
+		if after.Action == consts.ACTION_UPLOAD {
+
+			taskFile := do.TaskFile{
+				TraceId:   gtrace.GetTraceID(ctx),
+				UserId:    service.Session().GetUserId(ctx),
+				AppId:     service.Session().GetAppId(ctx),
+				Model:     mak.ReqModel.Name,
+				Purpose:   after.FileRes.Purpose,
+				FileId:    after.FileId,
+				FileName:  after.FileRes.Filename,
+				Bytes:     after.FileRes.Bytes,
+				ExpiresAt: after.FileRes.ExpiresAt,
+				Status:    after.FileRes.Status,
+				Rid:       service.Session().GetRid(ctx),
+			}
+
+			if _, err := dao.TaskFile.Insert(ctx, taskFile); err != nil {
+				logger.Error(ctx, err)
+			}
+		}
+	}
+
+	fileReq := &model.FileReq{
+		Action:      after.Action,
+		RequestData: after.RequestData,
+	}
+
+	fileRes := &model.FileRes{
+		FileId:       after.FileId,
+		ResponseData: after.ResponseData,
+		Error:        after.Error,
+		TotalTime:    after.TotalTime,
+		InternalTime: after.InternalTime,
+		EnterTime:    after.EnterTime,
+	}
+
+	if after.Spend.GroupId == "" && mak.Group != nil {
+		after.Spend.GroupId = mak.Group.Id
+		after.Spend.GroupName = mak.Group.Name
+		after.Spend.GroupDiscount = mak.Group.Discount
+	}
+
+	service.Log().File(ctx, model.LogFile{
+		ReqModel:           mak.ReqModel,
+		RealModel:          mak.RealModel,
+		ModelAgent:         mak.ModelAgent,
+		FallbackModelAgent: mak.FallbackModelAgent,
+		FallbackModel:      mak.FallbackModel,
+		Key:                mak.Key,
+		FileReq:            fileReq,
+		FileRes:            fileRes,
+		RetryInfo:          after.RetryInfo,
+		Spend:              after.Spend,
+	})
+}
+
+func batchHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
+
+	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
+
+		billingData := &mcommon.BillingData{
+			Usage:     after.Usage,
+			IsAborted: IsAborted(after.Error),
+		}
+
+		// 计算花费
+		after.Spend = Billing(ctx, mak, billingData)
+
+		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+			// 记录花费
+			if err := RecordSpend(ctx, after.Spend, mak); err != nil {
+				logger.Error(ctx, err)
+				panic(err)
+			}
+		}); err != nil {
+			logger.Error(ctx, err)
+		}
+
+		if after.Action == consts.ACTION_CREATE {
+
+			taskBatch := do.TaskBatch{
+				TraceId:      gtrace.GetTraceID(ctx),
+				UserId:       service.Session().GetUserId(ctx),
+				AppId:        service.Session().GetAppId(ctx),
+				Model:        mak.ReqModel.Name,
+				BatchId:      after.BatchId,
+				InputFileId:  after.FileId,
+				Status:       "validating",
+				ResponseData: after.ResponseData,
+				Rid:          service.Session().GetRid(ctx),
+			}
+
+			if _, err := dao.TaskBatch.Insert(ctx, taskBatch); err != nil {
+				logger.Error(ctx, err)
+			}
+		}
+	}
+
+	batchReq := &model.BatchReq{
+		Action:      after.Action,
+		RequestData: after.RequestData,
+	}
+
+	batchRes := &model.BatchRes{
+		BatchId:      after.BatchId,
+		ResponseData: after.ResponseData,
+		Error:        after.Error,
+		TotalTime:    after.TotalTime,
+		InternalTime: after.InternalTime,
+		EnterTime:    after.EnterTime,
+	}
+
+	if after.Spend.GroupId == "" && mak.Group != nil {
+		after.Spend.GroupId = mak.Group.Id
+		after.Spend.GroupName = mak.Group.Name
+		after.Spend.GroupDiscount = mak.Group.Discount
+	}
+
+	service.Log().Batch(ctx, model.LogBatch{
+		ReqModel:           mak.ReqModel,
+		RealModel:          mak.RealModel,
+		ModelAgent:         mak.ModelAgent,
+		FallbackModelAgent: mak.FallbackModelAgent,
+		FallbackModel:      mak.FallbackModel,
+		Key:                mak.Key,
+		BatchReq:           batchReq,
+		BatchRes:           batchRes,
+		RetryInfo:          after.RetryInfo,
+		Spend:              after.Spend,
+	})
+}
+
 func midjourneyHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
@@ -477,158 +631,6 @@ func generalHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) 
 		Key:                mak.Key,
 		GeneralReq:         generalReq,
 		GeneralRes:         generalRes,
-		RetryInfo:          after.RetryInfo,
-		Spend:              after.Spend,
-	})
-}
-
-func fileHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
-
-	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
-
-		billingData := &mcommon.BillingData{
-			Usage:     after.Usage,
-			IsAborted: IsAborted(after.Error),
-		}
-
-		// 计算花费
-		after.Spend = Billing(ctx, mak, billingData)
-
-		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-			// 记录花费
-			if err := RecordSpend(ctx, after.Spend, mak); err != nil {
-				logger.Error(ctx, err)
-				panic(err)
-			}
-		}); err != nil {
-			logger.Error(ctx, err)
-		}
-
-		if after.Action == consts.ACTION_UPLOAD {
-
-			taskFile := do.TaskFile{
-				TraceId:   gtrace.GetTraceID(ctx),
-				UserId:    service.Session().GetUserId(ctx),
-				AppId:     service.Session().GetAppId(ctx),
-				Model:     mak.ReqModel.Name,
-				Purpose:   after.FileRes.Purpose,
-				FileId:    after.FileId,
-				FileName:  after.FileRes.Filename,
-				Bytes:     after.FileRes.Bytes,
-				ExpiresAt: after.FileRes.ExpiresAt,
-				Status:    after.FileRes.Status,
-				Rid:       service.Session().GetRid(ctx),
-			}
-
-			if _, err := dao.TaskFile.Insert(ctx, taskFile); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
-	}
-
-	fileReq := &model.FileReq{
-		RequestData: after.RequestData,
-	}
-
-	fileRes := &model.FileRes{
-		FileId:       after.FileId,
-		ResponseData: after.ResponseData,
-		Error:        after.Error,
-		TotalTime:    after.TotalTime,
-		InternalTime: after.InternalTime,
-		EnterTime:    after.EnterTime,
-	}
-
-	if after.Spend.GroupId == "" && mak.Group != nil {
-		after.Spend.GroupId = mak.Group.Id
-		after.Spend.GroupName = mak.Group.Name
-		after.Spend.GroupDiscount = mak.Group.Discount
-	}
-
-	service.Log().File(ctx, model.LogFile{
-		ReqModel:           mak.ReqModel,
-		RealModel:          mak.RealModel,
-		ModelAgent:         mak.ModelAgent,
-		FallbackModelAgent: mak.FallbackModelAgent,
-		FallbackModel:      mak.FallbackModel,
-		Key:                mak.Key,
-		FileReq:            fileReq,
-		FileRes:            fileRes,
-		RetryInfo:          after.RetryInfo,
-		Spend:              after.Spend,
-	})
-}
-
-func batchHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
-
-	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
-
-		billingData := &mcommon.BillingData{
-			Usage:     after.Usage,
-			IsAborted: IsAborted(after.Error),
-		}
-
-		// 计算花费
-		after.Spend = Billing(ctx, mak, billingData)
-
-		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-			// 记录花费
-			if err := RecordSpend(ctx, after.Spend, mak); err != nil {
-				logger.Error(ctx, err)
-				panic(err)
-			}
-		}); err != nil {
-			logger.Error(ctx, err)
-		}
-
-		if after.Action == consts.ACTION_CREATE {
-
-			taskBatch := do.TaskBatch{
-				TraceId:      gtrace.GetTraceID(ctx),
-				UserId:       service.Session().GetUserId(ctx),
-				AppId:        service.Session().GetAppId(ctx),
-				Model:        mak.ReqModel.Name,
-				BatchId:      after.BatchId,
-				InputFileId:  after.FileId,
-				Status:       "validating",
-				ResponseData: after.ResponseData,
-				Rid:          service.Session().GetRid(ctx),
-			}
-
-			if _, err := dao.TaskBatch.Insert(ctx, taskBatch); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
-	}
-
-	batchReq := &model.BatchReq{
-		RequestData: after.RequestData,
-	}
-
-	batchRes := &model.BatchRes{
-		BatchId:      after.BatchId,
-		ResponseData: after.ResponseData,
-		Error:        after.Error,
-		TotalTime:    after.TotalTime,
-		InternalTime: after.InternalTime,
-		EnterTime:    after.EnterTime,
-	}
-
-	if after.Spend.GroupId == "" && mak.Group != nil {
-		after.Spend.GroupId = mak.Group.Id
-		after.Spend.GroupName = mak.Group.Name
-		after.Spend.GroupDiscount = mak.Group.Discount
-	}
-
-	service.Log().Batch(ctx, model.LogBatch{
-		ReqModel:           mak.ReqModel,
-		RealModel:          mak.RealModel,
-		ModelAgent:         mak.ModelAgent,
-		FallbackModelAgent: mak.FallbackModelAgent,
-		FallbackModel:      mak.FallbackModel,
-		Key:                mak.Key,
-		BatchReq:           batchReq,
-		BatchRes:           batchRes,
 		RetryInfo:          after.RetryInfo,
 		Spend:              after.Spend,
 	})
