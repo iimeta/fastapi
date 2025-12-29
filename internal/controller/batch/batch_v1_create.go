@@ -17,10 +17,6 @@ func (c *ControllerV1) Create(ctx context.Context, req *v1.CreateReq) (res *v1.C
 		logger.Debugf(ctx, "Controller Create time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	if req.Model == "" {
-		req.Model = req.Provider + "-batches"
-	}
-
 	response, err := service.Batch().Create(ctx, req, nil, nil)
 	if err != nil {
 		return nil, err

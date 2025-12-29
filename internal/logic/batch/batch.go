@@ -1,17 +1,22 @@
 package batch
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"time"
 
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
+	sdk "github.com/iimeta/fastapi-sdk"
 	smodel "github.com/iimeta/fastapi-sdk/model"
+	"github.com/iimeta/fastapi-sdk/options"
 	v1 "github.com/iimeta/fastapi/api/batch/v1"
+	"github.com/iimeta/fastapi/internal/config"
 	"github.com/iimeta/fastapi/internal/consts"
 	"github.com/iimeta/fastapi/internal/dao"
 	"github.com/iimeta/fastapi/internal/errors"
@@ -81,6 +86,15 @@ func (s *sBatch) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 			}
 		}
 	}()
+
+	if mak.Model, err = getFileModel(ctx, params.InputFileId); err != nil {
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	if mak.Model == "" {
+		mak.Model = params.Provider + "-batches"
+	}
 
 	if err = mak.InitMAK(ctx); err != nil {
 		logger.Error(ctx, err)
@@ -397,4 +411,56 @@ func (s *sBatch) Cancel(ctx context.Context, params *v1.CancelReq) (response smo
 	response.ResponseBytes = gconv.Bytes(taskBatch.ResponseData)
 
 	return response, nil
+}
+
+func getFileModel(ctx context.Context, fileId string) (string, error) {
+
+	taskFile, err := dao.TaskFile.FindOne(ctx, bson.M{"file_id": fileId, "creator": service.Session().GetSecretKey(ctx)})
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			err = errors.NewError(404, "invalid_request_error", "No such File object: "+fileId, "invalid_request_error", "id")
+		}
+		logger.Error(ctx, err)
+		return "", err
+	}
+
+	logFile, err := dao.LogFile.FindOne(ctx, bson.M{"trace_id": taskFile.TraceId, "status": 1})
+	if err != nil {
+		logger.Error(ctx, err)
+		return "", err
+	}
+
+	adapter := sdk.NewAdapter(ctx, &options.AdapterOptions{
+		Provider: common.GetProviderCode(ctx, logFile.ModelAgent.ProviderId),
+		Model:    logFile.Model,
+		Key:      logFile.Key,
+		BaseUrl:  logFile.ModelAgent.BaseUrl,
+		Path:     logFile.ModelAgent.Path,
+		Timeout:  config.Cfg.Base.ShortTimeout * time.Second,
+		ProxyUrl: config.Cfg.Http.ProxyUrl,
+	})
+
+	response, err := adapter.FileContent(ctx, smodel.FileContentRequest{FileId: taskFile.FileId})
+	if err != nil {
+		logger.Error(ctx, err)
+		return "", err
+	}
+
+	lines := bytes.Split(response.Data, []byte("\n"))
+	if len(lines) > 0 {
+
+		data := make(map[string]any)
+		if err = gjson.Unmarshal(lines[0], &data); err != nil {
+			logger.Error(ctx, err)
+			return "", err
+		}
+
+		if body, ok := data["body"]; ok {
+			if model, ok := gconv.Map(body)["model"]; ok {
+				return gconv.String(model), nil
+			}
+		}
+	}
+
+	return "", nil
 }
