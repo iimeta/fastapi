@@ -19,7 +19,7 @@ type TaskBatch struct {
 	CancelledAt  int64          `bson:"cancelled_at,omitempty"`   // 已取消时间
 	FailedAt     int64          `bson:"failed_at,omitempty"`      // 失败时间
 	ResponseData map[string]any `bson:"response_data,omitempty"`  // 响应数据
-	Error        any            `bson:"error,omitempty"`          // 错误信息
+	Error        map[string]any `bson:"error,omitempty"`          // 错误信息
 	Rid          int            `bson:"rid,omitempty"`            // 代理商ID
 	Creator      string         `bson:"creator,omitempty"`        // 创建人
 	Updater      string         `bson:"updater,omitempty"`        // 更新人
