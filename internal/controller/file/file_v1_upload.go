@@ -1,10 +1,13 @@
 package file
 
 import (
+	"bufio"
 	"context"
 
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/iimeta/fastapi/api/file/v1"
 	"github.com/iimeta/fastapi/internal/service"
 	"github.com/iimeta/fastapi/utility/logger"
@@ -17,10 +20,36 @@ func (c *ControllerV1) Upload(ctx context.Context, req *v1.UploadReq) (res *v1.U
 		logger.Debugf(ctx, "Controller Upload time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	_, fileHeader, err := g.RequestFromCtx(ctx).FormFile("file")
+	file, fileHeader, err := g.RequestFromCtx(ctx).FormFile("file")
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil, err
+	}
+
+	defer func() {
+		if err := file.Close(); err != nil {
+			logger.Error(ctx, err)
+		}
+	}()
+
+	if req.Model == "" && req.Purpose == "batch" {
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+
+			data := make(map[string]any)
+			if err = gjson.Unmarshal(scanner.Bytes(), &data); err != nil {
+				logger.Error(ctx, err)
+				break
+			}
+
+			if body, ok := data["body"]; ok {
+				if model, ok := gconv.Map(body)["model"]; ok {
+					req.Model = gconv.String(model)
+					break
+				}
+			}
+		}
 	}
 
 	req.File = fileHeader
