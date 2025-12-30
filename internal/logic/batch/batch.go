@@ -184,6 +184,7 @@ func (s *sBatch) List(ctx context.Context, params *v1.ListReq) (response smodel.
 
 	defer func() {
 
+		response.TotalTime = gtime.TimestampMilli() - now
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
@@ -298,6 +299,7 @@ func (s *sBatch) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 
 	defer func() {
 
+		response.TotalTime = gtime.TimestampMilli() - now
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
@@ -361,6 +363,10 @@ func (s *sBatch) Cancel(ctx context.Context, params *v1.CancelReq) (response smo
 
 	defer func() {
 
+		if response.TotalTime == 0 {
+			response.TotalTime = gtime.TimestampMilli() - now
+		}
+
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
@@ -404,11 +410,30 @@ func (s *sBatch) Cancel(ctx context.Context, params *v1.CancelReq) (response smo
 		return response, err
 	}
 
+	logBatch, err := dao.LogBatch.FindOne(ctx, bson.M{"trace_id": taskBatch.TraceId, "status": 1})
+	if err != nil {
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	adapter := sdk.NewAdapter(ctx, &options.AdapterOptions{
+		Provider: common.GetProviderCode(ctx, logBatch.ModelAgent.ProviderId),
+		Model:    logBatch.Model,
+		Key:      logBatch.Key,
+		BaseUrl:  logBatch.ModelAgent.BaseUrl,
+		Path:     logBatch.ModelAgent.Path,
+		Timeout:  config.Cfg.Base.ShortTimeout * time.Second,
+		ProxyUrl: config.Cfg.Http.ProxyUrl,
+	})
+
+	if response, err = adapter.BatchCancel(ctx, smodel.BatchCancelRequest{BatchId: params.BatchId}); err != nil {
+		logger.Error(ctx, err)
+		return response, err
+	}
+
 	if err := dao.TaskBatch.UpdateById(ctx, taskBatch.Id, bson.M{"status": "cancelling"}); err != nil {
 		logger.Error(ctx, err)
 	}
-
-	response.ResponseBytes = gconv.Bytes(taskBatch.ResponseData)
 
 	return response, nil
 }

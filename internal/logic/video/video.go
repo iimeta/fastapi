@@ -317,6 +317,7 @@ func (s *sVideo) List(ctx context.Context, params *v1.ListReq) (response smodel.
 
 	defer func() {
 
+		response.TotalTime = gtime.TimestampMilli() - now
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
@@ -476,6 +477,7 @@ func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 
 	defer func() {
 
+		response.TotalTime = gtime.TimestampMilli() - now
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
@@ -574,6 +576,7 @@ func (s *sVideo) Delete(ctx context.Context, params *v1.DeleteReq) (response smo
 
 	defer func() {
 
+		response.TotalTime = gtime.TimestampMilli() - now
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
@@ -616,7 +619,7 @@ func (s *sVideo) Delete(ctx context.Context, params *v1.DeleteReq) (response smo
 		return response, err
 	}
 
-	if err := dao.TaskVideo.UpdateById(ctx, taskVideo.Id, bson.M{"status": "deleted"}); err != nil {
+	if err := dao.TaskVideo.UpdateById(ctx, taskVideo.Id, bson.M{"status": "deleted", "video_url": "", "file_name": "", "file_path": ""}); err != nil {
 		logger.Error(ctx, err)
 	}
 
@@ -663,6 +666,10 @@ func (s *sVideo) Content(ctx context.Context, params *v1.ContentReq) (response s
 	)
 
 	defer func() {
+
+		if response.TotalTime == 0 {
+			response.TotalTime = gtime.TimestampMilli() - now
+		}
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime

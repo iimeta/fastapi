@@ -186,6 +186,7 @@ func (s *sFile) List(ctx context.Context, params *v1.ListReq) (response smodel.F
 
 	defer func() {
 
+		response.TotalTime = gtime.TimestampMilli() - now
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
@@ -332,6 +333,7 @@ func (s *sFile) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response 
 
 	defer func() {
 
+		response.TotalTime = gtime.TimestampMilli() - now
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
@@ -404,6 +406,7 @@ func (s *sFile) Delete(ctx context.Context, params *v1.DeleteReq) (response smod
 
 	defer func() {
 
+		response.TotalTime = gtime.TimestampMilli() - now
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
@@ -481,6 +484,10 @@ func (s *sFile) Content(ctx context.Context, params *v1.ContentReq) (response sm
 
 	defer func() {
 
+		if response.TotalTime == 0 {
+			response.TotalTime = gtime.TimestampMilli() - now
+		}
+
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
@@ -513,6 +520,11 @@ func (s *sFile) Content(ctx context.Context, params *v1.ContentReq) (response sm
 			err = errors.NewError(404, "invalid_request_error", "No such File object: "+params.FileId, "invalid_request_error", "id")
 		}
 		logger.Error(ctx, err)
+		return response, err
+	}
+
+	if taskFile.Status == "error" || taskFile.Status == "expired" || taskFile.Status == "deleted" {
+		err = errors.NewError(404, "invalid_request_error", "No such File object: "+params.FileId, "invalid_request_error", "id")
 		return response, err
 	}
 
