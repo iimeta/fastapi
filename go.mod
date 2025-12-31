@@ -1,8 +1,8 @@
-module github.com/iimeta/fastapi
+module github.com/iimeta/fastapi/v2
 
 go 1.25
 
-replace github.com/iimeta/fastapi-sdk => ../fastapi-sdk
+replace github.com/iimeta/fastapi-sdk/v2 => ../fastapi-sdk
 
 require (
 	cloud.google.com/go/iam v1.5.3
@@ -11,6 +11,7 @@ require (
 	github.com/gogf/gf/v2 v2.9.6
 	github.com/gorilla/websocket v1.5.3
 	github.com/iimeta/fastapi-sdk v1.7.0
+	github.com/iimeta/fastapi-sdk/v2 v2.0.0
 	github.com/redis/go-redis/v9 v9.17.2
 	github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300
 	github.com/tjfoc/gmsm v1.4.1
@@ -47,6 +48,7 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.3.7 // indirect
 	github.com/googleapis/gax-go/v2 v2.15.0 // indirect
 	github.com/grokify/html-strip-tags-go v0.1.0 // indirect
+	github.com/iimeta/go-openai v0.0.0-20250528155556-3b1f184b87fc // indirect
 	github.com/iimeta/tiktoken-go v0.0.0-20240913023457-97a6b8dfb0c7 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/magiconair/properties v1.8.10 // indirect

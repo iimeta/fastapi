@@ -2,7 +2,7 @@ package v1
 
 import (
 	"github.com/gogf/gf/v2/frame/g"
-	"github.com/iimeta/fastapi/internal/model"
+	"github.com/iimeta/fastapi/v2/internal/model"
 )
 
 // Subscription接口请求参数

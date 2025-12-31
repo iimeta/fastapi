@@ -7,9 +7,9 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
-	"github.com/iimeta/fastapi/api/dashboard/v1"
-	"github.com/iimeta/fastapi/internal/model"
-	"github.com/iimeta/fastapi/internal/service"
+	"github.com/iimeta/fastapi/v2/api/dashboard/v1"
+	"github.com/iimeta/fastapi/v2/internal/model"
+	"github.com/iimeta/fastapi/v2/internal/service"
 )
 
 func (c *ControllerV1) Models(ctx context.Context, req *v1.ModelsReq) (res *v1.ModelsRes, err error) {

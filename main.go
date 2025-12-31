@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gtime"
-	"github.com/iimeta/fastapi/internal/cmd"
-	_ "github.com/iimeta/fastapi/internal/logic"
+	"github.com/iimeta/fastapi/v2/internal/cmd"
+	_ "github.com/iimeta/fastapi/v2/internal/logic"
 )
 
 func main() {

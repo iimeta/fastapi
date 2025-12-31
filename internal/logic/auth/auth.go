@@ -5,10 +5,10 @@ import (
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
-	"github.com/iimeta/fastapi/internal/errors"
-	"github.com/iimeta/fastapi/internal/logic/common"
-	"github.com/iimeta/fastapi/internal/service"
-	"github.com/iimeta/fastapi/utility/logger"
+	"github.com/iimeta/fastapi/v2/internal/errors"
+	"github.com/iimeta/fastapi/v2/internal/logic/common"
+	"github.com/iimeta/fastapi/v2/internal/service"
+	"github.com/iimeta/fastapi/v2/utility/logger"
 )
 
 type sAuth struct{}

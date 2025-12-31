@@ -7,7 +7,7 @@ package health
 import (
 	"context"
 
-	"github.com/iimeta/fastapi/api/health/v1"
+	"github.com/iimeta/fastapi/v2/api/health/v1"
 )
 
 type IHealthV1 interface {

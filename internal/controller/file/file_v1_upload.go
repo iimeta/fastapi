@@ -8,9 +8,9 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
-	"github.com/iimeta/fastapi/api/file/v1"
-	"github.com/iimeta/fastapi/internal/service"
-	"github.com/iimeta/fastapi/utility/logger"
+	"github.com/iimeta/fastapi/v2/api/file/v1"
+	"github.com/iimeta/fastapi/v2/internal/service"
+	"github.com/iimeta/fastapi/v2/utility/logger"
 )
 
 func (c *ControllerV1) Upload(ctx context.Context, req *v1.UploadReq) (res *v1.UploadRes, err error) {

@@ -8,9 +8,9 @@ package service
 import (
 	"context"
 
-	smodel "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi/internal/model"
-	"github.com/iimeta/fastapi/internal/model/entity"
+	smodel "github.com/iimeta/fastapi-sdk/v2/model"
+	"github.com/iimeta/fastapi/v2/internal/model"
+	"github.com/iimeta/fastapi/v2/internal/model/entity"
 )
 
 type (

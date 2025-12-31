@@ -7,7 +7,7 @@ package batch
 import (
 	"context"
 
-	"github.com/iimeta/fastapi/api/batch/v1"
+	"github.com/iimeta/fastapi/v2/api/batch/v1"
 )
 
 type IBatchV1 interface {

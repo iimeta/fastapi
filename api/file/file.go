@@ -7,7 +7,7 @@ package file
 import (
 	"context"
 
-	"github.com/iimeta/fastapi/api/file/v1"
+	"github.com/iimeta/fastapi/v2/api/file/v1"
 )
 
 type IFileV1 interface {

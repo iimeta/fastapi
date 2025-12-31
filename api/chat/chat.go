@@ -7,7 +7,7 @@ package chat
 import (
 	"context"
 
-	"github.com/iimeta/fastapi/api/chat/v1"
+	"github.com/iimeta/fastapi/v2/api/chat/v1"
 )
 
 type IChatV1 interface {

@@ -5,7 +5,7 @@
 package chat
 
 import (
-	"github.com/iimeta/fastapi/api/chat"
+	"github.com/iimeta/fastapi/v2/api/chat"
 )
 
 type ControllerV1 struct{}

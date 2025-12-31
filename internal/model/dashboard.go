@@ -1,6 +1,6 @@
 package model
 
-import "github.com/iimeta/fastapi/internal/model/common"
+import "github.com/iimeta/fastapi/v2/internal/model/common"
 
 // Subscription接口响应参数
 type DashboardSubscriptionRes struct {

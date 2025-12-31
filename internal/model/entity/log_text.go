@@ -1,6 +1,6 @@
 package entity
 
-import "github.com/iimeta/fastapi/internal/model/common"
+import "github.com/iimeta/fastapi/v2/internal/model/common"
 
 type LogText struct {
 	Id                   string                 `bson:"_id,omitempty"`                     // ID

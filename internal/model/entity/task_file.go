@@ -1,7 +1,7 @@
 package entity
 
 import (
-	serrors "github.com/iimeta/fastapi-sdk/errors"
+	serrors "github.com/iimeta/fastapi-sdk/v2/errors"
 )
 
 type TaskFile struct {

@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/gogf/gf/v2/os/gctx"
-	"github.com/iimeta/fastapi/internal/config"
-	"github.com/iimeta/fastapi/utility/logger"
+	"github.com/iimeta/fastapi/v2/internal/config"
+	"github.com/iimeta/fastapi/v2/utility/logger"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"

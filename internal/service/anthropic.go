@@ -9,8 +9,8 @@ import (
 	"context"
 
 	"github.com/gogf/gf/v2/net/ghttp"
-	smodel "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi/internal/model"
+	smodel "github.com/iimeta/fastapi-sdk/v2/model"
+	"github.com/iimeta/fastapi/v2/internal/model"
 )
 
 type (

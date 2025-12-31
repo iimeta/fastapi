@@ -10,8 +10,8 @@ import (
 	"github.com/gogf/gf/v2/os/gcfg"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gfsnotify"
-	"github.com/iimeta/fastapi/internal/model/entity"
-	"github.com/iimeta/fastapi/utility/logger"
+	"github.com/iimeta/fastapi/v2/internal/model/entity"
+	"github.com/iimeta/fastapi/v2/utility/logger"
 )
 
 var Cfg *Config

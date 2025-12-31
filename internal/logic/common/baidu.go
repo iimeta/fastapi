@@ -9,12 +9,12 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
-	"github.com/iimeta/fastapi/internal/consts"
-	"github.com/iimeta/fastapi/internal/model"
-	"github.com/iimeta/fastapi/utility/cache"
-	"github.com/iimeta/fastapi/utility/logger"
-	"github.com/iimeta/fastapi/utility/redis"
-	"github.com/iimeta/fastapi/utility/util"
+	"github.com/iimeta/fastapi/v2/internal/consts"
+	"github.com/iimeta/fastapi/v2/internal/model"
+	"github.com/iimeta/fastapi/v2/utility/cache"
+	"github.com/iimeta/fastapi/v2/utility/logger"
+	"github.com/iimeta/fastapi/v2/utility/redis"
+	"github.com/iimeta/fastapi/v2/utility/util"
 )
 
 var baiduCache = cache.New() // [key]AccessToken

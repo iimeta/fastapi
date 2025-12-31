@@ -5,7 +5,7 @@
 package anthropic
 
 import (
-	"github.com/iimeta/fastapi/api/anthropic"
+	"github.com/iimeta/fastapi/v2/api/anthropic"
 )
 
 type ControllerV1 struct{}

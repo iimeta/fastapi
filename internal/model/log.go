@@ -1,8 +1,8 @@
 package model
 
 import (
-	smodel "github.com/iimeta/fastapi-sdk/model"
-	mcommon "github.com/iimeta/fastapi/internal/model/common"
+	smodel "github.com/iimeta/fastapi-sdk/v2/model"
+	mcommon "github.com/iimeta/fastapi/v2/internal/model/common"
 )
 
 type LogText struct {

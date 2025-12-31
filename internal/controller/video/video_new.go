@@ -5,7 +5,7 @@
 package video
 
 import (
-	"github.com/iimeta/fastapi/api/video"
+	"github.com/iimeta/fastapi/v2/api/video"
 )
 
 type ControllerV1 struct{}

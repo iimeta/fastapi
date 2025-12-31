@@ -5,7 +5,7 @@
 package general
 
 import (
-	"github.com/iimeta/fastapi/api/general"
+	"github.com/iimeta/fastapi/v2/api/general"
 )
 
 type ControllerV1 struct{}

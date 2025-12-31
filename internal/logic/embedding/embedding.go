@@ -8,13 +8,13 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
-	sconsts "github.com/iimeta/fastapi-sdk/consts"
-	smodel "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi/internal/logic/common"
-	"github.com/iimeta/fastapi/internal/model"
-	mcommon "github.com/iimeta/fastapi/internal/model/common"
-	"github.com/iimeta/fastapi/internal/service"
-	"github.com/iimeta/fastapi/utility/logger"
+	sconsts "github.com/iimeta/fastapi-sdk/v2/consts"
+	smodel "github.com/iimeta/fastapi-sdk/v2/model"
+	"github.com/iimeta/fastapi/v2/internal/logic/common"
+	"github.com/iimeta/fastapi/v2/internal/model"
+	mcommon "github.com/iimeta/fastapi/v2/internal/model/common"
+	"github.com/iimeta/fastapi/v2/internal/service"
+	"github.com/iimeta/fastapi/v2/utility/logger"
 )
 
 type sEmbedding struct{}

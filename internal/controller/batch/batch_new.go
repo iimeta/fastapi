@@ -5,7 +5,7 @@
 package batch
 
 import (
-	"github.com/iimeta/fastapi/api/batch"
+	"github.com/iimeta/fastapi/v2/api/batch"
 )
 
 type ControllerV1 struct{}

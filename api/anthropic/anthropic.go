@@ -7,7 +7,7 @@ package anthropic
 import (
 	"context"
 
-	"github.com/iimeta/fastapi/api/anthropic/v1"
+	"github.com/iimeta/fastapi/v2/api/anthropic/v1"
 )
 
 type IAnthropicV1 interface {

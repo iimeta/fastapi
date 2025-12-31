@@ -7,7 +7,7 @@ package openai
 import (
 	"context"
 
-	"github.com/iimeta/fastapi/api/openai/v1"
+	"github.com/iimeta/fastapi/v2/api/openai/v1"
 )
 
 type IOpenaiV1 interface {

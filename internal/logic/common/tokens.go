@@ -5,10 +5,10 @@ import (
 
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/os/gtime"
-	smodel "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi-sdk/tiktoken"
-	"github.com/iimeta/fastapi/internal/consts"
-	"github.com/iimeta/fastapi/utility/logger"
+	smodel "github.com/iimeta/fastapi-sdk/v2/model"
+	"github.com/iimeta/fastapi-sdk/v2/tiktoken"
+	"github.com/iimeta/fastapi/v2/internal/consts"
+	"github.com/iimeta/fastapi/v2/utility/logger"
 )
 
 func TokensFromMessages(ctx context.Context, model string, messages []smodel.ChatCompletionMessage) int {

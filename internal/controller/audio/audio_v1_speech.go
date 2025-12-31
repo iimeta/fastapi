@@ -8,9 +8,9 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/gogf/gf/v2/os/gtime"
-	"github.com/iimeta/fastapi/api/audio/v1"
-	"github.com/iimeta/fastapi/internal/service"
-	"github.com/iimeta/fastapi/utility/logger"
+	"github.com/iimeta/fastapi/v2/api/audio/v1"
+	"github.com/iimeta/fastapi/v2/internal/service"
+	"github.com/iimeta/fastapi/v2/utility/logger"
 )
 
 func (c *ControllerV1) Speech(ctx context.Context, req *v1.SpeechReq) (res *v1.SpeechRes, err error) {

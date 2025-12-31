@@ -5,7 +5,7 @@
 package audio
 
 import (
-	"github.com/iimeta/fastapi/api/audio"
+	"github.com/iimeta/fastapi/v2/api/audio"
 )
 
 type ControllerV1 struct{}

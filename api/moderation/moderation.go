@@ -7,7 +7,7 @@ package moderation
 import (
 	"context"
 
-	"github.com/iimeta/fastapi/api/moderation/v1"
+	"github.com/iimeta/fastapi/v2/api/moderation/v1"
 )
 
 type IModerationV1 interface {

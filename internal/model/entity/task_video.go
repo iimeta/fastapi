@@ -1,6 +1,6 @@
 package entity
 
-import smodel "github.com/iimeta/fastapi-sdk/model"
+import smodel "github.com/iimeta/fastapi-sdk/v2/model"
 
 type TaskVideo struct {
 	Id                 string             `bson:"_id,omitempty"`                   // ID

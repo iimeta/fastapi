@@ -16,14 +16,14 @@ import (
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/gorilla/websocket"
-	smodel "github.com/iimeta/fastapi-sdk/model"
-	"github.com/iimeta/fastapi/internal/consts"
-	"github.com/iimeta/fastapi/internal/errors"
-	"github.com/iimeta/fastapi/internal/logic/common"
-	"github.com/iimeta/fastapi/internal/model"
-	mcommon "github.com/iimeta/fastapi/internal/model/common"
-	"github.com/iimeta/fastapi/internal/service"
-	"github.com/iimeta/fastapi/utility/logger"
+	smodel "github.com/iimeta/fastapi-sdk/v2/model"
+	"github.com/iimeta/fastapi/v2/internal/consts"
+	"github.com/iimeta/fastapi/v2/internal/errors"
+	"github.com/iimeta/fastapi/v2/internal/logic/common"
+	"github.com/iimeta/fastapi/v2/internal/model"
+	mcommon "github.com/iimeta/fastapi/v2/internal/model/common"
+	"github.com/iimeta/fastapi/v2/internal/service"
+	"github.com/iimeta/fastapi/v2/utility/logger"
 )
 
 type sRealtime struct {

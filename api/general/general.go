@@ -7,7 +7,7 @@ package general
 import (
 	"context"
 
-	"github.com/iimeta/fastapi/api/general/v1"
+	"github.com/iimeta/fastapi/v2/api/general/v1"
 )
 
 type IGeneralV1 interface {

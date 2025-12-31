@@ -2,7 +2,7 @@ package do
 
 import (
 	"github.com/gogf/gf/v2/util/gmeta"
-	serrors "github.com/iimeta/fastapi-sdk/errors"
+	serrors "github.com/iimeta/fastapi-sdk/v2/errors"
 )
 
 type TaskFile struct {

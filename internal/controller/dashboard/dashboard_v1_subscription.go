@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/gogf/gf/v2/frame/g"
-	"github.com/iimeta/fastapi/api/dashboard/v1"
-	"github.com/iimeta/fastapi/internal/service"
+	"github.com/iimeta/fastapi/v2/api/dashboard/v1"
+	"github.com/iimeta/fastapi/v2/internal/service"
 )
 
 func (c *ControllerV1) Subscription(ctx context.Context, req *v1.SubscriptionReq) (res *v1.SubscriptionRes, err error) {

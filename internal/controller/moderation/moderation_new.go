@@ -5,7 +5,7 @@
 package moderation
 
 import (
-	"github.com/iimeta/fastapi/api/moderation"
+	"github.com/iimeta/fastapi/v2/api/moderation"
 )
 
 type ControllerV1 struct{}

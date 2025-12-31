@@ -5,7 +5,7 @@
 package dashboard
 
 import (
-	"github.com/iimeta/fastapi/api/dashboard"
+	"github.com/iimeta/fastapi/v2/api/dashboard"
 )
 
 type ControllerV1 struct{}

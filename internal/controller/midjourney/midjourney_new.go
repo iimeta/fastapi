@@ -5,7 +5,7 @@
 package midjourney
 
 import (
-	"github.com/iimeta/fastapi/api/midjourney"
+	"github.com/iimeta/fastapi/v2/api/midjourney"
 )
 
 type ControllerV1 struct{}

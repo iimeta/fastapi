@@ -1,7 +1,7 @@
 package common
 
 import (
-	smodel "github.com/iimeta/fastapi-sdk/model"
+	smodel "github.com/iimeta/fastapi-sdk/v2/model"
 )
 
 type PresetConfig struct {

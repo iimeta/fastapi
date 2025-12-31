@@ -5,7 +5,7 @@
 package embedding
 
 import (
-	"github.com/iimeta/fastapi/api/embedding"
+	"github.com/iimeta/fastapi/v2/api/embedding"
 )
 
 type ControllerV1 struct{}

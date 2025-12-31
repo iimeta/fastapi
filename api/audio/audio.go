@@ -7,7 +7,7 @@ package audio
 import (
 	"context"
 
-	"github.com/iimeta/fastapi/api/audio/v1"
+	"github.com/iimeta/fastapi/v2/api/audio/v1"
 )
 
 type IAudioV1 interface {

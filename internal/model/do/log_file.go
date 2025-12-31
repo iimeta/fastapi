@@ -2,7 +2,7 @@ package do
 
 import (
 	"github.com/gogf/gf/v2/util/gmeta"
-	"github.com/iimeta/fastapi/internal/model/common"
+	"github.com/iimeta/fastapi/v2/internal/model/common"
 )
 
 type LogFile struct {

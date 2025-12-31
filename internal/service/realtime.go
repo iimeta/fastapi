@@ -9,7 +9,7 @@ import (
 	"context"
 
 	"github.com/gogf/gf/v2/net/ghttp"
-	"github.com/iimeta/fastapi/internal/model"
+	"github.com/iimeta/fastapi/v2/internal/model"
 )
 
 type (

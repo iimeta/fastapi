@@ -7,7 +7,7 @@ package dashboard
 import (
 	"context"
 
-	"github.com/iimeta/fastapi/api/dashboard/v1"
+	"github.com/iimeta/fastapi/v2/api/dashboard/v1"
 )
 
 type IDashboardV1 interface {

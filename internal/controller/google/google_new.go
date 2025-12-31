@@ -5,7 +5,7 @@
 package google
 
 import (
-	"github.com/iimeta/fastapi/api/google"
+	"github.com/iimeta/fastapi/v2/api/google"
 )
 
 type ControllerV1 struct{}

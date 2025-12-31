@@ -5,9 +5,9 @@ import (
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
-	"github.com/iimeta/fastapi/api/moderation/v1"
-	"github.com/iimeta/fastapi/internal/service"
-	"github.com/iimeta/fastapi/utility/logger"
+	"github.com/iimeta/fastapi/v2/api/moderation/v1"
+	"github.com/iimeta/fastapi/v2/internal/service"
+	"github.com/iimeta/fastapi/v2/utility/logger"
 )
 
 func (c *ControllerV1) Moderations(ctx context.Context, req *v1.ModerationsReq) (res *v1.ModerationsRes, err error) {

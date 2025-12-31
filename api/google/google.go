@@ -7,7 +7,7 @@ package google
 import (
 	"context"
 
-	"github.com/iimeta/fastapi/api/google/v1"
+	"github.com/iimeta/fastapi/v2/api/google/v1"
 )
 
 type IGoogleV1 interface {

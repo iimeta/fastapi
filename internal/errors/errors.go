@@ -8,8 +8,8 @@ import (
 	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
-	serrors "github.com/iimeta/fastapi-sdk/errors"
-	"github.com/iimeta/fastapi/internal/config"
+	serrors "github.com/iimeta/fastapi-sdk/v2/errors"
+	"github.com/iimeta/fastapi/v2/internal/config"
 )
 
 type IFastApiError interface {

@@ -1,6 +1,6 @@
 package model
 
-import "github.com/iimeta/fastapi/internal/model/common"
+import "github.com/iimeta/fastapi/v2/internal/model/common"
 
 type Model struct {
 	Id                   string                 `json:"id,omitempty"`                      // ID

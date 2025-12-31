@@ -7,7 +7,7 @@ package embedding
 import (
 	"context"
 
-	"github.com/iimeta/fastapi/api/embedding/v1"
+	"github.com/iimeta/fastapi/v2/api/embedding/v1"
 )
 
 type IEmbeddingV1 interface {

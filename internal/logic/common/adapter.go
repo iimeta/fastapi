@@ -6,15 +6,15 @@ import (
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/text/gstr"
-	"github.com/iimeta/fastapi-sdk"
-	sconsts "github.com/iimeta/fastapi-sdk/consts"
-	"github.com/iimeta/fastapi-sdk/general"
-	"github.com/iimeta/fastapi-sdk/openai"
-	"github.com/iimeta/fastapi-sdk/options"
-	"github.com/iimeta/fastapi/internal/config"
-	"github.com/iimeta/fastapi/internal/model"
-	"github.com/iimeta/fastapi/internal/service"
-	"github.com/iimeta/fastapi/utility/logger"
+	"github.com/iimeta/fastapi-sdk/v2"
+	sconsts "github.com/iimeta/fastapi-sdk/v2/consts"
+	"github.com/iimeta/fastapi-sdk/v2/general"
+	"github.com/iimeta/fastapi-sdk/v2/openai"
+	"github.com/iimeta/fastapi-sdk/v2/options"
+	"github.com/iimeta/fastapi/v2/internal/config"
+	"github.com/iimeta/fastapi/v2/internal/model"
+	"github.com/iimeta/fastapi/v2/internal/service"
+	"github.com/iimeta/fastapi/v2/utility/logger"
 )
 
 func NewAdapter(ctx context.Context, mak *MAK, isLong bool) (adapter sdk.Adapter) {

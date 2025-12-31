@@ -8,8 +8,8 @@ package service
 import (
 	"context"
 
-	"github.com/iimeta/fastapi/internal/model"
-	"github.com/iimeta/fastapi/internal/model/entity"
+	"github.com/iimeta/fastapi/v2/internal/model"
+	"github.com/iimeta/fastapi/v2/internal/model/entity"
 )
 
 type (

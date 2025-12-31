@@ -5,7 +5,7 @@
 package image
 
 import (
-	"github.com/iimeta/fastapi/api/image"
+	"github.com/iimeta/fastapi/v2/api/image"
 )
 
 type ControllerV1 struct{}

@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"github.com/iimeta/fastapi/internal/model/common"
+	"github.com/iimeta/fastapi/v2/internal/model/common"
 )
 
 type LogBatch struct {

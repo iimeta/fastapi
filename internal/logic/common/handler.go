@@ -9,13 +9,13 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
-	"github.com/iimeta/fastapi/internal/consts"
-	"github.com/iimeta/fastapi/internal/dao"
-	"github.com/iimeta/fastapi/internal/model"
-	mcommon "github.com/iimeta/fastapi/internal/model/common"
-	"github.com/iimeta/fastapi/internal/model/do"
-	"github.com/iimeta/fastapi/internal/service"
-	"github.com/iimeta/fastapi/utility/logger"
+	"github.com/iimeta/fastapi/v2/internal/consts"
+	"github.com/iimeta/fastapi/v2/internal/dao"
+	"github.com/iimeta/fastapi/v2/internal/model"
+	mcommon "github.com/iimeta/fastapi/v2/internal/model/common"
+	"github.com/iimeta/fastapi/v2/internal/model/do"
+	"github.com/iimeta/fastapi/v2/internal/service"
+	"github.com/iimeta/fastapi/v2/utility/logger"
 )
 
 // 前置处理器

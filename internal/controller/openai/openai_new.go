@@ -5,7 +5,7 @@
 package openai
 
 import (
-	"github.com/iimeta/fastapi/api/openai"
+	"github.com/iimeta/fastapi/v2/api/openai"
 )
 
 type ControllerV1 struct{}

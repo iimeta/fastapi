@@ -7,7 +7,7 @@ package image
 import (
 	"context"
 
-	"github.com/iimeta/fastapi/api/image/v1"
+	"github.com/iimeta/fastapi/v2/api/image/v1"
 )
 
 type IImageV1 interface {

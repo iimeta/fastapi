@@ -7,7 +7,7 @@ package video
 import (
 	"context"
 
-	"github.com/iimeta/fastapi/api/video/v1"
+	"github.com/iimeta/fastapi/v2/api/video/v1"
 )
 
 type IVideoV1 interface {

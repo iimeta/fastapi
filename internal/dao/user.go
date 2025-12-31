@@ -3,8 +3,8 @@ package dao
 import (
 	"context"
 
-	"github.com/iimeta/fastapi/internal/model/entity"
-	"github.com/iimeta/fastapi/utility/db"
+	"github.com/iimeta/fastapi/v2/internal/model/entity"
+	"github.com/iimeta/fastapi/v2/utility/db"
 	"go.mongodb.org/mongo-driver/bson"
 )
 

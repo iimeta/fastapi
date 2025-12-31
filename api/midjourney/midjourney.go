@@ -7,7 +7,7 @@ package midjourney
 import (
 	"context"
 
-	"github.com/iimeta/fastapi/api/midjourney/v1"
+	"github.com/iimeta/fastapi/v2/api/midjourney/v1"
 )
 
 type IMidjourneyV1 interface {
