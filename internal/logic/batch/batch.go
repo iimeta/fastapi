@@ -9,6 +9,7 @@ import (
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
@@ -449,29 +450,42 @@ func getFileModel(ctx context.Context, fileId string) (string, error) {
 		return "", err
 	}
 
-	logFile, err := dao.LogFile.FindOne(ctx, bson.M{"trace_id": taskFile.TraceId, "status": 1})
-	if err != nil {
-		logger.Error(ctx, err)
-		return "", err
+	var data []byte
+
+	if config.Cfg.FileTask.IsEnableStorage && taskFile.FilePath != "" {
+		if bytes := gfile.GetBytes(taskFile.FilePath); bytes != nil {
+			data = bytes
+		}
 	}
 
-	adapter := sdk.NewAdapter(ctx, &options.AdapterOptions{
-		Provider: common.GetProviderCode(ctx, logFile.ModelAgent.ProviderId),
-		Model:    logFile.Model,
-		Key:      logFile.Key,
-		BaseUrl:  logFile.ModelAgent.BaseUrl,
-		Path:     logFile.ModelAgent.Path,
-		Timeout:  config.Cfg.Base.ShortTimeout * time.Second,
-		ProxyUrl: config.Cfg.Http.ProxyUrl,
-	})
+	if len(data) == 0 {
 
-	response, err := adapter.FileContent(ctx, smodel.FileContentRequest{FileId: taskFile.FileId})
-	if err != nil {
-		logger.Error(ctx, err)
-		return "", err
+		logFile, err := dao.LogFile.FindOne(ctx, bson.M{"trace_id": taskFile.TraceId, "status": 1})
+		if err != nil {
+			logger.Error(ctx, err)
+			return "", err
+		}
+
+		adapter := sdk.NewAdapter(ctx, &options.AdapterOptions{
+			Provider: common.GetProviderCode(ctx, logFile.ModelAgent.ProviderId),
+			Model:    logFile.Model,
+			Key:      logFile.Key,
+			BaseUrl:  logFile.ModelAgent.BaseUrl,
+			Path:     logFile.ModelAgent.Path,
+			Timeout:  config.Cfg.Base.ShortTimeout * time.Second,
+			ProxyUrl: config.Cfg.Http.ProxyUrl,
+		})
+
+		response, err := adapter.FileContent(ctx, smodel.FileContentRequest{FileId: taskFile.FileId})
+		if err != nil {
+			logger.Error(ctx, err)
+			return "", err
+		}
+
+		data = response.Data
 	}
 
-	lines := bytes.Split(response.Data, []byte("\n"))
+	lines := bytes.Split(data, []byte("\n"))
 	if len(lines) > 0 {
 
 		data := make(map[string]any)

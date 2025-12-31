@@ -7,6 +7,7 @@ import (
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
@@ -533,6 +534,13 @@ func (s *sFile) Content(ctx context.Context, params *v1.ContentReq) (response sm
 	if err = mak.InitMAK(ctx); err != nil {
 		logger.Error(ctx, err)
 		return response, err
+	}
+
+	if config.Cfg.FileTask.IsEnableStorage && taskFile.FilePath != "" {
+		if bytes := gfile.GetBytes(taskFile.FilePath); bytes != nil {
+			response = smodel.FileContentResponse{Data: bytes}
+			return response, nil
+		}
 	}
 
 	var adapter sdk.AdapterGroup

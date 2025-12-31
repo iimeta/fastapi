@@ -127,6 +127,17 @@ type VideoTask struct {
 	StorageExpiredDelete bool          `bson:"storage_expired_delete" json:"storage_expired_delete"`       // 存储过期删除开关
 }
 
+type FileTask struct {
+	Open                 bool          `bson:"open"                   json:"open"`                         // 开关
+	Cron                 string        `bson:"cron"                   json:"cron"`                         // CRON表达式
+	LockMinutes          time.Duration `bson:"lock_minutes"           json:"lock_minutes"`                 // 锁定时长, 单位: 分钟
+	IsEnableStorage      bool          `bson:"is_enable_storage"      json:"is_enable_storage"`            // 是否启用存储
+	StorageDir           string        `bson:"storage_dir"            json:"storage_dir"`                  // 存储目录
+	StorageBaseUrl       string        `bson:"storage_base_url"       json:"storage_base_url"`             // 访问地址
+	StorageExpiresAt     time.Duration `bson:"storage_expires_at"     json:"storage_expires_at,omitempty"` // 存储过期时间, 单位: 分钟
+	StorageExpiredDelete bool          `bson:"storage_expired_delete" json:"storage_expired_delete"`       // 存储过期删除开关
+}
+
 type ServiceUnavailable struct {
 	Open        bool     `bson:"open"         json:"open"`         // 开关
 	IpWhitelist []string `bson:"ip_whitelist" json:"ip_whitelist"` // IP白名单

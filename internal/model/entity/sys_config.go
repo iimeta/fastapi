@@ -16,6 +16,7 @@ type SysConfig struct {
 	NotShieldError     *common.NotShieldError     `bson:"not_shield_error,omitempty"`    // 不屏蔽错误
 	Quota              *common.Quota              `bson:"quota,omitempty"`               // 额度
 	VideoTask          *common.VideoTask          `bson:"video_task,omitempty"`          // 视频任务
+	FileTask           *common.FileTask           `bson:"file_task,omitempty"`           // 文件任务
 	ServiceUnavailable *common.ServiceUnavailable `bson:"service_unavailable,omitempty"` // 暂停服务
 	Debug              *common.Debug              `bson:"debug,omitempty"`               // 调试
 	Creator            string                     `bson:"creator,omitempty"`             // 创建人
