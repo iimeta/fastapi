@@ -60,31 +60,6 @@ type LogVideo struct {
 	Spend              mcommon.Spend
 }
 
-type LogMidjourney struct {
-	ReqModel           *Model
-	RealModel          *Model
-	ModelAgent         *ModelAgent
-	FallbackModelAgent *ModelAgent
-	FallbackModel      *Model
-	Key                *Key
-	Response           MidjourneyResponse
-	RetryInfo          *mcommon.Retry
-	Spend              mcommon.Spend
-}
-
-type LogGeneral struct {
-	ReqModel           *Model
-	RealModel          *Model
-	ModelAgent         *ModelAgent
-	FallbackModelAgent *ModelAgent
-	FallbackModel      *Model
-	Key                *Key
-	GeneralReq         *GeneralReq
-	GeneralRes         *GeneralRes
-	RetryInfo          *mcommon.Retry
-	Spend              mcommon.Spend
-}
-
 type LogFile struct {
 	ReqModel           *Model
 	RealModel          *Model
@@ -107,6 +82,31 @@ type LogBatch struct {
 	Key                *Key
 	BatchReq           *BatchReq
 	BatchRes           *BatchRes
+	RetryInfo          *mcommon.Retry
+	Spend              mcommon.Spend
+}
+
+type LogMidjourney struct {
+	ReqModel           *Model
+	RealModel          *Model
+	ModelAgent         *ModelAgent
+	FallbackModelAgent *ModelAgent
+	FallbackModel      *Model
+	Key                *Key
+	Response           MidjourneyResponse
+	RetryInfo          *mcommon.Retry
+	Spend              mcommon.Spend
+}
+
+type LogGeneral struct {
+	ReqModel           *Model
+	RealModel          *Model
+	ModelAgent         *ModelAgent
+	FallbackModelAgent *ModelAgent
+	FallbackModel      *Model
+	Key                *Key
+	GeneralReq         *GeneralReq
+	GeneralRes         *GeneralRes
 	RetryInfo          *mcommon.Retry
 	Spend              mcommon.Spend
 }
