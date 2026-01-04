@@ -143,6 +143,11 @@ type ServiceUnavailable struct {
 	IpWhitelist []string `bson:"ip_whitelist" json:"ip_whitelist"` // IP白名单
 }
 
+type GeneralApi struct {
+	Open        bool     `bson:"open"         json:"open"`         // 开关
+	IpWhitelist []string `bson:"ip_whitelist" json:"ip_whitelist"` // IP白名单
+}
+
 type Debug struct {
 	Open bool `bson:"open" json:"open"` // 开关
 }

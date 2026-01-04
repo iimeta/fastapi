@@ -18,6 +18,7 @@ type SysConfig struct {
 	VideoTask          *common.VideoTask          `bson:"video_task,omitempty"`          // 视频任务
 	FileTask           *common.FileTask           `bson:"file_task,omitempty"`           // 文件任务
 	ServiceUnavailable *common.ServiceUnavailable `bson:"service_unavailable,omitempty"` // 暂停服务
+	GeneralApi         *common.GeneralApi         `bson:"general_api,omitempty"`         // 通用API
 	Debug              *common.Debug              `bson:"debug,omitempty"`               // 调试
 	Creator            string                     `bson:"creator,omitempty"`             // 创建人
 	Updater            string                     `bson:"updater,omitempty"`             // 更新人
