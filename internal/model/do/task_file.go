@@ -15,7 +15,7 @@ type TaskFile struct {
 	FileId       string            `bson:"file_id,omitempty"`        // 文件ID
 	FileName     string            `bson:"file_name,omitempty"`      // 文件名
 	Bytes        int               `bson:"bytes,omitempty"`          // 文件大小
-	Status       string            `bson:"status,omitempty"`         // 状态[uploaded:已上传, processed:已处理, error:已失败, expired:已过期, deleted:已删除]
+	Status       string            `bson:"status,omitempty"`         // 状态[uploaded:已上传, processing:处理中, processed:已处理, error:已失败, expired:已过期, deleted:已删除]
 	ExpiresAt    int64             `bson:"expires_at,omitempty"`     // 过期时间
 	FileUrl      string            `bson:"file_url,omitempty"`       // 文件地址
 	FilePath     string            `bson:"file_path,omitempty"`      // 文件路径
