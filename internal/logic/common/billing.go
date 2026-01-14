@@ -146,7 +146,7 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 
 	if mak.ReqModel.Type == 2 || mak.ReqModel.Type == 3 || mak.ReqModel.Type == 4 {
 
-		if billingData.Usage.InputTokensDetails.TextTokens > 0 {
+		if billingData.Usage.InputTokensDetails.TextTokens+billingData.Usage.CompletionTokensDetails.TextTokens > 0 {
 
 			if spend.Text == nil {
 				spend.Text = new(common.TextSpend)
@@ -167,7 +167,8 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 			}
 
 			spend.Text.InputTokens = billingData.Usage.InputTokensDetails.TextTokens
-			spend.Text.SpendTokens = int(math.Ceil(float64(spend.Text.InputTokens) * spend.Text.Pricing.InputRatio))
+			spend.Text.OutputTokens = billingData.Usage.CompletionTokensDetails.TextTokens
+			spend.Text.SpendTokens = int(math.Ceil(float64(spend.Text.InputTokens)*spend.Text.Pricing.InputRatio)) + int(math.Ceil(float64(spend.Text.OutputTokens)*spend.Text.Pricing.OutputRatio))
 		}
 
 		return
