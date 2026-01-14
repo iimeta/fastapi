@@ -26,6 +26,7 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/db"
 	"github.com/iimeta/fastapi/v2/utility/logger"
+	"github.com/iimeta/fastapi/v2/utility/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -71,8 +72,8 @@ func (s *sVideo) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 					Prompt:       params.Prompt,
 					Seconds:      gconv.Int(params.Seconds),
 					Size:         params.Size,
-					RequestData:  gconv.Map(params.VideoCreateRequest),
-					ResponseData: gconv.Map(response),
+					RequestData:  util.ConvToMap(params.VideoCreateRequest),
+					ResponseData: util.ConvToMap(response),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
@@ -201,8 +202,8 @@ func (s *sVideo) Remix(ctx context.Context, params *v1.RemixReq, fallbackModelAg
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_REMIX,
 					VideoId:      response.Id,
-					RequestData:  gconv.Map(params.VideoRemixRequest),
-					ResponseData: gconv.Map(response),
+					RequestData:  util.ConvToMap(params.VideoRemixRequest),
+					ResponseData: util.ConvToMap(response),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
@@ -326,8 +327,8 @@ func (s *sVideo) List(ctx context.Context, params *v1.ListReq) (response smodel.
 
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_LIST,
-					RequestData:  gconv.Map(params.VideoListRequest),
-					ResponseData: gconv.Map(response),
+					RequestData:  util.ConvToMap(params.VideoListRequest),
+					ResponseData: util.ConvToMap(response),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
@@ -487,8 +488,8 @@ func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_RETRIEVE,
 					VideoId:      params.VideoId,
-					RequestData:  gconv.Map(params.VideoRetrieveRequest),
-					ResponseData: gconv.Map(response),
+					RequestData:  util.ConvToMap(params.VideoRetrieveRequest),
+					ResponseData: util.ConvToMap(response),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
@@ -586,8 +587,8 @@ func (s *sVideo) Delete(ctx context.Context, params *v1.DeleteReq) (response smo
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_DELETE,
 					VideoId:      params.VideoId,
-					RequestData:  gconv.Map(params.VideoDeleteRequest),
-					ResponseData: gconv.Map(response),
+					RequestData:  util.ConvToMap(params.VideoDeleteRequest),
+					ResponseData: util.ConvToMap(response),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
@@ -680,7 +681,7 @@ func (s *sVideo) Content(ctx context.Context, params *v1.ContentReq) (response s
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_CONTENT,
 					VideoId:      params.VideoId,
-					RequestData:  gconv.Map(params.VideoContentRequest),
+					RequestData:  util.ConvToMap(params.VideoContentRequest),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,

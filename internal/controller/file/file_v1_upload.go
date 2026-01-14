@@ -4,13 +4,13 @@ import (
 	"bufio"
 	"context"
 
-	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/iimeta/fastapi/v2/api/file/v1"
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/logger"
+	"github.com/iimeta/fastapi/v2/utility/util"
 )
 
 func (c *ControllerV1) Upload(ctx context.Context, req *v1.UploadReq) (res *v1.UploadRes, err error) {
@@ -36,15 +36,8 @@ func (c *ControllerV1) Upload(ctx context.Context, req *v1.UploadReq) (res *v1.U
 
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
-
-			data := make(map[string]any)
-			if err = gjson.Unmarshal(scanner.Bytes(), &data); err != nil {
-				logger.Error(ctx, err)
-				break
-			}
-
-			if body, ok := data["body"]; ok {
-				if model, ok := gconv.Map(body)["model"]; ok {
+			if body, ok := util.ConvToMap(scanner.Bytes())["body"]; ok {
+				if model, ok := util.ConvToMap(body)["model"]; ok {
 					req.Model = gconv.String(model)
 					break
 				}

@@ -378,17 +378,19 @@ func fileHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		if after.Action == consts.ACTION_UPLOAD {
 
 			taskFile := do.TaskFile{
-				TraceId:   gtrace.GetTraceID(ctx),
-				UserId:    service.Session().GetUserId(ctx),
-				AppId:     service.Session().GetAppId(ctx),
-				Model:     mak.ReqModel.Name,
-				Purpose:   after.FileRes.Purpose,
-				FileId:    after.FileId,
-				FileName:  after.FileRes.Filename,
-				Bytes:     after.FileRes.Bytes,
-				ExpiresAt: after.FileRes.ExpiresAt,
-				Status:    after.FileRes.Status,
-				Rid:       service.Session().GetRid(ctx),
+				TraceId:      gtrace.GetTraceID(ctx),
+				UserId:       service.Session().GetUserId(ctx),
+				AppId:        service.Session().GetAppId(ctx),
+				Model:        mak.ReqModel.Name,
+				Purpose:      after.FileRes.Purpose,
+				FileId:       after.FileId,
+				FileName:     after.FileRes.Filename,
+				Bytes:        after.FileRes.Bytes,
+				ExpiresAt:    after.FileRes.ExpiresAt,
+				Status:       after.FileRes.Status,
+				FileUrl:      after.FileRes.FileUrl,
+				ResponseData: after.ResponseData,
+				Rid:          service.Session().GetRid(ctx),
 			}
 
 			if _, err := dao.TaskFile.Insert(ctx, taskFile); err != nil {

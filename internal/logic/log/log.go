@@ -68,6 +68,8 @@ func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 		LocalIp:      util.GetLocalIp(),
 		Status:       1,
 		Host:         g.RequestFromCtx(ctx).GetHost(),
+		Method:       g.RequestFromCtx(ctx).Method,
+		Path:         g.RequestFromCtx(ctx).URL.Path,
 		Rid:          service.Session().GetRid(ctx),
 	}
 
@@ -449,6 +451,8 @@ func (s *sLog) Image(ctx context.Context, imageLog model.LogImage, retry ...int)
 		LocalIp:        util.GetLocalIp(),
 		Status:         1,
 		Host:           g.RequestFromCtx(ctx).GetHost(),
+		Method:         g.RequestFromCtx(ctx).Method,
+		Path:           g.RequestFromCtx(ctx).URL.Path,
 		Rid:            service.Session().GetRid(ctx),
 	}
 
@@ -597,6 +601,8 @@ func (s *sLog) Audio(ctx context.Context, audioLog model.LogAudio, retry ...int)
 		LocalIp:      util.GetLocalIp(),
 		Status:       1,
 		Host:         g.RequestFromCtx(ctx).GetHost(),
+		Method:       g.RequestFromCtx(ctx).Method,
+		Path:         g.RequestFromCtx(ctx).URL.Path,
 		Rid:          service.Session().GetRid(ctx),
 	}
 
@@ -740,6 +746,8 @@ func (s *sLog) Video(ctx context.Context, videoLog model.LogVideo, retry ...int)
 		LocalIp:      util.GetLocalIp(),
 		Status:       1,
 		Host:         g.RequestFromCtx(ctx).GetHost(),
+		Method:       g.RequestFromCtx(ctx).Method,
+		Path:         g.RequestFromCtx(ctx).URL.Path,
 		Rid:          service.Session().GetRid(ctx),
 	}
 
@@ -883,6 +891,8 @@ func (s *sLog) File(ctx context.Context, fileLog model.LogFile, retry ...int) {
 		LocalIp:      util.GetLocalIp(),
 		Status:       1,
 		Host:         g.RequestFromCtx(ctx).GetHost(),
+		Method:       g.RequestFromCtx(ctx).Method,
+		Path:         g.RequestFromCtx(ctx).URL.Path,
 		Rid:          service.Session().GetRid(ctx),
 	}
 
@@ -1026,6 +1036,8 @@ func (s *sLog) Batch(ctx context.Context, batchLog model.LogBatch, retry ...int)
 		LocalIp:      util.GetLocalIp(),
 		Status:       1,
 		Host:         g.RequestFromCtx(ctx).GetHost(),
+		Method:       g.RequestFromCtx(ctx).Method,
+		Path:         g.RequestFromCtx(ctx).URL.Path,
 		Rid:          service.Session().GetRid(ctx),
 	}
 
@@ -1174,6 +1186,8 @@ func (s *sLog) Midjourney(ctx context.Context, midjourneyLog model.LogMidjourney
 		LocalIp:      util.GetLocalIp(),
 		Status:       1,
 		Host:         g.RequestFromCtx(ctx).GetHost(),
+		Method:       g.RequestFromCtx(ctx).Method,
+		Path:         g.RequestFromCtx(ctx).URL.Path,
 		Rid:          service.Session().GetRid(ctx),
 	}
 
@@ -1319,6 +1333,8 @@ func (s *sLog) General(ctx context.Context, generalLog model.LogGeneral, retry .
 		LocalIp:      util.GetLocalIp(),
 		Status:       1,
 		Host:         g.RequestFromCtx(ctx).GetHost(),
+		Method:       g.RequestFromCtx(ctx).Method,
+		Path:         g.RequestFromCtx(ctx).URL.Path,
 		Rid:          service.Session().GetRid(ctx),
 	}
 

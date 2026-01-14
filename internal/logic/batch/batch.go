@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gfile"
@@ -27,6 +26,7 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/db"
 	"github.com/iimeta/fastapi/v2/utility/logger"
+	"github.com/iimeta/fastapi/v2/utility/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -71,8 +71,8 @@ func (s *sBatch) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 					IsBatch:      true,
 					BatchId:      response.Id,
 					FileId:       params.InputFileId,
-					RequestData:  gconv.Map(params.BatchCreateRequest),
-					ResponseData: gconv.Map(response.ResponseBytes),
+					RequestData:  util.ConvToMap(params.BatchCreateRequest),
+					ResponseData: util.ConvToMap(response.ResponseBytes),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
@@ -195,8 +195,8 @@ func (s *sBatch) List(ctx context.Context, params *v1.ListReq) (response smodel.
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_LIST,
 					IsBatch:      true,
-					RequestData:  gconv.Map(params.BatchListRequest),
-					ResponseData: gconv.Map(response),
+					RequestData:  util.ConvToMap(params.BatchListRequest),
+					ResponseData: util.ConvToMap(response),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
@@ -311,8 +311,8 @@ func (s *sBatch) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 					Action:       consts.ACTION_RETRIEVE,
 					IsBatch:      true,
 					BatchId:      params.BatchId,
-					RequestData:  gconv.Map(params.BatchRetrieveRequest),
-					ResponseData: gconv.Map(response.ResponseBytes),
+					RequestData:  util.ConvToMap(params.BatchRetrieveRequest),
+					ResponseData: util.ConvToMap(response.ResponseBytes),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
@@ -378,8 +378,8 @@ func (s *sBatch) Cancel(ctx context.Context, params *v1.CancelReq) (response smo
 					Action:       consts.ACTION_CANCEL,
 					IsBatch:      true,
 					BatchId:      params.BatchId,
-					RequestData:  gconv.Map(params.BatchCancelRequest),
-					ResponseData: gconv.Map(response.ResponseBytes),
+					RequestData:  util.ConvToMap(params.BatchCancelRequest),
+					ResponseData: util.ConvToMap(response.ResponseBytes),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
@@ -487,15 +487,8 @@ func getFileModel(ctx context.Context, fileId string) (string, error) {
 
 	lines := bytes.Split(data, []byte("\n"))
 	if len(lines) > 0 {
-
-		data := make(map[string]any)
-		if err = gjson.Unmarshal(lines[0], &data); err != nil {
-			logger.Error(ctx, err)
-			return "", err
-		}
-
-		if body, ok := data["body"]; ok {
-			if model, ok := gconv.Map(body)["model"]; ok {
+		if body, ok := util.ConvToMap(lines[0])["body"]; ok {
+			if model, ok := util.ConvToMap(body)["model"]; ok {
 				return gconv.String(model), nil
 			}
 		}

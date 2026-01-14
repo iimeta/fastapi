@@ -47,6 +47,8 @@ type LogVideo struct {
 	Retry                *common.Retry          `bson:"retry,omitempty"`                   // 重试
 	Status               int                    `bson:"status,omitempty"`                  // 状态[1:成功, -1:失败, 2:中止, 3:重试]
 	Host                 string                 `bson:"host,omitempty"`                    // Host
+	Method               string                 `bson:"method,omitempty"`                  // Method
+	Path                 string                 `bson:"path,omitempty"`                    // Path
 	Rid                  int                    `bson:"rid,omitempty"`                     // 代理商ID
 	Creator              string                 `bson:"creator,omitempty"`                 // 创建人
 	Updater              string                 `bson:"updater,omitempty"`                 // 更新人

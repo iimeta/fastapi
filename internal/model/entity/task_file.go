@@ -18,6 +18,7 @@ type TaskFile struct {
 	ExpiresAt    int64             `bson:"expires_at,omitempty"`     // 过期时间
 	FileUrl      string            `bson:"file_url,omitempty"`       // 文件地址
 	FilePath     string            `bson:"file_path,omitempty"`      // 文件路径
+	ResponseData map[string]any    `bson:"response_data,omitempty"`  // 响应数据
 	Error        *serrors.ApiError `bson:"error,omitempty"`          // 错误信息
 	BatchTraceId string            `bson:"batch_trace_id,omitempty"` // 批处理日志ID
 	Rid          int               `bson:"rid,omitempty"`            // 代理商ID

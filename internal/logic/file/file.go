@@ -10,7 +10,6 @@ import (
 	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
-	"github.com/gogf/gf/v2/util/gconv"
 	sdk "github.com/iimeta/fastapi-sdk/v2"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
 	"github.com/iimeta/fastapi-sdk/v2/options"
@@ -25,6 +24,7 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/db"
 	"github.com/iimeta/fastapi/v2/utility/logger"
+	"github.com/iimeta/fastapi/v2/utility/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -69,8 +69,8 @@ func (s *sFile) Upload(ctx context.Context, params *v1.UploadReq, fallbackModelA
 					IsFile:       true,
 					FileId:       response.Id,
 					FileRes:      response,
-					RequestData:  gconv.Map(params.FileUploadRequest),
-					ResponseData: gconv.Map(response),
+					RequestData:  util.ConvToMap(params.FileUploadRequest),
+					ResponseData: util.ConvToMap(response.ResponseBytes),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
@@ -197,8 +197,8 @@ func (s *sFile) List(ctx context.Context, params *v1.ListReq) (response smodel.F
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_LIST,
 					IsFile:       true,
-					RequestData:  gconv.Map(params.FileListRequest),
-					ResponseData: gconv.Map(response),
+					RequestData:  util.ConvToMap(params.FileListRequest),
+					ResponseData: util.ConvToMap(response),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
@@ -311,6 +311,7 @@ func (s *sFile) List(ctx context.Context, params *v1.ListReq) (response smodel.F
 			CreatedAt: result.CreatedAt / 1000,
 			ExpiresAt: result.ExpiresAt,
 			Status:    result.Status,
+			FileUrl:   result.FileUrl,
 		}
 
 		response.Data = append(response.Data, fileResponse)
@@ -345,8 +346,8 @@ func (s *sFile) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response 
 					Action:       consts.ACTION_RETRIEVE,
 					IsFile:       true,
 					FileId:       params.FileId,
-					RequestData:  gconv.Map(params.FileRetrieveRequest),
-					ResponseData: gconv.Map(response),
+					RequestData:  util.ConvToMap(params.FileRetrieveRequest),
+					ResponseData: util.ConvToMap(response),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
@@ -387,6 +388,7 @@ func (s *sFile) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response 
 		CreatedAt: taskFile.CreatedAt / 1000,
 		ExpiresAt: taskFile.ExpiresAt,
 		Status:    taskFile.Status,
+		FileUrl:   taskFile.FileUrl,
 	}
 
 	return response, nil
@@ -418,8 +420,8 @@ func (s *sFile) Delete(ctx context.Context, params *v1.DeleteReq) (response smod
 					Action:       consts.ACTION_DELETE,
 					IsFile:       true,
 					FileId:       params.FileId,
-					RequestData:  gconv.Map(params.FileDeleteRequest),
-					ResponseData: gconv.Map(response),
+					RequestData:  util.ConvToMap(params.FileDeleteRequest),
+					ResponseData: util.ConvToMap(response),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
@@ -499,7 +501,7 @@ func (s *sFile) Content(ctx context.Context, params *v1.ContentReq) (response sm
 					Action:       consts.ACTION_CONTENT,
 					IsFile:       true,
 					FileId:       params.FileId,
-					RequestData:  gconv.Map(params.FileContentRequest),
+					RequestData:  util.ConvToMap(params.FileContentRequest),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,

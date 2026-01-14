@@ -68,7 +68,7 @@ func (s *sGeneral) General(ctx context.Context, request *ghttp.Request, fallback
 
 				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					RequestData:       request.GetRequestMap(),
-					ResponseData:      gconv.Map(response.ResponseBytes),
+					ResponseData:      util.ConvToMap(response.ResponseBytes),
 					ChatCompletionReq: params,
 					ChatCompletionRes: response,
 					Usage:             response.Usage,
