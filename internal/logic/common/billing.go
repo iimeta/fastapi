@@ -440,10 +440,11 @@ func imageGeneration(ctx context.Context, mak *MAK, billingData *common.BillingD
 	}
 
 	var (
-		quality = billingData.ImageGenerationRequest.Quality
-		size    = billingData.ImageGenerationRequest.Size
-		width   int
-		height  int
+		quality     = billingData.ImageGenerationRequest.Quality
+		size        = billingData.ImageGenerationRequest.Size
+		aspectRatio = billingData.ImageGenerationRequest.AspectRatio
+		width       int
+		height      int
 	)
 
 	if quality == "" {
@@ -452,6 +453,14 @@ func imageGeneration(ctx context.Context, mak *MAK, billingData *common.BillingD
 
 	if size == "" {
 		size = billingData.ImageEditRequest.Size
+	}
+
+	if aspectRatio == "" {
+		aspectRatio = billingData.ImageEditRequest.AspectRatio
+	}
+
+	if aspectRatio == "" {
+		aspectRatio = "1:1"
 	}
 
 	if size != "" {
@@ -477,6 +486,21 @@ func imageGeneration(ctx context.Context, mak *MAK, billingData *common.BillingD
 		if len(widthHeight) == 2 {
 			width = gconv.Int(widthHeight[0])
 			height = gconv.Int(widthHeight[1])
+		} else {
+
+			if gstr.HasSuffix(size, "K") {
+				quality = size
+			}
+
+			if quality == "" || !gstr.HasSuffix(quality, "K") {
+				quality = "1K"
+			}
+
+			if size = consts.RESOLUTION_ASPECT_RATIO[quality+aspectRatio]; size != "" {
+				widthHeight = gstr.Split(size, `x`)
+				width = gconv.Int(widthHeight[0])
+				height = gconv.Int(widthHeight[1])
+			}
 		}
 	}
 
