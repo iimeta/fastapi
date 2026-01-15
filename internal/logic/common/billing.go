@@ -146,7 +146,7 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 
 	if mak.ReqModel.Type == 2 || mak.ReqModel.Type == 3 || mak.ReqModel.Type == 4 {
 
-		if billingData.Usage.InputTokensDetails.TextTokens+billingData.Usage.CompletionTokensDetails.TextTokens > 0 {
+		if billingData.Usage.InputTokensDetails.TextTokens+billingData.Usage.CompletionTokensDetails.TextTokens+billingData.Usage.OutputTokensDetails.ReasoningTokens > 0 {
 
 			if spend.Text == nil {
 				spend.Text = new(common.TextSpend)
@@ -168,7 +168,8 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 
 			spend.Text.InputTokens = billingData.Usage.InputTokensDetails.TextTokens
 			spend.Text.OutputTokens = billingData.Usage.CompletionTokensDetails.TextTokens
-			spend.Text.SpendTokens = int(math.Ceil(float64(spend.Text.InputTokens)*spend.Text.Pricing.InputRatio)) + int(math.Ceil(float64(spend.Text.OutputTokens)*spend.Text.Pricing.OutputRatio))
+			spend.Text.ReasoningTokens = billingData.Usage.OutputTokensDetails.ReasoningTokens
+			spend.Text.SpendTokens = int(math.Ceil(float64(spend.Text.InputTokens)*spend.Text.Pricing.InputRatio)) + int(math.Ceil(float64(spend.Text.OutputTokens)*spend.Text.Pricing.OutputRatio)) + int(math.Ceil(float64(spend.Text.ReasoningTokens)*spend.Text.Pricing.ReasoningRatio))
 		}
 
 		return
@@ -502,6 +503,14 @@ func imageGeneration(ctx context.Context, mak *MAK, billingData *common.BillingD
 				width = gconv.Int(widthHeight[0])
 				height = gconv.Int(widthHeight[1])
 			}
+		}
+
+	} else if gstr.HasSuffix(quality, "K") {
+
+		if size = consts.RESOLUTION_ASPECT_RATIO[quality+aspectRatio]; size != "" {
+			widthHeight := gstr.Split(size, `x`)
+			width = gconv.Int(widthHeight[0])
+			height = gconv.Int(widthHeight[1])
 		}
 	}
 
