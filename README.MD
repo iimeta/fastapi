@@ -5,12 +5,12 @@
 # 智元 Fast API
 
 [![Release](https://img.shields.io/github/v/release/iimeta/fastapi?color=blue)](https://github.com/iimeta/fastapi/releases)
-[![License](https://img.shields.io/static/v1?label=license&message=MIT&color=green)](https://github.com/iimeta/fastapi/blob/main/LICENSE)
-[![Docker Pull](https://img.shields.io/docker/pulls/iimeta/fastapi?color=brightgreen)](https://hub.docker.com/r/iimeta/fastapi)
+[![License](https://img.shields.io/static/v1?label=license&message=Apache-2.0&color=green)](https://github.com/iimeta/fastapi/blob/main/LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/iimeta/fastapi)](https://goreportcard.com/report/github.com/iimeta/fastapi)
 
 </div>
 
-`智元 Fast API` 是一站式API管理系统，将各类大模型API进行统一格式、统一规范、统一管理，使其在功能、性能和用户体验上达到极致。
+企业级 LLM API 快速集成系统，支持DeepSeek、OpenAI、Azure、文心一言、讯飞星火、通义千问、智谱GLM、豆包、Gemini、Anthropic Claude以及OpenAI格式的模型等，简洁的页面风格，轻量高效且稳定，支持Docker一键部署。业务系统只需要按照统一API标准，对接一次的开发工作量，即可无缝对接N个大模型，无需考虑N个大模型背后的各种复杂逻辑等等，可大大降低开发和维护成本...
 
 ## 手动Docker部署
 0. 需提前安装好Redis和MongoDB以及Docker服务
