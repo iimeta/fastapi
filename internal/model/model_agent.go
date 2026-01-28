@@ -8,6 +8,7 @@ type ModelAgent struct {
 	Path                 string   `json:"path,omitempty"`                    // 模型代理地址路径
 	Weight               int      `json:"weight,omitempty"`                  // 权重
 	CurrentWeight        int      `json:"current_weight,omitempty"`          // 当前权重
+	BillingMethods       []int    `bson:"billing_methods,omitempty"`         // 计费方式[1:按Tokens, 2:按次]
 	Models               []string `json:"models,omitempty"`                  // 绑定模型
 	IsEnableModelReplace bool     `json:"is_enable_model_replace,omitempty"` // 是否启用模型替换
 	ReplaceModels        []string `json:"replace_models,omitempty"`          // 替换模型
