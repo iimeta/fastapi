@@ -55,6 +55,8 @@ type (
 		RecordErrorKey(ctx context.Context, id string)
 		// 获取会话中的错误密钥Ids
 		GetErrorKeys(ctx context.Context) []string
+		// 是否是测试
+		IsTest(ctx context.Context) (string, bool)
 	}
 )
 

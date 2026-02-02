@@ -38,6 +38,7 @@ func (s *sSession) Save(ctx context.Context, secretKey string) error {
 		r.SetCtxVar(consts.USER_ID_KEY, userId)
 		r.SetCtxVar(consts.APP_ID_KEY, appId)
 		r.SetCtxVar(consts.SECRET_KEY, secretKey)
+		r.SetCtxVar(consts.MODEL_AGENT_HEADER, r.GetHeader(consts.MODEL_AGENT_HEADER))
 	}
 
 	return nil
@@ -235,4 +236,12 @@ func (s *sSession) GetErrorKeys(ctx context.Context) []string {
 	}
 
 	return keys.([]string)
+}
+
+// 是否是测试
+func (s *sSession) IsTest(ctx context.Context) (string, bool) {
+
+	modelAgentId := ctx.Value(consts.MODEL_AGENT_HEADER)
+
+	return modelAgentId.(string), modelAgentId != ""
 }

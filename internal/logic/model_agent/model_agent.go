@@ -313,6 +313,15 @@ func (s *sModelAgent) Pick(ctx context.Context, m *model.Model) (int, *model.Mod
 		return 0, nil, errors.ERR_ALL_MODEL_AGENT
 	}
 
+	// 测试
+	if modelAgentId, yes := service.Session().IsTest(ctx); yes {
+		for _, modelAgent := range filterModelAgentList {
+			if modelAgent.Id == modelAgentId {
+				return len(filterModelAgentList), modelAgent, nil
+			}
+		}
+	}
+
 	// 负载策略-权重
 	if m.LbStrategy == 2 {
 		return len(filterModelAgentList), lb.NewModelAgentWeight(filterModelAgentList).PickModelAgent(), nil
@@ -408,6 +417,15 @@ func (s *sModelAgent) PickGroup(ctx context.Context, m *model.Model, group *mode
 
 	if len(filterModelAgentList) == 0 {
 		return 0, nil, errors.ERR_ALL_MODEL_AGENT
+	}
+
+	// 测试
+	if modelAgentId, yes := service.Session().IsTest(ctx); yes {
+		for _, modelAgent := range filterModelAgentList {
+			if modelAgent.Id == modelAgentId {
+				return len(filterModelAgentList), modelAgent, nil
+			}
+		}
 	}
 
 	// 负载策略-权重

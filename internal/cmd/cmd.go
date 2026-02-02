@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"runtime"
 	"slices"
@@ -35,6 +36,8 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/model"
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/logger"
+	"github.com/iimeta/fastapi/v2/utility/redis"
+	"github.com/iimeta/fastapi/v2/utility/util"
 )
 
 var (
@@ -173,7 +176,12 @@ var (
 				s.SetAddr(config.Cfg.ApiServerAddress)
 			}
 
+			if _, err = redis.HSet(ctx, consts.SERVERS_KEY, g.Map{fmt.Sprintf("api:%s", util.GetLocalIp()): s.GetListenedAddress()}); err != nil {
+				logger.Error(ctx, err)
+			}
+
 			s.Run()
+
 			return nil
 		},
 	}
