@@ -238,8 +238,8 @@ func (s *sSession) GetErrorKeys(ctx context.Context) []string {
 	return keys.([]string)
 }
 
-// 是否是测试
-func (s *sSession) IsTest(ctx context.Context) (string, bool) {
+// 是否已选定模型代理
+func (s *sSession) IsSelectedModelAgent(ctx context.Context) (string, bool) {
 
 	modelAgentId := ctx.Value(consts.MODEL_AGENT_HEADER)
 

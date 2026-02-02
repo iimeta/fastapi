@@ -313,8 +313,8 @@ func (s *sModelAgent) Pick(ctx context.Context, m *model.Model) (int, *model.Mod
 		return 0, nil, errors.ERR_ALL_MODEL_AGENT
 	}
 
-	// 测试
-	if modelAgentId, yes := service.Session().IsTest(ctx); yes {
+	// 已选定模型代理
+	if modelAgentId, yes := service.Session().IsSelectedModelAgent(ctx); yes {
 		for _, modelAgent := range filterModelAgentList {
 			if modelAgent.Id == modelAgentId {
 				return len(filterModelAgentList), modelAgent, nil
@@ -419,8 +419,8 @@ func (s *sModelAgent) PickGroup(ctx context.Context, m *model.Model, group *mode
 		return 0, nil, errors.ERR_ALL_MODEL_AGENT
 	}
 
-	// 测试
-	if modelAgentId, yes := service.Session().IsTest(ctx); yes {
+	// 已选定模型代理
+	if modelAgentId, yes := service.Session().IsSelectedModelAgent(ctx); yes {
 		for _, modelAgent := range filterModelAgentList {
 			if modelAgent.Id == modelAgentId {
 				return len(filterModelAgentList), modelAgent, nil
