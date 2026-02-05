@@ -23,7 +23,7 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool) (adapter sdk.Adapter
 		defer func() {
 			if general, isGeneral := adapter.(*general.General); isGeneral {
 				if general.Path == "" {
-					general.Path = g.RequestFromCtx(ctx).RequestURI
+					general.Path = g.RequestFromCtx(ctx).URL.Path
 					if gstr.HasSuffix(general.BaseUrl, "/v1beta") {
 						general.Path = general.Path[7:]
 					} else if gstr.HasSuffix(general.BaseUrl, "/v1") {
@@ -66,7 +66,7 @@ func NewAdapterOfficial(ctx context.Context, mak *MAK, isLong bool) (adapter sdk
 		defer func() {
 			if general, isGeneral := adapter.(*general.General); isGeneral {
 				if general.Path == "" {
-					general.Path = g.RequestFromCtx(ctx).RequestURI
+					general.Path = g.RequestFromCtx(ctx).URL.Path
 					if gstr.HasSuffix(general.BaseUrl, "/v1beta") {
 						general.Path = general.Path[7:]
 					} else if gstr.HasSuffix(general.BaseUrl, "/v1") {

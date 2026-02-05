@@ -50,7 +50,7 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 		logger.Debugf(ctx, "sAuth VerifySecretKey time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	path := g.RequestFromCtx(ctx).RequestURI
+	path := g.RequestFromCtx(ctx).URL.Path
 	modelsPath := "/v1/models"
 
 	key, err := service.AppKey().GetCache(ctx, secretKey)

@@ -93,7 +93,7 @@ func (s *sGeneral) General(ctx context.Context, request *ghttp.Request, fallback
 	}
 
 	if mak.Path == "" {
-		mak.Path = request.RequestURI
+		mak.Path = request.URL.Path
 		if gstr.HasSuffix(mak.BaseUrl, "/v1beta") {
 			mak.Path = mak.Path[7:]
 		} else if gstr.HasSuffix(mak.BaseUrl, "/v1") {
@@ -234,7 +234,7 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 	}
 
 	if mak.Path == "" {
-		mak.Path = request.RequestURI
+		mak.Path = request.URL.Path
 		if gstr.HasSuffix(mak.BaseUrl, "/v1beta") {
 			mak.Path = mak.Path[7:]
 		} else if gstr.HasSuffix(mak.BaseUrl, "/v1") {
