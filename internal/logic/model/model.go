@@ -20,12 +20,15 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/model/entity"
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/cache"
+	"github.com/iimeta/fastapi/v2/utility/lb"
 	"github.com/iimeta/fastapi/v2/utility/logger"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 type sModel struct {
-	modelCache *cache.Cache // [模型ID]Model
+	modelCache                       *cache.Cache // [模型ID]Model
+	modelTargetModelsRoundRobinCache *cache.Cache // [模型ID]目标模型下标索引
+	groupTargetModelsRoundRobinCache *cache.Cache // [分组ID]目标模型下标索引
 }
 
 func init() {
@@ -34,7 +37,9 @@ func init() {
 
 func New() service.IModel {
 	return &sModel{
-		modelCache: cache.New(),
+		modelCache:                       cache.New(),
+		modelTargetModelsRoundRobinCache: cache.New(),
+		groupTargetModelsRoundRobinCache: cache.New(),
 	}
 }
 
@@ -603,10 +608,36 @@ func (s *sModel) GetTargetModel(ctx context.Context, model *model.Model, message
 
 	if model.ForwardConfig.ForwardRule == 1 {
 
-		if targetModel, err = s.GetCacheModel(ctx, model.ForwardConfig.TargetModel); err != nil || targetModel == nil {
-			if targetModel, err = s.GetModelAndSaveCache(ctx, model.ForwardConfig.TargetModel); err != nil {
-				logger.Error(ctx, err)
-				return nil, err
+		if model.ForwardConfig.ForwardMode == 2 {
+
+			var roundRobin *lb.RoundRobin
+			if roundRobinValue := s.modelTargetModelsRoundRobinCache.GetVal(ctx, model.Id); roundRobinValue != nil {
+				roundRobin = roundRobinValue.(*lb.RoundRobin)
+			}
+
+			if roundRobin == nil {
+				roundRobin = lb.NewRoundRobin()
+				if err = s.modelTargetModelsRoundRobinCache.Set(ctx, model.Id, roundRobin, 0); err != nil {
+					logger.Error(ctx, err)
+					return nil, err
+				}
+			}
+
+			id := model.ForwardConfig.TargetModels[roundRobin.Index(len(model.ForwardConfig.TargetModels))]
+
+			if targetModel, err = s.GetCacheModel(ctx, id); err != nil || targetModel == nil {
+				if targetModel, err = s.GetModelAndSaveCache(ctx, id); err != nil {
+					logger.Error(ctx, err)
+					return nil, err
+				}
+			}
+
+		} else {
+			if targetModel, err = s.GetCacheModel(ctx, model.ForwardConfig.TargetModel); err != nil || targetModel == nil {
+				if targetModel, err = s.GetModelAndSaveCache(ctx, model.ForwardConfig.TargetModel); err != nil {
+					logger.Error(ctx, err)
+					return nil, err
+				}
 			}
 		}
 
@@ -750,10 +781,36 @@ func (s *sModel) GetGroupTargetModel(ctx context.Context, group *model.Group, mo
 
 	if group.ForwardConfig.ForwardRule == 1 {
 
-		if targetModel, err = s.GetCacheModel(ctx, group.ForwardConfig.TargetModel); err != nil || targetModel == nil {
-			if targetModel, err = s.GetModelAndSaveCache(ctx, group.ForwardConfig.TargetModel); err != nil {
-				logger.Error(ctx, err)
-				return nil, err
+		if group.ForwardConfig.ForwardMode == 2 {
+
+			var roundRobin *lb.RoundRobin
+			if roundRobinValue := s.groupTargetModelsRoundRobinCache.GetVal(ctx, group.Id); roundRobinValue != nil {
+				roundRobin = roundRobinValue.(*lb.RoundRobin)
+			}
+
+			if roundRobin == nil {
+				roundRobin = lb.NewRoundRobin()
+				if err = s.groupTargetModelsRoundRobinCache.Set(ctx, group.Id, roundRobin, 0); err != nil {
+					logger.Error(ctx, err)
+					return nil, err
+				}
+			}
+
+			id := group.ForwardConfig.TargetModels[roundRobin.Index(len(group.ForwardConfig.TargetModels))]
+
+			if targetModel, err = s.GetCacheModel(ctx, id); err != nil || targetModel == nil {
+				if targetModel, err = s.GetModelAndSaveCache(ctx, id); err != nil {
+					logger.Error(ctx, err)
+					return nil, err
+				}
+			}
+
+		} else {
+			if targetModel, err = s.GetCacheModel(ctx, group.ForwardConfig.TargetModel); err != nil || targetModel == nil {
+				if targetModel, err = s.GetModelAndSaveCache(ctx, group.ForwardConfig.TargetModel); err != nil {
+					logger.Error(ctx, err)
+					return nil, err
+				}
 			}
 		}
 

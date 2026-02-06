@@ -14,11 +14,12 @@ type PresetConfig struct {
 
 type ForwardConfig struct {
 	ForwardRule   int      `bson:"forward_rule,omitempty"   json:"forward_rule,omitempty"`   // 转发规则[1:全部转发, 2:按关键字, 3:内容长度, 4:已用额度]
+	ForwardMode   int      `bson:"forward_mode,omitempty"   json:"forward_mode,omitempty"`   // 转发模式[1:固定, 2:轮询]
 	MatchRule     []int    `bson:"match_rule,omitempty"     json:"match_rule,omitempty"`     // 转发规则为2时的匹配规则[1:智能匹配, 2:正则匹配]
-	TargetModel   string   `bson:"target_model,omitempty"   json:"target_model,omitempty"`   // 转发规则为1和3时的目标模型
+	TargetModel   string   `bson:"target_model,omitempty"   json:"target_model,omitempty"`   // 转发规则为[1,3,4]时的目标模型
 	DecisionModel string   `bson:"decision_model,omitempty" json:"decision_model,omitempty"` // 转发规则为2时并且匹配规则为1时的判定模型
 	Keywords      []string `bson:"keywords,omitempty"       json:"keywords,omitempty"`       // 转发规则为2时的关键字
-	TargetModels  []string `bson:"target_models,omitempty"  json:"target_models,omitempty"`  // 转发规则为2时的目标模型
+	TargetModels  []string `bson:"target_models,omitempty"  json:"target_models,omitempty"`  // 转发规则为[1,2]时的目标模型
 	ContentLength int      `bson:"content_length,omitempty" json:"content_length,omitempty"` // 转发规则为3时的内容长度
 	UsedQuota     int      `bson:"used_quota,omitempty"     json:"used_quota,omitempty"`     // 转发规则为4时的已用额度
 }
