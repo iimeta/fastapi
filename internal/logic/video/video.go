@@ -3,6 +3,7 @@ package video
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
@@ -132,32 +133,38 @@ func (s *sVideo) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 
 			if common.IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
 
-				if mak.RealModel.IsEnableFallback {
+				if service.Session().GetModelAgentBillingMethod(ctx) == 2 && slices.Contains(mak.RealModel.Pricing.BillingMethods, 1) {
+					service.Session().SaveModelAgentBillingMethod(ctx, 1)
+					retry = []int{}
+				} else {
 
-					if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
+					if mak.RealModel.IsEnableFallback {
+
+						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
+							if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
+								retryInfo = &mcommon.Retry{
+									IsRetry:    true,
+									RetryCount: len(retry),
+									ErrMsg:     err.Error(),
+								}
+								return s.Create(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
 							}
-							return s.Create(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
+						}
+
+						if mak.RealModel.FallbackConfig.Model != "" {
+							if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
+								retryInfo = &mcommon.Retry{
+									IsRetry:    true,
+									RetryCount: len(retry),
+									ErrMsg:     err.Error(),
+								}
+								return s.Create(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
+							}
 						}
 					}
 
-					if mak.RealModel.FallbackConfig.Model != "" {
-						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.Create(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
-						}
-					}
+					return response, err
 				}
-
-				return response, err
 			}
 
 			retryInfo = &mcommon.Retry{
@@ -260,32 +267,38 @@ func (s *sVideo) Remix(ctx context.Context, params *v1.RemixReq, fallbackModelAg
 
 			if common.IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
 
-				if mak.RealModel.IsEnableFallback {
+				if service.Session().GetModelAgentBillingMethod(ctx) == 2 && slices.Contains(mak.RealModel.Pricing.BillingMethods, 1) {
+					service.Session().SaveModelAgentBillingMethod(ctx, 1)
+					retry = []int{}
+				} else {
 
-					if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
+					if mak.RealModel.IsEnableFallback {
+
+						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
+							if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
+								retryInfo = &mcommon.Retry{
+									IsRetry:    true,
+									RetryCount: len(retry),
+									ErrMsg:     err.Error(),
+								}
+								return s.Remix(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
 							}
-							return s.Remix(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
+						}
+
+						if mak.RealModel.FallbackConfig.Model != "" {
+							if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
+								retryInfo = &mcommon.Retry{
+									IsRetry:    true,
+									RetryCount: len(retry),
+									ErrMsg:     err.Error(),
+								}
+								return s.Remix(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
+							}
 						}
 					}
 
-					if mak.RealModel.FallbackConfig.Model != "" {
-						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.Remix(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
-						}
-					}
+					return response, err
 				}
-
-				return response, err
 			}
 
 			retryInfo = &mcommon.Retry{

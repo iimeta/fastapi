@@ -180,10 +180,12 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 
 	if mak.Group != nil && mak.Group.IsEnableModelAgent {
 
-		if slices.Contains(mak.AppKey.BillingMethods, 2) && slices.Contains(mak.RealModel.Pricing.BillingMethods, 2) {
-			service.Session().SaveModelAgentBillingMethod(ctx, 2)
-		} else {
-			service.Session().SaveModelAgentBillingMethod(ctx, 1)
+		if service.Session().GetModelAgentBillingMethod(ctx) == 0 {
+			if slices.Contains(mak.AppKey.BillingMethods, 2) && slices.Contains(mak.RealModel.Pricing.BillingMethods, 2) {
+				service.Session().SaveModelAgentBillingMethod(ctx, 2)
+			} else {
+				service.Session().SaveModelAgentBillingMethod(ctx, 1)
+			}
 		}
 
 		if mak.AgentTotal, mak.ModelAgent, err = service.ModelAgent().PickGroup(g.RequestFromCtx(ctx).GetCtx(), mak.RealModel, mak.Group); err != nil {
@@ -195,15 +197,17 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 
 			if err != nil {
 
-				if !errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT) {
+				if !errors.Is(err, errors.ERR_GROUP_NO_AVAILABLE_MODEL_AGENT) {
 					logger.Error(ctx, err)
 					return err
 				}
 
-				if slices.Contains(mak.AppKey.BillingMethods, 2) && slices.Contains(mak.RealModel.Pricing.BillingMethods, 2) {
-					service.Session().SaveModelAgentBillingMethod(ctx, 2)
-				} else {
-					service.Session().SaveModelAgentBillingMethod(ctx, 1)
+				if service.Session().GetModelAgentBillingMethod(ctx) == 0 {
+					if slices.Contains(mak.AppKey.BillingMethods, 2) && slices.Contains(mak.RealModel.Pricing.BillingMethods, 2) {
+						service.Session().SaveModelAgentBillingMethod(ctx, 2)
+					} else {
+						service.Session().SaveModelAgentBillingMethod(ctx, 1)
+					}
 				}
 
 				if mak.AgentTotal, mak.ModelAgent, err = service.ModelAgent().Pick(g.RequestFromCtx(ctx).GetCtx(), mak.RealModel); err != nil {
@@ -245,10 +249,12 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 			mak.RealModel.IsEnableModelAgent = true
 		} else {
 
-			if slices.Contains(mak.AppKey.BillingMethods, 2) && slices.Contains(mak.RealModel.Pricing.BillingMethods, 2) {
-				service.Session().SaveModelAgentBillingMethod(ctx, 2)
-			} else {
-				service.Session().SaveModelAgentBillingMethod(ctx, 1)
+			if service.Session().GetModelAgentBillingMethod(ctx) == 0 {
+				if slices.Contains(mak.AppKey.BillingMethods, 2) && slices.Contains(mak.RealModel.Pricing.BillingMethods, 2) {
+					service.Session().SaveModelAgentBillingMethod(ctx, 2)
+				} else {
+					service.Session().SaveModelAgentBillingMethod(ctx, 1)
+				}
 			}
 
 			if mak.AgentTotal, mak.ModelAgent, err = service.ModelAgent().Pick(g.RequestFromCtx(ctx).GetCtx(), mak.RealModel); err != nil {

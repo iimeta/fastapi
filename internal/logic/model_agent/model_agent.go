@@ -406,11 +406,26 @@ func (s *sModelAgent) PickGroup(ctx context.Context, m *model.Model, group *mode
 
 	modelAgentList := make([]*model.ModelAgent, 0)
 	for _, modelAgent := range modelAgents {
-		// 过滤被禁用的模型代理
-		if modelAgent.Status == 1 && slices.Contains(modelAgent.Models, m.Id) {
+		// 过滤未绑定此模型的模型代理
+		if slices.Contains(modelAgent.Models, m.Id) {
 			modelAgentList = append(modelAgentList, modelAgent)
 		}
 	}
+
+	if len(modelAgentList) == 0 {
+		return 0, nil, errors.ERR_GROUP_NO_AVAILABLE_MODEL_AGENT
+	}
+
+	i := 0
+	for _, modelAgent := range modelAgentList {
+		// 过滤被禁用的模型代理
+		if modelAgent.Status == 1 {
+			modelAgentList[i] = modelAgent
+			i++
+		}
+	}
+
+	modelAgentList = modelAgentList[:i]
 
 	if len(modelAgentList) == 0 {
 		return 0, nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT

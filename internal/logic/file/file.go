@@ -3,6 +3,7 @@ package file
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
@@ -129,32 +130,38 @@ func (s *sFile) Upload(ctx context.Context, params *v1.UploadReq, fallbackModelA
 
 			if common.IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
 
-				if mak.RealModel.IsEnableFallback {
+				if service.Session().GetModelAgentBillingMethod(ctx) == 2 && slices.Contains(mak.RealModel.Pricing.BillingMethods, 1) {
+					service.Session().SaveModelAgentBillingMethod(ctx, 1)
+					retry = []int{}
+				} else {
 
-					if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
-						if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
+					if mak.RealModel.IsEnableFallback {
+
+						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
+							if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
+								retryInfo = &mcommon.Retry{
+									IsRetry:    true,
+									RetryCount: len(retry),
+									ErrMsg:     err.Error(),
+								}
+								return s.Upload(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
 							}
-							return s.Upload(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
+						}
+
+						if mak.RealModel.FallbackConfig.Model != "" {
+							if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
+								retryInfo = &mcommon.Retry{
+									IsRetry:    true,
+									RetryCount: len(retry),
+									ErrMsg:     err.Error(),
+								}
+								return s.Upload(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
+							}
 						}
 					}
 
-					if mak.RealModel.FallbackConfig.Model != "" {
-						if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
-							retryInfo = &mcommon.Retry{
-								IsRetry:    true,
-								RetryCount: len(retry),
-								ErrMsg:     err.Error(),
-							}
-							return s.Upload(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
-						}
-					}
+					return response, err
 				}
-
-				return response, err
 			}
 
 			retryInfo = &mcommon.Retry{
