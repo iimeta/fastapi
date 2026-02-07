@@ -322,6 +322,24 @@ func (s *sModelAgent) Pick(ctx context.Context, m *model.Model) (int, *model.Mod
 		}
 	}
 
+	// 根据计费方式过滤模型代理
+	if billingMethod := service.Session().GetModelAgentBillingMethod(ctx); billingMethod > 0 {
+
+		i := 0
+		for _, modelAgent := range filterModelAgentList {
+			if slices.Contains(modelAgent.BillingMethods, billingMethod) {
+				filterModelAgentList[i] = modelAgent
+				i++
+			}
+		}
+
+		filterModelAgentList = filterModelAgentList[:i]
+
+		if len(filterModelAgentList) == 0 {
+			return 0, nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT
+		}
+	}
+
 	// 负载策略-权重
 	if m.LbStrategy == 2 {
 		return len(filterModelAgentList), lb.NewModelAgentWeight(filterModelAgentList).PickModelAgent(), nil
@@ -425,6 +443,24 @@ func (s *sModelAgent) PickGroup(ctx context.Context, m *model.Model, group *mode
 			if modelAgent.Id == modelAgentId {
 				return len(filterModelAgentList), modelAgent, nil
 			}
+		}
+	}
+
+	// 根据计费方式过滤模型代理
+	if billingMethod := service.Session().GetModelAgentBillingMethod(ctx); billingMethod > 0 {
+
+		i := 0
+		for _, modelAgent := range filterModelAgentList {
+			if slices.Contains(modelAgent.BillingMethods, billingMethod) {
+				filterModelAgentList[i] = modelAgent
+				i++
+			}
+		}
+
+		filterModelAgentList = filterModelAgentList[:i]
+
+		if len(filterModelAgentList) == 0 {
+			return 0, nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT
 		}
 	}
 

@@ -245,3 +245,21 @@ func (s *sSession) IsSelectedModelAgent(ctx context.Context) (string, bool) {
 
 	return modelAgentId.(string), modelAgentId != ""
 }
+
+// 保存模型代理计费方式
+func (s *sSession) SaveModelAgentBillingMethod(ctx context.Context, billingMethod int) {
+	if r := g.RequestFromCtx(ctx); r != nil {
+		r.SetCtxVar(consts.SESSION_MODEL_AGENT_BILLING_METHOD, billingMethod)
+	}
+}
+
+// 获取模型代理计费方式
+func (s *sSession) GetModelAgentBillingMethod(ctx context.Context) int {
+
+	billingMethod := ctx.Value(consts.SESSION_MODEL_AGENT_BILLING_METHOD)
+	if billingMethod == nil {
+		return 0
+	}
+
+	return billingMethod.(int)
+}

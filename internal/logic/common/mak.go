@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
@@ -178,34 +179,64 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 	mak.Path = mak.RealModel.Path
 
 	if mak.Group != nil && mak.Group.IsEnableModelAgent {
-		if mak.AgentTotal, mak.ModelAgent, err = service.ModelAgent().PickGroup(ctx, mak.RealModel, mak.Group); err != nil {
 
-			if !errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT) {
-				logger.Error(ctx, err)
-				return err
+		if slices.Contains(mak.AppKey.BillingMethods, 2) && slices.Contains(mak.RealModel.Pricing.BillingMethods, 2) {
+			service.Session().SaveModelAgentBillingMethod(ctx, 2)
+		} else {
+			service.Session().SaveModelAgentBillingMethod(ctx, 1)
+		}
+
+		if mak.AgentTotal, mak.ModelAgent, err = service.ModelAgent().PickGroup(g.RequestFromCtx(ctx).GetCtx(), mak.RealModel, mak.Group); err != nil {
+
+			if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT) && service.Session().GetModelAgentBillingMethod(g.RequestFromCtx(ctx).GetCtx()) == 2 && slices.Contains(mak.RealModel.Pricing.BillingMethods, 1) {
+				service.Session().SaveModelAgentBillingMethod(ctx, 1)
+				mak.AgentTotal, mak.ModelAgent, err = service.ModelAgent().PickGroup(g.RequestFromCtx(ctx).GetCtx(), mak.RealModel, mak.Group)
 			}
 
-			if mak.AgentTotal, mak.ModelAgent, err = service.ModelAgent().Pick(ctx, mak.RealModel); err != nil {
-				logger.Error(ctx, err)
+			if err != nil {
 
-				if mak.RealModel.IsEnableFallback {
-
-					if mak.RealModel.FallbackConfig.ModelAgent != "" {
-						if mak.FallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); mak.FallbackModelAgent != nil {
-							return mak.InitMAK(ctx)
-						}
-					}
-
-					if mak.RealModel.FallbackConfig.Model != "" {
-						if mak.FallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); mak.FallbackModel != nil {
-							return mak.InitMAK(ctx)
-						}
-					}
+				if !errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT) {
+					logger.Error(ctx, err)
+					return err
 				}
 
-				return err
+				if slices.Contains(mak.AppKey.BillingMethods, 2) && slices.Contains(mak.RealModel.Pricing.BillingMethods, 2) {
+					service.Session().SaveModelAgentBillingMethod(ctx, 2)
+				} else {
+					service.Session().SaveModelAgentBillingMethod(ctx, 1)
+				}
+
+				if mak.AgentTotal, mak.ModelAgent, err = service.ModelAgent().Pick(g.RequestFromCtx(ctx).GetCtx(), mak.RealModel); err != nil {
+
+					if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT) && service.Session().GetModelAgentBillingMethod(g.RequestFromCtx(ctx).GetCtx()) == 2 && slices.Contains(mak.RealModel.Pricing.BillingMethods, 1) {
+						service.Session().SaveModelAgentBillingMethod(ctx, 1)
+						mak.AgentTotal, mak.ModelAgent, err = service.ModelAgent().Pick(g.RequestFromCtx(ctx).GetCtx(), mak.RealModel)
+					}
+
+					if err != nil {
+						logger.Error(ctx, err)
+
+						if mak.RealModel.IsEnableFallback {
+
+							if mak.RealModel.FallbackConfig.ModelAgent != "" {
+								if mak.FallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); mak.FallbackModelAgent != nil {
+									return mak.InitMAK(ctx)
+								}
+							}
+
+							if mak.RealModel.FallbackConfig.Model != "" {
+								if mak.FallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); mak.FallbackModel != nil {
+									return mak.InitMAK(ctx)
+								}
+							}
+						}
+
+						return err
+					}
+				}
 			}
 		}
+
 	} else if mak.FallbackModelAgent != nil || mak.RealModel.IsEnableModelAgent {
 
 		if mak.FallbackModelAgent != nil {
@@ -214,25 +245,39 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 			mak.RealModel.IsEnableModelAgent = true
 		} else {
 
-			if mak.AgentTotal, mak.ModelAgent, err = service.ModelAgent().Pick(ctx, mak.RealModel); err != nil {
-				logger.Error(ctx, err)
+			if slices.Contains(mak.AppKey.BillingMethods, 2) && slices.Contains(mak.RealModel.Pricing.BillingMethods, 2) {
+				service.Session().SaveModelAgentBillingMethod(ctx, 2)
+			} else {
+				service.Session().SaveModelAgentBillingMethod(ctx, 1)
+			}
 
-				if mak.RealModel.IsEnableFallback {
+			if mak.AgentTotal, mak.ModelAgent, err = service.ModelAgent().Pick(g.RequestFromCtx(ctx).GetCtx(), mak.RealModel); err != nil {
 
-					if mak.RealModel.FallbackConfig.ModelAgent != "" {
-						if mak.FallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); mak.FallbackModelAgent != nil {
-							return mak.InitMAK(ctx)
-						}
-					}
-
-					if mak.RealModel.FallbackConfig.Model != "" {
-						if mak.FallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); mak.FallbackModel != nil {
-							return mak.InitMAK(ctx)
-						}
-					}
+				if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT) && service.Session().GetModelAgentBillingMethod(g.RequestFromCtx(ctx).GetCtx()) == 2 && slices.Contains(mak.RealModel.Pricing.BillingMethods, 1) {
+					service.Session().SaveModelAgentBillingMethod(ctx, 1)
+					mak.AgentTotal, mak.ModelAgent, err = service.ModelAgent().Pick(g.RequestFromCtx(ctx).GetCtx(), mak.RealModel)
 				}
 
-				return err
+				if err != nil {
+					logger.Error(ctx, err)
+
+					if mak.RealModel.IsEnableFallback {
+
+						if mak.RealModel.FallbackConfig.ModelAgent != "" {
+							if mak.FallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); mak.FallbackModelAgent != nil {
+								return mak.InitMAK(ctx)
+							}
+						}
+
+						if mak.RealModel.FallbackConfig.Model != "" {
+							if mak.FallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); mak.FallbackModel != nil {
+								return mak.InitMAK(ctx)
+							}
+						}
+					}
+
+					return err
+				}
 			}
 		}
 	}

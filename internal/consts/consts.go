@@ -12,12 +12,13 @@ const (
 )
 
 const (
-	SESSION_RESELLER           = "session_reseller"
-	SESSION_USER               = "session_user"
-	SESSION_APP                = "session_app"
-	SESSION_APP_KEY            = "session_app_key"
-	SESSION_ERROR_MODEL_AGENTS = "session_error_model_agents"
-	SESSION_ERROR_KEYS         = "session_error_keys"
+	SESSION_RESELLER                   = "session_reseller"
+	SESSION_USER                       = "session_user"
+	SESSION_APP                        = "session_app"
+	SESSION_APP_KEY                    = "session_app_key"
+	SESSION_ERROR_MODEL_AGENTS         = "session_error_model_agents"
+	SESSION_ERROR_KEYS                 = "session_error_keys"
+	SESSION_MODEL_AGENT_BILLING_METHOD = "session_model_agent_billing_method"
 )
 
 const (

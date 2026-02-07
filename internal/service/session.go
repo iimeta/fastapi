@@ -57,6 +57,10 @@ type (
 		GetErrorKeys(ctx context.Context) []string
 		// 是否已选定模型代理
 		IsSelectedModelAgent(ctx context.Context) (string, bool)
+		// 保存模型代理计费方式
+		SaveModelAgentBillingMethod(ctx context.Context, billingMethod int)
+		// 获取模型代理计费方式
+		GetModelAgentBillingMethod(ctx context.Context) int
 	}
 )
 
