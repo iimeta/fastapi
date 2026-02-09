@@ -178,7 +178,7 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 	mak.BaseUrl = mak.RealModel.BaseUrl
 	mak.Path = mak.RealModel.Path
 
-	if mak.Group != nil && mak.Group.IsEnableModelAgent {
+	if mak.Group != nil && mak.Group.IsEnableModelAgent && mak.RealModel.IsEnableModelAgent {
 
 		if service.Session().GetModelAgentBillingMethod(ctx) == 0 {
 			if slices.Contains(mak.AppKey.BillingMethods, 2) && slices.Contains(mak.RealModel.Pricing.BillingMethods, 2) {

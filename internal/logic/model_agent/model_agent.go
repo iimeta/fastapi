@@ -327,7 +327,7 @@ func (s *sModelAgent) Pick(ctx context.Context, m *model.Model) (int, *model.Mod
 
 		i := 0
 		for _, modelAgent := range filterModelAgentList {
-			if slices.Contains(modelAgent.BillingMethods, billingMethod) {
+			if len(modelAgent.BillingMethods) == 0 || slices.Contains(modelAgent.BillingMethods, billingMethod) {
 				filterModelAgentList[i] = modelAgent
 				i++
 			}
@@ -466,7 +466,7 @@ func (s *sModelAgent) PickGroup(ctx context.Context, m *model.Model, group *mode
 
 		i := 0
 		for _, modelAgent := range filterModelAgentList {
-			if slices.Contains(modelAgent.BillingMethods, billingMethod) {
+			if len(modelAgent.BillingMethods) == 0 || slices.Contains(modelAgent.BillingMethods, billingMethod) {
 				filterModelAgentList[i] = modelAgent
 				i++
 			}
