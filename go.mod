@@ -2,15 +2,13 @@ module github.com/iimeta/fastapi/v2
 
 go 1.25
 
-replace github.com/iimeta/fastapi-sdk/v2 => ../fastapi-sdk
-
 require (
 	cloud.google.com/go/iam v1.5.3
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/gogf/gf/contrib/nosql/redis/v2 v2.10.0
 	github.com/gogf/gf/v2 v2.10.0
 	github.com/gorilla/websocket v1.5.3
-	github.com/iimeta/fastapi-sdk/v2 v2.0.0
+	github.com/iimeta/fastapi-sdk/v2 v2.1.0
 	github.com/redis/go-redis/v9 v9.17.3
 	github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300
 	github.com/tjfoc/gmsm v1.4.1
