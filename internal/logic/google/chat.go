@@ -69,7 +69,7 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					ChatCompletionRes: response,
 					Usage:             response.Usage,
@@ -80,7 +80,24 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 					TotalTime:         response.TotalTime,
 					InternalTime:      internalTime,
 					EnterTime:         enterTime,
-				})
+				}
+
+				if mak.ReqModel.Type == 2 {
+
+					if after.ImageGenerationRequest, err = converter.ConvImageGenerationsRequest(ctx, request.GetBody()); err != nil {
+						logger.Error(ctx, err)
+					}
+
+					if after.ImageGenerationRequest.Model == "" {
+						after.ImageGenerationRequest.Model = mak.ReqModel.Model
+					}
+
+					if after.ImageResponse, err = converter.ConvImageGenerationsResponse(ctx, response.ResponseBytes); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
+
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -298,7 +315,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					Completion:        completion,
 					Usage:             usage,
@@ -309,7 +326,24 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 					TotalTime:         totalTime,
 					InternalTime:      internalTime,
 					EnterTime:         enterTime,
-				})
+				}
+
+				if mak.ReqModel.Type == 2 {
+
+					if after.ImageGenerationRequest, err = converter.ConvImageGenerationsRequest(ctx, request.GetBody()); err != nil {
+						logger.Error(ctx, err)
+					}
+
+					if after.ImageGenerationRequest.Model == "" {
+						after.ImageGenerationRequest.Model = mak.ReqModel.Model
+					}
+
+					after.ImageResponse = smodel.ImageResponse{
+						TotalTime: totalTime,
+					}
+				}
+
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
