@@ -3,8 +3,8 @@ package db
 import (
 	"context"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type MongoDB struct {
@@ -21,10 +21,9 @@ type MongoDB struct {
 
 func (m *MongoDB) Find(ctx context.Context, result any) error {
 
-	allowDiskUse := true
-	findOptions := []*options.FindOptions{{
-		AllowDiskUse: &allowDiskUse,
-	}}
+	var findOptions []options.Lister[options.FindOptions]
+
+	findOptions = append(findOptions, options.Find().SetAllowDiskUse(true))
 
 	if len(m.SortFields) > 0 {
 
@@ -37,11 +36,11 @@ func (m *MongoDB) Find(ctx context.Context, result any) error {
 			}
 		}
 
-		findOptions = append(findOptions, &options.FindOptions{Sort: sort})
+		findOptions = append(findOptions, options.Find().SetSort(sort))
 	}
 
 	if m.Index != "" {
-		findOptions = append(findOptions, &options.FindOptions{Hint: m.Index})
+		findOptions = append(findOptions, options.Find().SetHint(m.Index))
 	}
 
 	if len(m.IncludeFields) > 0 {
@@ -51,7 +50,7 @@ func (m *MongoDB) Find(ctx context.Context, result any) error {
 			projection[field] = 1
 		}
 
-		findOptions = append(findOptions, &options.FindOptions{Projection: projection})
+		findOptions = append(findOptions, options.Find().SetProjection(projection))
 	}
 
 	if len(m.ExcludeFields) > 0 {
@@ -61,7 +60,7 @@ func (m *MongoDB) Find(ctx context.Context, result any) error {
 			projection[field] = 0
 		}
 
-		findOptions = append(findOptions, &options.FindOptions{Projection: projection})
+		findOptions = append(findOptions, options.Find().SetProjection(projection))
 	}
 
 	cursor, err := client.Database(m.Database).Collection(m.Collection).Find(ctx, m.Filter, findOptions...)
@@ -74,7 +73,7 @@ func (m *MongoDB) Find(ctx context.Context, result any) error {
 
 func (m *MongoDB) FindOne(ctx context.Context, result any) error {
 
-	var findOneOptions []*options.FindOneOptions
+	var findOneOptions []options.Lister[options.FindOneOptions]
 
 	if len(m.SortFields) > 0 {
 
@@ -87,11 +86,11 @@ func (m *MongoDB) FindOne(ctx context.Context, result any) error {
 			}
 		}
 
-		findOneOptions = append(findOneOptions, &options.FindOneOptions{Sort: sort})
+		findOneOptions = append(findOneOptions, options.FindOne().SetSort(sort))
 	}
 
 	if m.Index != "" {
-		findOneOptions = append(findOneOptions, &options.FindOneOptions{Hint: m.Index})
+		findOneOptions = append(findOneOptions, options.FindOne().SetHint(m.Index))
 	}
 
 	if len(m.IncludeFields) > 0 {
@@ -101,7 +100,7 @@ func (m *MongoDB) FindOne(ctx context.Context, result any) error {
 			projection[field] = 1
 		}
 
-		findOneOptions = append(findOneOptions, &options.FindOneOptions{Projection: projection})
+		findOneOptions = append(findOneOptions, options.FindOne().SetProjection(projection))
 	}
 
 	if len(m.ExcludeFields) > 0 {
@@ -111,7 +110,7 @@ func (m *MongoDB) FindOne(ctx context.Context, result any) error {
 			projection[field] = 0
 		}
 
-		findOneOptions = append(findOneOptions, &options.FindOneOptions{Projection: projection})
+		findOneOptions = append(findOneOptions, options.FindOne().SetProjection(projection))
 	}
 
 	return client.Database(m.Database).Collection(m.Collection).FindOne(ctx, m.Filter, findOneOptions...).Decode(result)
@@ -133,13 +132,10 @@ func (m *MongoDB) FindByPage(ctx context.Context, paging *Paging, result any) (e
 
 	paging.GetPages()
 
-	allowDiskUse := true
-	findOptions := []*options.FindOptions{{
-		Skip:  &paging.StartNums,
-		Limit: &paging.PageSize,
-	}, {
-		AllowDiskUse: &allowDiskUse,
-	}}
+	var findOptions []options.Lister[options.FindOptions]
+
+	findOptions = append(findOptions, options.Find().SetSkip(paging.StartNums).SetLimit(paging.PageSize))
+	findOptions = append(findOptions, options.Find().SetAllowDiskUse(true))
 
 	if len(m.SortFields) > 0 {
 
@@ -152,11 +148,11 @@ func (m *MongoDB) FindByPage(ctx context.Context, paging *Paging, result any) (e
 			}
 		}
 
-		findOptions = append(findOptions, &options.FindOptions{Sort: sort})
+		findOptions = append(findOptions, options.Find().SetSort(sort))
 	}
 
 	if m.Index != "" {
-		findOptions = append(findOptions, &options.FindOptions{Hint: m.Index})
+		findOptions = append(findOptions, options.Find().SetHint(m.Index))
 	}
 
 	if len(m.IncludeFields) > 0 {
@@ -166,7 +162,7 @@ func (m *MongoDB) FindByPage(ctx context.Context, paging *Paging, result any) (e
 			projection[field] = 1
 		}
 
-		findOptions = append(findOptions, &options.FindOptions{Projection: projection})
+		findOptions = append(findOptions, options.Find().SetProjection(projection))
 	}
 
 	if len(m.ExcludeFields) > 0 {
@@ -176,7 +172,7 @@ func (m *MongoDB) FindByPage(ctx context.Context, paging *Paging, result any) (e
 			projection[field] = 0
 		}
 
-		findOptions = append(findOptions, &options.FindOptions{Projection: projection})
+		findOptions = append(findOptions, options.Find().SetProjection(projection))
 	}
 
 	cursor, err := collection.Find(ctx, m.Filter, findOptions...)
@@ -231,22 +227,22 @@ func (m *MongoDB) FindOneAndDelete(ctx context.Context, result any) error {
 	return client.Database(m.Database).Collection(m.Collection).FindOneAndDelete(ctx, m.Filter).Decode(result)
 }
 
-func (m *MongoDB) UpdateById(ctx context.Context, id, update any, opts ...*options.UpdateOptions) error {
+func (m *MongoDB) UpdateById(ctx context.Context, id, update any, opts ...options.Lister[options.UpdateOneOptions]) error {
 	_, err := client.Database(m.Database).Collection(m.Collection).UpdateByID(ctx, id, update, opts...)
 	return err
 }
 
-func (m *MongoDB) UpdateOne(ctx context.Context, update any, opts ...*options.UpdateOptions) error {
+func (m *MongoDB) UpdateOne(ctx context.Context, update any, opts ...options.Lister[options.UpdateOneOptions]) error {
 	_, err := client.Database(m.Database).Collection(m.Collection).UpdateOne(ctx, m.Filter, update, opts...)
 	return err
 }
 
-func (m *MongoDB) UpdateMany(ctx context.Context, update any, opts ...*options.UpdateOptions) error {
+func (m *MongoDB) UpdateMany(ctx context.Context, update any, opts ...options.Lister[options.UpdateManyOptions]) error {
 	_, err := client.Database(m.Database).Collection(m.Collection).UpdateMany(ctx, m.Filter, update, opts...)
 	return err
 }
 
-func (m *MongoDB) FindOneAndUpdate(ctx context.Context, update any, result any, opts ...*options.FindOneAndUpdateOptions) error {
+func (m *MongoDB) FindOneAndUpdate(ctx context.Context, update any, result any, opts ...options.Lister[options.FindOneAndUpdateOptions]) error {
 	return client.Database(m.Database).Collection(m.Collection).FindOneAndUpdate(ctx, m.Filter, update, opts...).Decode(result)
 }
 
@@ -258,7 +254,7 @@ func (m *MongoDB) EstimatedDocumentCount(ctx context.Context) (int64, error) {
 	return client.Database(m.Database).Collection(m.Collection).EstimatedDocumentCount(ctx)
 }
 
-func (m *MongoDB) Aggregate(ctx context.Context, result any, opts ...*options.AggregateOptions) error {
+func (m *MongoDB) Aggregate(ctx context.Context, result any, opts ...options.Lister[options.AggregateOptions]) error {
 
 	cursor, err := client.Database(m.Database).Collection(m.Collection).Aggregate(ctx, m.Pipeline, opts...)
 	if err != nil {
@@ -268,7 +264,7 @@ func (m *MongoDB) Aggregate(ctx context.Context, result any, opts ...*options.Ag
 	return cursor.All(ctx, result)
 }
 
-func (m *MongoDB) AggregateByPage(ctx context.Context, countResult, result any, opts ...*options.AggregateOptions) error {
+func (m *MongoDB) AggregateByPage(ctx context.Context, countResult, result any, opts ...options.Lister[options.AggregateOptions]) error {
 
 	countCursor, err := client.Database(m.Database).Collection(m.Collection).Aggregate(ctx, m.CountPipeline, opts...)
 	if err != nil {

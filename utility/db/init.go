@@ -6,9 +6,9 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/iimeta/fastapi/v2/internal/config"
 	"github.com/iimeta/fastapi/v2/utility/logger"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
 )
 
 var (
@@ -26,7 +26,7 @@ func init() {
 		logger.Error(ctx, err)
 	}
 
-	if client, err = mongo.Connect(ctx, options.Client().ApplyURI(uri.String())); err != nil {
+	if client, err = mongo.Connect(options.Client().ApplyURI(uri.String())); err != nil {
 		panic(err)
 	}
 

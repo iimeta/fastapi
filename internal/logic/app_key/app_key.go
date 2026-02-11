@@ -15,7 +15,7 @@ import (
 	"github.com/iimeta/fastapi/v2/utility/cache"
 	"github.com/iimeta/fastapi/v2/utility/logger"
 	"github.com/iimeta/fastapi/v2/utility/redis"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type sAppKey struct {

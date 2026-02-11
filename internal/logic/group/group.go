@@ -14,7 +14,7 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/cache"
 	"github.com/iimeta/fastapi/v2/utility/logger"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type sGroup struct {

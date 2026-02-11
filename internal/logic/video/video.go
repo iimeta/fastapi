@@ -28,8 +28,8 @@ import (
 	"github.com/iimeta/fastapi/v2/utility/db"
 	"github.com/iimeta/fastapi/v2/utility/logger"
 	"github.com/iimeta/fastapi/v2/utility/util"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 type sVideo struct{}

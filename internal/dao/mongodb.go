@@ -12,8 +12,8 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/db"
 	"github.com/iimeta/fastapi/v2/utility/util"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type IMongoDB any
@@ -383,7 +383,7 @@ func updateOne(ctx context.Context, database, collection string, filter map[stri
 		update = value
 	}
 
-	opt := &options.UpdateOptions{}
+	opt := options.UpdateOne()
 	if len(isUpsert) > 0 && isUpsert[0] {
 		opt.SetUpsert(true)
 	}
@@ -480,7 +480,7 @@ func updateMany(ctx context.Context, database, collection string, filter map[str
 		update = value
 	}
 
-	opt := &options.UpdateOptions{}
+	opt := options.UpdateMany()
 	if len(isUpsert) > 0 && isUpsert[0] {
 		opt.SetUpsert(true)
 	}
@@ -587,9 +587,7 @@ func findOneAndUpdate(ctx context.Context, database, collection string, filter m
 		update = value
 	}
 
-	opt := &options.FindOneAndUpdateOptions{}
-	opt.SetReturnDocument(options.After)
-
+	opt := options.FindOneAndUpdate().SetReturnDocument(options.After)
 	if len(isUpsert) > 0 && isUpsert[0] {
 		opt.SetUpsert(true)
 	}

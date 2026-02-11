@@ -5,7 +5,7 @@ import (
 
 	"github.com/iimeta/fastapi/v2/internal/model/entity"
 	"github.com/iimeta/fastapi/v2/utility/db"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 var Reseller = NewResellerDao()
