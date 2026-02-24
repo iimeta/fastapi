@@ -2,16 +2,15 @@ package common
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
-	credentials "cloud.google.com/go/iam/credentials/apiv1"
-	"cloud.google.com/go/iam/credentials/apiv1/credentialspb"
-	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
+	scommon "github.com/iimeta/fastapi-sdk/v2/common"
 	"github.com/iimeta/fastapi/v2/internal/config"
 	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/model"
@@ -20,24 +19,9 @@ import (
 	"github.com/iimeta/fastapi/v2/utility/crypto"
 	"github.com/iimeta/fastapi/v2/utility/logger"
 	"github.com/iimeta/fastapi/v2/utility/redis"
-	"google.golang.org/api/option"
 )
 
 var gcpCache = cache.New() // [key]Token
-
-type ApplicationDefaultCredentials struct {
-	Type                    string `json:"type"`
-	ProjectId               string `json:"project_id"`
-	PrivateKeyId            string `json:"private_key_id"`
-	PrivateKey              string `json:"private_key"`
-	ClientEmail             string `json:"client_email"`
-	ClientId                string `json:"client_id"`
-	AuthUri                 string `json:"auth_uri"`
-	TokenUri                string `json:"token_uri"`
-	AuthProviderX509CertUrl string `json:"auth_provider_x509_cert_url"`
-	ClientX509CertUrl       string `json:"client_x509_cert_url"`
-	UniverseDomain          string `json:"universe_domain"`
-}
 
 func getGcpToken(ctx context.Context, key *model.Key, proxyUrl string) (string, string, error) {
 
@@ -46,9 +30,9 @@ func getGcpToken(ctx context.Context, key *model.Key, proxyUrl string) (string, 
 		logger.Debugf(ctx, "getGcpToken time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	adc := &ApplicationDefaultCredentials{}
-	if err := gjson.Unmarshal([]byte(key.Key), adc); err != nil {
-		logger.Errorf(ctx, "getGcpToken gjson.Unmarshal key: %s, error: %v", key.Key, err)
+	adc := scommon.ApplicationDefaultCredentials{}
+	if err := json.Unmarshal([]byte(key.Key), &adc); err != nil {
+		logger.Errorf(ctx, "getGcpToken json.Unmarshal key: %s, error: %v", key.Key, err)
 		return "", "", err
 	}
 
@@ -70,26 +54,9 @@ func getGcpToken(ctx context.Context, key *model.Key, proxyUrl string) (string, 
 		return adc.ProjectId, reply, nil
 	}
 
-	client, err := credentials.NewIamCredentialsClient(ctx, option.WithCredentialsJSON([]byte(key.Key)))
+	accessToken, err := scommon.GetGcpToken(ctx, key.Key, proxyUrl)
 	if err != nil {
-		logger.Errorf(ctx, "getGcpToken NewIamCredentialsClient key: %s, error: %v", key.Key, err)
-		return "", "", err
-	}
-
-	defer func() {
-		if err = client.Close(); err != nil {
-			logger.Error(ctx, err)
-		}
-	}()
-
-	request := &credentialspb.GenerateAccessTokenRequest{
-		Name:  fmt.Sprintf("projects/-/serviceAccounts/%s", adc.ClientEmail),
-		Scope: []string{"https://www.googleapis.com/auth/cloud-platform"},
-	}
-
-	response, err := client.GenerateAccessToken(ctx, request)
-	if err != nil {
-		logger.Errorf(ctx, "getGcpToken GenerateAccessToken key: %s, error: %v", key.Key, err)
+		logger.Errorf(ctx, "getGcpToken scommon.GetGcpToken key: %s, error: %v", key.Key, err)
 		if config.Cfg.AutoDisabledError.Open && len(config.Cfg.AutoDisabledError.Errors) > 0 {
 			for _, autoDisabledError := range config.Cfg.AutoDisabledError.Errors {
 				if gstr.Contains(err.Error(), autoDisabledError) {
@@ -105,13 +72,13 @@ func getGcpToken(ctx context.Context, key *model.Key, proxyUrl string) (string, 
 		return "", "", err
 	}
 
-	if err = gcpCache.Set(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, crypto.SM3(key.Key)), response.AccessToken, time.Minute*50); err != nil {
+	if err = gcpCache.Set(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, crypto.SM3(key.Key)), accessToken, time.Minute*50); err != nil {
 		logger.Errorf(ctx, "getGcpToken key: %s, error: %v", key.Key, err)
 	}
 
-	if err = redis.SetEX(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, crypto.SM3(key.Key)), response.AccessToken, 60*50); err != nil {
+	if err = redis.SetEX(ctx, fmt.Sprintf(consts.GCP_TOKEN_KEY, crypto.SM3(key.Key)), accessToken, 60*50); err != nil {
 		logger.Errorf(ctx, "getGcpToken key: %s, error: %v", key.Key, err)
 	}
 
-	return adc.ProjectId, response.AccessToken, nil
+	return adc.ProjectId, accessToken, nil
 }
