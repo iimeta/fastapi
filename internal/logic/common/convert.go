@@ -163,6 +163,7 @@ func ConvResponsesToChatCompletionsResponse(ctx context.Context, res smodel.Open
 func ConvResponsesStreamToChatCompletionsResponse(ctx context.Context, res smodel.OpenAIResponsesStreamRes) smodel.ChatCompletionResponse {
 
 	responsesStreamRes := smodel.OpenAIResponsesStreamRes{
+		SSEEvent:      res.SSEEvent,
 		ResponseBytes: res.ResponseBytes,
 		ConnTime:      res.ConnTime,
 		Duration:      res.Duration,
@@ -182,6 +183,7 @@ func ConvResponsesStreamToChatCompletionsResponse(ctx context.Context, res smode
 		Created:       responsesStreamRes.Response.CreatedAt,
 		Model:         responsesStreamRes.Response.Model,
 		ServiceTier:   responsesStreamRes.Response.ServiceTier,
+		SSEEvent:      responsesStreamRes.SSEEvent,
 		ResponseBytes: responsesStreamRes.ResponseBytes,
 		ConnTime:      responsesStreamRes.ConnTime,
 		Duration:      responsesStreamRes.Duration,

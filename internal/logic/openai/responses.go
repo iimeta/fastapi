@@ -447,11 +447,6 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 					}
 				}
 
-				if err = util.SSEServer(ctx, "[DONE]"); err != nil {
-					logger.Error(ctx, err)
-					return err
-				}
-
 				return nil
 			}
 
@@ -578,7 +573,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 			data = gjson.MustEncode(response)
 		}
 
-		if err = util.SSEServer(ctx, string(data)); err != nil {
+		if err = util.SSEServer(ctx, string(data), response.SSEEvent); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}

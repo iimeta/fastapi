@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gogf/gf/v2/encoding/gjson"
@@ -56,7 +57,7 @@ func HttpPost(ctx context.Context, url string, header map[string]string, data, r
 	return nil
 }
 
-func SSEServer(ctx context.Context, data string) error {
+func SSEServer(ctx context.Context, data string, event ...string) error {
 
 	r := g.RequestFromCtx(ctx)
 	rw := r.Response.RawWriter()
@@ -70,9 +71,24 @@ func SSEServer(ctx context.Context, data string) error {
 	r.Response.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
 	r.Response.Header().Set("Cache-Control", "no-cache")
 	r.Response.Header().Set("Connection", "keep-alive")
+	r.Response.Header().Set("X-Accel-Buffering", "no") // 禁用 nginx 缓冲
 
-	if _, err := fmt.Fprintf(rw, "data: %s\n\n", data); err != nil {
-		logger.Errorf(ctx, "SSEServer data: %s, error: %v", data, err)
+	flusher.Flush()
+
+	var builder strings.Builder
+
+	if len(event) > 0 && event[0] != "" {
+		builder.WriteString("event: ")
+		builder.WriteString(event[0])
+		builder.WriteString("\n")
+	}
+
+	builder.WriteString("data: ")
+	builder.WriteString(data)
+	builder.WriteString("\n\n")
+
+	if _, err := fmt.Fprintf(rw, builder.String()); err != nil {
+		logger.Errorf(ctx, "SSEServer data: %s, error: %v", builder.String(), err)
 		return err
 	}
 

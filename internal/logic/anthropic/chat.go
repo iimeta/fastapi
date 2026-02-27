@@ -472,6 +472,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 				response.Error = r.Err
 			}
 
+			response.SSEEvent = r.SSEEvent
 			response.ConnTime = r.ConnTime
 			response.Duration = r.Duration
 			response.TotalTime = r.TotalTime
@@ -488,6 +489,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 				response.Error = r.Error
 			}
 
+			response.SSEEvent = r.SSEEvent
 			response.ConnTime = r.ConnTime
 			response.Duration = r.Duration
 			response.TotalTime = r.TotalTime
@@ -506,12 +508,6 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 		if response.Error != nil {
 
 			if errors.Is(response.Error, io.EOF) {
-
-				if err = util.SSEServer(ctx, "[DONE]"); err != nil {
-					logger.Error(ctx, err)
-					return err
-				}
-
 				return nil
 			}
 
@@ -626,7 +622,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 			}
 		}
 
-		if err = util.SSEServer(ctx, string(response.ResponseBytes)); err != nil {
+		if err = util.SSEServer(ctx, string(response.ResponseBytes), response.SSEEvent); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}

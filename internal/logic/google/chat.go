@@ -542,12 +542,6 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 		if response.Error != nil {
 
 			if errors.Is(response.Error, io.EOF) {
-
-				if err = util.SSEServer(ctx, "[DONE]"); err != nil {
-					logger.Error(ctx, err)
-					return err
-				}
-
 				return nil
 			}
 
