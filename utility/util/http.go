@@ -2,7 +2,7 @@ package util
 
 import (
 	"context"
-	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -87,7 +87,7 @@ func SSEServer(ctx context.Context, data string, event ...string) error {
 	builder.WriteString(data)
 	builder.WriteString("\n\n")
 
-	if _, err := fmt.Fprintf(rw, builder.String()); err != nil {
+	if _, err := io.WriteString(rw, builder.String()); err != nil {
 		logger.Errorf(ctx, "SSEServer data: %s, error: %v", builder.String(), err)
 		return err
 	}
