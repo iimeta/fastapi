@@ -179,7 +179,7 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 		spend.Text = new(common.TextSpend)
 	}
 
-	if billingData.Usage.TotalTokens == 0 || mak.ReqModel.Pricing.BillingRule == 2 || billingData.IsAborted {
+	if billingData.Usage.PromptTokens == 0 || billingData.Usage.CompletionTokens == 0 || mak.ReqModel.Pricing.BillingRule == 2 || billingData.IsAborted {
 
 		var (
 			promptTokens     int
@@ -306,7 +306,7 @@ func tieredText(ctx context.Context, mak *MAK, billingData *common.BillingData, 
 		billingData.Usage = new(smodel.Usage)
 	}
 
-	if billingData.Usage.TotalTokens == 0 || mak.ReqModel.Pricing.BillingRule == 2 || billingData.IsAborted {
+	if billingData.Usage.PromptTokens == 0 || billingData.Usage.CompletionTokens == 0 || mak.ReqModel.Pricing.BillingRule == 2 || billingData.IsAborted {
 
 		var (
 			promptTokens     int
