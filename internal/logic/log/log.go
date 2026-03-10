@@ -3,6 +3,7 @@ package log
 import (
 	"context"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/gogf/gf/v2/container/gmap"
@@ -25,6 +26,7 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/logger"
 	"github.com/iimeta/fastapi/v2/utility/util"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 type sLog struct{}
@@ -391,7 +393,7 @@ func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 	if _, err := dao.LogText.Insert(ctx, text); err != nil {
 		logger.Errorf(ctx, "sLog Text error: %v", err)
 
-		if err.Error() == "an inserted document is too large" {
+		if isTooLarge(err) {
 			if textLog.CompletionsReq != nil {
 				textLog.CompletionsReq.Messages = []smodel.ChatCompletionMessage{{
 					Role:    sconsts.ROLE_SYSTEM,
@@ -553,7 +555,7 @@ func (s *sLog) Image(ctx context.Context, imageLog model.LogImage, retry ...int)
 	if _, err := dao.LogImage.Insert(ctx, image); err != nil {
 		logger.Errorf(ctx, "sLog Image error: %v", err)
 
-		if err.Error() == "an inserted document is too large" {
+		if isTooLarge(err) {
 			imageLog.ImageReq.Prompt = err.Error()
 		}
 
@@ -696,7 +698,7 @@ func (s *sLog) Audio(ctx context.Context, audioLog model.LogAudio, retry ...int)
 	if _, err := dao.LogAudio.Insert(ctx, audio); err != nil {
 		logger.Errorf(ctx, "sLog Audio error: %v", err)
 
-		if err.Error() == "an inserted document is too large" {
+		if isTooLarge(err) {
 			audioLog.AudioReq.Input = err.Error()
 		}
 
@@ -841,7 +843,7 @@ func (s *sLog) Video(ctx context.Context, videoLog model.LogVideo, retry ...int)
 	if _, err := dao.LogVideo.Insert(ctx, video); err != nil {
 		logger.Errorf(ctx, "sLog Video error: %v", err)
 
-		if err.Error() == "an inserted document is too large" {
+		if isTooLarge(err) {
 			videoLog.VideoReq.RequestData = map[string]any{"error": err.Error()}
 		}
 
@@ -986,7 +988,7 @@ func (s *sLog) File(ctx context.Context, fileLog model.LogFile, retry ...int) {
 	if _, err := dao.LogFile.Insert(ctx, file); err != nil {
 		logger.Errorf(ctx, "sLog File error: %v", err)
 
-		if err.Error() == "an inserted document is too large" {
+		if isTooLarge(err) {
 			fileLog.FileReq.RequestData = map[string]any{"error": err.Error()}
 		}
 
@@ -1131,7 +1133,7 @@ func (s *sLog) Batch(ctx context.Context, batchLog model.LogBatch, retry ...int)
 	if _, err := dao.LogBatch.Insert(ctx, batch); err != nil {
 		logger.Errorf(ctx, "sLog Batch error: %v", err)
 
-		if err.Error() == "an inserted document is too large" {
+		if isTooLarge(err) {
 			batchLog.BatchReq.RequestData = map[string]any{"error": err.Error()}
 		}
 
@@ -1280,7 +1282,7 @@ func (s *sLog) Midjourney(ctx context.Context, midjourneyLog model.LogMidjourney
 	if _, err := dao.LogMidjourney.Insert(ctx, midjourney); err != nil {
 		logger.Errorf(ctx, "sLog Midjourney error: %v", err)
 
-		if err.Error() == "an inserted document is too large" {
+		if isTooLarge(err) {
 			midjourneyLog.Response.Prompt = err.Error()
 			midjourneyLog.Response.PromptEn = err.Error()
 		}
@@ -1428,7 +1430,7 @@ func (s *sLog) General(ctx context.Context, generalLog model.LogGeneral, retry .
 	if _, err := dao.LogGeneral.Insert(ctx, general); err != nil {
 		logger.Errorf(ctx, "sLog General error: %v", err)
 
-		if err.Error() == "an inserted document is too large" {
+		if isTooLarge(err) {
 			generalLog.GeneralReq.RequestData = map[string]any{"error": err.Error()}
 		}
 
@@ -1453,4 +1455,24 @@ func checkError(err error) bool {
 		errors.Is(err, errors.ERR_GROUP_DISABLED) ||
 		errors.Is(err, errors.ERR_GROUP_EXPIRED) ||
 		errors.Is(err, errors.ERR_GROUP_INSUFFICIENT_QUOTA)
+}
+
+func isTooLarge(err error) bool {
+
+	if err.Error() == "an inserted document is too large" {
+		return true
+	}
+
+	var cmdErr mongo.CommandError
+	if errors.As(err, &cmdErr) {
+		if cmdErr.Code == 10334 || cmdErr.Name == "BSONObjectTooLarge" {
+			return true
+		}
+	}
+
+	if errStr := err.Error(); strings.Contains(errStr, "TooLarge") || strings.Contains(errStr, "too large") {
+		return true
+	}
+
+	return false
 }
