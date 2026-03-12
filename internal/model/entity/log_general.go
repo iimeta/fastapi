@@ -46,7 +46,7 @@ type LogGeneral struct {
 	ErrMsg               string                 `bson:"err_msg,omitempty"`                 // 错误信息
 	IsRetry              bool                   `bson:"is_retry,omitempty"`                // 是否重试
 	Retry                *common.Retry          `bson:"retry,omitempty"`                   // 重试
-	Status               int                    `bson:"status,omitempty"`                  // 状态[1:成功, -1:失败, 2:中止, 3:重试]
+	Status               int                    `bson:"status,omitempty"`                  // 状态[1:成功, 2:中止, 3:重试, -1:失败]
 	Host                 string                 `bson:"host,omitempty"`                    // Host
 	Method               string                 `bson:"method,omitempty"`                  // Method
 	Path                 string                 `bson:"path,omitempty"`                    // Path
