@@ -124,8 +124,8 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 	}
 
 	// 模型时段折扣
-	if mak.ReqModel.Pricing.TimeRules != nil {
-		if modelTimeRule := MatchTimeRule(ctx, mak.ReqModel.Pricing.TimeRules); modelTimeRule != nil {
+	if mak.ReqModel.TimeRules != nil {
+		if modelTimeRule := MatchTimeRule(ctx, mak.ReqModel.TimeRules); modelTimeRule != nil {
 			spend.ModelTimeRule = modelTimeRule
 			spend.TotalSpendTokens = int(math.Ceil(float64(spend.TotalSpendTokens) * modelTimeRule.Discount))
 		}

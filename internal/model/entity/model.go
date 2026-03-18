@@ -12,6 +12,7 @@ type Model struct {
 	Path                 string                 `bson:"path,omitempty"`                    // 模型路径
 	IsEnablePresetConfig bool                   `bson:"is_enable_preset_config,omitempty"` // 是否启用预设配置
 	PresetConfig         common.PresetConfig    `bson:"preset_config,omitempty"`           // 预设配置
+	TimeRules            []*common.TimeRule     `bson:"time_rules,omitempty"`              // 时段规则
 	Pricing              common.Pricing         `bson:"pricing,omitempty"`                 // 定价
 	RequestDataFormat    int                    `bson:"request_data_format,omitempty"`     // 请求数据格式[1:统一格式, 2:官方格式]
 	ResponseDataFormat   int                    `bson:"response_data_format,omitempty"`    // 响应数据格式[1:统一格式, 2:官方格式]

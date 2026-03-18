@@ -140,7 +140,7 @@ func textHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	}
 
 	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
-		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.Pricing.TimeRules)
+		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.TimeRules)
 	}
 
 	if after.Spend.GroupId == "" && mak.Group != nil {
@@ -197,7 +197,7 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	}
 
 	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
-		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.Pricing.TimeRules)
+		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.TimeRules)
 	}
 
 	if after.Spend.GroupId == "" && mak.Group != nil {
@@ -258,7 +258,7 @@ func audioHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	}
 
 	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
-		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.Pricing.TimeRules)
+		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.TimeRules)
 	}
 
 	if after.Spend.GroupId == "" && mak.Group != nil {
@@ -346,7 +346,7 @@ func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	}
 
 	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
-		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.Pricing.TimeRules)
+		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.TimeRules)
 	}
 
 	if after.Spend.GroupId == "" && mak.Group != nil {
@@ -430,7 +430,7 @@ func fileHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	}
 
 	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
-		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.Pricing.TimeRules)
+		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.TimeRules)
 	}
 
 	if after.Spend.GroupId == "" && mak.Group != nil {
@@ -510,7 +510,7 @@ func batchHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	}
 
 	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
-		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.Pricing.TimeRules)
+		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.TimeRules)
 	}
 
 	if after.Spend.GroupId == "" && mak.Group != nil {
@@ -568,7 +568,7 @@ func midjourneyHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandle
 	}
 
 	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
-		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.Pricing.TimeRules)
+		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.TimeRules)
 	}
 
 	if after.Spend.GroupId == "" && mak.Group != nil {
@@ -647,7 +647,7 @@ func generalHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) 
 	}
 
 	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
-		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.Pricing.TimeRules)
+		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.TimeRules)
 	}
 
 	if after.Spend.GroupId == "" && mak.Group != nil {
