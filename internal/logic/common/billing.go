@@ -853,7 +853,7 @@ func MatchTimeRule(ctx context.Context, rules []*common.TimeRule) *common.TimeRu
 		}
 	}
 
-	return sorted[0]
+	return nil
 }
 
 func matchTimeRange(nowMs, startTime, endTime int64) bool {
