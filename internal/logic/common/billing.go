@@ -4,7 +4,9 @@ import (
 	"context"
 	"math"
 	"slices"
+	"sort"
 
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
@@ -121,12 +123,22 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 		spend.TotalSpendTokens = spend.Once.SpendTokens
 	}
 
-	// 分组折扣
+	// 模型时段折扣
+	if mak.ReqModel.Pricing.TimeRules != nil {
+		if modelTimeRule := MatchTimeRule(ctx, mak.ReqModel.Pricing.TimeRules); modelTimeRule != nil {
+			spend.ModelTimeRule = modelTimeRule
+			spend.TotalSpendTokens = int(math.Ceil(float64(spend.TotalSpendTokens) * modelTimeRule.Discount))
+		}
+	}
+
+	// 分组时段折扣
 	if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
 		spend.GroupId = mak.Group.Id
 		spend.GroupName = mak.Group.Name
-		spend.GroupDiscount = mak.Group.Discount
-		spend.TotalSpendTokens = int(math.Ceil(float64(spend.TotalSpendTokens) * mak.Group.Discount))
+		if groupTimeRule := MatchTimeRule(ctx, mak.Group.TimeRules); groupTimeRule != nil {
+			spend.GroupTimeRule = groupTimeRule
+			spend.TotalSpendTokens = int(math.Ceil(float64(spend.TotalSpendTokens) * groupTimeRule.Discount))
+		}
 	}
 
 	return spend
@@ -779,4 +791,74 @@ func once(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 		spend.Once.InputTokens = billingData.Usage.PromptTokens
 		spend.Once.OutputTokens = billingData.Usage.CompletionTokens
 	}
+}
+
+func MatchTimeRule(ctx context.Context, rules []*common.TimeRule) *common.TimeRule {
+
+	if len(rules) == 0 {
+		return nil
+	}
+
+	enterTime := g.RequestFromCtx(ctx).EnterTime
+	weekday := int(enterTime.Weekday())
+	dayOfMonth := enterTime.Day()
+
+	nowMs := int64(enterTime.Hour()*3600+enterTime.Minute()*60+enterTime.Second()) * 1000
+
+	sorted := make([]*common.TimeRule, len(rules))
+	copy(sorted, rules)
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].Priority > sorted[j].Priority
+	})
+
+	for _, rule := range sorted {
+
+		switch rule.TimeType {
+		case "all":
+			// 全天, 不过滤日期
+		case "weekday":
+			if weekday == 0 || weekday == 6 {
+				continue
+			}
+		case "weekend":
+			if weekday != 0 && weekday != 6 {
+				continue
+			}
+		case "custom":
+			if len(rule.Days) > 0 {
+				matched := false
+				if rule.DayMode == "month" {
+					for _, d := range rule.Days {
+						if d == dayOfMonth {
+							matched = true
+							break
+						}
+					}
+				} else {
+					for _, d := range rule.Days {
+						if d == weekday {
+							matched = true
+							break
+						}
+					}
+				}
+				if !matched {
+					continue
+				}
+			}
+		}
+
+		if matchTimeRange(nowMs, rule.StartTime, rule.EndTime) {
+			return rule
+		}
+	}
+
+	return sorted[0]
+}
+
+func matchTimeRange(nowMs, startTime, endTime int64) bool {
+	if startTime <= endTime {
+		return nowMs >= startTime && nowMs <= endTime
+	}
+	return nowMs >= startTime || nowMs <= endTime
 }

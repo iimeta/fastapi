@@ -4,8 +4,8 @@ import "github.com/iimeta/fastapi/v2/internal/model/common"
 
 type Group struct {
 	Id                 string                `json:"id,omitempty"`                    // ID
+	TimeRules          []*common.TimeRule    `json:"time_rules,omitempty"`            // 时段规则
 	Name               string                `json:"name,omitempty"`                  // 分组名称
-	Discount           float64               `json:"discount,omitempty"`              // 分组折扣
 	Models             []string              `json:"models,omitempty"`                // 模型权限
 	IsEnableModelAgent bool                  `json:"is_enable_model_agent,omitempty"` // 是否启用模型代理
 	LbStrategy         int                   `json:"lb_strategy,omitempty"`           // 代理负载均衡策略[1:轮询, 2:权重]

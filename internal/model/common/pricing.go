@@ -5,6 +5,7 @@ import (
 )
 
 type Pricing struct {
+	TimeRules       []*TimeRule               `bson:"time_rules,omitempty"        json:"time_rules,omitempty"`        // 时段规则
 	BillingRule     int                       `bson:"billing_rule,omitempty"      json:"billing_rule,omitempty"`      // 计费规则[1:按官方, 2:按系统]
 	BillingMethods  []int                     `bson:"billing_methods,omitempty"   json:"billing_methods,omitempty"`   // 计费方式[1:按Tokens, 2:按次]
 	BillingItems    []string                  `bson:"billing_items,omitempty"     json:"billing_items,omitempty"`     // 计费项[text:文本, text_cache:文本缓存, tiered_text:阶梯文本, tiered_text_cache:阶梯文本缓存, image:图像, image_generation:图像生成, image_cache:图像缓存, vision:识图, audio:音频, audio_cache:音频缓存, video:视频, video_generation:视频生成, video_cache:视频缓存, search:搜索, midjourney:Midjourney, once:一次]
@@ -24,6 +25,17 @@ type Pricing struct {
 	Search          []*SearchPricing          `bson:"search,omitempty"            json:"search,omitempty"`            // 搜索
 	Midjourney      []*MidjourneyPricing      `bson:"midjourney,omitempty"        json:"midjourney,omitempty"`        // Midjourney
 	Once            *OncePricing              `bson:"once,omitempty"              json:"once,omitempty"`              // 一次
+}
+
+type TimeRule struct {
+	TimeType  string  `bson:"time_type,omitempty"  json:"time_type,omitempty"`  // 时段类型[all:全天, weekday:工作日, weekend:周末, custom:自定义]
+	Name      string  `bson:"name,omitempty"       json:"name,omitempty"`       // 时段名称
+	StartTime int64   `bson:"start_time,omitempty" json:"start_time,omitempty"` // 开始时间
+	EndTime   int64   `bson:"end_time,omitempty"   json:"end_time,omitempty"`   // 结束时间
+	Discount  float64 `bson:"discount,omitempty"   json:"discount,omitempty"`   // 折扣
+	Days      []int   `bson:"days,omitempty"       json:"days,omitempty"`       // 适用日
+	DayMode   string  `bson:"day_mode,omitempty"   json:"day_mode,omitempty"`   // 日期模式[week:按周, month:按月]
+	Priority  int     `bson:"priority,omitempty"   json:"priority,omitempty"`   // 优先级, 数字越大越优先
 }
 
 type TextPricing struct {
@@ -137,7 +149,8 @@ type Spend struct {
 	Once             *OnceSpend            `bson:"once,omitempty"               json:"once,omitempty"`               // 一次
 	GroupId          string                `bson:"group_id,omitempty"           json:"group_id,omitempty"`           // 分组ID
 	GroupName        string                `bson:"group_name,omitempty"         json:"group_name,omitempty"`         // 分组名称
-	GroupDiscount    float64               `bson:"group_discount,omitempty"     json:"group_discount,omitempty"`     // 分组折扣
+	ModelTimeRule    *TimeRule             `bson:"model_time_rule,omitempty"    json:"model_time_rule,omitempty"`    // 模型时段规则
+	GroupTimeRule    *TimeRule             `bson:"group_time_rule,omitempty"    json:"group_time_rule,omitempty"`    // 分组时段规则
 	TotalSpendTokens int                   `bson:"total_spend_tokens,omitempty" json:"total_spend_tokens,omitempty"` // 总花费Token数
 }
 

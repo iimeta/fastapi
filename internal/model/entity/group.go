@@ -6,8 +6,8 @@ import (
 
 type Group struct {
 	Id                 string                `bson:"_id,omitempty"`                   // ID
+	TimeRules          []*common.TimeRule    `bson:"time_rules,omitempty"`            // 时段规则
 	Name               string                `bson:"name,omitempty"`                  // 分组名称
-	Discount           float64               `bson:"discount,omitempty"`              // 分组折扣
 	Models             []string              `bson:"models,omitempty"`                // 模型权限
 	IsEnableModelAgent bool                  `bson:"is_enable_model_agent,omitempty"` // 是否启用模型代理
 	LbStrategy         int                   `bson:"lb_strategy,omitempty"`           // 代理负载均衡策略[1:轮询, 2:权重]

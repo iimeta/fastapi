@@ -139,10 +139,14 @@ func textHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		}
 	}
 
+	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
+		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.Pricing.TimeRules)
+	}
+
 	if after.Spend.GroupId == "" && mak.Group != nil {
 		after.Spend.GroupId = mak.Group.Id
 		after.Spend.GroupName = mak.Group.Name
-		after.Spend.GroupDiscount = mak.Group.Discount
+		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules)
 	}
 
 	service.Log().Text(ctx, model.LogText{
@@ -192,10 +196,14 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		EnterTime:    after.EnterTime,
 	}
 
+	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
+		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.Pricing.TimeRules)
+	}
+
 	if after.Spend.GroupId == "" && mak.Group != nil {
 		after.Spend.GroupId = mak.Group.Id
 		after.Spend.GroupName = mak.Group.Name
-		after.Spend.GroupDiscount = mak.Group.Discount
+		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules)
 	}
 
 	service.Log().Image(ctx, model.LogImage{
@@ -249,10 +257,14 @@ func audioHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		EnterTime:    after.EnterTime,
 	}
 
+	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
+		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.Pricing.TimeRules)
+	}
+
 	if after.Spend.GroupId == "" && mak.Group != nil {
 		after.Spend.GroupId = mak.Group.Id
 		after.Spend.GroupName = mak.Group.Name
-		after.Spend.GroupDiscount = mak.Group.Discount
+		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules)
 	}
 
 	service.Log().Audio(ctx, model.LogAudio{
@@ -333,10 +345,14 @@ func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		EnterTime:    after.EnterTime,
 	}
 
+	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
+		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.Pricing.TimeRules)
+	}
+
 	if after.Spend.GroupId == "" && mak.Group != nil {
 		after.Spend.GroupId = mak.Group.Id
 		after.Spend.GroupName = mak.Group.Name
-		after.Spend.GroupDiscount = mak.Group.Discount
+		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules)
 	}
 
 	service.Log().Video(ctx, model.LogVideo{
@@ -413,10 +429,14 @@ func fileHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		EnterTime:    after.EnterTime,
 	}
 
+	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
+		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.Pricing.TimeRules)
+	}
+
 	if after.Spend.GroupId == "" && mak.Group != nil {
 		after.Spend.GroupId = mak.Group.Id
 		after.Spend.GroupName = mak.Group.Name
-		after.Spend.GroupDiscount = mak.Group.Discount
+		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules)
 	}
 
 	service.Log().File(ctx, model.LogFile{
@@ -489,10 +509,14 @@ func batchHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		EnterTime:    after.EnterTime,
 	}
 
+	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
+		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.Pricing.TimeRules)
+	}
+
 	if after.Spend.GroupId == "" && mak.Group != nil {
 		after.Spend.GroupId = mak.Group.Id
 		after.Spend.GroupName = mak.Group.Name
-		after.Spend.GroupDiscount = mak.Group.Discount
+		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules)
 	}
 
 	service.Log().Batch(ctx, model.LogBatch{
@@ -543,10 +567,14 @@ func midjourneyHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandle
 		EnterTime:          after.EnterTime,
 	}
 
+	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
+		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.Pricing.TimeRules)
+	}
+
 	if after.Spend.GroupId == "" && mak.Group != nil {
 		after.Spend.GroupId = mak.Group.Id
 		after.Spend.GroupName = mak.Group.Name
-		after.Spend.GroupDiscount = mak.Group.Discount
+		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules)
 	}
 
 	service.Log().Midjourney(ctx, model.LogMidjourney{
@@ -618,10 +646,14 @@ func generalHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) 
 		EnterTime:    after.EnterTime,
 	}
 
+	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
+		after.Spend.ModelTimeRule = MatchTimeRule(ctx, mak.ReqModel.Pricing.TimeRules)
+	}
+
 	if after.Spend.GroupId == "" && mak.Group != nil {
 		after.Spend.GroupId = mak.Group.Id
 		after.Spend.GroupName = mak.Group.Name
-		after.Spend.GroupDiscount = mak.Group.Discount
+		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules)
 	}
 
 	service.Log().General(ctx, model.LogGeneral{
