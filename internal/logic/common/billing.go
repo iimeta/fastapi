@@ -4,7 +4,6 @@ import (
 	"context"
 	"math"
 	"slices"
-	"sort"
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/text/gstr"
@@ -805,46 +804,30 @@ func MatchTimeRule(ctx context.Context, rules []*common.TimeRule) *common.TimeRu
 
 	enterTimeMs := int64(enterTime.Hour()*3600+enterTime.Minute()*60+enterTime.Second()) * 1000
 
-	sorted := make([]*common.TimeRule, len(rules))
-	copy(sorted, rules)
-	sort.Slice(sorted, func(i, j int) bool {
-		return sorted[i].Priority > sorted[j].Priority
-	})
+	for _, rule := range rules {
 
-	for _, rule := range sorted {
+		if rule.TimeType != "all" && len(rule.Days) > 0 {
 
-		switch rule.TimeType {
-		case "all":
-			// 全天, 不过滤日期
-		case "weekday":
-			if weekday == 0 || weekday == 6 {
-				continue
-			}
-		case "weekend":
-			if weekday != 0 && weekday != 6 {
-				continue
-			}
-		case "custom":
-			if len(rule.Days) > 0 {
-				matched := false
-				if rule.DayMode == "month" {
-					for _, d := range rule.Days {
-						if d == dayOfMonth {
-							matched = true
-							break
-						}
-					}
-				} else {
-					for _, d := range rule.Days {
-						if d == weekday {
-							matched = true
-							break
-						}
+			matched := false
+
+			if rule.DayMode == "month" {
+				for _, d := range rule.Days {
+					if d == dayOfMonth {
+						matched = true
+						break
 					}
 				}
-				if !matched {
-					continue
+			} else {
+				for _, d := range rule.Days {
+					if d == weekday {
+						matched = true
+						break
+					}
 				}
+			}
+
+			if !matched {
+				continue
 			}
 		}
 
