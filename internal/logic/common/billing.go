@@ -803,7 +803,7 @@ func MatchTimeRule(ctx context.Context, rules []*common.TimeRule) *common.TimeRu
 	weekday := int(enterTime.Weekday())
 	dayOfMonth := enterTime.Day()
 
-	nowMs := int64(enterTime.Hour()*3600+enterTime.Minute()*60+enterTime.Second()) * 1000
+	enterTimeMs := int64(enterTime.Hour()*3600+enterTime.Minute()*60+enterTime.Second()) * 1000
 
 	sorted := make([]*common.TimeRule, len(rules))
 	copy(sorted, rules)
@@ -848,7 +848,7 @@ func MatchTimeRule(ctx context.Context, rules []*common.TimeRule) *common.TimeRu
 			}
 		}
 
-		if matchTimeRange(nowMs, rule.StartTime, rule.EndTime) {
+		if matchTimeRange(enterTimeMs, rule.StartTime, rule.EndTime) {
 			return rule
 		}
 	}
@@ -856,9 +856,9 @@ func MatchTimeRule(ctx context.Context, rules []*common.TimeRule) *common.TimeRu
 	return nil
 }
 
-func matchTimeRange(nowMs, startTime, endTime int64) bool {
+func matchTimeRange(enterTimeMs, startTime, endTime int64) bool {
 	if startTime <= endTime {
-		return nowMs >= startTime && nowMs <= endTime
+		return enterTimeMs >= startTime && enterTimeMs <= endTime
 	}
-	return nowMs >= startTime || nowMs <= endTime
+	return enterTimeMs >= startTime || enterTimeMs <= endTime
 }
