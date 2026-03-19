@@ -131,7 +131,7 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 	}
 
 	// 分组时段折扣
-	if mak.Group != nil && slices.Contains(mak.Group.Models, mak.ReqModel.Id) {
+	if mak.Group != nil {
 		spend.GroupId = mak.Group.Id
 		spend.GroupName = mak.Group.Name
 		if groupTimeRule := MatchTimeRule(ctx, mak.Group.TimeRules); groupTimeRule != nil {
