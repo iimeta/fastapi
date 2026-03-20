@@ -11,7 +11,6 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/iimeta/fastapi-sdk/v2 v2.1.0
 	github.com/redis/go-redis/v9 v9.18.0
-	github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300
 	github.com/tjfoc/gmsm v1.4.1
 	go.mongodb.org/mongo-driver/v2 v2.5.0
 )
