@@ -50,6 +50,7 @@ func (s *sGroup) GetById(ctx context.Context, id string) (*model.Group, error) {
 	return &model.Group{
 		Id:                 group.Id,
 		TimeRules:          group.TimeRules,
+		BillingMethods:     group.BillingMethods,
 		Name:               group.Name,
 		Models:             group.Models,
 		IsEnableModelAgent: group.IsEnableModelAgent,
@@ -89,6 +90,7 @@ func (s *sGroup) List(ctx context.Context) ([]*model.Group, error) {
 		items = append(items, &model.Group{
 			Id:                 result.Id,
 			TimeRules:          result.TimeRules,
+			BillingMethods:     result.BillingMethods,
 			Name:               result.Name,
 			Models:             result.Models,
 			IsEnableModelAgent: result.IsEnableModelAgent,
@@ -224,6 +226,7 @@ func (s *sGroup) UpdateCache(ctx context.Context, newData *entity.Group) {
 	group := &model.Group{
 		Id:                 newData.Id,
 		TimeRules:          newData.TimeRules,
+		BillingMethods:     newData.BillingMethods,
 		Name:               newData.Name,
 		Models:             newData.Models,
 		IsEnableModelAgent: newData.IsEnableModelAgent,

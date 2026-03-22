@@ -7,6 +7,7 @@ import (
 type Group struct {
 	Id                 string                `bson:"_id,omitempty"`                   // ID
 	TimeRules          []*common.TimeRule    `bson:"time_rules,omitempty"`            // 时段规则
+	BillingMethods     []int                 `bson:"billing_methods,omitempty"`       // 计费方式[1:按Tokens, 2:按次]
 	Name               string                `bson:"name,omitempty"`                  // 分组名称
 	Models             []string              `bson:"models,omitempty"`                // 模型权限
 	IsEnableModelAgent bool                  `bson:"is_enable_model_agent,omitempty"` // 是否启用模型代理
