@@ -146,7 +146,7 @@ func textHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	if after.Spend.GroupId == "" && mak.Group != nil {
 		after.Spend.GroupId = mak.Group.Id
 		after.Spend.GroupName = mak.Group.Name
-		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules)
+		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules, mak.ReqModel)
 	}
 
 	service.Log().Text(ctx, model.LogText{
@@ -203,7 +203,7 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	if after.Spend.GroupId == "" && mak.Group != nil {
 		after.Spend.GroupId = mak.Group.Id
 		after.Spend.GroupName = mak.Group.Name
-		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules)
+		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules, mak.ReqModel)
 	}
 
 	service.Log().Image(ctx, model.LogImage{
@@ -264,7 +264,7 @@ func audioHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	if after.Spend.GroupId == "" && mak.Group != nil {
 		after.Spend.GroupId = mak.Group.Id
 		after.Spend.GroupName = mak.Group.Name
-		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules)
+		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules, mak.ReqModel)
 	}
 
 	service.Log().Audio(ctx, model.LogAudio{
@@ -352,7 +352,7 @@ func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	if after.Spend.GroupId == "" && mak.Group != nil {
 		after.Spend.GroupId = mak.Group.Id
 		after.Spend.GroupName = mak.Group.Name
-		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules)
+		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules, mak.ReqModel)
 	}
 
 	service.Log().Video(ctx, model.LogVideo{
@@ -436,7 +436,7 @@ func fileHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	if after.Spend.GroupId == "" && mak.Group != nil {
 		after.Spend.GroupId = mak.Group.Id
 		after.Spend.GroupName = mak.Group.Name
-		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules)
+		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules, mak.ReqModel)
 	}
 
 	service.Log().File(ctx, model.LogFile{
@@ -516,7 +516,7 @@ func batchHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	if after.Spend.GroupId == "" && mak.Group != nil {
 		after.Spend.GroupId = mak.Group.Id
 		after.Spend.GroupName = mak.Group.Name
-		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules)
+		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules, mak.ReqModel)
 	}
 
 	service.Log().Batch(ctx, model.LogBatch{
@@ -574,7 +574,7 @@ func midjourneyHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandle
 	if after.Spend.GroupId == "" && mak.Group != nil {
 		after.Spend.GroupId = mak.Group.Id
 		after.Spend.GroupName = mak.Group.Name
-		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules)
+		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules, mak.ReqModel)
 	}
 
 	service.Log().Midjourney(ctx, model.LogMidjourney{
@@ -653,7 +653,7 @@ func generalHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) 
 	if after.Spend.GroupId == "" && mak.Group != nil {
 		after.Spend.GroupId = mak.Group.Id
 		after.Spend.GroupName = mak.Group.Name
-		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules)
+		after.Spend.GroupTimeRule = MatchTimeRule(ctx, mak.Group.TimeRules, mak.ReqModel)
 	}
 
 	service.Log().General(ctx, model.LogGeneral{

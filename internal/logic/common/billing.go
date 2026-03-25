@@ -11,6 +11,7 @@ import (
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
 	"github.com/iimeta/fastapi-sdk/v2/tiktoken"
 	"github.com/iimeta/fastapi/v2/internal/consts"
+	"github.com/iimeta/fastapi/v2/internal/model"
 	"github.com/iimeta/fastapi/v2/internal/model/common"
 )
 
@@ -134,7 +135,7 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 	if mak.Group != nil {
 		spend.GroupId = mak.Group.Id
 		spend.GroupName = mak.Group.Name
-		if groupTimeRule := MatchTimeRule(ctx, mak.Group.TimeRules); groupTimeRule != nil {
+		if groupTimeRule := MatchTimeRule(ctx, mak.Group.TimeRules, mak.ReqModel); groupTimeRule != nil {
 			spend.GroupTimeRule = groupTimeRule
 			spend.TotalSpendTokens = int(math.Ceil(float64(spend.TotalSpendTokens) * groupTimeRule.Discount))
 		}
@@ -792,7 +793,7 @@ func once(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 	}
 }
 
-func MatchTimeRule(ctx context.Context, rules []*common.TimeRule) *common.TimeRule {
+func MatchTimeRule(ctx context.Context, rules []*common.TimeRule, model ...*model.Model) *common.TimeRule {
 
 	if len(rules) == 0 {
 		return nil
@@ -803,6 +804,8 @@ func MatchTimeRule(ctx context.Context, rules []*common.TimeRule) *common.TimeRu
 	dayOfMonth := enterTime.Day()
 
 	enterTimeMs := int64(enterTime.Hour()*3600+enterTime.Minute()*60+enterTime.Second()) * 1000
+
+	var firstTimeMatched *common.TimeRule
 
 	for _, rule := range rules {
 
@@ -832,11 +835,21 @@ func MatchTimeRule(ctx context.Context, rules []*common.TimeRule) *common.TimeRu
 		}
 
 		if matchTimeRange(enterTimeMs, rule.StartTime, rule.EndTime) {
-			return rule
+
+			if firstTimeMatched == nil {
+				firstTimeMatched = rule
+			}
+
+			if len(rule.Models) > 0 && len(model) > 0 && model[0] != nil {
+				if slices.Contains(rule.Models, model[0].Id) {
+					return rule
+				}
+				continue
+			}
 		}
 	}
 
-	return nil
+	return firstTimeMatched
 }
 
 func matchTimeRange(enterTimeMs, startTime, endTime int64) bool {

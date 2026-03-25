@@ -312,7 +312,7 @@ func (s *sGroup) GetDefault(ctx context.Context, ids ...string) (*model.Group, e
 }
 
 // 根据model挑选分组和模型
-func (s *sGroup) PickGroupAndModel(ctx context.Context, m string, ids ...string) (reqModel *model.Model, group *model.Group, err error) {
+func (s *sGroup) PickGroupAndModel(ctx context.Context, appKey *model.AppKey, m string, ids ...string) (reqModel *model.Model, group *model.Group, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -366,6 +366,10 @@ func (s *sGroup) PickGroupAndModel(ctx context.Context, m string, ids ...string)
 
 		if reqModel, err = service.Model().GetModelByGroup(ctx, m, group); err != nil && !errors.Is(err, errors.ERR_MODEL_NOT_FOUND) {
 			return
+		}
+
+		if len(group.BillingMethods) == 1 && len(appKey.BillingMethods) == 1 && !slices.Contains(group.BillingMethods, appKey.BillingMethods[0]) {
+			continue
 		}
 
 		if reqModel != nil {

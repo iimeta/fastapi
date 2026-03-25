@@ -27,14 +27,15 @@ type Pricing struct {
 }
 
 type TimeRule struct {
-	TimeType  string  `bson:"time_type,omitempty"  json:"time_type,omitempty"`  // 时段类型[all:全天, weekday:工作日, weekend:周末, custom:自定义]
-	Name      string  `bson:"name,omitempty"       json:"name,omitempty"`       // 时段名称
-	StartTime int64   `bson:"start_time,omitempty" json:"start_time,omitempty"` // 开始时间
-	EndTime   int64   `bson:"end_time,omitempty"   json:"end_time,omitempty"`   // 结束时间
-	Discount  float64 `bson:"discount,omitempty"   json:"discount,omitempty"`   // 折扣
-	Days      []int   `bson:"days,omitempty"       json:"days,omitempty"`       // 适用日
-	DayMode   string  `bson:"day_mode,omitempty"   json:"day_mode,omitempty"`   // 日期模式[week:按周, month:按月]
-	Priority  int     `bson:"priority,omitempty"   json:"priority,omitempty"`   // 优先级, 数字越大越优先
+	TimeType  string   `bson:"time_type,omitempty"  json:"time_type,omitempty"`  // 时段类型[all:全天, weekday:工作日, weekend:周末, custom:自定义]
+	Name      string   `bson:"name,omitempty"       json:"name,omitempty"`       // 时段名称
+	StartTime int64    `bson:"start_time,omitempty" json:"start_time,omitempty"` // 开始时间
+	EndTime   int64    `bson:"end_time,omitempty"   json:"end_time,omitempty"`   // 结束时间
+	Discount  float64  `bson:"discount,omitempty"   json:"discount,omitempty"`   // 折扣
+	Days      []int    `bson:"days,omitempty"       json:"days,omitempty"`       // 适用日
+	DayMode   string   `bson:"day_mode,omitempty"   json:"day_mode,omitempty"`   // 日期模式[week:按周, month:按月]
+	Priority  int      `bson:"priority,omitempty"   json:"priority,omitempty"`   // 优先级, 数字越大越优先
+	Models    []string `bson:"models,omitempty"     json:"models,omitempty"`     // 模型
 }
 
 type TextPricing struct {
@@ -127,30 +128,31 @@ type BillingData struct {
 }
 
 type Spend struct {
-	BillingRule      int                   `bson:"billing_rule,omitempty"       json:"billing_rule,omitempty"`       // 计费规则[1:按官方, 2:按系统]
-	BillingMethods   []int                 `bson:"billing_methods,omitempty"    json:"billing_methods,omitempty"`    // 计费方式[1:按Tokens, 2:按次]
-	BillingItems     []string              `bson:"billing_items,omitempty"      json:"billing_items,omitempty"`      // 计费项[text:文本, text_cache:文本缓存, tiered_text:阶梯文本, tiered_text_cache:阶梯文本缓存, image:图像, image_generation:图像生成, image_cache:图像缓存, vision:识图, audio:音频, audio_cache:音频缓存, video:视频, video_generation:视频生成, video_cache:视频缓存, search:搜索, midjourney:Midjourney, once:一次]
-	Text             *TextSpend            `bson:"text,omitempty"               json:"text,omitempty"`               // 文本
-	TextCache        *CacheSpend           `bson:"text_cache,omitempty"         json:"text_cache,omitempty"`         // 文本缓存
-	TieredText       *TextSpend            `bson:"tiered_text,omitempty"        json:"tiered_text,omitempty"`        // 阶梯文本
-	TieredTextCache  *CacheSpend           `bson:"tiered_text_cache,omitempty"  json:"tiered_text_cache,omitempty"`  // 阶梯文本缓存
-	Image            *ImageSpend           `bson:"image,omitempty"              json:"image,omitempty"`              // 图像
-	ImageGeneration  *ImageGenerationSpend `bson:"image_generation,omitempty"   json:"image_generation,omitempty"`   // 图像生成
-	ImageCache       *CacheSpend           `bson:"image_cache,omitempty"        json:"image_cache,omitempty"`        // 图像缓存
-	Vision           *VisionSpend          `bson:"vision,omitempty"             json:"vision,omitempty"`             // 识图
-	Audio            *AudioSpend           `bson:"audio,omitempty"              json:"audio,omitempty"`              // 音频
-	AudioCache       *CacheSpend           `bson:"audio_cache,omitempty"        json:"audio_cache,omitempty"`        // 音频缓存
-	Video            *VideoSpend           `bson:"video,omitempty"              json:"video,omitempty"`              // 视频
-	VideoGeneration  *VideoGenerationSpend `bson:"video_generation,omitempty"   json:"video_generation,omitempty"`   // 视频生成
-	VideoCache       *CacheSpend           `bson:"video_cache,omitempty"        json:"video_cache,omitempty"`        // 视频缓存
-	Search           *SearchSpend          `bson:"search,omitempty"             json:"search,omitempty"`             // 搜索
-	Midjourney       *MidjourneySpend      `bson:"midjourney,omitempty"         json:"midjourney,omitempty"`         // Midjourney
-	Once             *OnceSpend            `bson:"once,omitempty"               json:"once,omitempty"`               // 一次
-	GroupId          string                `bson:"group_id,omitempty"           json:"group_id,omitempty"`           // 分组ID
-	GroupName        string                `bson:"group_name,omitempty"         json:"group_name,omitempty"`         // 分组名称
-	ModelTimeRule    *TimeRule             `bson:"model_time_rule,omitempty"    json:"model_time_rule,omitempty"`    // 模型时段规则
-	GroupTimeRule    *TimeRule             `bson:"group_time_rule,omitempty"    json:"group_time_rule,omitempty"`    // 分组时段规则
-	TotalSpendTokens int                   `bson:"total_spend_tokens,omitempty" json:"total_spend_tokens,omitempty"` // 总花费Token数
+	ModelTimeRule       *TimeRule             `bson:"model_time_rule,omitempty"       json:"model_time_rule,omitempty"`       // 模型时段规则
+	BillingRule         int                   `bson:"billing_rule,omitempty"          json:"billing_rule,omitempty"`          // 计费规则[1:按官方, 2:按系统]
+	BillingMethods      []int                 `bson:"billing_methods,omitempty"       json:"billing_methods,omitempty"`       // 计费方式[1:按Tokens, 2:按次]
+	BillingItems        []string              `bson:"billing_items,omitempty"         json:"billing_items,omitempty"`         // 计费项[text:文本, text_cache:文本缓存, tiered_text:阶梯文本, tiered_text_cache:阶梯文本缓存, image:图像, image_generation:图像生成, image_cache:图像缓存, vision:识图, audio:音频, audio_cache:音频缓存, video:视频, video_generation:视频生成, video_cache:视频缓存, search:搜索, midjourney:Midjourney, once:一次]
+	Text                *TextSpend            `bson:"text,omitempty"                  json:"text,omitempty"`                  // 文本
+	TextCache           *CacheSpend           `bson:"text_cache,omitempty"            json:"text_cache,omitempty"`            // 文本缓存
+	TieredText          *TextSpend            `bson:"tiered_text,omitempty"           json:"tiered_text,omitempty"`           // 阶梯文本
+	TieredTextCache     *CacheSpend           `bson:"tiered_text_cache,omitempty"     json:"tiered_text_cache,omitempty"`     // 阶梯文本缓存
+	Image               *ImageSpend           `bson:"image,omitempty"                 json:"image,omitempty"`                 // 图像
+	ImageGeneration     *ImageGenerationSpend `bson:"image_generation,omitempty"      json:"image_generation,omitempty"`      // 图像生成
+	ImageCache          *CacheSpend           `bson:"image_cache,omitempty"           json:"image_cache,omitempty"`           // 图像缓存
+	Vision              *VisionSpend          `bson:"vision,omitempty"                json:"vision,omitempty"`                // 识图
+	Audio               *AudioSpend           `bson:"audio,omitempty"                 json:"audio,omitempty"`                 // 音频
+	AudioCache          *CacheSpend           `bson:"audio_cache,omitempty"           json:"audio_cache,omitempty"`           // 音频缓存
+	Video               *VideoSpend           `bson:"video,omitempty"                 json:"video,omitempty"`                 // 视频
+	VideoGeneration     *VideoGenerationSpend `bson:"video_generation,omitempty"      json:"video_generation,omitempty"`      // 视频生成
+	VideoCache          *CacheSpend           `bson:"video_cache,omitempty"           json:"video_cache,omitempty"`           // 视频缓存
+	Search              *SearchSpend          `bson:"search,omitempty"                json:"search,omitempty"`                // 搜索
+	Midjourney          *MidjourneySpend      `bson:"midjourney,omitempty"            json:"midjourney,omitempty"`            // Midjourney
+	Once                *OnceSpend            `bson:"once,omitempty"                  json:"once,omitempty"`                  // 一次
+	GroupId             string                `bson:"group_id,omitempty"              json:"group_id,omitempty"`              // 分组ID
+	GroupName           string                `bson:"group_name,omitempty"            json:"group_name,omitempty"`            // 分组名称
+	GroupTimeRule       *TimeRule             `bson:"group_time_rule,omitempty"       json:"group_time_rule,omitempty"`       // 分组时段规则
+	GroupBillingMethods []int                 `bson:"group_billing_methods,omitempty" json:"group_billing_methods,omitempty"` // 分组计费方式[1:按Tokens, 2:按次]
+	TotalSpendTokens    int                   `bson:"total_spend_tokens,omitempty"    json:"total_spend_tokens,omitempty"`    // 总花费Token数
 }
 
 type TextSpend struct {

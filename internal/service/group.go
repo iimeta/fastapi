@@ -37,7 +37,7 @@ type (
 		// 根据分组Ids获取默认分组
 		GetDefault(ctx context.Context, ids ...string) (*model.Group, error)
 		// 根据model挑选分组和模型
-		PickGroupAndModel(ctx context.Context, m string, ids ...string) (reqModel *model.Model, group *model.Group, err error)
+		PickGroupAndModel(ctx context.Context, appKey *model.AppKey, m string, ids ...string) (reqModel *model.Model, group *model.Group, err error)
 		// 分组花费额度
 		SpendQuota(ctx context.Context, group string, spendQuota int, currentQuota int) error
 		// 分组已用额度
