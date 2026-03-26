@@ -107,7 +107,13 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 		}
 	}
 
-	if mak.Group == nil || !slices.Contains(mak.User.Groups, mak.Group.Id) {
+	if mak.Group == nil {
+		err = errors.ERR_GROUP_IS_NIL
+		logger.Error(ctx, err)
+		return err
+	}
+
+	if !slices.Contains(mak.User.Groups, mak.Group.Id) {
 		err = errors.ERR_GROUP_NOT_FOUND
 		logger.Error(ctx, err)
 		return err
@@ -132,7 +138,7 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 	}
 
 	if len(mak.Group.BillingMethods) == 1 && len(mak.AppKey.BillingMethods) == 1 && mak.Group.BillingMethods[0] != mak.AppKey.BillingMethods[0] {
-		err = errors.ERR_GROUP_UNSUPPORTED_BILLING_METHOD
+		err = errors.ERR_UNSUPPORTED_BILLING_METHOD_GROUP
 		logger.Error(ctx, err)
 		return err
 	}
@@ -145,7 +151,7 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 	}
 
 	if len(mak.Group.BillingMethods) == 1 && len(mak.ReqModel.Pricing.BillingMethods) == 1 && mak.Group.BillingMethods[0] != mak.ReqModel.Pricing.BillingMethods[0] {
-		err = errors.ERR_MODEL_UNSUPPORTED_BILLING_METHOD
+		err = errors.ERR_UNSUPPORTED_BILLING_METHOD_MODEL
 		logger.Error(ctx, err)
 		return err
 	}

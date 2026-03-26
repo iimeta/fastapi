@@ -264,7 +264,7 @@ func (s *sModel) GetModelByGroup(ctx context.Context, m string, group *model.Gro
 	}
 
 	if isUnsupportedBillingMethod {
-		err = errors.ERR_MODEL_UNSUPPORTED_BILLING_METHOD
+		err = errors.ERR_UNSUPPORTED_BILLING_METHOD_MODEL
 		logger.Error(ctx, err)
 		return nil, err
 	}

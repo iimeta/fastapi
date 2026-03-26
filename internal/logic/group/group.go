@@ -186,7 +186,7 @@ func (s *sGroup) GetCache(ctx context.Context, id string) (*model.Group, error) 
 	}
 
 	if len(groups) == 0 {
-		return nil, errors.New("group is nil")
+		return nil, errors.ERR_GROUP_IS_NIL
 	}
 
 	return groups[0], nil
@@ -209,7 +209,7 @@ func (s *sGroup) GetCacheList(ctx context.Context, ids ...string) ([]*model.Grou
 	}
 
 	if len(items) == 0 {
-		return nil, errors.New("groups is nil")
+		return nil, errors.ERR_GROUP_IS_NIL
 	}
 
 	return items, nil
@@ -349,14 +349,23 @@ func (s *sGroup) PickGroupAndModel(ctx context.Context, appKey *model.AppKey, m 
 	}
 
 	if group != nil && group.Status == 1 {
+
 		if reqModel, err = service.Model().GetModelByGroup(ctx, m, group); err != nil && !errors.Is(err, errors.ERR_MODEL_NOT_FOUND) {
+			logger.Error(ctx, err)
+			return
+		} else if reqModel != nil {
+
+			if len(group.BillingMethods) == 1 && len(appKey.BillingMethods) == 1 && group.BillingMethods[0] != appKey.BillingMethods[0] {
+				err = errors.ERR_UNSUPPORTED_BILLING_METHOD_GROUP
+				logger.Error(ctx, err)
+				return nil, nil, err
+			}
+
 			return
 		}
 	}
 
-	if reqModel != nil {
-		return
-	}
+	isUnsupportedBillingMethod := false
 
 	for _, group = range groups {
 
@@ -368,13 +377,20 @@ func (s *sGroup) PickGroupAndModel(ctx context.Context, appKey *model.AppKey, m 
 			return
 		}
 
-		if len(group.BillingMethods) == 1 && len(appKey.BillingMethods) == 1 && !slices.Contains(group.BillingMethods, appKey.BillingMethods[0]) {
+		if len(group.BillingMethods) == 1 && len(appKey.BillingMethods) == 1 && group.BillingMethods[0] != appKey.BillingMethods[0] {
+			isUnsupportedBillingMethod = true
 			continue
 		}
 
 		if reqModel != nil {
 			return
 		}
+	}
+
+	if isUnsupportedBillingMethod {
+		err = errors.ERR_UNSUPPORTED_BILLING_METHOD_GROUP
+		logger.Error(ctx, err)
+		return nil, nil, err
 	}
 
 	return nil, nil, nil
