@@ -292,6 +292,15 @@ func (s *sModelAgent) Pick(ctx context.Context, m *model.Model) (int, *model.Mod
 		return 0, nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT
 	}
 
+	// 已选定模型代理
+	if modelAgentId, yes := service.Session().IsSelectedModelAgent(ctx); yes {
+		for _, modelAgent := range modelAgentList {
+			if modelAgent.Id == modelAgentId {
+				return len(modelAgentList), modelAgent, nil
+			}
+		}
+	}
+
 	filterModelAgentList := make([]*model.ModelAgent, 0)
 	if len(modelAgentList) > 1 {
 		errorModelAgents := service.Session().GetErrorModelAgents(ctx)
@@ -311,15 +320,6 @@ func (s *sModelAgent) Pick(ctx context.Context, m *model.Model) (int, *model.Mod
 
 	if len(filterModelAgentList) == 0 {
 		return 0, nil, errors.ERR_ALL_MODEL_AGENT
-	}
-
-	// 已选定模型代理
-	if modelAgentId, yes := service.Session().IsSelectedModelAgent(ctx); yes {
-		for _, modelAgent := range filterModelAgentList {
-			if modelAgent.Id == modelAgentId {
-				return len(filterModelAgentList), modelAgent, nil
-			}
-		}
 	}
 
 	// 根据计费方式过滤模型代理
@@ -431,6 +431,15 @@ func (s *sModelAgent) PickGroup(ctx context.Context, m *model.Model, group *mode
 		return 0, nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT
 	}
 
+	// 已选定模型代理
+	if modelAgentId, yes := service.Session().IsSelectedModelAgent(ctx); yes {
+		for _, modelAgent := range modelAgentList {
+			if modelAgent.Id == modelAgentId {
+				return len(modelAgentList), modelAgent, nil
+			}
+		}
+	}
+
 	filterModelAgentList := make([]*model.ModelAgent, 0)
 	if len(modelAgentList) > 1 {
 		errorModelAgents := service.Session().GetErrorModelAgents(ctx)
@@ -450,15 +459,6 @@ func (s *sModelAgent) PickGroup(ctx context.Context, m *model.Model, group *mode
 
 	if len(filterModelAgentList) == 0 {
 		return 0, nil, errors.ERR_ALL_MODEL_AGENT
-	}
-
-	// 已选定模型代理
-	if modelAgentId, yes := service.Session().IsSelectedModelAgent(ctx); yes {
-		for _, modelAgent := range filterModelAgentList {
-			if modelAgent.Id == modelAgentId {
-				return len(filterModelAgentList), modelAgent, nil
-			}
-		}
 	}
 
 	// 根据计费方式过滤模型代理

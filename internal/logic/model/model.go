@@ -219,6 +219,7 @@ func (s *sModel) GetModelByGroup(ctx context.Context, m string, group *model.Gro
 	}
 
 	isModelDisabled := false
+	isUnsupportedBillingMethod := false
 
 	for _, groupModel := range groupModels {
 
@@ -226,6 +227,11 @@ func (s *sModel) GetModelByGroup(ctx context.Context, m string, group *model.Gro
 
 			if groupModel.Status == 2 {
 				isModelDisabled = true
+				continue
+			}
+
+			if len(group.BillingMethods) == 1 && len(groupModel.Pricing.BillingMethods) == 1 && group.BillingMethods[0] != groupModel.Pricing.BillingMethods[0] {
+				isUnsupportedBillingMethod = true
 				continue
 			}
 
@@ -242,12 +248,23 @@ func (s *sModel) GetModelByGroup(ctx context.Context, m string, group *model.Gro
 				continue
 			}
 
+			if len(group.BillingMethods) == 1 && len(groupModel.Pricing.BillingMethods) == 1 && group.BillingMethods[0] != groupModel.Pricing.BillingMethods[0] {
+				isUnsupportedBillingMethod = true
+				continue
+			}
+
 			return groupModel, nil
 		}
 	}
 
 	if isModelDisabled {
 		err = errors.ERR_MODEL_DISABLED
+		logger.Error(ctx, err)
+		return nil, err
+	}
+
+	if isUnsupportedBillingMethod {
+		err = errors.ERR_MODEL_UNSUPPORTED_BILLING_METHOD
 		logger.Error(ctx, err)
 		return nil, err
 	}

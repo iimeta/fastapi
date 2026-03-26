@@ -131,8 +131,8 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 		return err
 	}
 
-	if len(mak.Group.BillingMethods) == 1 && len(mak.AppKey.BillingMethods) == 1 && !slices.Contains(mak.Group.BillingMethods, mak.AppKey.BillingMethods[0]) {
-		err = errors.ERR_UNSUPPORTED_BILLING_METHOD
+	if len(mak.Group.BillingMethods) == 1 && len(mak.AppKey.BillingMethods) == 1 && mak.Group.BillingMethods[0] != mak.AppKey.BillingMethods[0] {
+		err = errors.ERR_GROUP_UNSUPPORTED_BILLING_METHOD
 		logger.Error(ctx, err)
 		return err
 	}
@@ -144,8 +144,8 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 		}
 	}
 
-	if len(mak.Group.BillingMethods) == 1 && len(mak.ReqModel.Pricing.BillingMethods) == 1 && !slices.Contains(mak.Group.BillingMethods, mak.ReqModel.Pricing.BillingMethods[0]) {
-		err = errors.ERR_UNSUPPORTED_BILLING_METHOD
+	if len(mak.Group.BillingMethods) == 1 && len(mak.ReqModel.Pricing.BillingMethods) == 1 && mak.Group.BillingMethods[0] != mak.ReqModel.Pricing.BillingMethods[0] {
+		err = errors.ERR_MODEL_UNSUPPORTED_BILLING_METHOD
 		logger.Error(ctx, err)
 		return err
 	}
