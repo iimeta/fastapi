@@ -288,6 +288,10 @@ func middleware(r *ghttp.Request) {
 		}
 	}
 
+	if !config.Cfg.Base.AllowRequestAbort {
+		r.SetCtx(gctx.NeverDone(r.GetCtx()))
+	}
+
 	r.Middleware.Next()
 }
 

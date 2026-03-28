@@ -38,6 +38,7 @@ type Base struct {
 	ModelAgentKeyErrDisable int64         `bson:"model_agent_key_err_disable" json:"model_agent_key_err_disable"` // 模型代理密钥禁用次数
 	ShortTimeout            time.Duration `bson:"short_timeout"               json:"short_timeout"`               // 短连接超时时间, 单位: 秒
 	LongTimeout             time.Duration `bson:"long_timeout"                json:"long_timeout"`                // 长连接超时时间, 单位: 秒
+	AllowRequestAbort       bool          `bson:"allow_request_abort"         json:"allow_request_abort"`         // 允许请求中止
 }
 
 type Midjourney struct {

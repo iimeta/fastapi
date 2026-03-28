@@ -10,6 +10,7 @@ import (
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/gtrace"
+	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi/v2/internal/config"
 	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/errors"
@@ -88,6 +89,9 @@ func SSEServer(ctx context.Context, data string, event ...string) error {
 	builder.WriteString("\n\n")
 
 	if _, err := io.WriteString(rw, builder.String()); err != nil {
+		if !config.Cfg.Base.AllowRequestAbort && isAborted(err) {
+			return nil
+		}
 		logger.Errorf(ctx, "SSEServer data: %s, error: %v", builder.String(), err)
 		return err
 	}
@@ -95,4 +99,14 @@ func SSEServer(ctx context.Context, data string, event ...string) error {
 	flusher.Flush()
 
 	return nil
+}
+
+func isAborted(err error) bool {
+	if err == nil {
+		return false
+	}
+	return errors.Is(err, context.Canceled) ||
+		gstr.Contains(err.Error(), "context deadline exceeded") ||
+		gstr.Contains(err.Error(), "broken pipe") ||
+		gstr.Contains(err.Error(), "aborted")
 }
