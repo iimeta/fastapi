@@ -560,7 +560,12 @@ func (s *sModelAgent) Disabled(ctx context.Context, modelAgent *model.ModelAgent
 	}()
 
 	// 永不禁用
-	if modelAgent.IsNeverDisable {
+	if modelAgent.IsNeverDisable && disabledReason != errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY.(errors.IFastApiError).ErrMessage() {
+		return
+	}
+
+	// 已选定模型代理不禁用
+	if _, yes := service.Session().IsSelectedModelAgent(ctx); yes {
 		return
 	}
 
@@ -733,6 +738,11 @@ func (s *sModelAgent) DisabledKey(ctx context.Context, key *model.Key, disabledR
 
 	// 永不禁用
 	if key.IsNeverDisable {
+		return
+	}
+
+	// 已选定模型代理不禁用
+	if _, yes := service.Session().IsSelectedModelAgent(ctx); yes {
 		return
 	}
 

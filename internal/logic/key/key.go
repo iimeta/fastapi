@@ -263,6 +263,11 @@ func (s *sKey) Disabled(ctx context.Context, key *model.Key, disabledReason stri
 		return
 	}
 
+	// 已选定模型代理不禁用
+	if _, yes := service.Session().IsSelectedModelAgent(ctx); yes {
+		return
+	}
+
 	s.UpdateCache(ctx, nil, &entity.Key{
 		Id:                 key.Id,
 		ProviderId:         key.ProviderId,

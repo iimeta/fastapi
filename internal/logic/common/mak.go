@@ -318,7 +318,7 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 			service.ModelAgent().RecordError(ctx, mak.RealModel, mak.ModelAgent)
 
 			if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY) {
-				service.ModelAgent().Disabled(ctx, mak.ModelAgent, "No available model agent key")
+				service.ModelAgent().Disabled(ctx, mak.ModelAgent, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY.(errors.IFastApiError).ErrMessage())
 			}
 
 			if mak.RealModel.IsEnableFallback {
