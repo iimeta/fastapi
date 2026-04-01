@@ -263,8 +263,8 @@ func (s *sKey) Disabled(ctx context.Context, key *model.Key, disabledReason stri
 		return
 	}
 
-	// 已选定模型代理不禁用
-	if _, yes := service.Session().IsSelectedModelAgent(ctx); yes {
+	// 健康检查不禁用
+	if _, yes := service.Session().IsHealthCheck(ctx); yes {
 		return
 	}
 

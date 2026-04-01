@@ -38,6 +38,7 @@ func (s *sSession) Save(ctx context.Context, secretKey string) error {
 		r.SetCtxVar(consts.USER_ID_KEY, userId)
 		r.SetCtxVar(consts.APP_ID_KEY, appId)
 		r.SetCtxVar(consts.SECRET_KEY, secretKey)
+		r.SetCtxVar(consts.HEALTH_CHECK_HEADER, r.GetHeader(consts.HEALTH_CHECK_HEADER))
 		r.SetCtxVar(consts.MODEL_AGENT_HEADER, r.GetHeader(consts.MODEL_AGENT_HEADER))
 	}
 
@@ -236,6 +237,14 @@ func (s *sSession) GetErrorKeys(ctx context.Context) []string {
 	}
 
 	return keys.([]string)
+}
+
+// 是否健康检查
+func (s *sSession) IsHealthCheck(ctx context.Context) (string, bool) {
+
+	modelAgentId := ctx.Value(consts.HEALTH_CHECK_HEADER)
+
+	return modelAgentId.(string), modelAgentId != ""
 }
 
 // 是否已选定模型代理

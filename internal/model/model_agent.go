@@ -13,9 +13,9 @@ type ModelAgent struct {
 	IsEnableModelReplace  bool     `json:"is_enable_model_replace,omitempty"`  // 是否启用模型替换
 	ReplaceModels         []string `json:"replace_models,omitempty"`           // 替换模型
 	TargetModels          []string `json:"target_models,omitempty"`            // 目标模型
-	IsEnableHealthCheck   bool     `bson:"is_enable_health_check,omitempty"`   // 是否启用健康检查
-	IsRemoveAbnormalModel bool     `bson:"is_remove_abnormal_model,omitempty"` // 是否移除异常模型
-	AbnormalModels        []string `bson:"abnormal_models,omitempty"`          // 异常模型
+	IsEnableHealthCheck   bool     `json:"is_enable_health_check,omitempty"`   // 是否启用健康检查
+	IsRemoveAbnormalModel bool     `json:"is_remove_abnormal_model,omitempty"` // 是否移除异常模型
+	AbnormalModels        []string `json:"abnormal_models,omitempty"`          // 异常模型
 	IsNeverDisable        bool     `json:"is_never_disable,omitempty"`         // 是否永不禁用
 	LbStrategy            int      `json:"lb_strategy,omitempty"`              // 密钥负载均衡策略[1:轮询, 2:权重]
 	Remark                string   `json:"remark,omitempty"`                   // 备注

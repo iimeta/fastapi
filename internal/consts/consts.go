@@ -22,10 +22,11 @@ const (
 )
 
 const (
-	DEFAULT_MODEL      = "gpt-3.5-turbo"
-	QUOTA_DEFAULT_UNIT = 1000000.0 // $1 = 1M Tokens
-	SERVERS_KEY        = "CORE:SERVERS"
-	MODEL_AGENT_HEADER = "X-Model-Agent"
+	DEFAULT_MODEL       = "gpt-3.5-turbo"
+	QUOTA_DEFAULT_UNIT  = 1000000.0 // $1 = 1M Tokens
+	SERVERS_KEY         = "CORE:SERVERS"
+	HEALTH_CHECK_HEADER = "X-Health-Check"
+	MODEL_AGENT_HEADER  = "X-Model-Agent"
 )
 
 const (

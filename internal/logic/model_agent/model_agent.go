@@ -289,8 +289,8 @@ func (s *sModelAgent) Pick(ctx context.Context, m *model.Model) (int, *model.Mod
 		}
 	}
 
-	// 已选定模型代理
-	if modelAgentId, yes := service.Session().IsSelectedModelAgent(ctx); yes {
+	// 模型代理健康检查
+	if modelAgentId, yes := service.Session().IsHealthCheck(ctx); yes {
 		for _, modelAgent := range modelAgents {
 			if modelAgent.Id == modelAgentId {
 				return len(modelAgents), modelAgent, nil
@@ -425,8 +425,8 @@ func (s *sModelAgent) PickGroup(ctx context.Context, m *model.Model, group *mode
 		return 0, nil, errors.ERR_GROUP_NO_AVAILABLE_MODEL_AGENT
 	}
 
-	// 已选定模型代理
-	if modelAgentId, yes := service.Session().IsSelectedModelAgent(ctx); yes {
+	// 模型代理健康检查
+	if modelAgentId, yes := service.Session().IsHealthCheck(ctx); yes {
 		for _, modelAgent := range modelAgentList {
 			if modelAgent.Id == modelAgentId {
 				return len(modelAgentList), modelAgent, nil
@@ -569,12 +569,12 @@ func (s *sModelAgent) Disabled(ctx context.Context, modelAgent *model.ModelAgent
 	}()
 
 	// 永不禁用
-	if modelAgent.IsNeverDisable && disabledReason != errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY.(errors.IFastApiError).ErrMessage() {
+	if modelAgent.IsNeverDisable {
 		return
 	}
 
-	// 已选定模型代理不禁用
-	if _, yes := service.Session().IsSelectedModelAgent(ctx); yes {
+	// 健康检查不禁用
+	if _, yes := service.Session().IsHealthCheck(ctx); yes {
 		return
 	}
 
@@ -750,8 +750,8 @@ func (s *sModelAgent) DisabledKey(ctx context.Context, key *model.Key, disabledR
 		return
 	}
 
-	// 已选定模型代理不禁用
-	if _, yes := service.Session().IsSelectedModelAgent(ctx); yes {
+	// 健康检查不禁用
+	if _, yes := service.Session().IsHealthCheck(ctx); yes {
 		return
 	}
 
