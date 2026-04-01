@@ -62,20 +62,23 @@ func (s *sModelAgent) GetById(ctx context.Context, id string) (*model.ModelAgent
 	}
 
 	return &model.ModelAgent{
-		Id:                   modelAgent.Id,
-		ProviderId:           modelAgent.ProviderId,
-		Name:                 modelAgent.Name,
-		BaseUrl:              modelAgent.BaseUrl,
-		Path:                 modelAgent.Path,
-		Weight:               modelAgent.Weight,
-		BillingMethods:       modelAgent.BillingMethods,
-		Models:               modelAgent.Models,
-		IsEnableModelReplace: modelAgent.IsEnableModelReplace,
-		ReplaceModels:        modelAgent.ReplaceModels,
-		TargetModels:         modelAgent.TargetModels,
-		IsNeverDisable:       modelAgent.IsNeverDisable,
-		LbStrategy:           modelAgent.LbStrategy,
-		Status:               modelAgent.Status,
+		Id:                    modelAgent.Id,
+		ProviderId:            modelAgent.ProviderId,
+		Name:                  modelAgent.Name,
+		BaseUrl:               modelAgent.BaseUrl,
+		Path:                  modelAgent.Path,
+		Weight:                modelAgent.Weight,
+		BillingMethods:        modelAgent.BillingMethods,
+		Models:                modelAgent.Models,
+		IsEnableModelReplace:  modelAgent.IsEnableModelReplace,
+		ReplaceModels:         modelAgent.ReplaceModels,
+		TargetModels:          modelAgent.TargetModels,
+		IsEnableHealthCheck:   modelAgent.IsEnableHealthCheck,
+		IsRemoveAbnormalModel: modelAgent.IsRemoveAbnormalModel,
+		AbnormalModels:        modelAgent.AbnormalModels,
+		IsNeverDisable:        modelAgent.IsNeverDisable,
+		LbStrategy:            modelAgent.LbStrategy,
+		Status:                modelAgent.Status,
 	}, nil
 }
 
@@ -102,20 +105,23 @@ func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAge
 	items := make([]*model.ModelAgent, 0)
 	for _, result := range results {
 		items = append(items, &model.ModelAgent{
-			Id:                   result.Id,
-			ProviderId:           result.ProviderId,
-			Name:                 result.Name,
-			BaseUrl:              result.BaseUrl,
-			Path:                 result.Path,
-			Weight:               result.Weight,
-			BillingMethods:       result.BillingMethods,
-			Models:               result.Models,
-			IsEnableModelReplace: result.IsEnableModelReplace,
-			ReplaceModels:        result.ReplaceModels,
-			TargetModels:         result.TargetModels,
-			IsNeverDisable:       result.IsNeverDisable,
-			LbStrategy:           result.LbStrategy,
-			Status:               result.Status,
+			Id:                    result.Id,
+			ProviderId:            result.ProviderId,
+			Name:                  result.Name,
+			BaseUrl:               result.BaseUrl,
+			Path:                  result.Path,
+			Weight:                result.Weight,
+			BillingMethods:        result.BillingMethods,
+			Models:                result.Models,
+			IsEnableModelReplace:  result.IsEnableModelReplace,
+			ReplaceModels:         result.ReplaceModels,
+			TargetModels:          result.TargetModels,
+			IsEnableHealthCheck:   result.IsEnableHealthCheck,
+			IsRemoveAbnormalModel: result.IsRemoveAbnormalModel,
+			AbnormalModels:        result.AbnormalModels,
+			IsNeverDisable:        result.IsNeverDisable,
+			LbStrategy:            result.LbStrategy,
+			Status:                result.Status,
 		})
 	}
 
@@ -141,20 +147,23 @@ func (s *sModelAgent) ListAll(ctx context.Context) ([]*model.ModelAgent, error) 
 	items := make([]*model.ModelAgent, 0)
 	for _, result := range results {
 		items = append(items, &model.ModelAgent{
-			Id:                   result.Id,
-			ProviderId:           result.ProviderId,
-			Name:                 result.Name,
-			BaseUrl:              result.BaseUrl,
-			Path:                 result.Path,
-			Weight:               result.Weight,
-			BillingMethods:       result.BillingMethods,
-			Models:               result.Models,
-			IsEnableModelReplace: result.IsEnableModelReplace,
-			ReplaceModels:        result.ReplaceModels,
-			TargetModels:         result.TargetModels,
-			IsNeverDisable:       result.IsNeverDisable,
-			LbStrategy:           result.LbStrategy,
-			Status:               result.Status,
+			Id:                    result.Id,
+			ProviderId:            result.ProviderId,
+			Name:                  result.Name,
+			BaseUrl:               result.BaseUrl,
+			Path:                  result.Path,
+			Weight:                result.Weight,
+			BillingMethods:        result.BillingMethods,
+			Models:                result.Models,
+			IsEnableModelReplace:  result.IsEnableModelReplace,
+			ReplaceModels:         result.ReplaceModels,
+			TargetModels:          result.TargetModels,
+			IsEnableHealthCheck:   result.IsEnableHealthCheck,
+			IsRemoveAbnormalModel: result.IsRemoveAbnormalModel,
+			AbnormalModels:        result.AbnormalModels,
+			IsNeverDisable:        result.IsNeverDisable,
+			LbStrategy:            result.LbStrategy,
+			Status:                result.Status,
 		})
 	}
 
@@ -280,6 +289,15 @@ func (s *sModelAgent) Pick(ctx context.Context, m *model.Model) (int, *model.Mod
 		}
 	}
 
+	// 已选定模型代理
+	if modelAgentId, yes := service.Session().IsSelectedModelAgent(ctx); yes {
+		for _, modelAgent := range modelAgents {
+			if modelAgent.Id == modelAgentId {
+				return len(modelAgents), modelAgent, nil
+			}
+		}
+	}
+
 	modelAgentList := make([]*model.ModelAgent, 0)
 	for _, modelAgent := range modelAgents {
 		// 过滤被禁用的模型代理
@@ -290,15 +308,6 @@ func (s *sModelAgent) Pick(ctx context.Context, m *model.Model) (int, *model.Mod
 
 	if len(modelAgentList) == 0 {
 		return 0, nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT
-	}
-
-	// 已选定模型代理
-	if modelAgentId, yes := service.Session().IsSelectedModelAgent(ctx); yes {
-		for _, modelAgent := range modelAgentList {
-			if modelAgent.Id == modelAgentId {
-				return len(modelAgentList), modelAgent, nil
-			}
-		}
 	}
 
 	filterModelAgentList := make([]*model.ModelAgent, 0)
@@ -407,13 +416,22 @@ func (s *sModelAgent) PickGroup(ctx context.Context, m *model.Model, group *mode
 	modelAgentList := make([]*model.ModelAgent, 0)
 	for _, modelAgent := range modelAgents {
 		// 过滤未绑定此模型的模型代理
-		if slices.Contains(modelAgent.Models, m.Id) {
+		if slices.Contains(modelAgent.Models, m.Id) || slices.Contains(modelAgent.AbnormalModels, m.Id) {
 			modelAgentList = append(modelAgentList, modelAgent)
 		}
 	}
 
 	if len(modelAgentList) == 0 {
 		return 0, nil, errors.ERR_GROUP_NO_AVAILABLE_MODEL_AGENT
+	}
+
+	// 已选定模型代理
+	if modelAgentId, yes := service.Session().IsSelectedModelAgent(ctx); yes {
+		for _, modelAgent := range modelAgentList {
+			if modelAgent.Id == modelAgentId {
+				return len(modelAgentList), modelAgent, nil
+			}
+		}
 	}
 
 	i := 0
@@ -429,15 +447,6 @@ func (s *sModelAgent) PickGroup(ctx context.Context, m *model.Model, group *mode
 
 	if len(modelAgentList) == 0 {
 		return 0, nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT
-	}
-
-	// 已选定模型代理
-	if modelAgentId, yes := service.Session().IsSelectedModelAgent(ctx); yes {
-		for _, modelAgent := range modelAgentList {
-			if modelAgent.Id == modelAgentId {
-				return len(modelAgentList), modelAgent, nil
-			}
-		}
 	}
 
 	filterModelAgentList := make([]*model.ModelAgent, 0)
@@ -818,20 +827,23 @@ func (s *sModelAgent) AddCache(ctx context.Context, newData *model.ModelAgent) {
 	}()
 
 	if err := s.SaveCacheList(ctx, []*model.ModelAgent{{
-		Id:                   newData.Id,
-		ProviderId:           newData.ProviderId,
-		Name:                 newData.Name,
-		BaseUrl:              newData.BaseUrl,
-		Path:                 newData.Path,
-		Weight:               newData.Weight,
-		BillingMethods:       newData.BillingMethods,
-		Models:               newData.Models,
-		IsEnableModelReplace: newData.IsEnableModelReplace,
-		ReplaceModels:        newData.ReplaceModels,
-		TargetModels:         newData.TargetModels,
-		IsNeverDisable:       newData.IsNeverDisable,
-		LbStrategy:           newData.LbStrategy,
-		Status:               newData.Status,
+		Id:                    newData.Id,
+		ProviderId:            newData.ProviderId,
+		Name:                  newData.Name,
+		BaseUrl:               newData.BaseUrl,
+		Path:                  newData.Path,
+		Weight:                newData.Weight,
+		BillingMethods:        newData.BillingMethods,
+		Models:                newData.Models,
+		IsEnableModelReplace:  newData.IsEnableModelReplace,
+		ReplaceModels:         newData.ReplaceModels,
+		TargetModels:          newData.TargetModels,
+		IsEnableHealthCheck:   newData.IsEnableHealthCheck,
+		IsRemoveAbnormalModel: newData.IsRemoveAbnormalModel,
+		AbnormalModels:        newData.AbnormalModels,
+		IsNeverDisable:        newData.IsNeverDisable,
+		LbStrategy:            newData.LbStrategy,
+		Status:                newData.Status,
 	}}); err != nil {
 		logger.Error(ctx, err)
 	}
@@ -855,22 +867,25 @@ func (s *sModelAgent) UpdateCache(ctx context.Context, oldData *entity.ModelAgen
 	}()
 
 	if err := s.SaveCacheList(ctx, []*model.ModelAgent{{
-		Id:                   newData.Id,
-		ProviderId:           newData.ProviderId,
-		Name:                 newData.Name,
-		BaseUrl:              newData.BaseUrl,
-		Path:                 newData.Path,
-		Weight:               newData.Weight,
-		BillingMethods:       newData.BillingMethods,
-		Models:               newData.Models,
-		IsEnableModelReplace: newData.IsEnableModelReplace,
-		ReplaceModels:        newData.ReplaceModels,
-		TargetModels:         newData.TargetModels,
-		IsNeverDisable:       newData.IsNeverDisable,
-		LbStrategy:           newData.LbStrategy,
-		Status:               newData.Status,
-		IsAutoDisabled:       newData.IsAutoDisabled,
-		AutoDisabledReason:   newData.AutoDisabledReason,
+		Id:                    newData.Id,
+		ProviderId:            newData.ProviderId,
+		Name:                  newData.Name,
+		BaseUrl:               newData.BaseUrl,
+		Path:                  newData.Path,
+		Weight:                newData.Weight,
+		BillingMethods:        newData.BillingMethods,
+		Models:                newData.Models,
+		IsEnableModelReplace:  newData.IsEnableModelReplace,
+		ReplaceModels:         newData.ReplaceModels,
+		TargetModels:          newData.TargetModels,
+		IsEnableHealthCheck:   newData.IsEnableHealthCheck,
+		IsRemoveAbnormalModel: newData.IsRemoveAbnormalModel,
+		AbnormalModels:        newData.AbnormalModels,
+		IsNeverDisable:        newData.IsNeverDisable,
+		LbStrategy:            newData.LbStrategy,
+		Status:                newData.Status,
+		IsAutoDisabled:        newData.IsAutoDisabled,
+		AutoDisabledReason:    newData.AutoDisabledReason,
 	}}); err != nil {
 		logger.Error(ctx, err)
 	}
