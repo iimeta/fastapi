@@ -240,13 +240,13 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 
 						if mak.RealModel.IsEnableFallback {
 
-							if mak.RealModel.FallbackConfig.ModelAgent != "" {
+							if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.FallbackModelAgent == nil {
 								if mak.FallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); mak.FallbackModelAgent != nil {
 									return mak.InitMAK(ctx)
 								}
 							}
 
-							if mak.RealModel.FallbackConfig.Model != "" {
+							if mak.RealModel.FallbackConfig.Model != "" && mak.FallbackModel == nil {
 								if mak.FallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); mak.FallbackModel != nil {
 									return mak.InitMAK(ctx)
 								}
@@ -287,13 +287,13 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 
 					if mak.RealModel.IsEnableFallback {
 
-						if mak.RealModel.FallbackConfig.ModelAgent != "" {
+						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.FallbackModelAgent == nil {
 							if mak.FallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); mak.FallbackModelAgent != nil {
 								return mak.InitMAK(ctx)
 							}
 						}
 
-						if mak.RealModel.FallbackConfig.Model != "" {
+						if mak.RealModel.FallbackConfig.Model != "" && mak.FallbackModel == nil {
 							if mak.FallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); mak.FallbackModel != nil {
 								return mak.InitMAK(ctx)
 							}
@@ -323,13 +323,13 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 
 			if mak.RealModel.IsEnableFallback {
 
-				if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
+				if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id && mak.FallbackModelAgent == nil {
 					if mak.FallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); mak.FallbackModelAgent != nil {
 						return mak.InitMAK(ctx)
 					}
 				}
 
-				if mak.RealModel.FallbackConfig.Model != "" {
+				if mak.RealModel.FallbackConfig.Model != "" && mak.FallbackModel == nil {
 					if mak.FallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); mak.FallbackModel != nil {
 						return mak.InitMAK(ctx)
 					}
@@ -346,13 +346,13 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 
 			if mak.RealModel.IsEnableFallback {
 
-				if mak.RealModel.FallbackConfig.ModelAgent != "" {
+				if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.FallbackModelAgent == nil {
 					if mak.FallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); mak.FallbackModelAgent != nil {
 						return mak.InitMAK(ctx)
 					}
 				}
 
-				if mak.RealModel.FallbackConfig.Model != "" {
+				if mak.RealModel.FallbackConfig.Model != "" && mak.FallbackModel == nil {
 					if mak.FallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); mak.FallbackModel != nil {
 						return mak.InitMAK(ctx)
 					}

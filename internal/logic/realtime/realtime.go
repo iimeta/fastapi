@@ -153,7 +153,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 
 					if mak.RealModel.IsEnableFallback {
 
-						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
+						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id && fallbackModelAgent == nil {
 							if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
 								retryInfo = &mcommon.Retry{
 									IsRetry:    true,
@@ -164,7 +164,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 							}
 						}
 
-						if mak.RealModel.FallbackConfig.Model != "" {
+						if mak.RealModel.FallbackConfig.Model != "" && fallbackModel == nil {
 							if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
 								retryInfo = &mcommon.Retry{
 									IsRetry:    true,

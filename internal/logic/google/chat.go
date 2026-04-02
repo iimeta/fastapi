@@ -203,7 +203,7 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 
 					if mak.RealModel.IsEnableFallback {
 
-						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
+						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id && fallbackModelAgent == nil {
 							if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
 								retryInfo = &mcommon.Retry{
 									IsRetry:    true,
@@ -214,7 +214,7 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 							}
 						}
 
-						if mak.RealModel.FallbackConfig.Model != "" {
+						if mak.RealModel.FallbackConfig.Model != "" && fallbackModel == nil {
 							if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
 								retryInfo = &mcommon.Retry{
 									IsRetry:    true,
@@ -449,7 +449,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 
 					if mak.RealModel.IsEnableFallback {
 
-						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
+						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id && fallbackModelAgent == nil {
 							if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
 								retryInfo = &mcommon.Retry{
 									IsRetry:    true,
@@ -460,7 +460,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 							}
 						}
 
-						if mak.RealModel.FallbackConfig.Model != "" {
+						if mak.RealModel.FallbackConfig.Model != "" && fallbackModel == nil {
 							if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
 								retryInfo = &mcommon.Retry{
 									IsRetry:    true,
@@ -575,7 +575,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 
 						if mak.RealModel.IsEnableFallback {
 
-							if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
+							if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id && fallbackModelAgent == nil {
 								if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
 									retryInfo = &mcommon.Retry{
 										IsRetry:    true,
@@ -586,7 +586,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 								}
 							}
 
-							if mak.RealModel.FallbackConfig.Model != "" {
+							if mak.RealModel.FallbackConfig.Model != "" && fallbackModel == nil {
 								if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
 									retryInfo = &mcommon.Retry{
 										IsRetry:    true,

@@ -124,7 +124,7 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 
 					if mak.RealModel.IsEnableFallback {
 
-						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
+						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id && fallbackModelAgent == nil {
 							if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
 								retryInfo = &mcommon.Retry{
 									IsRetry:    true,
@@ -135,7 +135,7 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 							}
 						}
 
-						if mak.RealModel.FallbackConfig.Model != "" {
+						if mak.RealModel.FallbackConfig.Model != "" && fallbackModel == nil {
 							if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
 								retryInfo = &mcommon.Retry{
 									IsRetry:    true,
@@ -264,7 +264,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 
 					if mak.RealModel.IsEnableFallback {
 
-						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id {
+						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id && fallbackModelAgent == nil {
 							if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
 								retryInfo = &mcommon.Retry{
 									IsRetry:    true,
@@ -275,7 +275,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 							}
 						}
 
-						if mak.RealModel.FallbackConfig.Model != "" {
+						if mak.RealModel.FallbackConfig.Model != "" && fallbackModel == nil {
 							if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
 								retryInfo = &mcommon.Retry{
 									IsRetry:    true,
