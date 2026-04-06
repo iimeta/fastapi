@@ -27,3 +27,14 @@ type ResponsesChatCompletionsReq struct {
 type ResponsesChatCompletionsRes struct {
 	g.Meta `mime:"application/json" example:"json"`
 }
+
+// ResponsesCompact接口请求参数
+type ResponsesCompactReq struct {
+	g.Meta `path:"/responses/compact" tags:"openai" method:"post" summary:"ResponsesCompact接口"`
+	Model  string `json:"model"`
+}
+
+// ResponsesCompact接口响应参数
+type ResponsesCompactRes struct {
+	g.Meta `mime:"application/json" example:"json"`
+}
