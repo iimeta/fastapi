@@ -22,6 +22,7 @@ type AfterHandler struct {
 	ServiceTier            string
 	Action                 string
 	VideoId                string
+	VideoMode              string
 	IsFile                 bool
 	FileId                 string
 	FileRes                smodel.FileResponse

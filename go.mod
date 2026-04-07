@@ -2,6 +2,8 @@ module github.com/iimeta/fastapi/v2
 
 go 1.25
 
+replace github.com/iimeta/fastapi-sdk/v2 => ../fastapi-sdk
+
 require (
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/gogf/gf/contrib/nosql/redis/v2 v2.10.0

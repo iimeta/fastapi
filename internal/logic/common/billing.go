@@ -676,6 +676,7 @@ func videoGeneration(ctx context.Context, mak *MAK, billingData *common.BillingD
 	}
 
 	var (
+		mode   = billingData.VideoMode
 		size   = billingData.Size
 		width  int
 		height int
@@ -710,8 +711,10 @@ func videoGeneration(ctx context.Context, mak *MAK, billingData *common.BillingD
 	for _, videoGeneration := range mak.ReqModel.Pricing.VideoGeneration {
 
 		if videoGeneration.Width == width && videoGeneration.Height == height {
-			spend.VideoGeneration.Pricing = videoGeneration
-			break
+			if mode == "" || videoGeneration.Mode == "" || videoGeneration.Mode == mode {
+				spend.VideoGeneration.Pricing = videoGeneration
+				break
+			}
 		}
 
 		if videoGeneration.IsDefault {

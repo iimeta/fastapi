@@ -82,6 +82,12 @@ func (s *sVideo) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 					EnterTime:    enterTime,
 				}
 
+				if params.InputReference != nil {
+					afterHandler.VideoMode = "has_video_input"
+				} else {
+					afterHandler.VideoMode = "no_video_input"
+				}
+
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {

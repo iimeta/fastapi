@@ -32,6 +32,7 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/controller/moderation"
 	"github.com/iimeta/fastapi/v2/internal/controller/openai"
 	"github.com/iimeta/fastapi/v2/internal/controller/video"
+	"github.com/iimeta/fastapi/v2/internal/controller/volcengine"
 	"github.com/iimeta/fastapi/v2/internal/errors"
 	"github.com/iimeta/fastapi/v2/internal/model"
 	"github.com/iimeta/fastapi/v2/internal/service"
@@ -134,6 +135,12 @@ var (
 				v1.Group("/batches", func(g *ghttp.RouterGroup) {
 					g.Bind(
 						batch.NewV1(),
+					)
+				})
+
+				v1.Group("/contents/generations", func(g *ghttp.RouterGroup) {
+					g.Bind(
+						volcengine.NewV1(),
 					)
 				})
 			})
