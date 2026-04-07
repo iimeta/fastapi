@@ -579,3 +579,170 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 		}
 	}
 }
+
+// ResponsesCompact
+func (s *sOpenAI) ResponsesCompact(ctx context.Context, request *ghttp.Request, isChatCompletions bool, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.OpenAIResponsesRes, err error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sOpenAI ResponsesCompact time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	var (
+		params = common.ConvResponsesToChatCompletionsRequest(request, isChatCompletions)
+		mak    = &common.MAK{
+			Model:              params.Model,
+			Messages:           params.Messages,
+			FallbackModelAgent: fallbackModelAgent,
+			FallbackModel:      fallbackModel,
+		}
+		retryInfo *mcommon.Retry
+	)
+
+	defer func() {
+
+		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
+		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
+		chatCompletionResponse := common.ConvResponsesToChatCompletionsResponse(ctx, response)
+
+		if isChatCompletions {
+			response.ResponseBytes = gjson.MustEncode(chatCompletionResponse)
+		}
+
+		if mak.ReqModel != nil && mak.RealModel != nil {
+
+			// 替换成调用的模型
+			if mak.ReqModel.IsEnableForward {
+				chatCompletionResponse.Model = mak.ReqModel.Model
+			}
+
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+					ChatCompletionReq: params,
+					ChatCompletionRes: chatCompletionResponse,
+					Usage:             chatCompletionResponse.Usage,
+					Error:             err,
+					RetryInfo:         retryInfo,
+					ConnTime:          chatCompletionResponse.ConnTime,
+					Duration:          chatCompletionResponse.Duration,
+					TotalTime:         chatCompletionResponse.TotalTime,
+					InternalTime:      internalTime,
+					EnterTime:         enterTime,
+				})
+
+			}); err != nil {
+				logger.Error(ctx, err)
+			}
+		}
+	}()
+
+	if err = mak.InitMAK(ctx); err != nil {
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	body := request.GetBody()
+
+	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
+		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
+			if replaceModel == params.Model {
+				logger.Infof(ctx, "sOpenAI ResponsesCompact params.Model: %s replaced %s", params.Model, mak.ModelAgent.TargetModels[i])
+
+				params.Model = mak.ModelAgent.TargetModels[i]
+				mak.RealModel.Model = params.Model
+
+				data := make(map[string]any)
+				if err = json.Unmarshal(body, &data); err != nil {
+					logger.Error(ctx, err)
+					return response, err
+				}
+
+				if _, ok := data["model"]; ok {
+					data["model"] = mak.RealModel.Model
+				}
+
+				body = gjson.MustEncode(data)
+
+				break
+			}
+		}
+	}
+
+	if isChatCompletions {
+		body = gjson.MustEncode(common.ConvChatCompletionsToResponsesRequest(ctx, body))
+	}
+
+	response, err = common.NewAdapterOpenAI(ctx, mak, false).ResponsesCompact(ctx, body)
+	if err != nil {
+		logger.Error(ctx, err)
+
+		// 记录错误次数和禁用
+		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
+
+		isRetry, isDisabled := common.IsNeedRetry(err)
+
+		if isDisabled {
+			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+				if mak.RealModel.IsEnableModelAgent {
+					service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
+				} else {
+					service.Key().Disabled(ctx, mak.Key, err.Error())
+				}
+			}, nil); err != nil {
+				logger.Error(ctx, err)
+			}
+		}
+
+		if isRetry {
+
+			if common.IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
+
+				if service.Session().GetModelAgentBillingMethod(ctx) == 2 && slices.Contains(mak.RealModel.Pricing.BillingMethods, 1) {
+					service.Session().SaveModelAgentBillingMethod(ctx, 1)
+					retry = []int{}
+				} else {
+
+					if mak.RealModel.IsEnableFallback {
+
+						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id && fallbackModelAgent == nil {
+							if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
+								retryInfo = &mcommon.Retry{
+									IsRetry:    true,
+									RetryCount: len(retry),
+									ErrMsg:     err.Error(),
+								}
+								return s.ResponsesCompact(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel)
+							}
+						}
+
+						if mak.RealModel.FallbackConfig.Model != "" && fallbackModel == nil {
+							if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
+								retryInfo = &mcommon.Retry{
+									IsRetry:    true,
+									RetryCount: len(retry),
+									ErrMsg:     err.Error(),
+								}
+								return s.ResponsesCompact(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, nil, fallbackModel)
+							}
+						}
+					}
+
+					return response, err
+				}
+			}
+
+			retryInfo = &mcommon.Retry{
+				IsRetry:    true,
+				RetryCount: len(retry),
+				ErrMsg:     err.Error(),
+			}
+
+			return s.ResponsesCompact(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+		}
+
+		return response, err
+	}
+
+	return response, nil
+}
