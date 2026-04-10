@@ -47,6 +47,13 @@ const (
 )
 
 const (
+	SMART_HEALTH_AGENT_SUCCESS_KEY = "smart:health:agent:%s:success"    // 代理成功计数
+	SMART_HEALTH_AGENT_FAIL_KEY    = "smart:health:agent:%s:fail"       // 代理失败计数
+	SMART_HEALTH_MODEL_SUCCESS_KEY = "smart:health:model:%s:%s:success" // 模型成功计数
+	SMART_HEALTH_MODEL_FAIL_KEY    = "smart:health:model:%s:%s:fail"    // 模型失败计数
+)
+
+const (
 	ACTION_CREATE   = "create"
 	ACTION_UPDATE   = "update"
 	ACTION_DELETE   = "delete"

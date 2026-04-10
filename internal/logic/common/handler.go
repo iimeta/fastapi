@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
+	"github.com/iimeta/fastapi/v2/internal/config"
 	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/dao"
 	"github.com/iimeta/fastapi/v2/internal/model"
@@ -16,6 +18,7 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/model/do"
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/logger"
+	"github.com/iimeta/fastapi/v2/utility/redis"
 )
 
 // 前置处理器
@@ -24,6 +27,21 @@ func BeforeHandler(ctx context.Context, before *mcommon.BeforeHandler) {
 
 // 后置处理器
 func AfterHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
+
+	// 智能检查: 在所有 handler 完成后记录调用结果
+	defer func() {
+
+		if after.RetryInfo != nil {
+			return // 重试中间状态不记录
+		}
+
+		status := 1
+		if after.Error != nil {
+			status = -1
+		}
+
+		recordSmartHealthCheck(ctx, mak, status)
+	}()
 
 	if after.IsFile {
 		fileHandler(ctx, mak, after)
@@ -669,4 +687,71 @@ func generalHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) 
 		RetryInfo:          after.RetryInfo,
 		Spend:              after.Spend,
 	})
+}
+
+// 记录智能检查计数
+func recordSmartHealthCheck(ctx context.Context, mak *MAK, status int) {
+
+	if config.Cfg.ModelAgentHealthCheckTask == nil || !config.Cfg.ModelAgentHealthCheckTask.Open ||
+		!config.Cfg.ModelAgentHealthCheckTask.SmartCheck || mak.ModelAgent == nil || mak.ModelAgent.Id == "" {
+		return
+	}
+
+	if status != 1 && status != -1 {
+		return
+	}
+
+	// 排除健康检查请求本身
+	if g.RequestFromCtx(ctx).GetHeader(consts.HEALTH_CHECK_HEADER) != "" {
+		return
+	}
+
+	// TTL = 统计周期 * 2 (分钟转秒), 最小 600 秒
+	ttl := int64(config.Cfg.ModelAgentHealthCheckTask.StatPeriod) * 60 * 2
+	if ttl < 600 {
+		ttl = 600
+	}
+
+	agentId := mak.ModelAgent.Id
+
+	// 代理级别计数, TTL 仅在 key 首次创建时设置
+	if status == 1 {
+		key := fmt.Sprintf(consts.SMART_HEALTH_AGENT_SUCCESS_KEY, agentId)
+		if val, _ := redis.Incr(ctx, key); val == 1 {
+			if _, err := redis.Expire(ctx, key, ttl); err != nil {
+				logger.Error(ctx, err)
+			}
+		}
+	} else {
+		key := fmt.Sprintf(consts.SMART_HEALTH_AGENT_FAIL_KEY, agentId)
+		if val, _ := redis.Incr(ctx, key); val == 1 {
+			if _, err := redis.Expire(ctx, key, ttl); err != nil {
+				logger.Error(ctx, err)
+			}
+		}
+	}
+
+	// 模型级别计数
+	modelId := ""
+	if mak.RealModel != nil {
+		modelId = mak.RealModel.Id
+	}
+
+	if modelId != "" {
+		if status == 1 {
+			key := fmt.Sprintf(consts.SMART_HEALTH_MODEL_SUCCESS_KEY, agentId, modelId)
+			if val, _ := redis.Incr(ctx, key); val == 1 {
+				if _, err := redis.Expire(ctx, key, ttl); err != nil {
+					logger.Error(ctx, err)
+				}
+			}
+		} else {
+			key := fmt.Sprintf(consts.SMART_HEALTH_MODEL_FAIL_KEY, agentId, modelId)
+			if val, _ := redis.Incr(ctx, key); val == 1 {
+				if _, err := redis.Expire(ctx, key, ttl); err != nil {
+					logger.Error(ctx, err)
+				}
+			}
+		}
+	}
 }
