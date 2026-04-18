@@ -130,6 +130,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 	response, err = common.NewAdapterOpenAI(ctx, mak, false).Responses(ctx, body)
 	if err != nil {
 		logger.Error(ctx, err)
+		common.HandleSessionKeepFailure(ctx, mak)
 
 		// 记录错误次数和禁用
 		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
@@ -198,6 +199,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 		return response, err
 	}
 
+	common.HandleSessionKeepSuccess(ctx, mak)
 	return response, nil
 }
 
@@ -339,6 +341,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 	response, err := common.NewAdapterOpenAI(ctx, mak, true).ResponsesStream(ctx, body)
 	if err != nil {
 		logger.Error(ctx, err)
+		common.HandleSessionKeepFailure(ctx, mak)
 
 		// 记录错误次数和禁用
 		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
@@ -447,10 +450,12 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 					}
 				}
 
+				common.HandleSessionKeepSuccess(ctx, mak)
 				return nil
 			}
 
 			err = response.Error
+			common.HandleSessionKeepFailure(ctx, mak)
 
 			// 记录错误次数和禁用
 			service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
@@ -676,6 +681,7 @@ func (s *sOpenAI) ResponsesCompact(ctx context.Context, request *ghttp.Request, 
 	response, err = common.NewAdapterOpenAI(ctx, mak, false).ResponsesCompact(ctx, body)
 	if err != nil {
 		logger.Error(ctx, err)
+		common.HandleSessionKeepFailure(ctx, mak)
 
 		// 记录错误次数和禁用
 		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
@@ -744,5 +750,6 @@ func (s *sOpenAI) ResponsesCompact(ctx context.Context, request *ghttp.Request, 
 		return response, err
 	}
 
+	common.HandleSessionKeepSuccess(ctx, mak)
 	return response, nil
 }

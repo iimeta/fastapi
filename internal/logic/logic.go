@@ -26,6 +26,7 @@ import (
 	_ "github.com/iimeta/fastapi/v2/internal/logic/midjourney"
 	_ "github.com/iimeta/fastapi/v2/internal/logic/model"
 	_ "github.com/iimeta/fastapi/v2/internal/logic/model_agent"
+	_ "github.com/iimeta/fastapi/v2/internal/logic/model_agent_session_keep"
 	_ "github.com/iimeta/fastapi/v2/internal/logic/moderation"
 	_ "github.com/iimeta/fastapi/v2/internal/logic/openai"
 	_ "github.com/iimeta/fastapi/v2/internal/logic/provider"

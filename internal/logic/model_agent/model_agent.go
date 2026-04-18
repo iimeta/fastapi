@@ -74,6 +74,8 @@ func (s *sModelAgent) GetById(ctx context.Context, id string) (*model.ModelAgent
 		ReplaceModels:         modelAgent.ReplaceModels,
 		TargetModels:          modelAgent.TargetModels,
 		IsEnableHealthCheck:   modelAgent.IsEnableHealthCheck,
+		IsEnableSessionKeep:   modelAgent.IsEnableSessionKeep,
+		SessionKeepConfig:     modelAgent.SessionKeepConfig,
 		IsRemoveAbnormalModel: modelAgent.IsRemoveAbnormalModel,
 		AbnormalModels:        modelAgent.AbnormalModels,
 		IsNeverDisable:        modelAgent.IsNeverDisable,
@@ -117,6 +119,8 @@ func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAge
 			ReplaceModels:         result.ReplaceModels,
 			TargetModels:          result.TargetModels,
 			IsEnableHealthCheck:   result.IsEnableHealthCheck,
+			IsEnableSessionKeep:   result.IsEnableSessionKeep,
+			SessionKeepConfig:     result.SessionKeepConfig,
 			IsRemoveAbnormalModel: result.IsRemoveAbnormalModel,
 			AbnormalModels:        result.AbnormalModels,
 			IsNeverDisable:        result.IsNeverDisable,
@@ -159,6 +163,8 @@ func (s *sModelAgent) ListAll(ctx context.Context) ([]*model.ModelAgent, error) 
 			ReplaceModels:         result.ReplaceModels,
 			TargetModels:          result.TargetModels,
 			IsEnableHealthCheck:   result.IsEnableHealthCheck,
+			IsEnableSessionKeep:   result.IsEnableSessionKeep,
+			SessionKeepConfig:     result.SessionKeepConfig,
 			IsRemoveAbnormalModel: result.IsRemoveAbnormalModel,
 			AbnormalModels:        result.AbnormalModels,
 			IsNeverDisable:        result.IsNeverDisable,
@@ -330,6 +336,15 @@ func (s *sModelAgent) Pick(ctx context.Context, m *model.Model) (int, *model.Mod
 	if len(filterModelAgentList) == 0 {
 		return 0, nil, errors.ERR_ALL_MODEL_AGENT
 	}
+	if service.Session().GetUserId(ctx) > 0 {
+		if sessionAgentId, ok, sessionErr := service.ModelAgentSessionKeep().Get(ctx, service.Session().GetUserId(ctx), m.Model); sessionErr == nil && ok {
+			for _, modelAgent := range filterModelAgentList {
+				if modelAgent.Id == sessionAgentId && modelAgent.IsEnableSessionKeep {
+					return len(filterModelAgentList), modelAgent, nil
+				}
+			}
+		}
+	}
 
 	// 根据计费方式过滤模型代理
 	if billingMethod := service.Session().GetModelAgentBillingMethod(ctx); billingMethod > 0 {
@@ -468,6 +483,15 @@ func (s *sModelAgent) PickGroup(ctx context.Context, m *model.Model, group *mode
 
 	if len(filterModelAgentList) == 0 {
 		return 0, nil, errors.ERR_ALL_MODEL_AGENT
+	}
+	if service.Session().GetUserId(ctx) > 0 {
+		if sessionAgentId, ok, sessionErr := service.ModelAgentSessionKeep().Get(ctx, service.Session().GetUserId(ctx), m.Model); sessionErr == nil && ok {
+			for _, modelAgent := range filterModelAgentList {
+				if modelAgent.Id == sessionAgentId && modelAgent.IsEnableSessionKeep {
+					return len(filterModelAgentList), modelAgent, nil
+				}
+			}
+		}
 	}
 
 	// 根据计费方式过滤模型代理
