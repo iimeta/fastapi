@@ -269,38 +269,41 @@ func Keys(ctx context.Context, pattern string) ([]string, error) {
 }
 
 func ZAdd(ctx context.Context, key string, score float64, member string) (int64, error) {
+
 	reply, err := master.Do(ctx, "ZADD", key, score, member)
 	if err != nil {
 		return 0, err
 	}
+
 	return reply.Int64(), nil
 }
 
 func ZRem(ctx context.Context, key string, members ...string) (int64, error) {
+
 	args := make([]any, 0, len(members)+1)
 	args = append(args, key)
 	for _, member := range members {
 		args = append(args, member)
 	}
+
 	reply, err := master.Do(ctx, "ZREM", args...)
 	if err != nil {
 		return 0, err
 	}
+
 	return reply.Int64(), nil
 }
 
 func ZRange(ctx context.Context, key string, start, stop int64) ([]string, error) {
-	reply, err := slave.Do(ctx, "ZRANGE", key, start, stop)
+
+	reply, err := slave.ZRange(ctx, key, start, stop)
 	if err != nil {
 		return nil, err
 	}
+
 	return reply.Strings(), nil
 }
 
 func ZCard(ctx context.Context, key string) (int64, error) {
-	reply, err := slave.Do(ctx, "ZCARD", key)
-	if err != nil {
-		return 0, err
-	}
-	return reply.Int64(), nil
+	return slave.ZCard(ctx, key)
 }

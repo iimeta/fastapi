@@ -157,6 +157,16 @@ type ModelAgentHealthCheckTask struct {
 	Key               string        `bson:"key"                 json:"key"`                 // API接口密钥
 }
 
+type ModelAgentSessionKeep struct {
+	Open                bool          `bson:"open"                  json:"open"`                  // 开关
+	Ttl                 time.Duration `bson:"ttl"                   json:"ttl"`                   // 会话保持时长, 单位: 秒
+	FailTtl             time.Duration `bson:"fail_ttl"              json:"fail_ttl"`              // 失败保持时长, 单位: 秒
+	FailSwitchThreshold int64         `bson:"fail_switch_threshold" json:"fail_switch_threshold"` // 失败切换阈值
+	UserLimit           int64         `bson:"user_limit"            json:"user_limit"`            // 单用户上限
+	AgentLimit          int64         `bson:"agent_limit"           json:"agent_limit"`           // 单代理上限
+	GlobalLimit         int64         `bson:"global_limit"          json:"global_limit"`          // 全局总上限
+}
+
 type ServiceUnavailable struct {
 	Open        bool     `bson:"open"         json:"open"`         // 开关
 	IpWhitelist []string `bson:"ip_whitelist" json:"ip_whitelist"` // IP白名单

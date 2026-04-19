@@ -17,8 +17,8 @@ type SysConfig struct {
 	Quota                     *common.Quota                     `bson:"quota,omitempty"`                         // 额度
 	VideoTask                 *common.VideoTask                 `bson:"video_task,omitempty"`                    // 视频任务
 	FileTask                  *common.FileTask                  `bson:"file_task,omitempty"`                     // 文件任务
-	ModelAgentSessionKeep     *common.ModelAgentSessionKeep     `bson:"model_agent_session_keep,omitempty"`      // 会话保持
 	ModelAgentHealthCheckTask *common.ModelAgentHealthCheckTask `bson:"model_agent_health_check_task,omitempty"` // 模型代理健康检查任务
+	ModelAgentSessionKeep     *common.ModelAgentSessionKeep     `bson:"model_agent_session_keep,omitempty"`      // 会话保持
 	ServiceUnavailable        *common.ServiceUnavailable        `bson:"service_unavailable,omitempty"`           // 暂停服务
 	GeneralApi                *common.GeneralApi                `bson:"general_api,omitempty"`                   // 通用API
 	Debug                     *common.Debug                     `bson:"debug,omitempty"`                         // 调试
