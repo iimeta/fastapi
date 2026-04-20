@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"slices"
 	"time"
 
@@ -80,12 +81,18 @@ func (s *sVolcEngine) VideoCreate(ctx context.Context, request *ghttp.Request, f
 					EnterTime:    enterTime,
 				}
 
+				if params.Frames != nil && *params.Frames > 0 {
+					afterHandler.Seconds = int(math.Ceil(float64(*params.Frames) / 24))
+				} else if params.Duration != nil && *params.Duration > 0 {
+					afterHandler.Seconds = *params.Duration
+				}
+
 				// 解析响应获取 VideoId
 				if responseBytes != nil {
 					var res smodel.VolcVideoTaskRes
 					if e := json.Unmarshal(responseBytes, &res); e == nil {
 						afterHandler.VideoId = res.Id
-						if res.Duration != nil {
+						if res.Duration != nil && afterHandler.Seconds == 0 {
 							afterHandler.Seconds = *res.Duration
 						}
 					}

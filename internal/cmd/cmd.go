@@ -161,6 +161,16 @@ var (
 				)
 			})
 
+			s.Group("/api/v3", func(v1 *ghttp.RouterGroup) {
+				v1.Middleware(middlewareHandlerResponse)
+				v1.Middleware(middleware)
+				v1.Group("/contents/generations", func(g *ghttp.RouterGroup) {
+					g.Bind(
+						volcengine.NewV1(),
+					)
+				})
+			})
+
 			s.Group("/{provider}/v1", func(v1 *ghttp.RouterGroup) {
 
 				v1.Middleware(middlewareHandlerResponse)
