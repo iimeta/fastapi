@@ -94,11 +94,11 @@ func HandleSessionKeepSuccess(ctx context.Context, mak *MAK) {
 		return
 	}
 
-	if err := service.ModelAgentSessionKeep().Refresh(ctx, userId, modelName, mak.ModelAgent.Id); err != nil {
+	if err := service.SessionKeepModelAgent().Refresh(ctx, userId, modelName, mak.ModelAgent.Id); err != nil {
 		logger.Error(ctx, err)
 	}
 
-	if err := service.ModelAgentSessionKeep().ClearFail(ctx, userId, modelName, mak.ModelAgent.Id); err != nil {
+	if err := service.SessionKeepModelAgent().ClearFail(ctx, userId, modelName, mak.ModelAgent.Id); err != nil {
 		logger.Error(ctx, err)
 	}
 }
@@ -132,14 +132,14 @@ func HandleSessionKeepFailure(ctx context.Context, mak *MAK) {
 		return
 	}
 
-	failCount, err := service.ModelAgentSessionKeep().RecordFail(ctx, userId, modelName, mak.ModelAgent.Id)
+	failCount, err := service.SessionKeepModelAgent().RecordFail(ctx, userId, modelName, mak.ModelAgent.Id)
 	if err != nil {
 		logger.Error(ctx, err)
 		return
 	}
 
 	if cfg.FailSwitchThreshold > 0 && failCount >= cfg.FailSwitchThreshold {
-		if err = service.ModelAgentSessionKeep().Delete(ctx, userId, modelName, mak.ModelAgent.Id); err != nil {
+		if err = service.SessionKeepModelAgent().Delete(ctx, userId, modelName, mak.ModelAgent.Id); err != nil {
 			logger.Error(ctx, err)
 		}
 	}

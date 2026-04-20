@@ -22,6 +22,15 @@ const (
 )
 
 const (
+	SESSION_KEEP_VALUE_PREFIX     = "session:agent:u:%d:m:%s"
+	SESSION_KEEP_FAIL_PREFIX      = "session:agent:fail:u:%d:m:%s:a:%s"
+	SESSION_KEEP_AGENT_SET_PREFIX = "session:agent:set:%s"
+	SESSION_KEEP_USER_AGENT_SET   = "session:agent:user:set:%d:a:%s"
+	SESSION_KEEP_GLOBAL_SET       = "session:agent:global"
+	SESSION_KEEP_LOCAL_KEY_PREFIX = "session_keep:%d:%s"
+)
+
+const (
 	DEFAULT_MODEL       = "gpt-3.5-turbo"
 	QUOTA_DEFAULT_UNIT  = 1000000.0 // $1 = 1M Tokens
 	SERVERS_KEY         = "CORE:SERVERS"

@@ -338,7 +338,7 @@ func (s *sModelAgent) Pick(ctx context.Context, m *model.Model) (int, *model.Mod
 	}
 
 	if service.Session().GetUserId(ctx) > 0 {
-		if sessionAgentId, ok, sessionErr := service.ModelAgentSessionKeep().Get(ctx, service.Session().GetUserId(ctx), m.Model); sessionErr == nil && ok {
+		if sessionAgentId, ok, sessionErr := service.SessionKeepModelAgent().Get(ctx, service.Session().GetUserId(ctx), m.Model); sessionErr == nil && ok {
 			for _, modelAgent := range filterModelAgentList {
 				if modelAgent.Id == sessionAgentId && modelAgent.IsEnableSessionKeep {
 					return len(filterModelAgentList), modelAgent, nil
@@ -487,7 +487,7 @@ func (s *sModelAgent) PickGroup(ctx context.Context, m *model.Model, group *mode
 	}
 
 	if service.Session().GetUserId(ctx) > 0 {
-		if sessionAgentId, ok, sessionErr := service.ModelAgentSessionKeep().Get(ctx, service.Session().GetUserId(ctx), m.Model); sessionErr == nil && ok {
+		if sessionAgentId, ok, sessionErr := service.SessionKeepModelAgent().Get(ctx, service.Session().GetUserId(ctx), m.Model); sessionErr == nil && ok {
 			for _, modelAgent := range filterModelAgentList {
 				if modelAgent.Id == sessionAgentId && modelAgent.IsEnableSessionKeep {
 					return len(filterModelAgentList), modelAgent, nil

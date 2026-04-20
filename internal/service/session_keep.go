@@ -10,7 +10,7 @@ import (
 )
 
 type (
-	IModelAgentSessionKeep interface {
+	ISessionKeepModelAgent interface {
 		Get(ctx context.Context, userId int, modelName string) (string, bool, error)
 		Set(ctx context.Context, userId int, modelName string, agentId string) error
 		Refresh(ctx context.Context, userId int, modelName string, agentId string) error
@@ -19,23 +19,22 @@ type (
 		DeleteAll(ctx context.Context) (int64, error)
 		RecordFail(ctx context.Context, userId int, modelName string, agentId string) (int64, error)
 		ClearFail(ctx context.Context, userId int, modelName string, agentId string) error
-		ShouldSwitch(ctx context.Context, failCount int64) bool
 		GetAgentCount(ctx context.Context, agentId string) (int64, error)
 		GetGlobalCount(ctx context.Context) (int64, error)
 	}
 )
 
 var (
-	localModelAgentSessionKeep IModelAgentSessionKeep
+	localSessionKeepModelAgent ISessionKeepModelAgent
 )
 
-func ModelAgentSessionKeep() IModelAgentSessionKeep {
-	if localModelAgentSessionKeep == nil {
-		panic("implement not found for interface IModelAgentSessionKeep, forgot register?")
+func SessionKeepModelAgent() ISessionKeepModelAgent {
+	if localSessionKeepModelAgent == nil {
+		panic("implement not found for interface ISessionKeepModelAgent, forgot register?")
 	}
-	return localModelAgentSessionKeep
+	return localSessionKeepModelAgent
 }
 
-func RegisterModelAgentSessionKeep(i IModelAgentSessionKeep) {
-	localModelAgentSessionKeep = i
+func RegisterSessionKeepModelAgent(i ISessionKeepModelAgent) {
+	localSessionKeepModelAgent = i
 }
