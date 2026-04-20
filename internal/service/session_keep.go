@@ -19,8 +19,6 @@ type (
 		DeleteAll(ctx context.Context) (int64, error)
 		RecordFail(ctx context.Context, userId int, modelName string, agentId string) (int64, error)
 		ClearFail(ctx context.Context, userId int, modelName string, agentId string) error
-		GetAgentCount(ctx context.Context, agentId string) (int64, error)
-		GetGlobalCount(ctx context.Context) (int64, error)
 	}
 )
 

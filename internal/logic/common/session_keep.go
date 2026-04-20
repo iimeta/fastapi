@@ -85,7 +85,7 @@ func HandleSessionKeepSuccess(ctx context.Context, mak *MAK) {
 		return
 	}
 
-	modelName := mak.RealModel.Model
+	modelName := mak.RealModel.Name
 	if modelName == "" {
 		modelName = mak.Model
 	}
@@ -123,7 +123,7 @@ func HandleSessionKeepFailure(ctx context.Context, mak *MAK) {
 		return
 	}
 
-	modelName := mak.RealModel.Model
+	modelName := mak.RealModel.Name
 	if modelName == "" {
 		modelName = mak.Model
 	}

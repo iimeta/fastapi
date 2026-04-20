@@ -228,14 +228,6 @@ func (s *sSessionKeepModelAgent) ClearFail(ctx context.Context, userId int, mode
 	return err
 }
 
-func (s *sSessionKeepModelAgent) GetAgentCount(ctx context.Context, agentId string) (int64, error) {
-	return redis.ZCard(ctx, s.redisAgentSetKey(agentId))
-}
-
-func (s *sSessionKeepModelAgent) GetGlobalCount(ctx context.Context) (int64, error) {
-	return redis.ZCard(ctx, s.redisGlobalSetKey())
-}
-
 func (s *sSessionKeepModelAgent) redisValueKey(userId int, modelName string) string {
 	return fmt.Sprintf(consts.SESSION_KEEP_VALUE_PREFIX, userId, modelName)
 }
