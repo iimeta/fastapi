@@ -28,7 +28,6 @@ func BeforeHandler(ctx context.Context, before *mcommon.BeforeHandler) {
 // 后置处理器
 func AfterHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
-	// 智能检查: 在所有 handler 完成后记录调用结果
 	defer func() {
 
 		if after.RetryInfo != nil {
@@ -40,7 +39,11 @@ func AfterHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 			status = -1
 		}
 
+		// 记录智能检查计数
 		recordSmartHealthCheck(ctx, mak, status)
+
+		// 记录会话保持
+		handleSessionKeep(ctx, mak, after)
 	}()
 
 	if after.IsFile {
@@ -754,4 +757,19 @@ func recordSmartHealthCheck(ctx context.Context, mak *MAK, status int) {
 			}
 		}
 	}
+}
+
+// 记录会话保持
+func handleSessionKeep(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
+
+	if after.Error == nil {
+		HandleSessionKeepSuccess(ctx, mak)
+		return
+	}
+
+	if IsAborted(after.Error) {
+		return
+	}
+
+	HandleSessionKeepFailure(ctx, mak)
 }

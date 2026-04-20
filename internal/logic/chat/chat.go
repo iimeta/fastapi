@@ -138,7 +138,6 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 	response, err = common.NewAdapter(ctx, mak, false).ChatCompletions(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
-		common.HandleSessionKeepFailure(ctx, mak)
 
 		// 记录错误次数和禁用
 		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
@@ -207,7 +206,6 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 		return response, err
 	}
 
-	common.HandleSessionKeepSuccess(ctx, mak)
 	return response, nil
 }
 
@@ -316,7 +314,6 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 	response, err := common.NewAdapter(ctx, mak, true).ChatCompletionsStream(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
-		common.HandleSessionKeepFailure(ctx, mak)
 
 		// 记录错误次数和禁用
 		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
@@ -404,12 +401,10 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 					return err
 				}
 
-				common.HandleSessionKeepSuccess(ctx, mak)
 				return nil
 			}
 
 			err = response.Error
-			common.HandleSessionKeepFailure(ctx, mak)
 
 			// 记录错误次数和禁用
 			service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)

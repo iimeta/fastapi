@@ -59,7 +59,8 @@ func (s *sSessionKeepModelAgent) Get(ctx context.Context, userId int, modelName 
 		return "", false, cfgErr
 	}
 
-	if err = s.localCache.Set(ctx, key, &localSessionKeepValue{AgentId: agentId}, cfg.Ttl); err != nil {
+	localTtl := s.localTTL(cfg.Ttl)
+	if err = s.localCache.Set(ctx, key, &localSessionKeepValue{AgentId: agentId}, localTtl); err != nil {
 		logger.Error(ctx, err)
 	}
 
@@ -96,7 +97,7 @@ func (s *sSessionKeepModelAgent) Set(ctx context.Context, userId int, modelName,
 		return err
 	}
 
-	if err = redis.SetEX(ctx, s.redisValueKey(userId, modelName), agentId, int64(cfg.Ttl)); err != nil {
+	if err = redis.SetEX(ctx, s.redisValueKey(userId, modelName), agentId, s.redisTTLSeconds(cfg.Ttl)); err != nil {
 		return err
 	}
 
@@ -114,7 +115,8 @@ func (s *sSessionKeepModelAgent) Set(ctx context.Context, userId int, modelName,
 		return err
 	}
 
-	if err = s.localCache.Set(ctx, s.localKey(userId, modelName), &localSessionKeepValue{AgentId: agentId}, cfg.Ttl); err != nil {
+	localTtl := s.localTTL(cfg.Ttl)
+	if err = s.localCache.Set(ctx, s.localKey(userId, modelName), &localSessionKeepValue{AgentId: agentId}, localTtl); err != nil {
 		logger.Error(ctx, err)
 	}
 
@@ -214,7 +216,7 @@ func (s *sSessionKeepModelAgent) RecordFail(ctx context.Context, userId int, mod
 		return 0, err
 	}
 
-	if _, err = redis.Expire(ctx, s.redisFailKey(userId, modelName, agentId), int64(cfg.FailTtl)); err != nil {
+	if _, err = redis.Expire(ctx, s.redisFailKey(userId, modelName, agentId), s.redisTTLSeconds(cfg.FailTtl)); err != nil {
 		return 0, err
 	}
 
@@ -564,4 +566,18 @@ func (s *sSessionKeepModelAgent) compactGlobalSet(ctx context.Context) (int64, e
 	}
 
 	return count, nil
+}
+
+func (s *sSessionKeepModelAgent) localTTL(ttl time.Duration) time.Duration {
+	if ttl <= 0 {
+		return ttl
+	}
+	return time.Second * time.Duration(s.redisTTLSeconds(ttl))
+}
+
+func (s *sSessionKeepModelAgent) redisTTLSeconds(ttl time.Duration) int64 {
+	if ttl <= 0 {
+		return int64(ttl)
+	}
+	return int64(ttl)
 }
