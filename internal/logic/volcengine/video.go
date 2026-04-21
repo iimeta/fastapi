@@ -3,19 +3,17 @@ package volcengine
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"math"
 	"slices"
 	"time"
 
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
-	"github.com/gogf/gf/v2/util/gconv"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
-	"github.com/iimeta/fastapi-sdk/v2/volcengine"
 	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/dao"
 	"github.com/iimeta/fastapi/v2/internal/errors"
@@ -70,15 +68,17 @@ func (s *sVolcEngine) VideoCreate(ctx context.Context, request *ghttp.Request, f
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				afterHandler := &mcommon.AfterHandler{
-					Action:       consts.ACTION_CREATE,
-					VideoMode:    detectVideoMode(params),
-					RequestData:  util.ConvToMap(params),
-					ResponseData: util.ConvToMap(responseBytes),
-					Error:        err,
-					RetryInfo:    retryInfo,
-					TotalTime:    totalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
+					Action:             consts.ACTION_CREATE,
+					VideoMode:          detectVideoMode(params),
+					IsVolcEngine:       true,
+					VolcVideoCreateReq: params,
+					RequestData:        util.ConvToMap(params),
+					ResponseData:       util.ConvToMap(responseBytes),
+					Error:              err,
+					RetryInfo:          retryInfo,
+					TotalTime:          totalTime,
+					InternalTime:       internalTime,
+					EnterTime:          enterTime,
 				}
 
 				if params.Frames != nil && *params.Frames > 0 {
@@ -284,7 +284,9 @@ func (s *sVolcEngine) VideoList(ctx context.Context, request *ghttp.Request, fal
 	}
 
 	for _, result := range results {
-		listRes.Items = append(listRes.Items, convTaskVideoToVolcRes(result))
+		if res := convTaskVideoToVolcRes(ctx, result); res != nil {
+			listRes.Items = append(listRes.Items, res)
+		}
 	}
 
 	if listRes.Items == nil {
@@ -360,7 +362,86 @@ func (s *sVolcEngine) VideoRetrieve(ctx context.Context, request *ghttp.Request,
 		return nil, err
 	}
 
-	volcRes := convTaskVideoToVolcRes(taskVideo)
+	volcRes := convTaskVideoToVolcRes(ctx, taskVideo)
+	if volcRes == nil {
+
+		responseBytes, err = common.NewAdapterOfficial(ctx, mak, false).VideoRetrieveOfficial(ctx, taskId)
+		if err != nil {
+			logger.Error(ctx, err)
+
+			// 记录错误次数和禁用
+			service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
+
+			isRetry, isDisabled := common.IsNeedRetry(err)
+
+			if isDisabled {
+				if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
+					if mak.RealModel.IsEnableModelAgent {
+						service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
+					} else {
+						service.Key().Disabled(ctx, mak.Key, err.Error())
+					}
+				}, nil); err != nil {
+					logger.Error(ctx, err)
+				}
+			}
+
+			if isRetry {
+
+				if common.IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
+
+					if service.Session().GetModelAgentBillingMethod(ctx) == 2 && slices.Contains(mak.RealModel.Pricing.BillingMethods, 1) {
+						service.Session().SaveModelAgentBillingMethod(ctx, 1)
+						retry = []int{}
+					} else {
+
+						if mak.RealModel.IsEnableFallback {
+
+							if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id && fallbackModelAgent == nil {
+								if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
+									retryInfo = &mcommon.Retry{
+										IsRetry:    true,
+										RetryCount: len(retry),
+										ErrMsg:     err.Error(),
+									}
+									return s.VideoRetrieve(g.RequestFromCtx(ctx).GetCtx(), request, taskId, fallbackModelAgent, fallbackModel)
+								}
+							}
+
+							if mak.RealModel.FallbackConfig.Model != "" && fallbackModel == nil {
+								if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
+									retryInfo = &mcommon.Retry{
+										IsRetry:    true,
+										RetryCount: len(retry),
+										ErrMsg:     err.Error(),
+									}
+									return s.VideoRetrieve(g.RequestFromCtx(ctx).GetCtx(), request, taskId, nil, fallbackModel)
+								}
+							}
+						}
+
+						return nil, err
+					}
+				}
+
+				retryInfo = &mcommon.Retry{
+					IsRetry:    true,
+					RetryCount: len(retry),
+					ErrMsg:     err.Error(),
+				}
+
+				return s.VideoRetrieve(g.RequestFromCtx(ctx).GetCtx(), request, taskId, fallbackModelAgent, fallbackModel, append(retry, 1)...)
+			}
+
+			return nil, err
+		}
+
+		volcRes = &smodel.VolcVideoTaskRes{}
+		if err = json.Unmarshal(responseBytes, &volcRes); err != nil {
+			logger.Error(ctx, err)
+			return nil, err
+		}
+	}
 
 	responseBytes, err = json.Marshal(volcRes)
 	if err != nil {
@@ -476,39 +557,18 @@ func detectVideoMode(req *smodel.VolcVideoCreateReq) string {
 	return "no_video_input"
 }
 
-func convTaskVideoToVolcRes(task *entity.TaskVideo) *smodel.VolcVideoTaskRes {
+func convTaskVideoToVolcRes(ctx context.Context, task *entity.TaskVideo) *smodel.VolcVideoTaskRes {
 
-	response := smodel.VideoJobResponse{
-		Id:        task.VideoId,
-		Object:    "video",
-		Model:     task.Model,
-		Status:    task.Status,
-		CreatedAt: task.CreatedAt / 1000,
-		Size:      fmt.Sprintf("%dx%d", task.Width, task.Height),
-		Seconds:   gconv.String(task.Seconds),
-	}
+	if task.ResponseData != nil {
 
-	if task.CompletedAt != 0 {
-		response.CompletedAt = &task.CompletedAt
-	}
-
-	if task.VideoUrl != "" {
-		response.VideoUrl = task.VideoUrl
-	}
-
-	if task.Error != nil {
-		response.Error = &smodel.VideoError{
-			Code:    task.Error.Code,
-			Message: task.Error.Message,
+		volcVideoTaskRes := &smodel.VolcVideoTaskRes{}
+		if err := json.Unmarshal(gjson.MustEncode(task.ResponseData), &volcVideoTaskRes); err != nil {
+			logger.Error(ctx, err)
+			return nil
 		}
+
+		return volcVideoTaskRes
 	}
 
-	converter := &volcengine.VolcEngine{}
-	volcRes, _ := converter.ConvVideoJobResponseOfficial(context.Background(), response)
-
-	if task.UpdatedAt > 0 {
-		volcRes.UpdatedAt = task.UpdatedAt / 1000
-	}
-
-	return volcRes
+	return nil
 }

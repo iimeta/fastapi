@@ -307,10 +307,12 @@ func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
 
 		billingData := &mcommon.BillingData{
-			Seconds:   after.Seconds,
-			Size:      after.Size,
-			VideoMode: after.VideoMode,
-			IsAborted: IsAborted(after.Error),
+			Seconds:            after.Seconds,
+			Size:               after.Size,
+			VideoMode:          after.VideoMode,
+			IsAborted:          IsAborted(after.Error),
+			IsVolcEngine:       after.IsVolcEngine,
+			VolcVideoCreateReq: after.VolcVideoCreateReq,
 		}
 
 		// 计算花费

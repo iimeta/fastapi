@@ -21,6 +21,7 @@ type TaskVideo struct {
 	VideoUrl           string             `bson:"video_url,omitempty"`             // 视频地址
 	FileName           string             `bson:"file_name,omitempty"`             // 文件名
 	FilePath           string             `bson:"file_path,omitempty"`             // 文件路径
+	ResponseData       map[string]any     `bson:"response_data,omitempty"`         // 响应数据
 	Error              *smodel.VideoError `bson:"error,omitempty"`                 // 错误信息
 	Rid                int                `bson:"rid,omitempty"`                   // 代理商ID
 	Creator            string             `bson:"creator,omitempty"`               // 创建人

@@ -23,6 +23,8 @@ type AfterHandler struct {
 	Action                 string
 	VideoId                string
 	VideoMode              string
+	IsVolcEngine           bool
+	VolcVideoCreateReq     *smodel.VolcVideoCreateReq
 	IsFile                 bool
 	FileId                 string
 	FileRes                smodel.FileResponse

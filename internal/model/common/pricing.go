@@ -127,6 +127,8 @@ type BillingData struct {
 	VideoMode              string
 	Usage                  *smodel.Usage
 	IsAborted              bool
+	IsVolcEngine           bool
+	VolcVideoCreateReq     *smodel.VolcVideoCreateReq
 }
 
 type Spend struct {

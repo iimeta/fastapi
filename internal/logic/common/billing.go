@@ -706,6 +706,24 @@ func videoGeneration(ctx context.Context, mak *MAK, billingData *common.BillingD
 			width = gconv.Int(widthHeight[0])
 			height = gconv.Int(widthHeight[1])
 		}
+
+	} else if billingData.IsVolcEngine && billingData.VolcVideoCreateReq != nil {
+
+		resolution := billingData.VolcVideoCreateReq.Resolution
+		if resolution == "" {
+			resolution = "720p"
+		}
+
+		ratio := billingData.VolcVideoCreateReq.Ratio
+		if ratio == "" {
+			ratio = "16:9"
+		}
+
+		if size = consts.VIDEO_RESOLUTION_RATIO[resolution+ratio]; size != "" {
+			widthHeight := gstr.Split(size, `x`)
+			width = gconv.Int(widthHeight[0])
+			height = gconv.Int(widthHeight[1])
+		}
 	}
 
 	for _, videoGeneration := range mak.ReqModel.Pricing.VideoGeneration {
@@ -723,7 +741,10 @@ func videoGeneration(ctx context.Context, mak *MAK, billingData *common.BillingD
 	}
 
 	spend.VideoGeneration.Seconds = billingData.Seconds
-	spend.VideoGeneration.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT*spend.VideoGeneration.Pricing.OnceRatio)) * spend.VideoGeneration.Seconds
+
+	if !billingData.IsVolcEngine {
+		spend.VideoGeneration.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT*spend.VideoGeneration.Pricing.OnceRatio)) * spend.VideoGeneration.Seconds
+	}
 }
 
 // 搜索
