@@ -87,7 +87,7 @@ type VideoPricing struct {
 }
 
 type VideoGenerationPricing struct {
-	Mode      string  `bson:"mode,omitempty"       json:"mode,omitempty"`       // 模式[no_video_input:不含视频, has_video_input:包含视频]
+	Mode      string  `bson:"mode,omitempty"       json:"mode,omitempty"`       // 模式[all:全部, no_video_input:不含视频, has_video_input:包含视频]
 	Width     int     `bson:"width,omitempty"      json:"width,omitempty"`      // 宽度
 	Height    int     `bson:"height,omitempty"     json:"height,omitempty"`     // 高度
 	OnceRatio float64 `bson:"once_ratio"           json:"once_ratio,omitempty"` // 一次倍率
