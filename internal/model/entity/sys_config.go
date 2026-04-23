@@ -12,6 +12,7 @@ type SysConfig struct {
 	Midjourney                *common.Midjourney                `bson:"midjourney,omitempty"`                    // Midjourney
 	Log                       *common.Log                       `bson:"log,omitempty"`                           // 日志
 	AutoDisabledError         *common.AutoDisabledError         `bson:"auto_disabled_error,omitempty"`           // 自动禁用错误
+	AutoRetryError            *common.AutoRetryError            `bson:"auto_retry_error,omitempty"`              // 自动重试错误
 	NotRetryError             *common.NotRetryError             `bson:"not_retry_error,omitempty"`               // 不重试错误
 	NotShieldError            *common.NotShieldError            `bson:"not_shield_error,omitempty"`              // 不屏蔽错误
 	Quota                     *common.Quota                     `bson:"quota,omitempty"`                         // 额度

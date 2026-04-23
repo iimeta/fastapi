@@ -96,6 +96,11 @@ type EnableError struct {
 	Error      string        `bson:"error"       json:"error"`       // 错误
 }
 
+type AutoRetryError struct {
+	Open   bool     `bson:"open"   json:"open"`   // 开关
+	Errors []string `bson:"errors" json:"errors"` // 错误
+}
+
 type NotRetryError struct {
 	Open   bool     `bson:"open"   json:"open"`   // 开关
 	Errors []string `bson:"errors" json:"errors"` // 错误

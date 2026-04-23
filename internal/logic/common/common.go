@@ -95,11 +95,24 @@ func IsNeedRetry(err error) (isRetry bool, isDisabled bool) {
 		return false, false
 	}
 
+	defer func() {
+		// 自动重试错误
+		if isRetry && len(config.Cfg.AutoRetryError.Errors) > 0 {
+			isRetry = false
+			for _, autoRetryError := range config.Cfg.AutoRetryError.Errors {
+				if gstr.Contains(err.Error(), autoRetryError) {
+					isRetry = true
+					return
+				}
+			}
+		}
+	}()
+
 	// 自动禁用错误
 	if config.Cfg.AutoDisabledError.Open && len(config.Cfg.AutoDisabledError.Errors) > 0 {
 		for _, autoDisabledError := range config.Cfg.AutoDisabledError.Errors {
 			if gstr.Contains(err.Error(), autoDisabledError) {
-				return true, true
+				return config.Cfg.AutoRetryError.Open, true
 			}
 		}
 	}
@@ -113,7 +126,7 @@ func IsNeedRetry(err error) (isRetry bool, isDisabled bool) {
 		}
 	}
 
-	return true, false
+	return config.Cfg.AutoRetryError.Open, false
 }
 
 func IsMaxRetry(isEnableModelAgent bool, agentTotal, keyTotal, retry int) bool {
