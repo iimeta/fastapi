@@ -92,10 +92,8 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 
 		// 计算花费
 		spend := common.Billing(ctx, mak, billingData, "image_generation")
-		if spend.ImageGeneration.Pricing.Quality != "" {
-			if params.Quality != "" {
-				params.Quality = spend.ImageGeneration.Pricing.Quality
-			}
+		if spend.ImageGeneration.Pricing.Width > 0 {
+			params.Quality = spend.ImageGeneration.Pricing.Quality
 			params.Size = fmt.Sprintf("%dx%d", spend.ImageGeneration.Pricing.Width, spend.ImageGeneration.Pricing.Height)
 		}
 	}
@@ -258,7 +256,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 
 		// 计算花费
 		spend := common.Billing(ctx, mak, billingData, "image_generation")
-		if spend.ImageGeneration.Pricing.Quality != "" {
+		if spend.ImageGeneration.Pricing.Width > 0 {
 			params.Quality = spend.ImageGeneration.Pricing.Quality
 			params.Size = fmt.Sprintf("%dx%d", spend.ImageGeneration.Pricing.Width, spend.ImageGeneration.Pricing.Height)
 		}
