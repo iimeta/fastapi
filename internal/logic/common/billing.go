@@ -426,7 +426,7 @@ func tieredTextCache(ctx context.Context, mak *MAK, billingData *common.BillingD
 // 图像
 func image(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
 
-	if billingData.Usage == nil || billingData.Usage.InputTokensDetails.ImageTokens+billingData.Usage.OutputTokens == 0 {
+	if billingData.Usage == nil || billingData.Usage.InputTokensDetails.ImageTokens+billingData.Usage.CompletionTokensDetails.ImageTokens == 0 {
 		return
 	}
 
@@ -438,8 +438,8 @@ func image(ctx context.Context, mak *MAK, billingData *common.BillingData, spend
 		spend.Image.InputTokens += billingData.Usage.InputTokensDetails.ImageTokens
 	}
 
-	if billingData.Usage.OutputTokens > 0 {
-		spend.Image.OutputTokens += billingData.Usage.OutputTokens
+	if billingData.Usage.CompletionTokensDetails.ImageTokens > 0 {
+		spend.Image.OutputTokens += billingData.Usage.CompletionTokensDetails.ImageTokens
 	}
 
 	spend.Image.Pricing = mak.ReqModel.Pricing.Image
