@@ -829,7 +829,9 @@ func MatchTimeRule(ctx context.Context, rules []*common.TimeRule, model ...*mode
 
 	enterTimeMs := int64(enterTime.Hour()*3600+enterTime.Minute()*60+enterTime.Second()) * 1000
 
-	var firstTimeMatched *common.TimeRule
+	hasModel := len(model) > 0 && model[0] != nil
+
+	var firstTimeRule, fallbackRule *common.TimeRule
 
 	for _, rule := range rules {
 
@@ -858,22 +860,35 @@ func MatchTimeRule(ctx context.Context, rules []*common.TimeRule, model ...*mode
 			}
 		}
 
-		if matchTimeRange(enterTimeMs, rule.StartTime, rule.EndTime) {
+		if !matchTimeRange(enterTimeMs, rule.StartTime, rule.EndTime) {
+			continue
+		}
 
-			if firstTimeMatched == nil {
-				firstTimeMatched = rule
-			}
+		if hasModel {
 
-			if len(rule.Models) > 0 && len(model) > 0 && model[0] != nil {
+			if len(rule.Models) > 0 {
 				if slices.Contains(rule.Models, model[0].Id) {
 					return rule
 				}
 				continue
 			}
+
+			if fallbackRule == nil {
+				fallbackRule = rule
+			}
+
+		} else {
+			if firstTimeRule == nil {
+				firstTimeRule = rule
+			}
 		}
 	}
 
-	return firstTimeMatched
+	if hasModel {
+		return fallbackRule
+	}
+
+	return firstTimeRule
 }
 
 func matchTimeRange(enterTimeMs, startTime, endTime int64) bool {
