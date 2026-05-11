@@ -17,6 +17,7 @@ type LogFile struct {
 	Model                string                 `bson:"model,omitempty"`                   // 模型
 	ModelType            int                    `bson:"model_type,omitempty"`              // 模型类型
 	Key                  string                 `bson:"key,omitempty"`                     // 密钥
+	Privacy              *common.UserPrivacy    `bson:"privacy,omitempty"`                 // 隐私设置
 	IsEnablePresetConfig bool                   `bson:"is_enable_preset_config,omitempty"` // 是否启用预设配置
 	PresetConfig         common.PresetConfig    `bson:"preset_config,omitempty"`           // 预设配置
 	IsEnableModelAgent   bool                   `bson:"is_enable_model_agent,omitempty"`   // 是否启用模型代理

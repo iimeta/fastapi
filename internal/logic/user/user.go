@@ -5,10 +5,12 @@ import (
 
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/iimeta/fastapi/v2/internal/config"
 	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/dao"
 	"github.com/iimeta/fastapi/v2/internal/errors"
 	"github.com/iimeta/fastapi/v2/internal/model"
+	"github.com/iimeta/fastapi/v2/internal/model/common"
 	"github.com/iimeta/fastapi/v2/internal/model/entity"
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/cache"
@@ -57,6 +59,7 @@ func (s *sUser) GetByUserId(ctx context.Context, userId int) (*model.User, error
 		UsedQuota:      user.UsedQuota,
 		QuotaExpiresAt: user.QuotaExpiresAt,
 		Groups:         user.Groups,
+		Privacy:        user.Privacy,
 		Status:         user.Status,
 		Rid:            user.Rid,
 	}, nil
@@ -91,6 +94,7 @@ func (s *sUser) List(ctx context.Context) ([]*model.User, error) {
 			UsedQuota:      result.UsedQuota,
 			QuotaExpiresAt: result.QuotaExpiresAt,
 			Groups:         result.Groups,
+			Privacy:        result.Privacy,
 			Status:         result.Status,
 			Rid:            result.Rid,
 		})
@@ -187,11 +191,23 @@ func (s *sUser) UpdateCache(ctx context.Context, user *entity.User) {
 		UsedQuota:      user.UsedQuota,
 		QuotaExpiresAt: user.QuotaExpiresAt,
 		Groups:         user.Groups,
+		Privacy:        user.Privacy,
 		Status:         user.Status,
 		Rid:            user.Rid,
 	}); err != nil {
 		logger.Error(ctx, err)
 	}
+}
+
+// 获取用户隐私设置
+func (s *sUser) GetPrivacy(ctx context.Context, userId int) *common.UserPrivacy {
+
+	user, err := s.GetCache(ctx, userId)
+	if err != nil || user == nil {
+		return common.DefaultUserPrivacy()
+	}
+
+	return common.NormalizeUserPrivacy(user.Privacy, config.Cfg.Log.PrivacyFields)
 }
 
 // 移除缓存中的用户信息

@@ -390,6 +390,8 @@ func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 		}
 	}
 
+	applyTextPrivacy(&text, privacy(ctx))
+
 	if _, err := dao.LogText.Insert(ctx, text); err != nil {
 		logger.Errorf(ctx, "sLog Text error: %v", err)
 
@@ -552,6 +554,8 @@ func (s *sLog) Image(ctx context.Context, imageLog model.LogImage, retry ...int)
 		}
 	}
 
+	applyImagePrivacy(&image, privacy(ctx))
+
 	if _, err := dao.LogImage.Insert(ctx, image); err != nil {
 		logger.Errorf(ctx, "sLog Image error: %v", err)
 
@@ -694,6 +698,8 @@ func (s *sLog) Audio(ctx context.Context, audioLog model.LogAudio, retry ...int)
 			audio.ErrMsg = audioLog.RetryInfo.ErrMsg
 		}
 	}
+
+	applyAudioPrivacy(&audio, privacy(ctx))
 
 	if _, err := dao.LogAudio.Insert(ctx, audio); err != nil {
 		logger.Errorf(ctx, "sLog Audio error: %v", err)
@@ -840,6 +846,8 @@ func (s *sLog) Video(ctx context.Context, videoLog model.LogVideo, retry ...int)
 		}
 	}
 
+	applyVideoPrivacy(&video, privacy(ctx))
+
 	if _, err := dao.LogVideo.Insert(ctx, video); err != nil {
 		logger.Errorf(ctx, "sLog Video error: %v", err)
 
@@ -985,6 +993,8 @@ func (s *sLog) File(ctx context.Context, fileLog model.LogFile, retry ...int) {
 		}
 	}
 
+	applyFilePrivacy(&file, privacy(ctx))
+
 	if _, err := dao.LogFile.Insert(ctx, file); err != nil {
 		logger.Errorf(ctx, "sLog File error: %v", err)
 
@@ -1129,6 +1139,8 @@ func (s *sLog) Batch(ctx context.Context, batchLog model.LogBatch, retry ...int)
 			batch.ErrMsg = batchLog.RetryInfo.ErrMsg
 		}
 	}
+
+	applyBatchPrivacy(&batch, privacy(ctx))
 
 	if _, err := dao.LogBatch.Insert(ctx, batch); err != nil {
 		logger.Errorf(ctx, "sLog Batch error: %v", err)
@@ -1279,6 +1291,8 @@ func (s *sLog) Midjourney(ctx context.Context, midjourneyLog model.LogMidjourney
 		}
 	}
 
+	applyMidjourneyPrivacy(&midjourney, privacy(ctx))
+
 	if _, err := dao.LogMidjourney.Insert(ctx, midjourney); err != nil {
 		logger.Errorf(ctx, "sLog Midjourney error: %v", err)
 
@@ -1426,6 +1440,8 @@ func (s *sLog) General(ctx context.Context, generalLog model.LogGeneral, retry .
 			general.ErrMsg = generalLog.RetryInfo.ErrMsg
 		}
 	}
+
+	applyGeneralPrivacy(&general, privacy(ctx))
 
 	if _, err := dao.LogGeneral.Insert(ctx, general); err != nil {
 		logger.Errorf(ctx, "sLog General error: %v", err)
