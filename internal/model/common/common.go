@@ -67,16 +67,16 @@ type UserPrivacy struct {
 }
 
 type LogPrivacy struct {
-	IsEnableRequest         bool                    `bson:"is_enable_request"           json:"is_enable_request"`          // 是否启用请求内容隐私配置
+	IsEnableRequest         bool                    `bson:"is_enable_request"           json:"is_enable_request"`          // 是否开放请求内容用户配置
 	IsDefaultEnableRequest  bool                    `bson:"is_default_enable_request"   json:"is_default_enable_request"`  // 是否默认记录请求内容
 	RequestPrivacyFields    []PrivacyLogFieldOption `bson:"request_privacy_fields"      json:"request_privacy_fields"`     // 请求内容字段
-	IsEnableResponse        bool                    `bson:"is_enable_response"          json:"is_enable_response"`         // 是否启用响应内容隐私配置
+	IsEnableResponse        bool                    `bson:"is_enable_response"          json:"is_enable_response"`         // 是否开放响应内容用户配置
 	IsDefaultEnableResponse bool                    `bson:"is_default_enable_response"  json:"is_default_enable_response"` // 是否默认记录响应内容
 	ResponsePrivacyFields   []PrivacyLogFieldOption `bson:"response_privacy_fields"     json:"response_privacy_fields"`    // 响应内容字段
-	IsEnableResource        bool                    `bson:"is_enable_resource"          json:"is_enable_resource"`         // 是否启用资源链接隐私配置
+	IsEnableResource        bool                    `bson:"is_enable_resource"          json:"is_enable_resource"`         // 是否开放资源链接用户配置
 	IsDefaultEnableResource bool                    `bson:"is_default_enable_resource"  json:"is_default_enable_resource"` // 是否默认记录资源链接
 	ResourcePrivacyFields   []PrivacyLogFieldOption `bson:"resource_privacy_fields"     json:"resource_privacy_fields"`    // 资源链接字段
-	IsEnableNetwork         bool                    `bson:"is_enable_network"           json:"is_enable_network"`          // 是否启用网络信息隐私配置
+	IsEnableNetwork         bool                    `bson:"is_enable_network"           json:"is_enable_network"`          // 是否开放网络信息用户配置
 	IsDefaultEnableNetwork  bool                    `bson:"is_default_enable_network"   json:"is_default_enable_network"`  // 是否默认记录网络信息
 	NetworkPrivacyFields    []PrivacyLogFieldOption `bson:"network_privacy_fields"      json:"network_privacy_fields"`     // 网络信息字段
 }
