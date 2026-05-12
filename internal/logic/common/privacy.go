@@ -32,10 +32,10 @@ func NormalizeUserPrivacy(privacy *mcommon.UserPrivacy, logPrivacy *mcommon.LogP
 		LogResponseContent: logResponseContent,
 		LogResourceUrl:     logResourceUrl,
 		LogClientIp:        logClientIp,
-		LogRequestFields:   categoryPrivacyFields(privacy.LogRequestFields, logPrivacy.RequestPrivacyFields, logPrivacy.IsEnableRequest, logRequestContent),
-		LogResponseFields:  categoryPrivacyFields(privacy.LogResponseFields, logPrivacy.ResponsePrivacyFields, logPrivacy.IsEnableResponse, logResponseContent),
-		LogResourceFields:  categoryPrivacyFields(privacy.LogResourceFields, logPrivacy.ResourcePrivacyFields, logPrivacy.IsEnableResource, logResourceUrl),
-		LogNetworkFields:   categoryPrivacyFields(privacy.LogNetworkFields, logPrivacy.NetworkPrivacyFields, logPrivacy.IsEnableNetwork, logClientIp),
+		LogRequestFields:   categoryPrivacyFields(privacy.LogRequestFields, logPrivacy.RequestPrivacyFields, true, logPrivacy.IsEnableRequest, logRequestContent),
+		LogResponseFields:  categoryPrivacyFields(privacy.LogResponseFields, logPrivacy.ResponsePrivacyFields, true, logPrivacy.IsEnableResponse, logResponseContent),
+		LogResourceFields:  categoryPrivacyFields(privacy.LogResourceFields, logPrivacy.ResourcePrivacyFields, true, logPrivacy.IsEnableResource, logResourceUrl),
+		LogNetworkFields:   categoryPrivacyFields(privacy.LogNetworkFields, logPrivacy.NetworkPrivacyFields, true, logPrivacy.IsEnableNetwork, logClientIp),
 	}
 }
 
@@ -66,13 +66,13 @@ func categoryPrivacyEnabled(configured bool, allowUserConfig bool, defaultEnable
 	return userEnabled
 }
 
-func categoryPrivacyFields(values []string, fields []mcommon.PrivacyLogFieldOption, allowUserConfig bool, enabled bool) []string {
+func categoryPrivacyFields(values []string, fields []mcommon.PrivacyLogFieldOption, configured bool, allowUserConfig bool, enabled bool) []string {
 
 	if !enabled {
 		return []string{}
 	}
 
-	if !allowUserConfig {
+	if !configured || !allowUserConfig {
 		return defaultPrivacyFields(fields, true)
 	}
 
