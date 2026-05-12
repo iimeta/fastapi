@@ -51,18 +51,18 @@ type Midjourney struct {
 }
 
 type Log struct {
-	Open           bool                    `bson:"open"            json:"open"`            // 开关
-	TextRecords    []string                `bson:"text_records"    json:"text_records"`    // 文本日志记录内容
-	TextReserve    time.Duration           `bson:"text_reserve"    json:"text_reserve"`    // 文本日志保留天数
-	ImageReserve   time.Duration           `bson:"image_reserve"   json:"image_reserve"`   // 绘图日志保留天数
-	AudioReserve   time.Duration           `bson:"audio_reserve"   json:"audio_reserve"`   // 音频日志保留天数
-	VideoReserve   time.Duration           `bson:"video_reserve"   json:"video_reserve"`   // 视频日志保留天数
-	FileReserve    time.Duration           `bson:"file_reserve"    json:"file_reserve"`    // 文件日志保留天数
-	BatchReserve   time.Duration           `bson:"batch_reserve"   json:"batch_reserve"`   // 批处理日志保留天数
-	GeneralReserve time.Duration           `bson:"general_reserve" json:"general_reserve"` // 通用日志保留天数
-	Status         []int                   `bson:"status"          json:"status"`          // 删除日志状态
-	Cron           string                  `bson:"cron"            json:"cron"`            // CRON表达式
-	PrivacyFields  []PrivacyLogFieldOption `bson:"privacy_fields"  json:"privacy_fields"`  // 隐私日志字段
+	Open           bool          `bson:"open"            json:"open"`            // 开关
+	TextRecords    []string      `bson:"text_records"    json:"text_records"`    // 文本日志记录内容
+	TextReserve    time.Duration `bson:"text_reserve"    json:"text_reserve"`    // 文本日志保留天数
+	ImageReserve   time.Duration `bson:"image_reserve"   json:"image_reserve"`   // 绘图日志保留天数
+	AudioReserve   time.Duration `bson:"audio_reserve"   json:"audio_reserve"`   // 音频日志保留天数
+	VideoReserve   time.Duration `bson:"video_reserve"   json:"video_reserve"`   // 视频日志保留天数
+	FileReserve    time.Duration `bson:"file_reserve"    json:"file_reserve"`    // 文件日志保留天数
+	BatchReserve   time.Duration `bson:"batch_reserve"   json:"batch_reserve"`   // 批处理日志保留天数
+	GeneralReserve time.Duration `bson:"general_reserve" json:"general_reserve"` // 通用日志保留天数
+	Status         []int         `bson:"status"          json:"status"`          // 删除日志状态
+	Cron           string        `bson:"cron"            json:"cron"`            // CRON表达式
+	Privacy        *LogPrivacy   `bson:"privacy"         json:"privacy"`         // 日志隐私
 }
 
 type UserLoginRegister struct {

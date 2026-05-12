@@ -9,7 +9,7 @@ import (
 	"context"
 
 	"github.com/iimeta/fastapi/v2/internal/model"
-	"github.com/iimeta/fastapi/v2/internal/model/common"
+	mcommon "github.com/iimeta/fastapi/v2/internal/model/common"
 	"github.com/iimeta/fastapi/v2/internal/model/entity"
 )
 
@@ -25,8 +25,6 @@ type (
 		SaveCache(ctx context.Context, user *model.User) error
 		// 获取缓存中的用户信息
 		GetCache(ctx context.Context, userId int) (*model.User, error)
-		// 获取用户隐私设置
-		GetPrivacy(ctx context.Context, userId int) *common.UserPrivacy
 		// 更新缓存中的用户信息
 		UpdateCache(ctx context.Context, user *entity.User)
 		// 移除缓存中的用户信息
@@ -35,6 +33,8 @@ type (
 		SaveCacheQuota(ctx context.Context, userId int, quota int) error
 		// 获取缓存中的用户额度
 		GetCacheQuota(ctx context.Context, userId int) int
+		// 获取用户隐私设置
+		GetPrivacy(ctx context.Context, userId int) *mcommon.UserPrivacy
 		// 变更订阅
 		Subscribe(ctx context.Context, msg string) error
 	}

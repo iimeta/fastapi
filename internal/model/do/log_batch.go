@@ -17,7 +17,6 @@ type LogBatch struct {
 	Model                string                 `bson:"model,omitempty"`                   // 模型
 	ModelType            int                    `bson:"model_type,omitempty"`              // 模型类型
 	Key                  string                 `bson:"key,omitempty"`                     // 密钥
-	Privacy              *common.UserPrivacy    `bson:"privacy,omitempty"`                 // 隐私设置
 	IsEnablePresetConfig bool                   `bson:"is_enable_preset_config,omitempty"` // 是否启用预设配置
 	PresetConfig         common.PresetConfig    `bson:"preset_config,omitempty"`           // 预设配置
 	IsEnableModelAgent   bool                   `bson:"is_enable_model_agent,omitempty"`   // 是否启用模型代理
@@ -50,6 +49,7 @@ type LogBatch struct {
 	Host                 string                 `bson:"host,omitempty"`                    // Host
 	Method               string                 `bson:"method,omitempty"`                  // Method
 	Path                 string                 `bson:"path,omitempty"`                    // Path
+	Privacy              *common.UserPrivacy    `bson:"privacy,omitempty"`                 // 隐私设置
 	Rid                  int                    `bson:"rid,omitempty"`                     // 代理商ID
 	Creator              string                 `bson:"creator,omitempty"`                 // 创建人
 	Updater              string                 `bson:"updater,omitempty"`                 // 更新人

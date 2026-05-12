@@ -9,8 +9,9 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/dao"
 	"github.com/iimeta/fastapi/v2/internal/errors"
+	"github.com/iimeta/fastapi/v2/internal/logic/common"
 	"github.com/iimeta/fastapi/v2/internal/model"
-	"github.com/iimeta/fastapi/v2/internal/model/common"
+	mcommon "github.com/iimeta/fastapi/v2/internal/model/common"
 	"github.com/iimeta/fastapi/v2/internal/model/entity"
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/cache"
@@ -199,17 +200,6 @@ func (s *sUser) UpdateCache(ctx context.Context, user *entity.User) {
 	}
 }
 
-// 获取用户隐私设置
-func (s *sUser) GetPrivacy(ctx context.Context, userId int) *common.UserPrivacy {
-
-	user, err := s.GetCache(ctx, userId)
-	if err != nil || user == nil {
-		return common.DefaultUserPrivacy()
-	}
-
-	return common.NormalizeUserPrivacy(user.Privacy, config.Cfg.Log.PrivacyFields)
-}
-
 // 移除缓存中的用户信息
 func (s *sUser) RemoveCache(ctx context.Context, userId int) {
 
@@ -256,6 +246,17 @@ func (s *sUser) GetCacheQuota(ctx context.Context, userId int) int {
 	}
 
 	return 0
+}
+
+// 获取用户隐私设置
+func (s *sUser) GetPrivacy(ctx context.Context, userId int) *mcommon.UserPrivacy {
+
+	user, err := s.GetCache(ctx, userId)
+	if err != nil || user == nil {
+		return common.DefaultUserPrivacy()
+	}
+
+	return common.NormalizeUserPrivacy(user.Privacy, config.Cfg.Log.Privacy)
 }
 
 // 变更订阅
