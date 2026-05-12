@@ -40,16 +40,21 @@ func allowNetworkField(privacy *common.UserPrivacy, field string) bool {
 }
 
 func applyTextPrivacy(text *do.LogText, privacy *common.UserPrivacy) {
+
 	text.Privacy = privacy
+
 	if !allowRequestField(privacy, "messages") {
 		text.Messages = nil
 	}
+
 	if !allowRequestField(privacy, "prompt") {
 		text.Prompt = ""
 	}
+
 	if !allowResponseField(privacy, "completion") {
 		text.Completion = ""
 	}
+
 	if !allowNetworkField(privacy, "client_ip") {
 		text.ClientIp = ""
 	}
@@ -58,6 +63,7 @@ func applyTextPrivacy(text *do.LogText, privacy *common.UserPrivacy) {
 func applyImagePrivacy(image *do.LogImage, privacy *common.UserPrivacy) {
 
 	image.Privacy = privacy
+
 	if !allowRequestField(privacy, "prompt") {
 		image.Prompt = ""
 	}

@@ -85,18 +85,13 @@ func normalizePrivacyFields(values []string, fields []mcommon.PrivacyLogFieldOpt
 	}
 
 	allowed := map[string]bool{}
-	all := make([]string, 0)
 	for _, field := range enabledPrivacyLogFields(fields) {
 		allowed[field.Key] = true
-		all = append(all, field.Key)
-	}
-
-	if len(values) == 0 {
-		return all
 	}
 
 	result := make([]string, 0)
 	seen := map[string]bool{}
+
 	for _, value := range values {
 		if allowed[value] && !seen[value] {
 			result = append(result, value)
