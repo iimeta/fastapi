@@ -110,7 +110,7 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 		return response, err
 	}
 
-	//request := params
+	//request := *params
 	//
 	//if !gstr.Contains(mak.RealModel.Model, "*") {
 	//	request.Model = mak.RealModel.Model
@@ -356,7 +356,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 		return err
 	}
 
-	//request := params
+	//request := *params
 	//
 	//if !gstr.Contains(mak.RealModel.Model, "*") {
 	//	request.Model = mak.RealModel.Model

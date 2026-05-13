@@ -101,7 +101,7 @@ func (s *sVideo) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 		return response, err
 	}
 
-	request := params
+	request := *params
 
 	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
 		for i, replaceModel := range mak.ModelAgent.ReplaceModels {

@@ -93,7 +93,7 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 		return response, err
 	}
 
-	//request := params
+	//request := *params
 	//
 	//if !gstr.Contains(mak.RealModel.Model, "*") {
 	//	request.Model = mak.RealModel.Model
@@ -320,7 +320,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 		return err
 	}
 
-	//request := params
+	//request := *params
 	//
 	//if !gstr.Contains(mak.RealModel.Model, "*") {
 	//	request.Model = mak.RealModel.Model

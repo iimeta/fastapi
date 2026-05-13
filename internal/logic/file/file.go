@@ -92,7 +92,7 @@ func (s *sFile) Upload(ctx context.Context, params *v1.UploadReq, fallbackModelA
 		return response, err
 	}
 
-	request := params
+	request := *params
 
 	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
 		for i, replaceModel := range mak.ModelAgent.ReplaceModels {

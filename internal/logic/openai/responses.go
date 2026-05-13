@@ -260,7 +260,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 		return err
 	}
 
-	//request := params
+	//request := *params
 	//
 	//if !gstr.Contains(mak.RealModel.Model, "*") {
 	//	request.Model = mak.RealModel.Model
