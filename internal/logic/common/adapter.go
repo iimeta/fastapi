@@ -97,6 +97,7 @@ func NewAdapterOfficial(ctx context.Context, mak *MAK, isLong bool) (adapter sdk
 		Timeout:              config.Cfg.Base.ShortTimeout * time.Second,
 		ProxyUrl:             config.Cfg.Http.ProxyUrl,
 		ReqPassthroughParams: []string{"req_data"},
+		PassthroughHeader:    getPassthroughHeaders(ctx, mak.Passthrough),
 	}
 
 	if isLong {
@@ -108,7 +109,15 @@ func NewAdapterOfficial(ctx context.Context, mak *MAK, isLong bool) (adapter sdk
 		options.IsSupportStream = &mak.RealModel.PresetConfig.IsSupportStream
 	}
 
-	g.RequestFromCtx(ctx).SetCtxVar("passthrough", &EffectivePassthrough{ResParams: []string{"res_data"}})
+	officialPassthrough := &EffectivePassthrough{ResParams: []string{"res_data"}}
+	if mak.Passthrough != nil {
+		if slices.Contains(mak.Passthrough.ResParams, "res_header") {
+			officialPassthrough.ResParams = append(officialPassthrough.ResParams, "res_header")
+			officialPassthrough.ResHeaderMode = mak.Passthrough.ResHeaderMode
+			officialPassthrough.ResHeaderList = mak.Passthrough.ResHeaderList
+		}
+	}
+	g.RequestFromCtx(ctx).SetCtxVar("passthrough", officialPassthrough)
 
 	return sdk.NewAdapterOfficial(ctx, options)
 }
@@ -126,6 +135,7 @@ func NewAdapterOpenAI(ctx context.Context, mak *MAK, isLong bool) *openai.OpenAI
 		Timeout:              config.Cfg.Base.ShortTimeout * time.Second,
 		ProxyUrl:             config.Cfg.Http.ProxyUrl,
 		ReqPassthroughParams: []string{"req_data"},
+		PassthroughHeader:    getPassthroughHeaders(ctx, mak.Passthrough),
 	}
 
 	if isLong {
@@ -137,7 +147,15 @@ func NewAdapterOpenAI(ctx context.Context, mak *MAK, isLong bool) *openai.OpenAI
 		options.IsSupportStream = &mak.RealModel.PresetConfig.IsSupportStream
 	}
 
-	g.RequestFromCtx(ctx).SetCtxVar("passthrough", &EffectivePassthrough{ResParams: []string{"res_data"}})
+	openaiPassthrough := &EffectivePassthrough{ResParams: []string{"res_data"}}
+	if mak.Passthrough != nil {
+		if slices.Contains(mak.Passthrough.ResParams, "res_header") {
+			openaiPassthrough.ResParams = append(openaiPassthrough.ResParams, "res_header")
+			openaiPassthrough.ResHeaderMode = mak.Passthrough.ResHeaderMode
+			openaiPassthrough.ResHeaderList = mak.Passthrough.ResHeaderList
+		}
+	}
+	g.RequestFromCtx(ctx).SetCtxVar("passthrough", openaiPassthrough)
 
 	return openai.NewAdapter(ctx, options)
 }
@@ -146,8 +164,11 @@ func NewRealtimeClient(ctx context.Context, model *model.Model, key, baseUrl, pa
 	return sdk.NewRealtimeClient(ctx, model.Model, key, baseUrl, path, config.Cfg.Http.ProxyUrl)
 }
 
-func NewModerationClient(ctx context.Context, model *model.Model, key, baseUrl, path string) *sdk.ModerationClient {
-	return sdk.NewModerationClient(ctx, model.Model, key, baseUrl, path, config.Cfg.Base.ShortTimeout*time.Second, config.Cfg.Http.ProxyUrl)
+func NewModerationClient(ctx context.Context, m *model.Model, key, baseUrl, path string, passthrough *EffectivePassthrough) *sdk.ModerationClient {
+
+	g.RequestFromCtx(ctx).SetCtxVar("passthrough", passthrough)
+
+	return sdk.NewModerationClient(ctx, m.Model, key, baseUrl, path, config.Cfg.Base.ShortTimeout*time.Second, config.Cfg.Http.ProxyUrl, getReqPassthroughParams(passthrough), getPassthroughHeaders(ctx, passthrough))
 }
 
 func NewConverter(ctx context.Context, provider string) sdk.Converter {

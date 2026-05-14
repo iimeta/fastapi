@@ -362,6 +362,11 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 			return err
 		}
 
+		// 响应头透传
+		if response.ResponseHeaders != nil {
+			common.WritePassthroughHeaders(ctx, mak.Passthrough, response.ResponseHeaders)
+		}
+
 		if len(response.Choices) > 0 && response.Choices[0].Delta != nil {
 			if mak.RealModel.Type == 102 && response.Choices[0].Delta.Audio != nil {
 				completion += response.Choices[0].Delta.Audio.Transcript
@@ -411,12 +416,35 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 			}
 		}
 
-		if len(response.ResponseBytes) > 0 {
+		// 数据透传
+		if mak.Passthrough != nil && slices.Contains(mak.Passthrough.ResParams, "res_data") && response.ResponseBytes != nil {
+
+			if mak.ReqModel.IsEnableForward {
+
+				data := make(map[string]any)
+				if err = gjson.Unmarshal(response.ResponseBytes, &data); err != nil {
+					logger.Error(ctx, err)
+					return err
+				}
+
+				if _, ok := data["model"]; ok {
+					data["model"] = mak.ReqModel.Model
+				}
+
+				response.ResponseBytes = gjson.MustEncode(data)
+			}
+
 			if err = util.SSEServer(ctx, string(response.ResponseBytes)); err != nil {
 				logger.Error(ctx, err)
 				return err
 			}
+
 		} else {
+
+			if mak.ReqModel.IsEnableForward {
+				response.Model = mak.ReqModel.Model
+			}
+
 			if err = util.SSEServer(ctx, gjson.MustEncodeString(response)); err != nil {
 				logger.Error(ctx, err)
 				return err

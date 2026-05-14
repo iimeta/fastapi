@@ -58,6 +58,11 @@ func (c *ControllerV1) Completions(ctx context.Context, req *v1.CompletionsReq) 
 			if err != nil {
 				return nil, err
 			}
+
+			// 响应头透传
+			passthrough, _ := g.RequestFromCtx(ctx).GetCtxVar("passthrough").Val().(*common.EffectivePassthrough)
+			common.WritePassthroughHeaders(ctx, passthrough, response.ResponseHeaders)
+
 			g.RequestFromCtx(ctx).Response.WriteJson(response.ResponseBytes)
 		}
 	}

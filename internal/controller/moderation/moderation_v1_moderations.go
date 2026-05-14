@@ -2,10 +2,12 @@ package moderation
 
 import (
 	"context"
+	"slices"
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/v2/api/moderation/v1"
+	"github.com/iimeta/fastapi/v2/internal/logic/common"
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/logger"
 )
@@ -22,7 +24,17 @@ func (c *ControllerV1) Moderations(ctx context.Context, req *v1.ModerationsReq) 
 		return nil, err
 	}
 
-	g.RequestFromCtx(ctx).Response.WriteJson(response)
+	passthrough, _ := g.RequestFromCtx(ctx).GetCtxVar("passthrough").Val().(*common.EffectivePassthrough)
+	isResDataPassthrough := passthrough != nil && slices.Contains(passthrough.ResParams, "res_data")
+
+	// 响应头透传
+	common.WritePassthroughHeaders(ctx, passthrough, response.ResponseHeaders)
+
+	if !isResDataPassthrough || response.ResponseBytes == nil {
+		g.RequestFromCtx(ctx).Response.WriteJson(response)
+	} else {
+		g.RequestFromCtx(ctx).Response.WriteJson(response.ResponseBytes)
+	}
 
 	return
 }

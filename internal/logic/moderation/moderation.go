@@ -98,7 +98,7 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 		}
 	}
 
-	response, err = common.NewModerationClient(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path).TextModerations(ctx, request)
+	response, err = common.NewModerationClient(ctx, mak.RealModel, mak.RealKey, mak.BaseUrl, mak.Path, mak.Passthrough).TextModerations(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
 

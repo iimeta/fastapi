@@ -238,6 +238,7 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 		}
 
 		response.TotalTime = r.TotalTime
+		response.ResponseHeaders = r.ResponseHeaders
 
 	} else if r, ok := res.(*smodel.ChatCompletionResponse); ok {
 
@@ -252,6 +253,7 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 		}
 
 		response.TotalTime = r.TotalTime
+		response.ResponseHeaders = r.ResponseHeaders
 
 	} else {
 		if err = json.Unmarshal(gjson.MustEncode(res), &response); err != nil {
@@ -476,6 +478,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 			response.ConnTime = r.ConnTime
 			response.Duration = r.Duration
 			response.TotalTime = r.TotalTime
+			response.ResponseHeaders = r.ResponseHeaders
 
 		} else if r, ok := res.(*smodel.ChatCompletionResponse); ok {
 
@@ -493,6 +496,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 			response.ConnTime = r.ConnTime
 			response.Duration = r.Duration
 			response.TotalTime = r.TotalTime
+			response.ResponseHeaders = r.ResponseHeaders
 
 		} else {
 			if err = json.Unmarshal(gjson.MustEncode(res), &response); err != nil {
@@ -578,6 +582,11 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 			}
 
 			return err
+		}
+
+		// 响应头透传
+		if response.ResponseHeaders != nil {
+			common.WritePassthroughHeaders(ctx, mak.Passthrough, response.ResponseHeaders)
 		}
 
 		if len(response.Choices) > 0 && response.Choices[0].Delta != nil {

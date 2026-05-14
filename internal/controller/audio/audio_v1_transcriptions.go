@@ -2,12 +2,14 @@ package audio
 
 import (
 	"context"
+	"slices"
 
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/v2/api/audio/v1"
 	"github.com/iimeta/fastapi/v2/internal/errors"
+	"github.com/iimeta/fastapi/v2/internal/logic/common"
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/logger"
 	"github.com/iimeta/fastapi/v2/utility/util"
@@ -52,10 +54,20 @@ func (c *ControllerV1) Transcriptions(ctx context.Context, req *v1.Transcription
 		return nil, err
 	}
 
-	if req.ResponseFormat == "" || req.ResponseFormat == "json" || req.ResponseFormat == "verbose_json" {
-		g.RequestFromCtx(ctx).Response.WriteJson(response)
+	passthrough, _ := g.RequestFromCtx(ctx).GetCtxVar("passthrough").Val().(*common.EffectivePassthrough)
+	isResDataPassthrough := passthrough != nil && slices.Contains(passthrough.ResParams, "res_data")
+
+	// 响应头透传
+	common.WritePassthroughHeaders(ctx, passthrough, response.ResponseHeaders)
+
+	if isResDataPassthrough && response.ResponseBytes != nil {
+		g.RequestFromCtx(ctx).Response.WriteJson(response.ResponseBytes)
 	} else {
-		g.RequestFromCtx(ctx).Response.Write(response.Text)
+		if req.ResponseFormat == "" || req.ResponseFormat == "json" || req.ResponseFormat == "verbose_json" {
+			g.RequestFromCtx(ctx).Response.WriteJson(response)
+		} else {
+			g.RequestFromCtx(ctx).Response.Write(response.Text)
+		}
 	}
 
 	return

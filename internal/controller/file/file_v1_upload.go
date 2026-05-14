@@ -3,11 +3,13 @@ package file
 import (
 	"bufio"
 	"context"
+	"slices"
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/iimeta/fastapi/v2/api/file/v1"
+	"github.com/iimeta/fastapi/v2/internal/logic/common"
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/logger"
 	"github.com/iimeta/fastapi/v2/utility/util"
@@ -56,7 +58,17 @@ func (c *ControllerV1) Upload(ctx context.Context, req *v1.UploadReq) (res *v1.U
 		return nil, err
 	}
 
-	g.RequestFromCtx(ctx).Response.WriteJson(response)
+	passthrough, _ := g.RequestFromCtx(ctx).GetCtxVar("passthrough").Val().(*common.EffectivePassthrough)
+	isResDataPassthrough := passthrough != nil && slices.Contains(passthrough.ResParams, "res_data")
+
+	// 响应头透传
+	common.WritePassthroughHeaders(ctx, passthrough, response.ResponseHeaders)
+
+	if !isResDataPassthrough || response.ResponseBytes == nil {
+		g.RequestFromCtx(ctx).Response.WriteJson(response)
+	} else {
+		g.RequestFromCtx(ctx).Response.WriteJson(response.ResponseBytes)
+	}
 
 	return
 }

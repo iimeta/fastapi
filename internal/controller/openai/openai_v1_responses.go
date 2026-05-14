@@ -6,6 +6,7 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/v2/api/openai/v1"
+	"github.com/iimeta/fastapi/v2/internal/logic/common"
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/logger"
 )
@@ -27,6 +28,11 @@ func (c *ControllerV1) Responses(ctx context.Context, req *v1.ResponsesReq) (res
 		if err != nil {
 			return nil, err
 		}
+
+		// 响应头透传
+		passthrough, _ := g.RequestFromCtx(ctx).GetCtxVar("passthrough").Val().(*common.EffectivePassthrough)
+		common.WritePassthroughHeaders(ctx, passthrough, response.ResponseHeaders)
+
 		g.RequestFromCtx(ctx).Response.WriteJson(response.ResponseBytes)
 	}
 

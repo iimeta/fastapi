@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"math"
+	"net/http"
 	"slices"
 	"time"
 
@@ -54,8 +55,9 @@ func (s *sVolcEngine) VideoCreate(ctx context.Context, request *ghttp.Request, f
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo *mcommon.Retry
-		totalTime int64
+		retryInfo      *mcommon.Retry
+		totalTime      int64
+		responseHeader http.Header
 	)
 
 	defer func() {
@@ -113,7 +115,7 @@ func (s *sVolcEngine) VideoCreate(ctx context.Context, request *ghttp.Request, f
 
 	body := request.GetBody()
 
-	responseBytes, err = common.NewAdapterOfficial(ctx, mak, false).VideoCreateOfficial(ctx, body)
+	responseBytes, responseHeader, err = common.NewAdapterOfficial(ctx, mak, false).VideoCreateOfficial(ctx, body)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -183,6 +185,9 @@ func (s *sVolcEngine) VideoCreate(ctx context.Context, request *ghttp.Request, f
 
 		return nil, err
 	}
+
+	// 响应头透传
+	common.WritePassthroughHeaders(ctx, mak.Passthrough, responseHeader)
 
 	return responseBytes, nil
 }
@@ -315,8 +320,9 @@ func (s *sVolcEngine) VideoRetrieve(ctx context.Context, request *ghttp.Request,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo *mcommon.Retry
-		totalTime int64
+		retryInfo      *mcommon.Retry
+		totalTime      int64
+		responseHeader http.Header
 	)
 
 	defer func() {
@@ -365,7 +371,7 @@ func (s *sVolcEngine) VideoRetrieve(ctx context.Context, request *ghttp.Request,
 	volcRes := convTaskVideoToVolcRes(ctx, taskVideo)
 	if volcRes == nil {
 
-		responseBytes, err = common.NewAdapterOfficial(ctx, mak, false).VideoRetrieveOfficial(ctx, taskId)
+		responseBytes, responseHeader, err = common.NewAdapterOfficial(ctx, mak, false).VideoRetrieveOfficial(ctx, taskId)
 		if err != nil {
 			logger.Error(ctx, err)
 
@@ -448,6 +454,9 @@ func (s *sVolcEngine) VideoRetrieve(ctx context.Context, request *ghttp.Request,
 		logger.Error(ctx, err)
 		return nil, err
 	}
+
+	// 响应头透传
+	common.WritePassthroughHeaders(ctx, mak.Passthrough, responseHeader)
 
 	return responseBytes, nil
 }

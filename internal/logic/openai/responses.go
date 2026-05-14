@@ -419,6 +419,11 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 		duration = response.Duration
 		totalTime = response.TotalTime
 
+		// 响应头透传
+		if res.ResponseHeaders != nil {
+			common.WritePassthroughHeaders(ctx, mak.Passthrough, res.ResponseHeaders)
+		}
+
 		if response.Error != nil {
 
 			if errors.Is(response.Error, io.EOF) {

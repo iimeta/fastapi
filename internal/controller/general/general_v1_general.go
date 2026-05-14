@@ -9,6 +9,7 @@ import (
 	"github.com/iimeta/fastapi/v2/api/general/v1"
 	"github.com/iimeta/fastapi/v2/internal/config"
 	"github.com/iimeta/fastapi/v2/internal/errors"
+	"github.com/iimeta/fastapi/v2/internal/logic/common"
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/logger"
 )
@@ -41,10 +42,16 @@ func (c *ControllerV1) General(ctx context.Context, req *v1.GeneralReq) (res *v1
 			return nil, err
 		}
 
-		if response.ResponseBytes != nil {
-			r.Response.WriteJson(response.ResponseBytes)
-		} else {
+		passthrough, _ := r.GetCtxVar("passthrough").Val().(*common.EffectivePassthrough)
+		isResDataPassthrough := passthrough != nil && slices.Contains(passthrough.ResParams, "res_data")
+
+		// 响应头透传
+		common.WritePassthroughHeaders(ctx, passthrough, response.ResponseHeaders)
+
+		if !isResDataPassthrough || response.ResponseBytes == nil {
 			r.Response.WriteJson(response)
+		} else {
+			r.Response.WriteJson(response.ResponseBytes)
 		}
 	}
 
