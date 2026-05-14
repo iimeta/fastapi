@@ -37,6 +37,7 @@ type MAK struct {
 	App                *model.App
 	AppKey             *model.AppKey
 	Group              *model.Group
+	Passthrough        *EffectivePassthrough // 有效透传配置
 }
 
 func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
@@ -392,6 +393,8 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 
 		return err
 	}
+
+	mak.Passthrough = GetEffectivePassthrough(mak.ReqModel, mak.ModelAgent)
 
 	return nil
 }

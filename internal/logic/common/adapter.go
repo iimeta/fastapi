@@ -2,6 +2,8 @@ package common
 
 import (
 	"context"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
@@ -35,16 +37,22 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool) (adapter sdk.Adapter
 	}
 
 	options := &options.AdapterOptions{
-		Provider:                GetProviderCode(ctx, mak.Provider),
-		Model:                   mak.RealModel.Model,
-		Key:                     mak.RealKey,
-		BaseUrl:                 mak.BaseUrl,
-		Path:                    mak.Path,
-		Stream:                  isLong,
-		Action:                  g.RequestFromCtx(ctx).GetRouter("action", "").String(),
-		Timeout:                 config.Cfg.Base.ShortTimeout * time.Second,
-		ProxyUrl:                config.Cfg.Http.ProxyUrl,
-		IsOfficialFormatRequest: mak.ReqModel.RequestDataFormat == 2,
+		Provider:             GetProviderCode(ctx, mak.Provider),
+		Model:                mak.RealModel.Model,
+		Key:                  mak.RealKey,
+		BaseUrl:              mak.BaseUrl,
+		Path:                 mak.Path,
+		Stream:               isLong,
+		Action:               g.RequestFromCtx(ctx).GetRouter("action", "").String(),
+		Timeout:              config.Cfg.Base.ShortTimeout * time.Second,
+		ProxyUrl:             config.Cfg.Http.ProxyUrl,
+		ReqPassthroughParams: getReqPassthroughParams(mak.Passthrough),
+		ResPassthroughParams: getResPassthroughParams(mak.Passthrough),
+		PassthroughHeader:    getPassthroughHeaders(ctx, mak.Passthrough),
+	}
+
+	if mak.Passthrough != nil && slices.Contains(mak.Passthrough.ReqParams, "req_path") {
+		options.Path = g.RequestFromCtx(ctx).URL.Path
 	}
 
 	if isLong {
@@ -56,7 +64,7 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool) (adapter sdk.Adapter
 		options.IsSupportStream = &mak.RealModel.PresetConfig.IsSupportStream
 	}
 
-	g.RequestFromCtx(ctx).SetCtxVar("is_official_format_response", mak.ReqModel.ResponseDataFormat == 2)
+	g.RequestFromCtx(ctx).SetCtxVar("passthrough", mak.Passthrough)
 
 	return sdk.NewAdapter(ctx, options)
 }
@@ -79,16 +87,16 @@ func NewAdapterOfficial(ctx context.Context, mak *MAK, isLong bool) (adapter sdk
 	}
 
 	options := &options.AdapterOptions{
-		Provider:                GetProviderCode(ctx, mak.Provider),
-		Model:                   mak.RealModel.Model,
-		Key:                     mak.RealKey,
-		BaseUrl:                 mak.BaseUrl,
-		Path:                    mak.Path,
-		Stream:                  isLong,
-		Action:                  g.RequestFromCtx(ctx).GetRouter("action", "").String(),
-		Timeout:                 config.Cfg.Base.ShortTimeout * time.Second,
-		ProxyUrl:                config.Cfg.Http.ProxyUrl,
-		IsOfficialFormatRequest: true,
+		Provider:             GetProviderCode(ctx, mak.Provider),
+		Model:                mak.RealModel.Model,
+		Key:                  mak.RealKey,
+		BaseUrl:              mak.BaseUrl,
+		Path:                 mak.Path,
+		Stream:               isLong,
+		Action:               g.RequestFromCtx(ctx).GetRouter("action", "").String(),
+		Timeout:              config.Cfg.Base.ShortTimeout * time.Second,
+		ProxyUrl:             config.Cfg.Http.ProxyUrl,
+		ReqPassthroughParams: []string{"req_data"},
 	}
 
 	if isLong {
@@ -100,7 +108,7 @@ func NewAdapterOfficial(ctx context.Context, mak *MAK, isLong bool) (adapter sdk
 		options.IsSupportStream = &mak.RealModel.PresetConfig.IsSupportStream
 	}
 
-	g.RequestFromCtx(ctx).SetCtxVar("is_official_format_response", true)
+	g.RequestFromCtx(ctx).SetCtxVar("passthrough", &EffectivePassthrough{ResParams: []string{"res_data"}})
 
 	return sdk.NewAdapterOfficial(ctx, options)
 }
@@ -108,16 +116,16 @@ func NewAdapterOfficial(ctx context.Context, mak *MAK, isLong bool) (adapter sdk
 func NewAdapterOpenAI(ctx context.Context, mak *MAK, isLong bool) *openai.OpenAI {
 
 	options := &options.AdapterOptions{
-		Provider:                sconsts.PROVIDER_OPENAI,
-		Model:                   mak.RealModel.Model,
-		Key:                     mak.RealKey,
-		BaseUrl:                 mak.BaseUrl,
-		Path:                    mak.Path,
-		Stream:                  isLong,
-		Action:                  g.RequestFromCtx(ctx).GetRouter("action", "").String(),
-		Timeout:                 config.Cfg.Base.ShortTimeout * time.Second,
-		ProxyUrl:                config.Cfg.Http.ProxyUrl,
-		IsOfficialFormatRequest: true,
+		Provider:             sconsts.PROVIDER_OPENAI,
+		Model:                mak.RealModel.Model,
+		Key:                  mak.RealKey,
+		BaseUrl:              mak.BaseUrl,
+		Path:                 mak.Path,
+		Stream:               isLong,
+		Action:               g.RequestFromCtx(ctx).GetRouter("action", "").String(),
+		Timeout:              config.Cfg.Base.ShortTimeout * time.Second,
+		ProxyUrl:             config.Cfg.Http.ProxyUrl,
+		ReqPassthroughParams: []string{"req_data"},
 	}
 
 	if isLong {
@@ -129,7 +137,7 @@ func NewAdapterOpenAI(ctx context.Context, mak *MAK, isLong bool) *openai.OpenAI
 		options.IsSupportStream = &mak.RealModel.PresetConfig.IsSupportStream
 	}
 
-	g.RequestFromCtx(ctx).SetCtxVar("is_official_format_response", true)
+	g.RequestFromCtx(ctx).SetCtxVar("passthrough", &EffectivePassthrough{ResParams: []string{"res_data"}})
 
 	return openai.NewAdapter(ctx, options)
 }
@@ -163,4 +171,42 @@ func GetProviderCode(ctx context.Context, providerId string) string {
 	}
 
 	return providerId
+}
+
+func getReqPassthroughParams(pt *EffectivePassthrough) []string {
+	if pt == nil {
+		return nil
+	}
+	return pt.ReqParams
+}
+
+func getResPassthroughParams(pt *EffectivePassthrough) []string {
+	if pt == nil {
+		return nil
+	}
+	return pt.ResParams
+}
+
+func getPassthroughHeaders(ctx context.Context, pt *EffectivePassthrough) map[string]string {
+	if pt == nil || !slices.Contains(pt.ReqParams, "req_header") {
+		return nil
+	}
+	headers := make(map[string]string)
+	request := g.RequestFromCtx(ctx)
+	for k, v := range request.Header {
+		key := strings.ToLower(k)
+		if pt.ReqHeaderMode == 1 {
+			if !slices.Contains(ReqReservedHeaders, key) {
+				headers[k] = v[0]
+			}
+		} else if pt.ReqHeaderMode == 2 {
+			for _, allowed := range pt.ReqHeaderList {
+				if strings.EqualFold(k, allowed) {
+					headers[k] = v[0]
+					break
+				}
+			}
+		}
+	}
+	return headers
 }

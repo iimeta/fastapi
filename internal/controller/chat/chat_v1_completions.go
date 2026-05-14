@@ -2,10 +2,12 @@ package chat
 
 import (
 	"context"
+	"slices"
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/v2/api/chat/v1"
+	"github.com/iimeta/fastapi/v2/internal/logic/common"
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/logger"
 )
@@ -33,9 +35,13 @@ func (c *ControllerV1) Completions(ctx context.Context, req *v1.CompletionsReq) 
 				return nil, err
 			}
 
-			isOfficialFormatResponse := g.RequestFromCtx(ctx).GetCtxVar("is_official_format_response")
+			passthrough, _ := g.RequestFromCtx(ctx).GetCtxVar("passthrough").Val().(*common.EffectivePassthrough)
+			isResDataPassthrough := passthrough != nil && slices.Contains(passthrough.ResParams, "res_data")
 
-			if isOfficialFormatResponse == nil || !isOfficialFormatResponse.Bool() || response.ResponseBytes == nil {
+			// 响应头透传
+			common.WritePassthroughHeaders(ctx, passthrough, response.ResponseHeaders)
+
+			if !isResDataPassthrough || response.ResponseBytes == nil {
 				g.RequestFromCtx(ctx).Response.WriteJson(response)
 			} else {
 				g.RequestFromCtx(ctx).Response.WriteJson(response.ResponseBytes)

@@ -80,6 +80,13 @@ func (s *sModelAgent) GetById(ctx context.Context, id string) (*model.ModelAgent
 		SessionKeepConfig:     modelAgent.SessionKeepConfig,
 		IsNeverDisable:        modelAgent.IsNeverDisable,
 		LbStrategy:            modelAgent.LbStrategy,
+		IsEnableDataPassthrough:  modelAgent.IsEnableDataPassthrough,
+		ReqPassthroughParams:     modelAgent.ReqPassthroughParams,
+		ReqHeaderPassthroughMode: modelAgent.ReqHeaderPassthroughMode,
+		ReqHeaderPassthroughList: modelAgent.ReqHeaderPassthroughList,
+		ResPassthroughParams:     modelAgent.ResPassthroughParams,
+		ResHeaderPassthroughMode: modelAgent.ResHeaderPassthroughMode,
+		ResHeaderPassthroughList: modelAgent.ResHeaderPassthroughList,
 		Status:                modelAgent.Status,
 	}, nil
 }
@@ -125,6 +132,13 @@ func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAge
 			SessionKeepConfig:     result.SessionKeepConfig,
 			IsNeverDisable:        result.IsNeverDisable,
 			LbStrategy:            result.LbStrategy,
+			IsEnableDataPassthrough:  result.IsEnableDataPassthrough,
+			ReqPassthroughParams:     result.ReqPassthroughParams,
+			ReqHeaderPassthroughMode: result.ReqHeaderPassthroughMode,
+			ReqHeaderPassthroughList: result.ReqHeaderPassthroughList,
+			ResPassthroughParams:     result.ResPassthroughParams,
+			ResHeaderPassthroughMode: result.ResHeaderPassthroughMode,
+			ResHeaderPassthroughList: result.ResHeaderPassthroughList,
 			Status:                result.Status,
 		})
 	}
@@ -169,6 +183,13 @@ func (s *sModelAgent) ListAll(ctx context.Context) ([]*model.ModelAgent, error) 
 			SessionKeepConfig:     result.SessionKeepConfig,
 			IsNeverDisable:        result.IsNeverDisable,
 			LbStrategy:            result.LbStrategy,
+			IsEnableDataPassthrough:  result.IsEnableDataPassthrough,
+			ReqPassthroughParams:     result.ReqPassthroughParams,
+			ReqHeaderPassthroughMode: result.ReqHeaderPassthroughMode,
+			ReqHeaderPassthroughList: result.ReqHeaderPassthroughList,
+			ResPassthroughParams:     result.ResPassthroughParams,
+			ResHeaderPassthroughMode: result.ResHeaderPassthroughMode,
+			ResHeaderPassthroughList: result.ResHeaderPassthroughList,
 			Status:                result.Status,
 		})
 	}

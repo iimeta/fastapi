@@ -424,6 +424,11 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 			return err
 		}
 
+		// 响应头透传
+		if response.ResponseHeaders != nil {
+			common.WritePassthroughHeaders(ctx, mak.Passthrough, response.ResponseHeaders)
+		}
+
 		if len(response.Choices) > 0 && response.Choices[0].Delta != nil {
 			if mak.RealModel.Type == 102 && response.Choices[0].Delta.Audio != nil {
 				completion += response.Choices[0].Delta.Audio.Transcript
@@ -473,8 +478,8 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 			}
 		}
 
-		// 官方格式
-		if mak.ReqModel.ResponseDataFormat == 2 && response.ResponseBytes != nil {
+		// 数据透传
+		if mak.Passthrough != nil && slices.Contains(mak.Passthrough.ResParams, "res_data") && response.ResponseBytes != nil {
 
 			if mak.ReqModel.IsEnableForward {
 
