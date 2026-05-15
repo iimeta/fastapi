@@ -25,6 +25,7 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 	spend.BillingRule = mak.ReqModel.Pricing.BillingRule
 	spend.BillingMethods = mak.ReqModel.Pricing.BillingMethods
 	spend.BillingItems = billingItems
+	spend.CurrencySymbol = mak.ReqModel.Pricing.CurrencySymbol
 
 	for _, billingItem := range billingItems {
 		switch billingItem {
