@@ -36,8 +36,15 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool) (adapter sdk.Adapter
 		}()
 	}
 
+	provider := GetProviderCode(ctx, mak.Provider)
+
+	// 非 OpenAI 不透传
+	if provider != sconsts.PROVIDER_OPENAI {
+		mak.Passthrough = nil
+	}
+
 	options := &options.AdapterOptions{
-		Provider:             GetProviderCode(ctx, mak.Provider),
+		Provider:             provider,
 		Model:                mak.RealModel.Model,
 		Key:                  mak.RealKey,
 		BaseUrl:              mak.BaseUrl,
