@@ -5,12 +5,15 @@ import (
 	"crypto/md5"
 	"fmt"
 	"regexp"
+	"sync"
 
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/iimeta/fastapi/v2/internal/model/common"
 	"github.com/iimeta/fastapi/v2/internal/service"
 )
+
+var regexCache sync.Map
 
 func (s *sSessionKeepModelAgent) ResolveSessionKey(ctx context.Context, modelName string, cfg *common.ModelAgentSessionKeep) *common.SessionKey {
 
@@ -36,6 +39,14 @@ func matchRuleAndBuildKey(ctx context.Context, userId int, modelName string, cfg
 	r := g.RequestFromCtx(ctx)
 	path := r.URL.Path
 
+	// 预解析请求体 JSON, 避免重复解析
+	var bodyJson *gjson.Json
+	if needsBodyParsing(cfg) {
+		if j, err := gjson.LoadJson(r.GetBody()); err == nil {
+			bodyJson = j
+		}
+	}
+
 	for i := range cfg.Rules {
 		rule := &cfg.Rules[i]
 
@@ -47,7 +58,7 @@ func matchRuleAndBuildKey(ctx context.Context, userId int, modelName string, cfg
 			continue
 		}
 
-		value := extractKeyValue(ctx, rule.KeySources)
+		value := extractKeyValue(ctx, bodyJson, rule.KeySources)
 		if value == "" {
 			continue
 		}
@@ -56,7 +67,7 @@ func matchRuleAndBuildKey(ctx context.Context, userId int, modelName string, cfg
 	}
 
 	if cfg.EnableSystemPromptHash {
-		if hash := extractSystemPromptHash(ctx); hash != "" {
+		if hash := extractSystemPromptHash(bodyJson); hash != "" {
 			return buildSysHashSessionKey(userId, modelName, hash)
 		}
 	}
@@ -64,18 +75,34 @@ func matchRuleAndBuildKey(ctx context.Context, userId int, modelName string, cfg
 	return nil
 }
 
-func extractKeyValue(ctx context.Context, sources []common.SessionKeepKeySource) string {
+func needsBodyParsing(cfg *common.ModelAgentSessionKeep) bool {
+
+	if cfg.EnableSystemPromptHash {
+		return true
+	}
+
+	for i := range cfg.Rules {
+		for j := range cfg.Rules[i].KeySources {
+			if cfg.Rules[i].KeySources[j].Type == "body" {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+func extractKeyValue(ctx context.Context, bodyJson *gjson.Json, sources []common.SessionKeepKeySource) string {
 
 	r := g.RequestFromCtx(ctx)
 
 	for _, src := range sources {
 		switch src.Type {
 		case "body":
-			j, err := gjson.LoadJson(r.GetBody())
-			if err != nil {
+			if bodyJson == nil {
 				continue
 			}
-			val := j.Get(src.Key).String()
+			val := bodyJson.Get(src.Key).String()
 			if val != "" {
 				return val
 			}
@@ -90,16 +117,13 @@ func extractKeyValue(ctx context.Context, sources []common.SessionKeepKeySource)
 	return ""
 }
 
-func extractSystemPromptHash(ctx context.Context) string {
+func extractSystemPromptHash(bodyJson *gjson.Json) string {
 
-	r := g.RequestFromCtx(ctx)
-
-	j, err := gjson.LoadJson(r.GetBody())
-	if err != nil {
+	if bodyJson == nil {
 		return ""
 	}
 
-	messages := j.GetJsons("messages")
+	messages := bodyJson.GetJsons("messages")
 	if len(messages) == 0 {
 		return ""
 	}
@@ -119,7 +143,15 @@ func extractSystemPromptHash(ctx context.Context) string {
 
 func matchAnyRegex(value string, patterns []string) bool {
 	for _, pattern := range patterns {
-		if matched, err := regexp.MatchString(pattern, value); err == nil && matched {
+		re, ok := regexCache.Load(pattern)
+		if !ok {
+			compiled, err := regexp.Compile(pattern)
+			if err != nil {
+				continue
+			}
+			re, _ = regexCache.LoadOrStore(pattern, compiled)
+		}
+		if re.(*regexp.Regexp).MatchString(value) {
 			return true
 		}
 	}

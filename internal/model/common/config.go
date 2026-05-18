@@ -169,7 +169,7 @@ type ModelAgentHealthCheckTask struct {
 
 type ModelAgentSessionKeep struct {
 	Open                   bool              `bson:"open"                      json:"open"`                      // 开关
-	Mode                   string            `bson:"mode"                      json:"mode"`                      // 模式: user(按用户,默认) | rule(按规则)
+	Mode                   string            `bson:"mode"                      json:"mode"`                      // 模式[rule:按规则, user:按用户]
 	Ttl                    time.Duration     `bson:"ttl"                       json:"ttl"`                       // 会话保持时长, 单位: 秒
 	FailTtl                time.Duration     `bson:"fail_ttl"                  json:"fail_ttl"`                  // 失败保持时长, 单位: 秒
 	FailSwitchThreshold    int64             `bson:"fail_switch_threshold"     json:"fail_switch_threshold"`     // 失败切换阈值
@@ -185,7 +185,7 @@ type SessionKeepRule struct {
 	ModelRegex []string               `bson:"model_regex" json:"model_regex"` // 模型名正则过滤
 	PathRegex  []string               `bson:"path_regex"  json:"path_regex"`  // 请求路径正则过滤
 	KeySources []SessionKeepKeySource `bson:"key_sources" json:"key_sources"` // Key提取源(有序, 首个命中生效)
-	Transform  string                 `bson:"transform"   json:"transform"`   // 值转换: none(默认) | md5 | prefix:N
+	Transform  string                 `bson:"transform"   json:"transform"`   // 值转换[none, md5, prefix:N]
 }
 
 type SessionKeepKeySource struct {
