@@ -3,7 +3,6 @@ package common
 import (
 	"context"
 
-	"github.com/gogf/gf/v2/frame/g"
 	"github.com/iimeta/fastapi/v2/internal/config"
 	mcommon "github.com/iimeta/fastapi/v2/internal/model/common"
 	"github.com/iimeta/fastapi/v2/internal/service"
@@ -22,6 +21,10 @@ func getSessionKeepConfig(modelAgent *mcommon.ModelAgentSessionKeep, enabled boo
 
 		if modelAgent.Open {
 			cfg.Open = true
+		}
+
+		if modelAgent.Mode != "" {
+			cfg.Mode = modelAgent.Mode
 		}
 
 		if modelAgent.Ttl > 0 {
@@ -46,6 +49,14 @@ func getSessionKeepConfig(modelAgent *mcommon.ModelAgentSessionKeep, enabled boo
 
 		if modelAgent.GlobalLimit > 0 {
 			cfg.GlobalLimit = modelAgent.GlobalLimit
+		}
+
+		if len(modelAgent.Rules) > 0 {
+			cfg.Rules = modelAgent.Rules
+		}
+
+		if modelAgent.EnableSystemPromptHash {
+			cfg.EnableSystemPromptHash = true
 		}
 	}
 
@@ -76,30 +87,41 @@ func HandleSessionKeepSuccess(ctx context.Context, mak *MAK) {
 		return
 	}
 
-	userId := service.Session().GetUserId(ctx)
-	if userId <= 0 {
-		userId = service.Session().GetUserId(g.RequestFromCtx(ctx).GetCtx())
+	sk := service.Session().GetSessionKey(ctx)
+	if sk == nil {
+		modelName := ""
+		if mak.RealModel != nil {
+			modelName = mak.RealModel.Name
+		}
+		if modelName == "" {
+			modelName = mak.Model
+		}
+		if modelName == "" {
+			return
+		}
+		sk = service.SessionKeepModelAgent().ResolveSessionKey(ctx, modelName, cfg)
 	}
-
-	if userId <= 0 || mak.RealModel == nil {
+	if sk == nil {
 		return
 	}
 
-	modelName := mak.RealModel.Name
-	if modelName == "" {
-		modelName = mak.Model
+	keyId := ""
+	if mak.Key != nil {
+		keyId = mak.Key.Id
 	}
 
-	if modelName == "" {
-		return
-	}
-
-	if err := service.SessionKeepModelAgent().Refresh(ctx, userId, modelName, mak.ModelAgent.Id); err != nil {
+	if err := service.SessionKeepModelAgent().Refresh(ctx, sk, mak.ModelAgent.Id, keyId); err != nil {
 		logger.Error(ctx, err)
 	}
 
-	if err := service.SessionKeepModelAgent().ClearFail(ctx, userId, modelName, mak.ModelAgent.Id); err != nil {
+	if err := service.SessionKeepModelAgent().ClearFail(ctx, sk, mak.ModelAgent.Id); err != nil {
 		logger.Error(ctx, err)
+	}
+
+	if keyId != "" {
+		if err := service.SessionKeepModelAgent().ClearKeyFail(ctx, sk, mak.ModelAgent.Id, keyId); err != nil {
+			logger.Error(ctx, err)
+		}
 	}
 }
 
@@ -114,32 +136,52 @@ func HandleSessionKeepFailure(ctx context.Context, mak *MAK) {
 		return
 	}
 
-	userId := service.Session().GetUserId(ctx)
-	if userId <= 0 {
-		userId = service.Session().GetUserId(g.RequestFromCtx(ctx).GetCtx())
+	sk := service.Session().GetSessionKey(ctx)
+	if sk == nil {
+		modelName := ""
+		if mak.RealModel != nil {
+			modelName = mak.RealModel.Name
+		}
+		if modelName == "" {
+			modelName = mak.Model
+		}
+		if modelName == "" {
+			return
+		}
+		sk = service.SessionKeepModelAgent().ResolveSessionKey(ctx, modelName, cfg)
 	}
-
-	if userId <= 0 || mak.RealModel == nil {
+	if sk == nil {
 		return
 	}
 
-	modelName := mak.RealModel.Name
-	if modelName == "" {
-		modelName = mak.Model
+	keyId := ""
+	if mak.Key != nil {
+		keyId = mak.Key.Id
 	}
 
-	if modelName == "" {
-		return
+	if keyId != "" {
+		keyFailCount, keyErr := service.SessionKeepModelAgent().RecordKeyFail(ctx, sk, mak.ModelAgent.Id, keyId)
+		if keyErr != nil {
+			logger.Error(ctx, keyErr)
+			return
+		}
+
+		if cfg.FailSwitchThreshold > 0 && keyFailCount >= cfg.FailSwitchThreshold {
+			if err := service.SessionKeepModelAgent().Refresh(ctx, sk, mak.ModelAgent.Id, ""); err != nil {
+				logger.Error(ctx, err)
+			}
+			return
+		}
 	}
 
-	failCount, err := service.SessionKeepModelAgent().RecordFail(ctx, userId, modelName, mak.ModelAgent.Id)
+	failCount, err := service.SessionKeepModelAgent().RecordFail(ctx, sk, mak.ModelAgent.Id)
 	if err != nil {
 		logger.Error(ctx, err)
 		return
 	}
 
 	if cfg.FailSwitchThreshold > 0 && failCount >= cfg.FailSwitchThreshold {
-		if err = service.SessionKeepModelAgent().Delete(ctx, userId, modelName, mak.ModelAgent.Id); err != nil {
+		if err = service.SessionKeepModelAgent().Delete(ctx, sk, mak.ModelAgent.Id); err != nil {
 			logger.Error(ctx, err)
 		}
 	}

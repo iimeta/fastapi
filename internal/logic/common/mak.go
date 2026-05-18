@@ -316,6 +316,19 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 		if mak.KeyTotal, mak.Key, err = service.ModelAgent().PickKey(ctx, mak.ModelAgent); err != nil {
 			logger.Error(ctx, err)
 
+			if errors.Is(err, errors.ERR_ALL_MODEL_AGENT_KEY) && service.Session().GetSessionKeepHit(ctx) {
+				service.Session().RecordErrorModelAgent(ctx, mak.ModelAgent.Id)
+				if sk := service.Session().GetSessionKey(ctx); sk != nil {
+					if delErr := service.SessionKeepModelAgent().Delete(ctx, sk, mak.ModelAgent.Id); delErr != nil {
+						logger.Error(ctx, delErr)
+					}
+				}
+				service.Session().SaveSessionKeepHit(ctx, false)
+				service.Session().SaveSessionKeepPreferredKey(ctx, "")
+				mak.ModelAgent = nil
+				return mak.InitMAK(ctx)
+			}
+
 			service.ModelAgent().RecordError(ctx, mak.RealModel, mak.ModelAgent)
 
 			if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY) {

@@ -59,7 +59,9 @@ func (s *sCommon) ParseSecretKey(ctx context.Context, secretKey string) (int, in
 // 记录错误次数和禁用
 func (s *sCommon) RecordError(ctx context.Context, model *model.Model, key *model.Key, modelAgent *model.ModelAgent) {
 
-	if modelAgent != nil {
+	sessionKeepHit := service.Session().GetSessionKeepHit(ctx)
+
+	if modelAgent != nil && !sessionKeepHit {
 		service.Session().RecordErrorModelAgent(ctx, modelAgent.Id)
 	}
 
@@ -70,7 +72,9 @@ func (s *sCommon) RecordError(ctx context.Context, model *model.Model, key *mode
 	if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
 		if model.IsEnableModelAgent {
 			service.ModelAgent().RecordErrorKey(ctx, modelAgent, key)
-			service.ModelAgent().RecordError(ctx, model, modelAgent)
+			if !sessionKeepHit {
+				service.ModelAgent().RecordError(ctx, model, modelAgent)
+			}
 		} else {
 			service.Key().RecordError(ctx, model, key)
 		}

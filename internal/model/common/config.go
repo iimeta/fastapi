@@ -168,13 +168,35 @@ type ModelAgentHealthCheckTask struct {
 }
 
 type ModelAgentSessionKeep struct {
-	Open                bool          `bson:"open"                  json:"open"`                  // 开关
-	Ttl                 time.Duration `bson:"ttl"                   json:"ttl"`                   // 会话保持时长, 单位: 秒
-	FailTtl             time.Duration `bson:"fail_ttl"              json:"fail_ttl"`              // 失败保持时长, 单位: 秒
-	FailSwitchThreshold int64         `bson:"fail_switch_threshold" json:"fail_switch_threshold"` // 失败切换阈值
-	UserLimit           int64         `bson:"user_limit"            json:"user_limit"`            // 单用户上限
-	AgentLimit          int64         `bson:"agent_limit"           json:"agent_limit"`           // 单代理上限
-	GlobalLimit         int64         `bson:"global_limit"          json:"global_limit"`          // 全局总上限
+	Open                   bool              `bson:"open"                      json:"open"`                      // 开关
+	Mode                   string            `bson:"mode"                      json:"mode"`                      // 模式: user(按用户,默认) | rule(按规则)
+	Ttl                    time.Duration     `bson:"ttl"                       json:"ttl"`                       // 会话保持时长, 单位: 秒
+	FailTtl                time.Duration     `bson:"fail_ttl"                  json:"fail_ttl"`                  // 失败保持时长, 单位: 秒
+	FailSwitchThreshold    int64             `bson:"fail_switch_threshold"     json:"fail_switch_threshold"`     // 失败切换阈值
+	UserLimit              int64             `bson:"user_limit"                json:"user_limit"`                // 单用户上限
+	AgentLimit             int64             `bson:"agent_limit"               json:"agent_limit"`               // 单代理上限
+	GlobalLimit            int64             `bson:"global_limit"              json:"global_limit"`              // 全局总上限
+	Rules                  []SessionKeepRule `bson:"rules"                     json:"rules"`                     // Mode="rule"时的规则列表
+	EnableSystemPromptHash bool              `bson:"enable_system_prompt_hash" json:"enable_system_prompt_hash"` // Mode="rule"时, 无规则命中则用SystemPrompt哈希兜底
+}
+
+type SessionKeepRule struct {
+	Name       string                 `bson:"name"        json:"name"`        // 规则名称
+	ModelRegex []string               `bson:"model_regex" json:"model_regex"` // 模型名正则过滤
+	PathRegex  []string               `bson:"path_regex"  json:"path_regex"`  // 请求路径正则过滤
+	KeySources []SessionKeepKeySource `bson:"key_sources" json:"key_sources"` // Key提取源(有序, 首个命中生效)
+	Transform  string                 `bson:"transform"   json:"transform"`   // 值转换: none(默认) | md5 | prefix:N
+}
+
+type SessionKeepKeySource struct {
+	Type string `bson:"type" json:"type"` // body | header
+	Key  string `bson:"key"  json:"key"`  // gjson路径 / Header名
+}
+
+type SessionKey struct {
+	Raw    string // 完整Key字符串, 用于Redis key拼接和ZSET member
+	UserId int    // 用户ID
+	Mode   string // user | rule
 }
 
 type ServiceUnavailable struct {

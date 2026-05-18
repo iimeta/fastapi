@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/iimeta/fastapi/v2/internal/model"
+	"github.com/iimeta/fastapi/v2/internal/model/common"
 )
 
 type (
@@ -63,6 +64,18 @@ type (
 		SaveModelAgentBillingMethod(ctx context.Context, billingMethod int)
 		// 获取模型代理计费方式
 		GetModelAgentBillingMethod(ctx context.Context) int
+		// 保存会话保持首选密钥ID
+		SaveSessionKeepPreferredKey(ctx context.Context, keyId string)
+		// 获取会话保持首选密钥ID
+		GetSessionKeepPreferredKey(ctx context.Context) string
+		// 保存会话保持命中标记
+		SaveSessionKeepHit(ctx context.Context, hit bool)
+		// 获取会话保持命中标记
+		GetSessionKeepHit(ctx context.Context) bool
+		// 保存会话保持SessionKey到上下文
+		SaveSessionKey(ctx context.Context, sk *common.SessionKey)
+		// 获取会话保持SessionKey
+		GetSessionKey(ctx context.Context) *common.SessionKey
 	}
 )
 

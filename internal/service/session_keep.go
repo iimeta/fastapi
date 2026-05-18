@@ -1,24 +1,24 @@
-// ================================================================================
-// Code generated and maintained by GoFrame CLI tool. DO NOT EDIT.
-// You can delete these comments if you wish manually maintain this interface file.
-// ================================================================================
-
 package service
 
 import (
 	"context"
+
+	"github.com/iimeta/fastapi/v2/internal/model/common"
 )
 
 type (
 	ISessionKeepModelAgent interface {
-		Get(ctx context.Context, userId int, modelName string) (string, bool, error)
-		Set(ctx context.Context, userId int, modelName string, agentId string) error
-		Refresh(ctx context.Context, userId int, modelName string, agentId string) error
-		Delete(ctx context.Context, userId int, modelName string, agentId string) error
+		ResolveSessionKey(ctx context.Context, modelName string, cfg *common.ModelAgentSessionKeep) *common.SessionKey
+		Get(ctx context.Context, sk *common.SessionKey) (agentId string, keyId string, ok bool, err error)
+		Set(ctx context.Context, sk *common.SessionKey, agentId string, keyId string) error
+		Refresh(ctx context.Context, sk *common.SessionKey, agentId string, keyId string) error
+		Delete(ctx context.Context, sk *common.SessionKey, agentId string) error
 		DeleteByAgent(ctx context.Context, agentId string) (int64, error)
 		DeleteAll(ctx context.Context) (int64, error)
-		RecordFail(ctx context.Context, userId int, modelName string, agentId string) (int64, error)
-		ClearFail(ctx context.Context, userId int, modelName string, agentId string) error
+		RecordFail(ctx context.Context, sk *common.SessionKey, agentId string) (int64, error)
+		ClearFail(ctx context.Context, sk *common.SessionKey, agentId string) error
+		RecordKeyFail(ctx context.Context, sk *common.SessionKey, agentId string, keyId string) (int64, error)
+		ClearKeyFail(ctx context.Context, sk *common.SessionKey, agentId string, keyId string) error
 	}
 )
 

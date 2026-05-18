@@ -20,6 +20,7 @@ import (
 
 type localSessionKeepValue struct {
 	AgentId string
+	KeyId   string
 }
 
 type sSessionKeepModelAgent struct {
@@ -36,44 +37,44 @@ func New() service.ISessionKeepModelAgent {
 	}
 }
 
-func (s *sSessionKeepModelAgent) Get(ctx context.Context, userId int, modelName string) (string, bool, error) {
+func (s *sSessionKeepModelAgent) Get(ctx context.Context, sk *common.SessionKey) (string, string, bool, error) {
 
-	key := s.localKey(userId, modelName)
+	key := s.localKey(sk)
 	if value := s.localCache.GetVal(ctx, key); value != nil {
 		if localValue, ok := value.(*localSessionKeepValue); ok && localValue.AgentId != "" {
-			return localValue.AgentId, true, nil
+			return localValue.AgentId, localValue.KeyId, true, nil
 		}
 	}
 
-	agentId, err := redis.GetStr(ctx, s.redisValueKey(userId, modelName))
+	agentId, keyId, exists, err := s.getStoredValue(ctx, sk)
 	if err != nil {
-		return "", false, err
+		return "", "", false, err
 	}
 
-	if agentId == "" {
-		return "", false, nil
+	if !exists {
+		return "", "", false, nil
 	}
 
 	cfg, cfgErr := s.cfgByAgent(ctx, agentId)
 	if cfgErr != nil {
-		return "", false, cfgErr
+		return "", "", false, cfgErr
 	}
 
 	localTtl := s.localTTL(cfg.Ttl)
-	if err = s.localCache.Set(ctx, key, &localSessionKeepValue{AgentId: agentId}, localTtl); err != nil {
+	if err = s.localCache.Set(ctx, key, &localSessionKeepValue{AgentId: agentId, KeyId: keyId}, localTtl); err != nil {
 		logger.Error(ctx, err)
 	}
 
-	return agentId, true, nil
+	return agentId, keyId, true, nil
 }
 
-func (s *sSessionKeepModelAgent) Set(ctx context.Context, userId int, modelName, agentId string) error {
+func (s *sSessionKeepModelAgent) Set(ctx context.Context, sk *common.SessionKey, agentId string, keyId string) error {
 
-	if agentId == "" || modelName == "" || userId <= 0 {
+	if agentId == "" || sk == nil || sk.UserId <= 0 {
 		return nil
 	}
 
-	if err := s.cleanupExpired(ctx, userId, modelName); err != nil {
+	if err := s.cleanupExpired(ctx, sk); err != nil {
 		return err
 	}
 
@@ -82,32 +83,37 @@ func (s *sSessionKeepModelAgent) Set(ctx context.Context, userId int, modelName,
 		return err
 	}
 
-	oldAgentId, exists, err := s.getStoredAgentId(ctx, userId, modelName)
+	oldAgentId, _, exists, err := s.getStoredValue(ctx, sk)
 	if err != nil {
 		return err
 	}
 
 	if exists && oldAgentId != "" && oldAgentId != agentId {
-		if err = s.removeIndex(ctx, userId, modelName, oldAgentId); err != nil {
+		if err = s.removeIndex(ctx, sk, oldAgentId); err != nil {
 			return err
 		}
 	}
 
-	if err = s.ensureLimit(ctx, userId, modelName, agentId, cfg); err != nil {
+	if err = s.ensureLimit(ctx, sk, agentId, cfg); err != nil {
 		return err
 	}
 
-	if err = redis.SetEX(ctx, s.redisValueKey(userId, modelName), agentId, s.redisTTLSeconds(cfg.Ttl)); err != nil {
+	value := agentId
+	if keyId != "" {
+		value = agentId + ":" + keyId
+	}
+
+	if err = redis.SetEX(ctx, s.redisValueKey(sk), value, s.redisTTLSeconds(cfg.Ttl)); err != nil {
 		return err
 	}
 
 	now := time.Now().Unix()
-	member := s.member(userId, modelName)
+	member := sk.Raw
 	if _, err := redis.ZAdd(ctx, s.redisAgentSetKey(agentId), float64(now), member); err != nil {
 		return err
 	}
 
-	if _, err := redis.ZAdd(ctx, s.redisUserAgentSetKey(userId, agentId), float64(now), modelName); err != nil {
+	if _, err := redis.ZAdd(ctx, s.redisUserAgentSetKey(sk.UserId, agentId), float64(now), member); err != nil {
 		return err
 	}
 
@@ -116,28 +122,35 @@ func (s *sSessionKeepModelAgent) Set(ctx context.Context, userId int, modelName,
 	}
 
 	localTtl := s.localTTL(cfg.Ttl)
-	if err = s.localCache.Set(ctx, s.localKey(userId, modelName), &localSessionKeepValue{AgentId: agentId}, localTtl); err != nil {
+	if err = s.localCache.Set(ctx, s.localKey(sk), &localSessionKeepValue{AgentId: agentId, KeyId: keyId}, localTtl); err != nil {
 		logger.Error(ctx, err)
 	}
 
 	return nil
 }
 
-func (s *sSessionKeepModelAgent) Refresh(ctx context.Context, userId int, modelName, agentId string) error {
-	return s.Set(ctx, userId, modelName, agentId)
+func (s *sSessionKeepModelAgent) Refresh(ctx context.Context, sk *common.SessionKey, agentId string, keyId string) error {
+	return s.Set(ctx, sk, agentId, keyId)
 }
 
-func (s *sSessionKeepModelAgent) Delete(ctx context.Context, userId int, modelName, agentId string) error {
+func (s *sSessionKeepModelAgent) Delete(ctx context.Context, sk *common.SessionKey, agentId string) error {
 
-	if _, err := redis.Del(ctx, s.redisValueKey(userId, modelName), s.redisFailKey(userId, modelName, agentId)); err != nil {
+	_, keyId, _, _ := s.getStoredValue(ctx, sk)
+
+	keysToDelete := []string{s.redisValueKey(sk), s.redisFailKey(sk, agentId)}
+	if keyId != "" {
+		keysToDelete = append(keysToDelete, s.redisKeyFailKey(sk, agentId, keyId))
+	}
+
+	if _, err := redis.Del(ctx, keysToDelete...); err != nil {
 		return err
 	}
 
-	if err := s.removeIndex(ctx, userId, modelName, agentId); err != nil {
+	if err := s.removeIndex(ctx, sk, agentId); err != nil {
 		return err
 	}
 
-	if _, err := s.localCache.Remove(ctx, s.localKey(userId, modelName)); err != nil {
+	if _, err := s.localCache.Remove(ctx, s.localKey(sk)); err != nil {
 		logger.Error(ctx, err)
 	}
 
@@ -154,11 +167,11 @@ func (s *sSessionKeepModelAgent) DeleteByAgent(ctx context.Context, agentId stri
 	var deleted int64
 
 	for _, member := range members {
-		userId, modelName, ok := s.parseMember(member)
-		if !ok {
+		sk := recoverSessionKey(member)
+		if sk == nil {
 			continue
 		}
-		if delErr := s.Delete(ctx, userId, modelName, agentId); delErr != nil {
+		if delErr := s.Delete(ctx, sk, agentId); delErr != nil {
 			return deleted, delErr
 		}
 		deleted++
@@ -204,40 +217,72 @@ func (s *sSessionKeepModelAgent) DeleteAll(ctx context.Context) (int64, error) {
 	return deleted, nil
 }
 
-func (s *sSessionKeepModelAgent) RecordFail(ctx context.Context, userId int, modelName, agentId string) (int64, error) {
+func (s *sSessionKeepModelAgent) RecordFail(ctx context.Context, sk *common.SessionKey, agentId string) (int64, error) {
 
 	cfg, err := s.cfgByAgent(ctx, agentId)
 	if err != nil {
 		return 0, err
 	}
 
-	count, err := redis.Incr(ctx, s.redisFailKey(userId, modelName, agentId))
+	failKey := s.redisFailKey(sk, agentId)
+
+	count, err := redis.Incr(ctx, failKey)
 	if err != nil {
 		return 0, err
 	}
 
-	if _, err = redis.Expire(ctx, s.redisFailKey(userId, modelName, agentId), s.redisTTLSeconds(cfg.FailTtl)); err != nil {
+	if _, err = redis.Expire(ctx, failKey, s.redisTTLSeconds(cfg.FailTtl)); err != nil {
 		return 0, err
 	}
 
 	return count, nil
 }
 
-func (s *sSessionKeepModelAgent) ClearFail(ctx context.Context, userId int, modelName, agentId string) error {
-	_, err := redis.Del(ctx, s.redisFailKey(userId, modelName, agentId))
+func (s *sSessionKeepModelAgent) ClearFail(ctx context.Context, sk *common.SessionKey, agentId string) error {
+	_, err := redis.Del(ctx, s.redisFailKey(sk, agentId))
 	return err
 }
 
-func (s *sSessionKeepModelAgent) redisValueKey(userId int, modelName string) string {
-	return fmt.Sprintf(consts.SESSION_KEEP_VALUE_PREFIX, userId, modelName)
+func (s *sSessionKeepModelAgent) RecordKeyFail(ctx context.Context, sk *common.SessionKey, agentId, keyId string) (int64, error) {
+
+	cfg, err := s.cfgByAgent(ctx, agentId)
+	if err != nil {
+		return 0, err
+	}
+
+	failKey := s.redisKeyFailKey(sk, agentId, keyId)
+
+	count, err := redis.Incr(ctx, failKey)
+	if err != nil {
+		return 0, err
+	}
+
+	if _, err = redis.Expire(ctx, failKey, s.redisTTLSeconds(cfg.FailTtl)); err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
 
-func (s *sSessionKeepModelAgent) redisFailKey(userId int, modelName, agentId string) string {
-	return fmt.Sprintf(consts.SESSION_KEEP_FAIL_PREFIX, userId, modelName, agentId)
+func (s *sSessionKeepModelAgent) ClearKeyFail(ctx context.Context, sk *common.SessionKey, agentId, keyId string) error {
+	_, err := redis.Del(ctx, s.redisKeyFailKey(sk, agentId, keyId))
+	return err
 }
 
-func (s *sSessionKeepModelAgent) localKey(userId int, modelName string) string {
-	return fmt.Sprintf(consts.SESSION_KEEP_LOCAL_KEY_PREFIX, userId, modelName)
+func (s *sSessionKeepModelAgent) redisValueKey(sk *common.SessionKey) string {
+	return fmt.Sprintf(consts.SESSION_KEEP_VALUE_PREFIX, sk.Raw)
+}
+
+func (s *sSessionKeepModelAgent) redisFailKey(sk *common.SessionKey, agentId string) string {
+	return fmt.Sprintf(consts.SESSION_KEEP_FAIL_PREFIX, sk.Raw, agentId)
+}
+
+func (s *sSessionKeepModelAgent) redisKeyFailKey(sk *common.SessionKey, agentId, keyId string) string {
+	return fmt.Sprintf(consts.SESSION_KEEP_KEY_FAIL_PREFIX, sk.Raw, agentId, keyId)
+}
+
+func (s *sSessionKeepModelAgent) localKey(sk *common.SessionKey) string {
+	return fmt.Sprintf(consts.SESSION_KEEP_LOCAL_KEY_PREFIX, sk.Raw)
 }
 
 func (s *sSessionKeepModelAgent) redisAgentSetKey(agentId string) string {
@@ -250,25 +295,6 @@ func (s *sSessionKeepModelAgent) redisUserAgentSetKey(userId int, agentId string
 
 func (s *sSessionKeepModelAgent) redisGlobalSetKey() string {
 	return consts.SESSION_KEEP_GLOBAL_SET
-}
-
-func (s *sSessionKeepModelAgent) member(userId int, modelName string) string {
-	return fmt.Sprintf("%d:%s", userId, modelName)
-}
-
-func (s *sSessionKeepModelAgent) parseMember(member string) (int, string, bool) {
-
-	parts := strings.SplitN(member, ":", 2)
-	if len(parts) != 2 {
-		return 0, "", false
-	}
-
-	var userId int
-	if _, err := fmt.Sscanf(parts[0], "%d", &userId); err != nil || userId <= 0 {
-		return 0, "", false
-	}
-
-	return userId, parts[1], true
 }
 
 func (s *sSessionKeepModelAgent) cfgByAgent(ctx context.Context, agentId string) (*common.ModelAgentSessionKeep, error) {
@@ -296,6 +322,10 @@ func (s *sSessionKeepModelAgent) cfgByAgent(ctx context.Context, agentId string)
 
 		cfg.Open = true
 
+		if agentCfg.Mode != "" {
+			cfg.Mode = agentCfg.Mode
+		}
+
 		if agentCfg.Ttl > 0 {
 			cfg.Ttl = agentCfg.Ttl
 		}
@@ -319,31 +349,42 @@ func (s *sSessionKeepModelAgent) cfgByAgent(ctx context.Context, agentId string)
 		if agentCfg.GlobalLimit > 0 {
 			cfg.GlobalLimit = agentCfg.GlobalLimit
 		}
+
+		if len(agentCfg.Rules) > 0 {
+			cfg.Rules = agentCfg.Rules
+		}
+
+		if agentCfg.EnableSystemPromptHash {
+			cfg.EnableSystemPromptHash = true
+		}
 	}
 
 	return &cfg, nil
 }
 
-func (s *sSessionKeepModelAgent) ensureLimit(ctx context.Context, userId int, modelName, agentId string, cfg *common.ModelAgentSessionKeep) error {
+func (s *sSessionKeepModelAgent) ensureLimit(ctx context.Context, sk *common.SessionKey, agentId string, cfg *common.ModelAgentSessionKeep) error {
 
 	memberLimit := cfg.UserLimit
 	if memberLimit > 0 {
 
-		userCount, err := s.compactUserAgentSet(ctx, userId, agentId)
+		userCount, err := s.compactUserAgentSet(ctx, sk.UserId, agentId)
 		if err != nil {
 			return err
 		}
 
 		if userCount >= memberLimit {
 
-			oldModels, err := redis.ZRange(ctx, s.redisUserAgentSetKey(userId, agentId), 0, 0)
+			oldMembers, err := redis.ZRange(ctx, s.redisUserAgentSetKey(sk.UserId, agentId), 0, 0)
 			if err != nil {
 				return err
 			}
 
-			if len(oldModels) > 0 {
-				if err = s.Delete(ctx, userId, oldModels[0], agentId); err != nil {
-					return err
+			if len(oldMembers) > 0 {
+				oldSk := recoverSessionKey(oldMembers[0])
+				if oldSk != nil {
+					if err = s.Delete(ctx, oldSk, agentId); err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -364,10 +405,9 @@ func (s *sSessionKeepModelAgent) ensureLimit(ctx context.Context, userId int, mo
 			}
 
 			if len(oldMembers) > 0 {
-
-				oldUserId, oldModelName, ok := s.parseMember(oldMembers[0])
-				if ok {
-					if err = s.Delete(ctx, oldUserId, oldModelName, agentId); err != nil {
+				oldSk := recoverSessionKey(oldMembers[0])
+				if oldSk != nil {
+					if err = s.Delete(ctx, oldSk, agentId); err != nil {
 						return err
 					}
 				}
@@ -390,17 +430,16 @@ func (s *sSessionKeepModelAgent) ensureLimit(ctx context.Context, userId int, mo
 			}
 
 			if len(oldMembers) > 0 {
+				oldSk := recoverSessionKey(oldMembers[0])
+				if oldSk != nil {
 
-				oldUserId, oldModelName, ok := s.parseMember(oldMembers[0])
-				if ok {
-
-					oldAgentId, exists, getErr := s.Get(ctx, oldUserId, oldModelName)
+					oldAgentId, _, exists, getErr := s.Get(ctx, oldSk)
 					if getErr != nil {
 						return getErr
 					}
 
 					if exists {
-						if err = s.Delete(ctx, oldUserId, oldModelName, oldAgentId); err != nil {
+						if err = s.Delete(ctx, oldSk, oldAgentId); err != nil {
 							return err
 						}
 					}
@@ -412,30 +451,37 @@ func (s *sSessionKeepModelAgent) ensureLimit(ctx context.Context, userId int, mo
 	return nil
 }
 
-func (s *sSessionKeepModelAgent) getStoredAgentId(ctx context.Context, userId int, modelName string) (string, bool, error) {
+func (s *sSessionKeepModelAgent) getStoredValue(ctx context.Context, sk *common.SessionKey) (string, string, bool, error) {
 
-	agentId, err := redis.GetStr(ctx, s.redisValueKey(userId, modelName))
+	val, err := redis.GetStr(ctx, s.redisValueKey(sk))
 	if err != nil {
-		return "", false, err
+		return "", "", false, err
 	}
 
-	if agentId == "" {
-		return "", false, nil
+	if val == "" {
+		return "", "", false, nil
 	}
 
-	return agentId, true, nil
+	parts := strings.SplitN(val, ":", 2)
+	agentId := parts[0]
+	keyId := ""
+	if len(parts) == 2 {
+		keyId = parts[1]
+	}
+
+	return agentId, keyId, true, nil
 }
 
-func (s *sSessionKeepModelAgent) removeIndex(ctx context.Context, userId int, modelName, agentId string) error {
+func (s *sSessionKeepModelAgent) removeIndex(ctx context.Context, sk *common.SessionKey, agentId string) error {
 
-	member := s.member(userId, modelName)
+	member := sk.Raw
 	if agentId != "" {
 
 		if _, err := redis.ZRem(ctx, s.redisAgentSetKey(agentId), member); err != nil {
 			return err
 		}
 
-		if _, err := redis.ZRem(ctx, s.redisUserAgentSetKey(userId, agentId), modelName); err != nil {
+		if _, err := redis.ZRem(ctx, s.redisUserAgentSetKey(sk.UserId, agentId), member); err != nil {
 			return err
 		}
 	}
@@ -447,9 +493,9 @@ func (s *sSessionKeepModelAgent) removeIndex(ctx context.Context, userId int, mo
 	return nil
 }
 
-func (s *sSessionKeepModelAgent) cleanupExpired(ctx context.Context, userId int, modelName string) error {
+func (s *sSessionKeepModelAgent) cleanupExpired(ctx context.Context, sk *common.SessionKey) error {
 
-	_, exists, err := s.getStoredAgentId(ctx, userId, modelName)
+	_, _, exists, err := s.getStoredValue(ctx, sk)
 	if err != nil {
 		return err
 	}
@@ -458,11 +504,11 @@ func (s *sSessionKeepModelAgent) cleanupExpired(ctx context.Context, userId int,
 		return nil
 	}
 
-	if err = s.removeIndex(ctx, userId, modelName, ""); err != nil {
+	if err = s.removeIndex(ctx, sk, ""); err != nil {
 		return err
 	}
 
-	if _, err = s.localCache.Remove(ctx, s.localKey(userId, modelName)); err != nil {
+	if _, err = s.localCache.Remove(ctx, s.localKey(sk)); err != nil {
 		logger.Error(ctx, err)
 	}
 
@@ -471,21 +517,29 @@ func (s *sSessionKeepModelAgent) cleanupExpired(ctx context.Context, userId int,
 
 func (s *sSessionKeepModelAgent) compactUserAgentSet(ctx context.Context, userId int, agentId string) (int64, error) {
 
-	modelNames, err := redis.ZRange(ctx, s.redisUserAgentSetKey(userId, agentId), 0, -1)
+	members, err := redis.ZRange(ctx, s.redisUserAgentSetKey(userId, agentId), 0, -1)
 	if err != nil {
 		return 0, err
 	}
 
 	var count int64
-	for _, modelName := range modelNames {
+	for _, member := range members {
 
-		storedAgentId, exists, getErr := s.getStoredAgentId(ctx, userId, modelName)
+		sk := recoverSessionKey(member)
+		if sk == nil {
+			if _, remErr := redis.ZRem(ctx, s.redisUserAgentSetKey(userId, agentId), member); remErr != nil {
+				return 0, remErr
+			}
+			continue
+		}
+
+		storedAgentId, _, exists, getErr := s.getStoredValue(ctx, sk)
 		if getErr != nil {
 			return 0, getErr
 		}
 
 		if !exists || storedAgentId != agentId {
-			if remErr := s.removeIndex(ctx, userId, modelName, agentId); remErr != nil {
+			if remErr := s.removeIndex(ctx, sk, agentId); remErr != nil {
 				return 0, remErr
 			}
 			continue
@@ -506,18 +560,21 @@ func (s *sSessionKeepModelAgent) compactAgentSet(ctx context.Context, agentId st
 	var count int64
 	for _, member := range members {
 
-		userId, modelName, ok := s.parseMember(member)
-		if !ok {
+		sk := recoverSessionKey(member)
+		if sk == nil {
+			if _, remErr := redis.ZRem(ctx, s.redisAgentSetKey(agentId), member); remErr != nil {
+				return 0, remErr
+			}
 			continue
 		}
 
-		storedAgentId, exists, getErr := s.getStoredAgentId(ctx, userId, modelName)
+		storedAgentId, _, exists, getErr := s.getStoredValue(ctx, sk)
 		if getErr != nil {
 			return 0, getErr
 		}
 
 		if !exists || storedAgentId != agentId {
-			if remErr := s.removeIndex(ctx, userId, modelName, agentId); remErr != nil {
+			if remErr := s.removeIndex(ctx, sk, agentId); remErr != nil {
 				return 0, remErr
 			}
 			continue
@@ -538,18 +595,21 @@ func (s *sSessionKeepModelAgent) compactGlobalSet(ctx context.Context) (int64, e
 	var count int64
 	for _, member := range members {
 
-		userId, modelName, ok := s.parseMember(member)
-		if !ok {
+		sk := recoverSessionKey(member)
+		if sk == nil {
+			if _, remErr := redis.ZRem(ctx, s.redisGlobalSetKey(), member); remErr != nil {
+				return 0, remErr
+			}
 			continue
 		}
 
-		_, exists, getErr := s.getStoredAgentId(ctx, userId, modelName)
+		_, _, exists, getErr := s.getStoredValue(ctx, sk)
 		if getErr != nil {
 			return 0, getErr
 		}
 
 		if !exists {
-			if remErr := s.removeIndex(ctx, userId, modelName, ""); remErr != nil {
+			if remErr := s.removeIndex(ctx, sk, ""); remErr != nil {
 				return 0, remErr
 			}
 			continue

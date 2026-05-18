@@ -7,6 +7,7 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/errors"
 	"github.com/iimeta/fastapi/v2/internal/model"
+	"github.com/iimeta/fastapi/v2/internal/model/common"
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/logger"
 )
@@ -271,4 +272,60 @@ func (s *sSession) GetModelAgentBillingMethod(ctx context.Context) int {
 	}
 
 	return billingMethod.(int)
+}
+
+// 保存会话保持首选密钥ID
+func (s *sSession) SaveSessionKeepPreferredKey(ctx context.Context, keyId string) {
+	if r := g.RequestFromCtx(ctx); r != nil {
+		r.SetCtxVar(consts.SESSION_KEEP_PREFERRED_KEY, keyId)
+	}
+}
+
+// 获取会话保持首选密钥ID
+func (s *sSession) GetSessionKeepPreferredKey(ctx context.Context) string {
+
+	keyId := ctx.Value(consts.SESSION_KEEP_PREFERRED_KEY)
+	if keyId == nil {
+		return ""
+	}
+
+	return keyId.(string)
+}
+
+// 保存会话保持命中标记
+func (s *sSession) SaveSessionKeepHit(ctx context.Context, hit bool) {
+	if r := g.RequestFromCtx(ctx); r != nil {
+		r.SetCtxVar(consts.SESSION_KEEP_HIT, hit)
+	}
+}
+
+// 获取会话保持命中标记
+func (s *sSession) GetSessionKeepHit(ctx context.Context) bool {
+
+	hit := ctx.Value(consts.SESSION_KEEP_HIT)
+	if hit == nil {
+		return false
+	}
+
+	return hit.(bool)
+}
+
+func (s *sSession) SaveSessionKey(ctx context.Context, sk *common.SessionKey) {
+	if r := g.RequestFromCtx(ctx); r != nil {
+		r.SetCtxVar(consts.CTX_SESSION_KEY, sk)
+	}
+}
+
+func (s *sSession) GetSessionKey(ctx context.Context) *common.SessionKey {
+
+	val := ctx.Value(consts.CTX_SESSION_KEY)
+	if val == nil {
+		return nil
+	}
+
+	if sk, ok := val.(*common.SessionKey); ok {
+		return sk
+	}
+
+	return nil
 }

@@ -358,11 +358,18 @@ func (s *sModelAgent) Pick(ctx context.Context, m *model.Model) (int, *model.Mod
 		return 0, nil, errors.ERR_ALL_MODEL_AGENT
 	}
 
-	if service.Session().GetUserId(ctx) > 0 {
-		if sessionAgentId, ok, sessionErr := service.SessionKeepModelAgent().Get(ctx, service.Session().GetUserId(ctx), m.Name); sessionErr == nil && ok {
-			for _, modelAgent := range filterModelAgentList {
-				if modelAgent.Id == sessionAgentId && modelAgent.IsEnableSessionKeep {
-					return len(filterModelAgentList), modelAgent, nil
+	if cfg := config.Cfg.SysConfig.ModelAgentSessionKeep; cfg != nil && cfg.Open {
+		if sk := service.SessionKeepModelAgent().ResolveSessionKey(ctx, m.Name, cfg); sk != nil {
+			if sessionAgentId, sessionKeyId, ok, sessionErr := service.SessionKeepModelAgent().Get(ctx, sk); sessionErr == nil && ok {
+				for _, modelAgent := range filterModelAgentList {
+					if modelAgent.Id == sessionAgentId && modelAgent.IsEnableSessionKeep {
+						service.Session().SaveSessionKey(ctx, sk)
+						if sessionKeyId != "" {
+							service.Session().SaveSessionKeepPreferredKey(ctx, sessionKeyId)
+						}
+						service.Session().SaveSessionKeepHit(ctx, true)
+						return len(filterModelAgentList), modelAgent, nil
+					}
 				}
 			}
 		}
@@ -507,11 +514,18 @@ func (s *sModelAgent) PickGroup(ctx context.Context, m *model.Model, group *mode
 		return 0, nil, errors.ERR_ALL_MODEL_AGENT
 	}
 
-	if service.Session().GetUserId(ctx) > 0 {
-		if sessionAgentId, ok, sessionErr := service.SessionKeepModelAgent().Get(ctx, service.Session().GetUserId(ctx), m.Name); sessionErr == nil && ok {
-			for _, modelAgent := range filterModelAgentList {
-				if modelAgent.Id == sessionAgentId && modelAgent.IsEnableSessionKeep {
-					return len(filterModelAgentList), modelAgent, nil
+	if cfg := config.Cfg.SysConfig.ModelAgentSessionKeep; cfg != nil && cfg.Open {
+		if sk := service.SessionKeepModelAgent().ResolveSessionKey(ctx, m.Name, cfg); sk != nil {
+			if sessionAgentId, sessionKeyId, ok, sessionErr := service.SessionKeepModelAgent().Get(ctx, sk); sessionErr == nil && ok {
+				for _, modelAgent := range filterModelAgentList {
+					if modelAgent.Id == sessionAgentId && modelAgent.IsEnableSessionKeep {
+						service.Session().SaveSessionKey(ctx, sk)
+						if sessionKeyId != "" {
+							service.Session().SaveSessionKeepPreferredKey(ctx, sessionKeyId)
+						}
+						service.Session().SaveSessionKeepHit(ctx, true)
+						return len(filterModelAgentList), modelAgent, nil
+					}
 				}
 			}
 		}
@@ -708,6 +722,14 @@ func (s *sModelAgent) PickKey(ctx context.Context, modelAgent *model.ModelAgent)
 
 	if len(filterKeyList) == 0 {
 		return 0, nil, errors.ERR_ALL_MODEL_AGENT_KEY
+	}
+
+	if preferredKeyId := service.Session().GetSessionKeepPreferredKey(ctx); preferredKeyId != "" {
+		for _, key := range filterKeyList {
+			if key.Id == preferredKeyId {
+				return len(filterKeyList), key, nil
+			}
+		}
 	}
 
 	// 负载策略-权重

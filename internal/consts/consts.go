@@ -19,15 +19,20 @@ const (
 	SESSION_ERROR_MODEL_AGENTS         = "session_error_model_agents"
 	SESSION_ERROR_KEYS                 = "session_error_keys"
 	SESSION_MODEL_AGENT_BILLING_METHOD = "session_model_agent_billing_method"
+	SESSION_KEEP_PREFERRED_KEY         = "session_keep_preferred_key"
+	SESSION_KEEP_HIT                   = "session_keep_hit"
 )
 
 const (
-	SESSION_KEEP_VALUE_PREFIX     = "session:agent:u:%d:m:%s"
-	SESSION_KEEP_FAIL_PREFIX      = "session:agent:fail:u:%d:m:%s:a:%s"
-	SESSION_KEEP_AGENT_SET_PREFIX = "session:agent:set:%s"
-	SESSION_KEEP_USER_AGENT_SET   = "session:agent:user:set:%d:a:%s"
+	SESSION_KEEP_VALUE_PREFIX     = "session:agent:v:%s"                   // sk.Raw
+	SESSION_KEEP_FAIL_PREFIX      = "session:agent:fail:%s:a:%s"           // sk.Raw, agentId
+	SESSION_KEEP_KEY_FAIL_PREFIX  = "session:agent:key:fail:%s:a:%s:k:%s" // sk.Raw, agentId, keyId
+	SESSION_KEEP_AGENT_SET_PREFIX = "session:agent:set:%s"                 // agentId
+	SESSION_KEEP_USER_AGENT_SET   = "session:agent:user:set:%d:a:%s"      // sk.UserId, agentId
 	SESSION_KEEP_GLOBAL_SET       = "session:agent:global"
-	SESSION_KEEP_LOCAL_KEY_PREFIX = "session_keep:%d:%s"
+	SESSION_KEEP_LOCAL_KEY_PREFIX = "session_keep:%s" // sk.Raw
+
+	CTX_SESSION_KEY = "ctx_session_key"
 )
 
 const (
