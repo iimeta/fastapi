@@ -396,12 +396,30 @@ func tieredText(ctx context.Context, mak *MAK, billingData *common.BillingData, 
 // 阶梯文本缓存
 func tieredTextCache(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
 
-	if billingData.Usage == nil || billingData.Usage.CacheReadInputTokens+billingData.Usage.CacheCreationInputTokens == 0 {
+	if billingData.Usage == nil || billingData.Usage.PromptTokensDetails.CachedTokens+billingData.Usage.CompletionTokensDetails.CachedTokens+billingData.Usage.CacheReadInputTokens+billingData.Usage.CacheCreationInputTokens == 0 {
 		return
 	}
 
 	if spend.TieredTextCache == nil {
 		spend.TieredTextCache = new(common.CacheSpend)
+	}
+
+	if billingData.Usage.PromptTokensDetails.CachedTokens > 0 {
+		spend.TieredTextCache.ReadTokens += billingData.Usage.PromptTokensDetails.CachedTokens
+	}
+
+	if billingData.Usage.CompletionTokensDetails.CachedTokens > 0 {
+		spend.TieredTextCache.ReadTokens += billingData.Usage.CompletionTokensDetails.CachedTokens
+	}
+
+	// Claude
+	if billingData.Usage.CacheReadInputTokens > 0 {
+		spend.TieredTextCache.ReadTokens += billingData.Usage.CacheReadInputTokens
+	}
+
+	// Claude
+	if billingData.Usage.CacheCreationInputTokens > 0 {
+		spend.TieredTextCache.WriteTokens += billingData.Usage.CacheCreationInputTokens
 	}
 
 	mode := "all"
@@ -414,10 +432,8 @@ func tieredTextCache(ctx context.Context, mak *MAK, billingData *common.BillingD
 	}
 
 	for i, tieredTextCache := range mak.ReqModel.Pricing.TieredTextCache {
-		if mode == tieredTextCache.Mode && ((billingData.Usage.PromptTokens > tieredTextCache.Gt && billingData.Usage.PromptTokens <= tieredTextCache.Lte) || (i == len(mak.ReqModel.Pricing.TieredTextCache)-1)) {
+		if mode == tieredTextCache.Mode && ((spend.TieredTextCache.ReadTokens > tieredTextCache.Gt && spend.TieredTextCache.ReadTokens <= tieredTextCache.Lte) || (i == len(mak.ReqModel.Pricing.TieredTextCache)-1)) {
 			spend.TieredTextCache.Pricing = tieredTextCache
-			spend.TieredTextCache.ReadTokens = billingData.Usage.CacheReadInputTokens
-			spend.TieredTextCache.WriteTokens = billingData.Usage.CacheCreationInputTokens
 			spend.TieredTextCache.SpendTokens = int(math.Ceil(float64(spend.TieredTextCache.ReadTokens)*spend.TieredTextCache.Pricing.ReadRatio)) + int(math.Ceil(float64(spend.TieredTextCache.WriteTokens)*spend.TieredTextCache.Pricing.WriteRatio))
 			return
 		}

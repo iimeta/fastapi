@@ -154,6 +154,8 @@ func ConvResponsesToChatCompletionsResponse(ctx context.Context, res smodel.Open
 			CompletionTokensDetails: smodel.CompletionTokensDetails{
 				ReasoningTokens: responsesRes.Usage.OutputTokensDetails.ReasoningTokens,
 			},
+			InputTokensDetails:  responsesRes.Usage.InputTokensDetails,
+			OutputTokensDetails: responsesRes.Usage.OutputTokensDetails,
 		}
 	}
 
@@ -223,9 +225,8 @@ func ConvResponsesStreamToChatCompletionsResponse(ctx context.Context, res smode
 			CompletionTokensDetails: smodel.CompletionTokensDetails{
 				ReasoningTokens: responsesStreamRes.Response.Usage.OutputTokensDetails.ReasoningTokens,
 			},
-			CacheReadInputTokens: responsesStreamRes.Response.Usage.InputTokensDetails.CachedTokens,
-			InputTokensDetails:   responsesStreamRes.Response.Usage.InputTokensDetails,
-			OutputTokensDetails:  responsesStreamRes.Response.Usage.OutputTokensDetails,
+			InputTokensDetails:  responsesStreamRes.Response.Usage.InputTokensDetails,
+			OutputTokensDetails: responsesStreamRes.Response.Usage.OutputTokensDetails,
 		}
 	}
 
