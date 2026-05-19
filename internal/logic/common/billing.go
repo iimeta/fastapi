@@ -255,7 +255,7 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 		}
 	}
 
-	spend.Text.InputTokens = billingData.Usage.PromptTokens
+	spend.Text.InputTokens = billingData.Usage.PromptTokens - billingData.Usage.PromptTokensDetails.CachedTokens
 	spend.Text.OutputTokens = billingData.Usage.CompletionTokens
 	spend.Text.ReasoningTokens = billingData.Usage.OutputTokensDetails.ReasoningTokens
 	spend.Text.SpendTokens = int(math.Ceil(float64(spend.Text.InputTokens)*spend.Text.Pricing.InputRatio)) + int(math.Ceil(float64(spend.Text.OutputTokens)*spend.Text.Pricing.OutputRatio)) + int(math.Ceil(float64(spend.Text.ReasoningTokens)*spend.Text.Pricing.ReasoningRatio))
@@ -384,7 +384,7 @@ func tieredText(ctx context.Context, mak *MAK, billingData *common.BillingData, 
 	for i, tieredText := range mak.ReqModel.Pricing.TieredText {
 		if mode == tieredText.Mode && ((billingData.Usage.PromptTokens > tieredText.Gt && billingData.Usage.PromptTokens <= tieredText.Lte) || (i == len(mak.ReqModel.Pricing.TieredText)-1)) {
 			spend.TieredText.Pricing = tieredText
-			spend.TieredText.InputTokens = billingData.Usage.PromptTokens
+			spend.TieredText.InputTokens = billingData.Usage.PromptTokens - billingData.Usage.PromptTokensDetails.CachedTokens
 			spend.TieredText.OutputTokens = billingData.Usage.CompletionTokens
 			spend.TieredText.ReasoningTokens = billingData.Usage.OutputTokensDetails.ReasoningTokens
 			spend.TieredText.SpendTokens = int(math.Ceil(float64(spend.TieredText.InputTokens)*spend.TieredText.Pricing.InputRatio)) + int(math.Ceil(float64(spend.TieredText.OutputTokens)*spend.TieredText.Pricing.OutputRatio)) + int(math.Ceil(float64(spend.TieredText.ReasoningTokens)*spend.TieredText.Pricing.ReasoningRatio))
