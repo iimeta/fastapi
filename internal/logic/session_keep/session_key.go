@@ -85,7 +85,7 @@ func applyTransform(value, transform string) string {
 
 func md5Short(value string) string {
 	h := md5.Sum([]byte(value))
-	return fmt.Sprintf("%x", h)[:8]
+	return fmt.Sprintf("%x", h)
 }
 
 func safeLen(value string) string {

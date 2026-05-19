@@ -313,6 +313,12 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 		mak.BaseUrl = mak.ModelAgent.BaseUrl
 		mak.Path = mak.ModelAgent.Path
 
+		// PickModelAgent 通过 r.SetCtxVar 设置了会话保持首选密钥等变量,
+		// 但 ctx 是调用前的快照, 需要刷新才能读到最新值
+		if r := g.RequestFromCtx(ctx); r != nil {
+			ctx = r.GetCtx()
+		}
+
 		if mak.KeyTotal, mak.Key, err = service.ModelAgent().PickKey(ctx, mak.ModelAgent); err != nil {
 			logger.Error(ctx, err)
 

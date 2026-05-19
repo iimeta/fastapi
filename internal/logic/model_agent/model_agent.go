@@ -360,10 +360,10 @@ func (s *sModelAgent) Pick(ctx context.Context, m *model.Model) (int, *model.Mod
 
 	if cfg := config.Cfg.SysConfig.ModelAgentSessionKeep; cfg != nil && cfg.Open {
 		if sk := service.SessionKeepModelAgent().ResolveSessionKey(ctx, m.Name, cfg); sk != nil {
+			service.Session().SaveSessionKey(ctx, sk)
 			if sessionAgentId, sessionKeyId, ok, sessionErr := service.SessionKeepModelAgent().Get(ctx, sk); sessionErr == nil && ok {
 				for _, modelAgent := range filterModelAgentList {
 					if modelAgent.Id == sessionAgentId && modelAgent.IsEnableSessionKeep {
-						service.Session().SaveSessionKey(ctx, sk)
 						if sessionKeyId != "" {
 							service.Session().SaveSessionKeepPreferredKey(ctx, sessionKeyId)
 						}
@@ -516,10 +516,10 @@ func (s *sModelAgent) PickGroup(ctx context.Context, m *model.Model, group *mode
 
 	if cfg := config.Cfg.SysConfig.ModelAgentSessionKeep; cfg != nil && cfg.Open {
 		if sk := service.SessionKeepModelAgent().ResolveSessionKey(ctx, m.Name, cfg); sk != nil {
+			service.Session().SaveSessionKey(ctx, sk)
 			if sessionAgentId, sessionKeyId, ok, sessionErr := service.SessionKeepModelAgent().Get(ctx, sk); sessionErr == nil && ok {
 				for _, modelAgent := range filterModelAgentList {
 					if modelAgent.Id == sessionAgentId && modelAgent.IsEnableSessionKeep {
-						service.Session().SaveSessionKey(ctx, sk)
 						if sessionKeyId != "" {
 							service.Session().SaveSessionKeepPreferredKey(ctx, sessionKeyId)
 						}

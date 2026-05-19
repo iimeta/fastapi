@@ -23,6 +23,7 @@ const (
 	SESSION_KEEP_HIT                   = "session_keep_hit"
 )
 
+// 会话保持Redis Key — fastapi-admin内对应常量: internal/consts/consts.go SESSION_KEEP_*
 const (
 	SESSION_KEEP_VALUE_PREFIX     = "session:agent:v:%s"                   // sk.Raw
 	SESSION_KEEP_FAIL_PREFIX      = "session:agent:fail:%s:a:%s"           // sk.Raw, agentId

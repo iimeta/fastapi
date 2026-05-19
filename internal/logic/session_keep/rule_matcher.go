@@ -133,7 +133,7 @@ func extractSystemPromptHash(bodyJson *gjson.Json) string {
 			content := msg.Get("content").String()
 			if content != "" {
 				h := md5.Sum([]byte(content))
-				return fmt.Sprintf("%x", h)[:8]
+				return fmt.Sprintf("%x", h)
 			}
 		}
 	}

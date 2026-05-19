@@ -225,7 +225,7 @@ func (s *sSession) GetErrorModelAgents(ctx context.Context) []string {
 // 记录错误密钥ID到会话中
 func (s *sSession) RecordErrorKey(ctx context.Context, id string) {
 	if r := g.RequestFromCtx(ctx); r != nil {
-		r.SetCtxVar(consts.SESSION_ERROR_KEYS, append(s.GetErrorModelAgents(ctx), id))
+		r.SetCtxVar(consts.SESSION_ERROR_KEYS, append(s.GetErrorKeys(ctx), id))
 	}
 }
 
