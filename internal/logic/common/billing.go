@@ -290,6 +290,16 @@ func textCache(ctx context.Context, mak *MAK, billingData *common.BillingData, s
 		spend.TextCache.WriteTokens += billingData.Usage.CacheCreationInputTokens
 	}
 
+	// Claude 5分钟缓存写入
+	if billingData.Usage.CacheCreation5MInputTokens > 0 {
+		spend.TextCache.Write5MTokens += billingData.Usage.CacheCreation5MInputTokens
+	}
+
+	// Claude 1小时缓存写入
+	if billingData.Usage.CacheCreation1HInputTokens > 0 {
+		spend.TextCache.Write1HTokens += billingData.Usage.CacheCreation1HInputTokens
+	}
+
 	serviceTier := "all"
 	if billingData.ServiceTier != "" {
 		serviceTier = billingData.ServiceTier
@@ -304,7 +314,13 @@ func textCache(ctx context.Context, mak *MAK, billingData *common.BillingData, s
 		}
 	}
 
-	spend.TextCache.SpendTokens = int(math.Ceil(float64(spend.TextCache.ReadTokens)*spend.TextCache.Pricing.ReadRatio)) + int(math.Ceil(float64(spend.TextCache.WriteTokens)*spend.TextCache.Pricing.WriteRatio))
+	if spend.TextCache.Pricing.Write5MRatio > 0 || spend.TextCache.Pricing.Write1HRatio > 0 {
+		spend.TextCache.SpendTokens = int(math.Ceil(float64(spend.TextCache.ReadTokens)*spend.TextCache.Pricing.ReadRatio)) +
+			int(math.Ceil(float64(spend.TextCache.Write5MTokens)*spend.TextCache.Pricing.Write5MRatio)) +
+			int(math.Ceil(float64(spend.TextCache.Write1HTokens)*spend.TextCache.Pricing.Write1HRatio))
+	} else {
+		spend.TextCache.SpendTokens = int(math.Ceil(float64(spend.TextCache.ReadTokens)*spend.TextCache.Pricing.ReadRatio)) + int(math.Ceil(float64(spend.TextCache.WriteTokens)*spend.TextCache.Pricing.WriteRatio))
+	}
 }
 
 // 阶梯文本
@@ -422,6 +438,16 @@ func tieredTextCache(ctx context.Context, mak *MAK, billingData *common.BillingD
 		spend.TieredTextCache.WriteTokens += billingData.Usage.CacheCreationInputTokens
 	}
 
+	// Claude 5分钟缓存写入
+	if billingData.Usage.CacheCreation5MInputTokens > 0 {
+		spend.TieredTextCache.Write5MTokens += billingData.Usage.CacheCreation5MInputTokens
+	}
+
+	// Claude 1小时缓存写入
+	if billingData.Usage.CacheCreation1HInputTokens > 0 {
+		spend.TieredTextCache.Write1HTokens += billingData.Usage.CacheCreation1HInputTokens
+	}
+
 	mode := "all"
 	if billingData.ChatCompletionRequest.EnableThinking != nil {
 		if *billingData.ChatCompletionRequest.EnableThinking {
@@ -434,7 +460,13 @@ func tieredTextCache(ctx context.Context, mak *MAK, billingData *common.BillingD
 	for i, tieredTextCache := range mak.ReqModel.Pricing.TieredTextCache {
 		if mode == tieredTextCache.Mode && ((spend.TieredTextCache.ReadTokens > tieredTextCache.Gt && spend.TieredTextCache.ReadTokens <= tieredTextCache.Lte) || (i == len(mak.ReqModel.Pricing.TieredTextCache)-1)) {
 			spend.TieredTextCache.Pricing = tieredTextCache
-			spend.TieredTextCache.SpendTokens = int(math.Ceil(float64(spend.TieredTextCache.ReadTokens)*spend.TieredTextCache.Pricing.ReadRatio)) + int(math.Ceil(float64(spend.TieredTextCache.WriteTokens)*spend.TieredTextCache.Pricing.WriteRatio))
+			if spend.TieredTextCache.Pricing.Write5MRatio > 0 || spend.TieredTextCache.Pricing.Write1HRatio > 0 {
+				spend.TieredTextCache.SpendTokens = int(math.Ceil(float64(spend.TieredTextCache.ReadTokens)*spend.TieredTextCache.Pricing.ReadRatio)) +
+					int(math.Ceil(float64(spend.TieredTextCache.Write5MTokens)*spend.TieredTextCache.Pricing.Write5MRatio)) +
+					int(math.Ceil(float64(spend.TieredTextCache.Write1HTokens)*spend.TieredTextCache.Pricing.Write1HRatio))
+			} else {
+				spend.TieredTextCache.SpendTokens = int(math.Ceil(float64(spend.TieredTextCache.ReadTokens)*spend.TieredTextCache.Pricing.ReadRatio)) + int(math.Ceil(float64(spend.TieredTextCache.WriteTokens)*spend.TieredTextCache.Pricing.WriteRatio))
+			}
 			return
 		}
 	}

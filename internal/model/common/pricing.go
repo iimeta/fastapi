@@ -50,12 +50,14 @@ type TextPricing struct {
 }
 
 type CachePricing struct {
-	ServiceTier string  `bson:"service_tier,omitempty" json:"service_tier,omitempty"` // 服务层[all:全部, default:默认, priority:优先, flex:弹性]
-	ReadRatio   float64 `bson:"read_ratio,omitempty"   json:"read_ratio,omitempty"`   // 读取/命中倍率
-	WriteRatio  float64 `bson:"write_ratio,omitempty"  json:"write_ratio,omitempty"`  // 写入倍率
-	Mode        string  `bson:"mode,omitempty"         json:"mode,omitempty"`         // 模式[all:全部, thinking:思考, non_thinking:非思考]
-	Gt          int     `bson:"gt,omitempty"           json:"gt,omitempty"`           // 大于, 单位: k
-	Lte         int     `bson:"lte,omitempty"          json:"lte,omitempty"`          // 小于等于, 单位: k
+	ServiceTier  string  `bson:"service_tier,omitempty"   json:"service_tier,omitempty"`   // 服务层[all:全部, default:默认, priority:优先, flex:弹性]
+	ReadRatio    float64 `bson:"read_ratio,omitempty"     json:"read_ratio,omitempty"`     // 读取/命中倍率
+	WriteRatio   float64 `bson:"write_ratio,omitempty"    json:"write_ratio,omitempty"`    // 写入倍率
+	Write5MRatio float64 `bson:"write_5m_ratio,omitempty" json:"write_5m_ratio,omitempty"` // 5分钟缓存写入倍率
+	Write1HRatio float64 `bson:"write_1h_ratio,omitempty" json:"write_1h_ratio,omitempty"` // 1小时缓存写入倍率
+	Mode         string  `bson:"mode,omitempty"           json:"mode,omitempty"`           // 模式[all:全部, thinking:思考, non_thinking:非思考]
+	Gt           int     `bson:"gt,omitempty"             json:"gt,omitempty"`             // 大于, 单位: k
+	Lte          int     `bson:"lte,omitempty"            json:"lte,omitempty"`            // 小于等于, 单位: k
 }
 
 type ImagePricing struct {
@@ -170,10 +172,12 @@ type TextSpend struct {
 }
 
 type CacheSpend struct {
-	Pricing     *CachePricing `bson:"pricing,omitempty"      json:"pricing,omitempty"`      // 定价
-	ReadTokens  int           `bson:"read_tokens,omitempty"  json:"read_tokens,omitempty"`  // 读取/命中Token数
-	WriteTokens int           `bson:"write_tokens,omitempty" json:"write_tokens,omitempty"` // 写入Token数
-	SpendTokens int           `bson:"spend_tokens,omitempty" json:"spend_tokens,omitempty"` // 花费Token数
+	Pricing       *CachePricing `bson:"pricing,omitempty"         json:"pricing,omitempty"`         // 定价
+	ReadTokens    int           `bson:"read_tokens,omitempty"     json:"read_tokens,omitempty"`     // 读取/命中Token数
+	WriteTokens   int           `bson:"write_tokens,omitempty"    json:"write_tokens,omitempty"`    // 写入Token数
+	Write5MTokens int           `bson:"write_5m_tokens,omitempty" json:"write_5m_tokens,omitempty"` // 5分钟缓存写入Token数
+	Write1HTokens int           `bson:"write_1h_tokens,omitempty" json:"write_1h_tokens,omitempty"` // 1小时缓存写入Token数
+	SpendTokens   int           `bson:"spend_tokens,omitempty"    json:"spend_tokens,omitempty"`    // 花费Token数
 }
 
 type ImageSpend struct {
