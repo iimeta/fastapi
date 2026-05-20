@@ -11,6 +11,7 @@ type LogVideo struct {
 	AppId                int                    `bson:"app_id,omitempty"`                  // 应用ID
 	ProviderId           string                 `bson:"provider_id,omitempty"`             // 提供商ID
 	ProviderName         string                 `bson:"provider_name,omitempty"`           // 提供商名称
+	ProviderCode         string                 `bson:"provider_code,omitempty"`           // 提供商代码
 	ModelId              string                 `bson:"model_id,omitempty"`                // 模型ID
 	ModelName            string                 `bson:"model_name,omitempty"`              // 模型名称
 	Model                string                 `bson:"model,omitempty"`                   // 模型

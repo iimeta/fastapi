@@ -202,6 +202,7 @@ func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 			logger.Error(ctx, err)
 		} else {
 			text.ProviderName = provider.Name
+			text.ProviderCode = provider.Code
 		}
 		text.ModelId = textLog.ReqModel.Id
 		text.ModelName = textLog.ReqModel.Name
@@ -473,6 +474,7 @@ func (s *sLog) Image(ctx context.Context, imageLog model.LogImage, retry ...int)
 			logger.Error(ctx, err)
 		} else {
 			image.ProviderName = provider.Name
+			image.ProviderCode = provider.Code
 		}
 		image.ModelId = imageLog.ReqModel.Id
 		image.ModelName = imageLog.ReqModel.Name
@@ -617,6 +619,7 @@ func (s *sLog) Audio(ctx context.Context, audioLog model.LogAudio, retry ...int)
 			logger.Error(ctx, err)
 		} else {
 			audio.ProviderName = provider.Name
+			audio.ProviderCode = provider.Code
 		}
 		audio.ModelId = audioLog.ReqModel.Id
 		audio.ModelName = audioLog.ReqModel.Name
@@ -764,6 +767,7 @@ func (s *sLog) Video(ctx context.Context, videoLog model.LogVideo, retry ...int)
 			logger.Error(ctx, err)
 		} else {
 			video.ProviderName = provider.Name
+			video.ProviderCode = provider.Code
 		}
 		video.ModelId = videoLog.ReqModel.Id
 		video.ModelName = videoLog.ReqModel.Name
@@ -911,6 +915,7 @@ func (s *sLog) File(ctx context.Context, fileLog model.LogFile, retry ...int) {
 			logger.Error(ctx, err)
 		} else {
 			file.ProviderName = provider.Name
+			file.ProviderCode = provider.Code
 		}
 		file.ModelId = fileLog.ReqModel.Id
 		file.ModelName = fileLog.ReqModel.Name
@@ -1058,6 +1063,7 @@ func (s *sLog) Batch(ctx context.Context, batchLog model.LogBatch, retry ...int)
 			logger.Error(ctx, err)
 		} else {
 			batch.ProviderName = provider.Name
+			batch.ProviderCode = provider.Code
 		}
 		batch.ModelId = batchLog.ReqModel.Id
 		batch.ModelName = batchLog.ReqModel.Name
@@ -1210,6 +1216,7 @@ func (s *sLog) Midjourney(ctx context.Context, midjourneyLog model.LogMidjourney
 			logger.Error(ctx, err)
 		} else {
 			midjourney.ProviderName = provider.Name
+			midjourney.ProviderCode = provider.Code
 		}
 		midjourney.ModelId = midjourneyLog.ReqModel.Id
 		midjourney.ModelName = midjourneyLog.ReqModel.Name
@@ -1359,6 +1366,7 @@ func (s *sLog) General(ctx context.Context, generalLog model.LogGeneral, retry .
 			logger.Error(ctx, err)
 		} else {
 			general.ProviderName = provider.Name
+			general.ProviderCode = provider.Code
 		}
 		general.ModelId = generalLog.ReqModel.Id
 		general.ModelName = generalLog.ReqModel.Name
