@@ -457,8 +457,22 @@ func tieredTextCache(ctx context.Context, mak *MAK, billingData *common.BillingD
 		}
 	}
 
+	readTokens := spend.TieredTextCache.ReadTokens
+
+	if spend.TieredTextCache.WriteTokens > readTokens {
+		readTokens = spend.TieredTextCache.WriteTokens
+	}
+
+	if spend.TieredTextCache.Write5MTokens > readTokens {
+		readTokens = spend.TieredTextCache.Write5MTokens
+	}
+
+	if spend.TieredTextCache.Write1HTokens > readTokens {
+		readTokens = spend.TieredTextCache.Write1HTokens
+	}
+
 	for i, tieredTextCache := range mak.ReqModel.Pricing.TieredTextCache {
-		if mode == tieredTextCache.Mode && ((spend.TieredTextCache.ReadTokens > tieredTextCache.Gt && spend.TieredTextCache.ReadTokens <= tieredTextCache.Lte) || (i == len(mak.ReqModel.Pricing.TieredTextCache)-1)) {
+		if mode == tieredTextCache.Mode && ((readTokens > tieredTextCache.Gt && readTokens <= tieredTextCache.Lte) || (i == len(mak.ReqModel.Pricing.TieredTextCache)-1)) {
 			spend.TieredTextCache.Pricing = tieredTextCache
 			if spend.TieredTextCache.Pricing.Write5MRatio > 0 || spend.TieredTextCache.Pricing.Write1HRatio > 0 {
 				spend.TieredTextCache.SpendTokens = int(math.Ceil(float64(spend.TieredTextCache.ReadTokens)*spend.TieredTextCache.Pricing.ReadRatio)) +
