@@ -397,8 +397,18 @@ func tieredText(ctx context.Context, mak *MAK, billingData *common.BillingData, 
 		}
 	}
 
+	promptTokens := billingData.Usage.PromptTokens
+
+	if billingData.Usage.CompletionTokens > promptTokens {
+		promptTokens = billingData.Usage.CompletionTokens
+	}
+
+	if billingData.Usage.OutputTokensDetails.ReasoningTokens > promptTokens {
+		promptTokens = billingData.Usage.OutputTokensDetails.ReasoningTokens
+	}
+
 	for i, tieredText := range mak.ReqModel.Pricing.TieredText {
-		if mode == tieredText.Mode && ((billingData.Usage.PromptTokens > tieredText.Gt && billingData.Usage.PromptTokens <= tieredText.Lte) || (i == len(mak.ReqModel.Pricing.TieredText)-1)) {
+		if mode == tieredText.Mode && ((promptTokens > tieredText.Gt && promptTokens <= tieredText.Lte) || (i == len(mak.ReqModel.Pricing.TieredText)-1)) {
 			spend.TieredText.Pricing = tieredText
 			spend.TieredText.InputTokens = billingData.Usage.PromptTokens - billingData.Usage.PromptTokensDetails.CachedTokens
 			spend.TieredText.OutputTokens = billingData.Usage.CompletionTokens
