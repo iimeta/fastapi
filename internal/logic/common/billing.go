@@ -601,7 +601,7 @@ func imageGeneration(ctx context.Context, mak *MAK, billingData *common.BillingD
 
 	for _, imageGeneration := range mak.ReqModel.Pricing.ImageGeneration {
 
-		if imageGeneration.Quality == quality && imageGeneration.Width == width && imageGeneration.Height == height {
+		if (imageGeneration.Quality == quality || imageGeneration.Quality == "") && imageGeneration.Width == width && imageGeneration.Height == height {
 			spend.ImageGeneration.Pricing = imageGeneration
 			break
 		}
