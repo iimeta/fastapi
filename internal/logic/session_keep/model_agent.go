@@ -8,6 +8,7 @@ import (
 
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
+	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/v2/internal/config"
 	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/model"
@@ -37,7 +38,13 @@ func New() service.ISessionKeepModelAgent {
 	}
 }
 
+// 获取会话保持绑定的代理和密钥
 func (s *sSessionKeepModelAgent) Get(ctx context.Context, sk *common.SessionKey) (string, string, bool, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sSessionKeepModelAgent Get time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	key := s.localKey(sk)
 	if value := s.localCache.GetVal(ctx, key); value != nil {
@@ -68,7 +75,13 @@ func (s *sSessionKeepModelAgent) Get(ctx context.Context, sk *common.SessionKey)
 	return agentId, keyId, true, nil
 }
 
+// 设置会话保持绑定
 func (s *sSessionKeepModelAgent) Set(ctx context.Context, sk *common.SessionKey, agentId string, keyId string) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sSessionKeepModelAgent Set time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	if agentId == "" || sk == nil || sk.UserId <= 0 {
 		return nil
@@ -107,17 +120,17 @@ func (s *sSessionKeepModelAgent) Set(ctx context.Context, sk *common.SessionKey,
 		return err
 	}
 
-	now := time.Now().Unix()
+	ts := time.Now().Unix()
 	member := sk.Raw
-	if _, err := redis.ZAdd(ctx, s.redisAgentSetKey(agentId), float64(now), member); err != nil {
+	if _, err := redis.ZAdd(ctx, s.redisAgentSetKey(agentId), float64(ts), member); err != nil {
 		return err
 	}
 
-	if _, err := redis.ZAdd(ctx, s.redisUserAgentSetKey(sk.UserId, agentId), float64(now), member); err != nil {
+	if _, err := redis.ZAdd(ctx, s.redisUserAgentSetKey(sk.UserId, agentId), float64(ts), member); err != nil {
 		return err
 	}
 
-	if _, err := redis.ZAdd(ctx, s.redisGlobalSetKey(), float64(now), member); err != nil {
+	if _, err := redis.ZAdd(ctx, s.redisGlobalSetKey(), float64(ts), member); err != nil {
 		return err
 	}
 
@@ -129,11 +142,24 @@ func (s *sSessionKeepModelAgent) Set(ctx context.Context, sk *common.SessionKey,
 	return nil
 }
 
+// 刷新会话保持绑定
 func (s *sSessionKeepModelAgent) Refresh(ctx context.Context, sk *common.SessionKey, agentId string, keyId string) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sSessionKeepModelAgent Refresh time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	return s.Set(ctx, sk, agentId, keyId)
 }
 
+// 删除会话保持绑定
 func (s *sSessionKeepModelAgent) Delete(ctx context.Context, sk *common.SessionKey, agentId string) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sSessionKeepModelAgent Delete time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	_, keyId, _, _ := s.getStoredValue(ctx, sk)
 
@@ -157,7 +183,13 @@ func (s *sSessionKeepModelAgent) Delete(ctx context.Context, sk *common.SessionK
 	return nil
 }
 
+// 根据代理删除所有会话保持绑定
 func (s *sSessionKeepModelAgent) DeleteByAgent(ctx context.Context, agentId string) (int64, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sSessionKeepModelAgent DeleteByAgent time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	members, err := redis.ZRange(ctx, s.redisAgentSetKey(agentId), 0, -1)
 	if err != nil {
@@ -194,7 +226,13 @@ func (s *sSessionKeepModelAgent) DeleteByAgent(ctx context.Context, agentId stri
 	return deleted, nil
 }
 
+// 删除所有会话保持绑定
 func (s *sSessionKeepModelAgent) DeleteAll(ctx context.Context) (int64, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sSessionKeepModelAgent DeleteAll time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	keys, err := redis.Keys(ctx, "session:agent:*")
 	if err != nil {
@@ -217,7 +255,13 @@ func (s *sSessionKeepModelAgent) DeleteAll(ctx context.Context) (int64, error) {
 	return deleted, nil
 }
 
+// 记录代理失败次数
 func (s *sSessionKeepModelAgent) RecordFail(ctx context.Context, sk *common.SessionKey, agentId string) (int64, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sSessionKeepModelAgent RecordFail time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	cfg, err := s.cfgByAgent(ctx, agentId)
 	if err != nil {
@@ -238,12 +282,26 @@ func (s *sSessionKeepModelAgent) RecordFail(ctx context.Context, sk *common.Sess
 	return count, nil
 }
 
+// 清除代理失败计数
 func (s *sSessionKeepModelAgent) ClearFail(ctx context.Context, sk *common.SessionKey, agentId string) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sSessionKeepModelAgent ClearFail time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	_, err := redis.Del(ctx, s.redisFailKey(sk, agentId))
+
 	return err
 }
 
+// 记录密钥失败次数
 func (s *sSessionKeepModelAgent) RecordKeyFail(ctx context.Context, sk *common.SessionKey, agentId, keyId string) (int64, error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sSessionKeepModelAgent RecordKeyFail time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	cfg, err := s.cfgByAgent(ctx, agentId)
 	if err != nil {
@@ -264,8 +322,16 @@ func (s *sSessionKeepModelAgent) RecordKeyFail(ctx context.Context, sk *common.S
 	return count, nil
 }
 
+// 清除密钥失败计数
 func (s *sSessionKeepModelAgent) ClearKeyFail(ctx context.Context, sk *common.SessionKey, agentId, keyId string) error {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sSessionKeepModelAgent ClearKeyFail time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	_, err := redis.Del(ctx, s.redisKeyFailKey(sk, agentId, keyId))
+
 	return err
 }
 

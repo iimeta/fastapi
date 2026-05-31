@@ -9,13 +9,21 @@ import (
 
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/v2/internal/model/common"
 	"github.com/iimeta/fastapi/v2/internal/service"
+	"github.com/iimeta/fastapi/v2/utility/logger"
 )
 
 var regexCache sync.Map
 
+// 解析会话保持Key
 func (s *sSessionKeepModelAgent) ResolveSessionKey(ctx context.Context, modelName string, cfg *common.ModelAgentSessionKeep) *common.SessionKey {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sSessionKeepModelAgent ResolveSessionKey time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	userId := service.Session().GetUserId(ctx)
 	if userId <= 0 {

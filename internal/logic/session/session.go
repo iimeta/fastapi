@@ -310,12 +310,14 @@ func (s *sSession) GetSessionKeepHit(ctx context.Context) bool {
 	return hit.(bool)
 }
 
+// 保存会话保持SessionKey到上下文
 func (s *sSession) SaveSessionKey(ctx context.Context, sk *common.SessionKey) {
 	if r := g.RequestFromCtx(ctx); r != nil {
 		r.SetCtxVar(consts.CTX_SESSION_KEY, sk)
 	}
 }
 
+// 获取会话保持SessionKey
 func (s *sSession) GetSessionKey(ctx context.Context) *common.SessionKey {
 
 	val := ctx.Value(consts.CTX_SESSION_KEY)

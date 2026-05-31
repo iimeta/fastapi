@@ -62,24 +62,24 @@ func (s *sModelAgent) GetById(ctx context.Context, id string) (*model.ModelAgent
 	}
 
 	return &model.ModelAgent{
-		Id:                    modelAgent.Id,
-		ProviderId:            modelAgent.ProviderId,
-		Name:                  modelAgent.Name,
-		BaseUrl:               modelAgent.BaseUrl,
-		Path:                  modelAgent.Path,
-		Weight:                modelAgent.Weight,
-		BillingMethods:        modelAgent.BillingMethods,
-		Models:                modelAgent.Models,
-		IsEnableModelReplace:  modelAgent.IsEnableModelReplace,
-		ReplaceModels:         modelAgent.ReplaceModels,
-		TargetModels:          modelAgent.TargetModels,
-		IsEnableHealthCheck:   modelAgent.IsEnableHealthCheck,
-		IsRemoveAbnormalModel: modelAgent.IsRemoveAbnormalModel,
-		AbnormalModels:        modelAgent.AbnormalModels,
-		IsEnableSessionKeep:   modelAgent.IsEnableSessionKeep,
-		SessionKeepConfig:     modelAgent.SessionKeepConfig,
-		IsNeverDisable:        modelAgent.IsNeverDisable,
-		LbStrategy:            modelAgent.LbStrategy,
+		Id:                       modelAgent.Id,
+		ProviderId:               modelAgent.ProviderId,
+		Name:                     modelAgent.Name,
+		BaseUrl:                  modelAgent.BaseUrl,
+		Path:                     modelAgent.Path,
+		Weight:                   modelAgent.Weight,
+		BillingMethods:           modelAgent.BillingMethods,
+		Models:                   modelAgent.Models,
+		IsEnableModelReplace:     modelAgent.IsEnableModelReplace,
+		ReplaceModels:            modelAgent.ReplaceModels,
+		TargetModels:             modelAgent.TargetModels,
+		IsEnableHealthCheck:      modelAgent.IsEnableHealthCheck,
+		IsRemoveAbnormalModel:    modelAgent.IsRemoveAbnormalModel,
+		AbnormalModels:           modelAgent.AbnormalModels,
+		IsEnableSessionKeep:      modelAgent.IsEnableSessionKeep,
+		SessionKeepConfig:        modelAgent.SessionKeepConfig,
+		IsNeverDisable:           modelAgent.IsNeverDisable,
+		LbStrategy:               modelAgent.LbStrategy,
 		IsEnableDataPassthrough:  modelAgent.IsEnableDataPassthrough,
 		ReqPassthroughParams:     modelAgent.ReqPassthroughParams,
 		ReqHeaderPassthroughMode: modelAgent.ReqHeaderPassthroughMode,
@@ -87,7 +87,7 @@ func (s *sModelAgent) GetById(ctx context.Context, id string) (*model.ModelAgent
 		ResPassthroughParams:     modelAgent.ResPassthroughParams,
 		ResHeaderPassthroughMode: modelAgent.ResHeaderPassthroughMode,
 		ResHeaderPassthroughList: modelAgent.ResHeaderPassthroughList,
-		Status:                modelAgent.Status,
+		Status:                   modelAgent.Status,
 	}, nil
 }
 
@@ -114,24 +114,24 @@ func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAge
 	items := make([]*model.ModelAgent, 0)
 	for _, result := range results {
 		items = append(items, &model.ModelAgent{
-			Id:                    result.Id,
-			ProviderId:            result.ProviderId,
-			Name:                  result.Name,
-			BaseUrl:               result.BaseUrl,
-			Path:                  result.Path,
-			Weight:                result.Weight,
-			BillingMethods:        result.BillingMethods,
-			Models:                result.Models,
-			IsEnableModelReplace:  result.IsEnableModelReplace,
-			ReplaceModels:         result.ReplaceModels,
-			TargetModels:          result.TargetModels,
-			IsEnableHealthCheck:   result.IsEnableHealthCheck,
-			IsRemoveAbnormalModel: result.IsRemoveAbnormalModel,
-			AbnormalModels:        result.AbnormalModels,
-			IsEnableSessionKeep:   result.IsEnableSessionKeep,
-			SessionKeepConfig:     result.SessionKeepConfig,
-			IsNeverDisable:        result.IsNeverDisable,
-			LbStrategy:            result.LbStrategy,
+			Id:                       result.Id,
+			ProviderId:               result.ProviderId,
+			Name:                     result.Name,
+			BaseUrl:                  result.BaseUrl,
+			Path:                     result.Path,
+			Weight:                   result.Weight,
+			BillingMethods:           result.BillingMethods,
+			Models:                   result.Models,
+			IsEnableModelReplace:     result.IsEnableModelReplace,
+			ReplaceModels:            result.ReplaceModels,
+			TargetModels:             result.TargetModels,
+			IsEnableHealthCheck:      result.IsEnableHealthCheck,
+			IsRemoveAbnormalModel:    result.IsRemoveAbnormalModel,
+			AbnormalModels:           result.AbnormalModels,
+			IsEnableSessionKeep:      result.IsEnableSessionKeep,
+			SessionKeepConfig:        result.SessionKeepConfig,
+			IsNeverDisable:           result.IsNeverDisable,
+			LbStrategy:               result.LbStrategy,
 			IsEnableDataPassthrough:  result.IsEnableDataPassthrough,
 			ReqPassthroughParams:     result.ReqPassthroughParams,
 			ReqHeaderPassthroughMode: result.ReqHeaderPassthroughMode,
@@ -139,7 +139,7 @@ func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAge
 			ResPassthroughParams:     result.ResPassthroughParams,
 			ResHeaderPassthroughMode: result.ResHeaderPassthroughMode,
 			ResHeaderPassthroughList: result.ResHeaderPassthroughList,
-			Status:                result.Status,
+			Status:                   result.Status,
 		})
 	}
 
@@ -165,24 +165,24 @@ func (s *sModelAgent) ListAll(ctx context.Context) ([]*model.ModelAgent, error) 
 	items := make([]*model.ModelAgent, 0)
 	for _, result := range results {
 		items = append(items, &model.ModelAgent{
-			Id:                    result.Id,
-			ProviderId:            result.ProviderId,
-			Name:                  result.Name,
-			BaseUrl:               result.BaseUrl,
-			Path:                  result.Path,
-			Weight:                result.Weight,
-			BillingMethods:        result.BillingMethods,
-			Models:                result.Models,
-			IsEnableModelReplace:  result.IsEnableModelReplace,
-			ReplaceModels:         result.ReplaceModels,
-			TargetModels:          result.TargetModels,
-			IsEnableHealthCheck:   result.IsEnableHealthCheck,
-			IsRemoveAbnormalModel: result.IsRemoveAbnormalModel,
-			AbnormalModels:        result.AbnormalModels,
-			IsEnableSessionKeep:   result.IsEnableSessionKeep,
-			SessionKeepConfig:     result.SessionKeepConfig,
-			IsNeverDisable:        result.IsNeverDisable,
-			LbStrategy:            result.LbStrategy,
+			Id:                       result.Id,
+			ProviderId:               result.ProviderId,
+			Name:                     result.Name,
+			BaseUrl:                  result.BaseUrl,
+			Path:                     result.Path,
+			Weight:                   result.Weight,
+			BillingMethods:           result.BillingMethods,
+			Models:                   result.Models,
+			IsEnableModelReplace:     result.IsEnableModelReplace,
+			ReplaceModels:            result.ReplaceModels,
+			TargetModels:             result.TargetModels,
+			IsEnableHealthCheck:      result.IsEnableHealthCheck,
+			IsRemoveAbnormalModel:    result.IsRemoveAbnormalModel,
+			AbnormalModels:           result.AbnormalModels,
+			IsEnableSessionKeep:      result.IsEnableSessionKeep,
+			SessionKeepConfig:        result.SessionKeepConfig,
+			IsNeverDisable:           result.IsNeverDisable,
+			LbStrategy:               result.LbStrategy,
 			IsEnableDataPassthrough:  result.IsEnableDataPassthrough,
 			ReqPassthroughParams:     result.ReqPassthroughParams,
 			ReqHeaderPassthroughMode: result.ReqHeaderPassthroughMode,
@@ -190,7 +190,7 @@ func (s *sModelAgent) ListAll(ctx context.Context) ([]*model.ModelAgent, error) 
 			ResPassthroughParams:     result.ResPassthroughParams,
 			ResHeaderPassthroughMode: result.ResHeaderPassthroughMode,
 			ResHeaderPassthroughList: result.ResHeaderPassthroughList,
-			Status:                result.Status,
+			Status:                   result.Status,
 		})
 	}
 
@@ -359,16 +359,34 @@ func (s *sModelAgent) Pick(ctx context.Context, m *model.Model) (int, *model.Mod
 	}
 
 	if cfg := config.Cfg.SysConfig.ModelAgentSessionKeep; cfg != nil && cfg.Open {
-		if sk := service.SessionKeepModelAgent().ResolveSessionKey(ctx, m.Name, cfg); sk != nil {
-			service.Session().SaveSessionKey(ctx, sk)
-			if sessionAgentId, sessionKeyId, ok, sessionErr := service.SessionKeepModelAgent().Get(ctx, sk); sessionErr == nil && ok {
-				for _, modelAgent := range filterModelAgentList {
-					if modelAgent.Id == sessionAgentId && modelAgent.IsEnableSessionKeep {
-						if sessionKeyId != "" {
-							service.Session().SaveSessionKeepPreferredKey(ctx, sessionKeyId)
+
+		hasSessionKeepAgent := false
+		for _, modelAgent := range filterModelAgentList {
+			if modelAgent.IsEnableSessionKeep {
+				hasSessionKeepAgent = true
+				break
+			}
+		}
+
+		if hasSessionKeepAgent {
+			if sk := service.SessionKeepModelAgent().ResolveSessionKey(ctx, m.Name, cfg); sk != nil {
+
+				service.Session().SaveSessionKey(ctx, sk)
+
+				if sessionAgentId, sessionKeyId, ok, sessionErr := service.SessionKeepModelAgent().Get(ctx, sk); sessionErr == nil && ok {
+
+					for _, modelAgent := range filterModelAgentList {
+
+						if modelAgent.Id == sessionAgentId && modelAgent.IsEnableSessionKeep {
+
+							if sessionKeyId != "" {
+								service.Session().SaveSessionKeepPreferredKey(ctx, sessionKeyId)
+							}
+
+							service.Session().SaveSessionKeepHit(ctx, true)
+
+							return len(filterModelAgentList), modelAgent, nil
 						}
-						service.Session().SaveSessionKeepHit(ctx, true)
-						return len(filterModelAgentList), modelAgent, nil
 					}
 				}
 			}
@@ -515,16 +533,34 @@ func (s *sModelAgent) PickGroup(ctx context.Context, m *model.Model, group *mode
 	}
 
 	if cfg := config.Cfg.SysConfig.ModelAgentSessionKeep; cfg != nil && cfg.Open {
-		if sk := service.SessionKeepModelAgent().ResolveSessionKey(ctx, m.Name, cfg); sk != nil {
-			service.Session().SaveSessionKey(ctx, sk)
-			if sessionAgentId, sessionKeyId, ok, sessionErr := service.SessionKeepModelAgent().Get(ctx, sk); sessionErr == nil && ok {
-				for _, modelAgent := range filterModelAgentList {
-					if modelAgent.Id == sessionAgentId && modelAgent.IsEnableSessionKeep {
-						if sessionKeyId != "" {
-							service.Session().SaveSessionKeepPreferredKey(ctx, sessionKeyId)
+
+		hasSessionKeepAgent := false
+		for _, modelAgent := range filterModelAgentList {
+			if modelAgent.IsEnableSessionKeep {
+				hasSessionKeepAgent = true
+				break
+			}
+		}
+
+		if hasSessionKeepAgent {
+			if sk := service.SessionKeepModelAgent().ResolveSessionKey(ctx, m.Name, cfg); sk != nil {
+
+				service.Session().SaveSessionKey(ctx, sk)
+
+				if sessionAgentId, sessionKeyId, ok, sessionErr := service.SessionKeepModelAgent().Get(ctx, sk); sessionErr == nil && ok {
+
+					for _, modelAgent := range filterModelAgentList {
+
+						if modelAgent.Id == sessionAgentId && modelAgent.IsEnableSessionKeep {
+
+							if sessionKeyId != "" {
+								service.Session().SaveSessionKeepPreferredKey(ctx, sessionKeyId)
+							}
+
+							service.Session().SaveSessionKeepHit(ctx, true)
+
+							return len(filterModelAgentList), modelAgent, nil
 						}
-						service.Session().SaveSessionKeepHit(ctx, true)
-						return len(filterModelAgentList), modelAgent, nil
 					}
 				}
 			}
