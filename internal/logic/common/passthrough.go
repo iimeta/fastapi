@@ -7,7 +7,9 @@ import (
 	"strings"
 
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/v2/internal/model"
+	"github.com/iimeta/fastapi/v2/utility/logger"
 )
 
 // 有效透传配置(Model ∩ ModelAgent 交集)
@@ -34,7 +36,12 @@ var ResReservedHeaders = []string{
 }
 
 // 计算有效的透传配置, 无ModelAgent时使用Model配置, 有ModelAgent时取交集
-func GetEffectivePassthrough(m *model.Model, agent *model.ModelAgent) *EffectivePassthrough {
+func GetEffectivePassthrough(ctx context.Context, m *model.Model, agent *model.ModelAgent) *EffectivePassthrough {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "GetEffectivePassthrough time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	if agent == nil {
 		if !m.IsEnableDataPassthrough {

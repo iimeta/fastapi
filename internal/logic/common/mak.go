@@ -42,6 +42,11 @@ type MAK struct {
 
 func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "MAK InitMAK time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	if mak.RealModel == nil {
 		mak.RealModel = new(model.Model)
 	}
@@ -158,17 +163,11 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 	}
 
 	if mak.Group != nil && mak.ReqModel != nil {
-		if app, err := service.App().GetCache(ctx, service.Session().GetAppId(ctx)); err != nil {
-			logger.Error(ctx, err)
-			return err
-		} else if len(app.Models) > 0 && !slices.Contains(app.Models, mak.ReqModel.Id) {
+		if len(mak.App.Models) > 0 && !slices.Contains(mak.App.Models, mak.ReqModel.Id) {
 			err = errors.ERR_MODEL_NOT_FOUND
 			logger.Info(ctx, err)
 			return err
-		} else if appKey, err := service.AppKey().GetCache(ctx, service.Session().GetSecretKey(ctx)); err != nil {
-			logger.Error(ctx, err)
-			return err
-		} else if len(appKey.Models) > 0 && !slices.Contains(appKey.Models, mak.ReqModel.Id) {
+		} else if len(mak.AppKey.Models) > 0 && !slices.Contains(mak.AppKey.Models, mak.ReqModel.Id) {
 			err = errors.ERR_MODEL_NOT_FOUND
 			logger.Info(ctx, err)
 			return err
@@ -413,7 +412,7 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 		return err
 	}
 
-	mak.Passthrough = GetEffectivePassthrough(mak.ReqModel, mak.ModelAgent)
+	mak.Passthrough = GetEffectivePassthrough(ctx, mak.ReqModel, mak.ModelAgent)
 
 	return nil
 }
