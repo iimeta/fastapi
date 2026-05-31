@@ -2,9 +2,11 @@ package common
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/net/ghttp"
+	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
 	"github.com/iimeta/fastapi/v2/internal/consts"
@@ -28,9 +30,14 @@ func ConvQuota(quota int, n ...int) float64 {
 
 func ConvResponsesToChatCompletionsRequest(request *ghttp.Request, isChatCompletions bool) smodel.ChatCompletionRequest {
 
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(request.GetCtx(), "ConvResponsesToChatCompletionsRequest time: %d", gtime.TimestampMilli()-now)
+	}()
+
 	if isChatCompletions {
 		chatCompletionRequest := smodel.ChatCompletionRequest{}
-		if err := gjson.Unmarshal(request.GetBody(), &chatCompletionRequest); err != nil {
+		if err := json.Unmarshal(request.GetBody(), &chatCompletionRequest); err != nil {
 			logger.Error(request.GetCtx(), err)
 			return smodel.ChatCompletionRequest{}
 		}
@@ -38,7 +45,7 @@ func ConvResponsesToChatCompletionsRequest(request *ghttp.Request, isChatComplet
 	}
 
 	responsesReq := smodel.OpenAIResponsesReq{}
-	if err := gjson.Unmarshal(request.GetBody(), &responsesReq); err != nil {
+	if err := json.Unmarshal(request.GetBody(), &responsesReq); err != nil {
 		logger.Error(request.GetCtx(), err)
 		return smodel.ChatCompletionRequest{}
 	}
@@ -62,7 +69,7 @@ func ConvResponsesToChatCompletionsRequest(request *ghttp.Request, isChatComplet
 		if value, ok := responsesReq.Input.([]any); ok {
 
 			inputs := make([]smodel.OpenAIResponsesInput, 0)
-			if err := gjson.Unmarshal(gjson.MustEncode(value), &inputs); err != nil {
+			if err := json.Unmarshal(gjson.MustEncode(value), &inputs); err != nil {
 				logger.Error(request.GetCtx(), err)
 				return chatCompletionRequest
 			}
