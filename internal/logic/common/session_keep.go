@@ -3,6 +3,7 @@ package common
 import (
 	"context"
 
+	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/iimeta/fastapi/v2/internal/config"
 	mcommon "github.com/iimeta/fastapi/v2/internal/model/common"
 	"github.com/iimeta/fastapi/v2/internal/service"
@@ -76,11 +77,17 @@ func GetResolvedSessionKeepConfig(mak *MAK) *mcommon.ModelAgentSessionKeep {
 	return getSessionKeepConfig(mak.ModelAgent.SessionKeepConfig, mak.ModelAgent.IsEnableSessionKeep)
 }
 
+// 会话保持成功处理
 func HandleSessionKeepSuccess(ctx context.Context, mak *MAK) {
 
-	if mak == nil || mak.ModelAgent == nil {
+	if mak == nil || mak.ModelAgent == nil || !mak.ModelAgent.IsEnableSessionKeep {
 		return
 	}
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "HandleSessionKeepSuccess time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	cfg := GetResolvedSessionKeepConfig(mak)
 	if cfg == nil || !cfg.Open {
@@ -125,11 +132,17 @@ func HandleSessionKeepSuccess(ctx context.Context, mak *MAK) {
 	}
 }
 
+// 会话保持失败处理
 func HandleSessionKeepFailure(ctx context.Context, mak *MAK) {
 
-	if mak == nil || mak.ModelAgent == nil {
+	if mak == nil || mak.ModelAgent == nil || !mak.ModelAgent.IsEnableSessionKeep {
 		return
 	}
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "HandleSessionKeepFailure time: %d", gtime.TimestampMilli()-now)
+	}()
 
 	cfg := GetResolvedSessionKeepConfig(mak)
 	if cfg == nil || !cfg.Open {
