@@ -211,6 +211,8 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 	imageRes := &model.ImageRes{
 		Data:         after.ImageResponse.Data,
+		ConnTime:     after.ConnTime,
+		Duration:     after.Duration,
 		TotalTime:    after.ImageResponse.TotalTime,
 		Error:        after.Error,
 		InternalTime: after.InternalTime,

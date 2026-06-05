@@ -19,21 +19,32 @@ func (c *ControllerV1) Generations(ctx context.Context, req *v1.GenerationsReq) 
 		logger.Debugf(ctx, "Controller Generations time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	response, err := service.Image().Generations(ctx, g.RequestFromCtx(ctx).GetBody(), nil, nil)
-	if err != nil {
-		return nil, err
-	}
+	if req.Stream {
 
-	passthrough, _ := g.RequestFromCtx(ctx).GetCtxVar("passthrough").Val().(*common.EffectivePassthrough)
-	isResDataPassthrough := passthrough != nil && slices.Contains(passthrough.ResParams, "res_data")
+		if err = service.Image().GenerationsStream(ctx, g.RequestFromCtx(ctx).GetBody(), nil, nil); err != nil {
+			return nil, err
+		}
 
-	// 响应头透传
-	common.WritePassthroughHeaders(ctx, passthrough, response.ResponseHeaders)
+		g.RequestFromCtx(ctx).SetCtxVar("stream", req.Stream)
 
-	if !isResDataPassthrough || response.ResponseBytes == nil {
-		g.RequestFromCtx(ctx).Response.WriteJson(response)
 	} else {
-		g.RequestFromCtx(ctx).Response.WriteJson(response.ResponseBytes)
+
+		response, err := service.Image().Generations(ctx, g.RequestFromCtx(ctx).GetBody(), nil, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		passthrough, _ := g.RequestFromCtx(ctx).GetCtxVar("passthrough").Val().(*common.EffectivePassthrough)
+		isResDataPassthrough := passthrough != nil && slices.Contains(passthrough.ResParams, "res_data")
+
+		// 响应头透传
+		common.WritePassthroughHeaders(ctx, passthrough, response.ResponseHeaders)
+
+		if !isResDataPassthrough || response.ResponseBytes == nil {
+			g.RequestFromCtx(ctx).Response.WriteJson(response)
+		} else {
+			g.RequestFromCtx(ctx).Response.WriteJson(response.ResponseBytes)
+		}
 	}
 
 	return

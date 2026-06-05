@@ -31,6 +31,7 @@ type LogImage struct {
 	RealModelId          string                 `bson:"real_model_id,omitempty"`           // 真实模型ID
 	RealModelName        string                 `bson:"real_model_name,omitempty"`         // 真实模型名称
 	RealModel            string                 `bson:"real_model,omitempty"`              // 真实模型
+	Stream               bool                   `bson:"stream,omitempty"`                  // 流式
 	Prompt               string                 `bson:"prompt,omitempty"`                  // 提示(提问)
 	Size                 string                 `bson:"size,omitempty"`                    // 尺寸大小
 	N                    int                    `bson:"n,omitempty"`                       // 图像数
@@ -39,6 +40,8 @@ type LogImage struct {
 	ResponseFormat       string                 `bson:"response_format,omitempty"`         // 图像格式[url, b64_json]
 	ImageData            []common.ImageData     `bson:"image_data,omitempty"`              // 生成图像数据
 	Spend                common.Spend           `bson:"spend,omitempty"`                   // 花费
+	ConnTime             int64                  `bson:"conn_time,omitempty"`               // 连接时间
+	Duration             int64                  `bson:"duration,omitempty"`                // 持续时间
 	TotalTime            int64                  `bson:"total_time,omitempty"`              // 总时间
 	InternalTime         int64                  `bson:"internal_time,omitempty"`           // 内耗时间
 	ReqTime              int64                  `bson:"req_time,omitempty"`                // 请求时间
