@@ -8,8 +8,6 @@ type Model struct {
 	Name                     string                 `json:"name,omitempty"`                        // 模型名称
 	Model                    string                 `json:"model,omitempty"`                       // 模型
 	Type                     int                    `json:"type,omitempty"`                        // 模型类型[1:文生文, 2:文生图, 3:图生文, 4:图生图, 5:文生语音, 6:语音生文, 7:文本向量化, 8:视频生成, 100:多模态, 101:多模态实时, 102:多模态语音, 103:多模态向量化, 10000:通用]
-	BaseUrl                  string                 `json:"base_url,omitempty"`                    // 模型地址
-	Path                     string                 `json:"path,omitempty"`                        // 模型路径
 	IsEnablePresetConfig     bool                   `json:"is_enable_preset_config,omitempty"`     // 是否启用预设配置
 	PresetConfig             common.PresetConfig    `json:"preset_config,omitempty"`               // 预设配置
 	TimeRules                []*common.TimeRule     `json:"time_rules,omitempty"`                  // 时段规则

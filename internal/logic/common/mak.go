@@ -193,8 +193,6 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 	}
 
 	mak.Provider = mak.RealModel.ProviderId
-	mak.BaseUrl = mak.RealModel.BaseUrl
-	mak.Path = mak.RealModel.Path
 
 	if mak.Group != nil && mak.Group.IsEnableModelAgent && mak.RealModel.IsEnableModelAgent {
 
@@ -216,49 +214,6 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 			if err != nil {
 				logger.Error(ctx, err)
 				return err
-
-				// todo 移除默认使用模型绑定代理
-				//if !errors.Is(err, errors.ERR_GROUP_NO_AVAILABLE_MODEL_AGENT) {
-				//	logger.Error(ctx, err)
-				//	return err
-				//}
-				//
-				//if service.Session().GetModelAgentBillingMethod(ctx) == 0 {
-				//	if slices.Contains(mak.AppKey.BillingMethods, 2) && slices.Contains(mak.RealModel.Pricing.BillingMethods, 2) {
-				//		service.Session().SaveModelAgentBillingMethod(ctx, 2)
-				//	} else {
-				//		service.Session().SaveModelAgentBillingMethod(ctx, 1)
-				//	}
-				//}
-				//
-				//if mak.AgentTotal, mak.ModelAgent, err = service.ModelAgent().Pick(g.RequestFromCtx(ctx).GetCtx(), mak.RealModel); err != nil {
-				//
-				//	if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT) && service.Session().GetModelAgentBillingMethod(g.RequestFromCtx(ctx).GetCtx()) == 2 && slices.Contains(mak.RealModel.Pricing.BillingMethods, 1) {
-				//		service.Session().SaveModelAgentBillingMethod(ctx, 1)
-				//		mak.AgentTotal, mak.ModelAgent, err = service.ModelAgent().Pick(g.RequestFromCtx(ctx).GetCtx(), mak.RealModel)
-				//	}
-				//
-				//	if err != nil {
-				//		logger.Error(ctx, err)
-				//
-				//		if mak.RealModel.IsEnableFallback {
-				//
-				//			if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.FallbackModelAgent == nil {
-				//				if mak.FallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); mak.FallbackModelAgent != nil {
-				//					return mak.InitMAK(ctx)
-				//				}
-				//			}
-				//
-				//			if mak.RealModel.FallbackConfig.Model != "" && mak.FallbackModel == nil {
-				//				if mak.FallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); mak.FallbackModel != nil {
-				//					return mak.InitMAK(ctx)
-				//				}
-				//			}
-				//		}
-				//
-				//		return err
-				//	}
-				//}
 			}
 		}
 
