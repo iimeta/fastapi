@@ -207,6 +207,35 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		}); err != nil {
 			logger.Error(ctx, err)
 		}
+
+		if after.IsAsync {
+
+			taskImage := do.TaskImage{
+				TraceId:        gtrace.GetTraceID(ctx),
+				UserId:         service.Session().GetUserId(ctx),
+				AppId:          service.Session().GetAppId(ctx),
+				Model:          mak.ReqModel.Name,
+				ImageId:        after.ImageId,
+				N:              after.ImageGenerationRequest.N,
+				Quality:        after.ImageGenerationRequest.Quality,
+				Size:           after.ImageGenerationRequest.Size,
+				ResponseFormat: after.ImageGenerationRequest.ResponseFormat,
+				Prompt:         after.ImageGenerationRequest.Prompt,
+				Status:         "queued",
+				RequestData:    after.RequestData,
+				Rid:            service.Session().GetRid(ctx),
+				Creator:        service.Session().GetSecretKey(ctx),
+			}
+
+			if after.Spend.ImageGeneration != nil && after.Spend.ImageGeneration.Pricing != nil {
+				taskImage.Width = after.Spend.ImageGeneration.Pricing.Width
+				taskImage.Height = after.Spend.ImageGeneration.Pricing.Height
+			}
+
+			if _, err := dao.TaskImage.Insert(ctx, taskImage); err != nil {
+				logger.Error(ctx, err)
+			}
+		}
 	}
 
 	imageRes := &model.ImageRes{

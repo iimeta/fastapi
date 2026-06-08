@@ -10,6 +10,7 @@ const (
 	MODEL_AGENT    = "model_agent"
 	KEY            = "key"
 	GROUP          = "group"
+	TASK_IMAGE     = "task_image"
 	TASK_VIDEO     = "task_video"
 	TASK_FILE      = "task_file"
 	TASK_BATCH     = "task_batch"

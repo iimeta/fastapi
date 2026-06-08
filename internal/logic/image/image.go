@@ -5,22 +5,31 @@ import (
 	"fmt"
 	"io"
 	"slices"
+	"time"
 
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
 	sconsts "github.com/iimeta/fastapi-sdk/v2/consts"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
+	v1 "github.com/iimeta/fastapi/v2/api/image/v1"
+	"github.com/iimeta/fastapi/v2/internal/config"
+	"github.com/iimeta/fastapi/v2/internal/consts"
+	"github.com/iimeta/fastapi/v2/internal/dao"
 	"github.com/iimeta/fastapi/v2/internal/errors"
 	"github.com/iimeta/fastapi/v2/internal/logic/common"
 	"github.com/iimeta/fastapi/v2/internal/model"
 	mcommon "github.com/iimeta/fastapi/v2/internal/model/common"
 	"github.com/iimeta/fastapi/v2/internal/service"
+	"github.com/iimeta/fastapi/v2/utility/db"
 	"github.com/iimeta/fastapi/v2/utility/logger"
 	"github.com/iimeta/fastapi/v2/utility/util"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 type sImage struct{}
@@ -805,4 +814,503 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 			return err
 		}
 	}
+}
+
+// GenerationsAsync
+func (s *sImage) GenerationsAsync(ctx context.Context, data []byte, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.ImageJobResponse, err error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sImage GenerationsAsync time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	params, err := common.NewConverter(ctx, sconsts.PROVIDER_OPENAI).ConvImageGenerationsRequest(ctx, data)
+	if err != nil {
+		logger.Errorf(ctx, "sImage GenerationsAsync ConvImageGenerationsRequest error: %v", err)
+		return response, err
+	}
+
+	var (
+		mak = &common.MAK{
+			Model:              params.Model,
+			FallbackModelAgent: fallbackModelAgent,
+			FallbackModel:      fallbackModel,
+		}
+		retryInfo *mcommon.Retry
+	)
+
+	imageId := "img-" + util.GenerateId()
+
+	defer func() {
+
+		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
+		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
+		usage := smodel.Usage{}
+
+		if mak.ReqModel != nil && mak.RealModel != nil {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+					ImageGenerationRequest: params,
+					IsAsync:                true,
+					ImageId:                imageId,
+					RequestData:            util.ConvToMap(params),
+					Usage:                  &usage,
+					Error:                  err,
+					RetryInfo:              retryInfo,
+					TotalTime:              response.TotalTime,
+					InternalTime:           internalTime,
+					EnterTime:              enterTime,
+				})
+
+			}); err != nil {
+				logger.Error(ctx, err)
+			}
+		}
+	}()
+
+	if err = mak.InitMAK(ctx); err != nil {
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	if slices.Contains(mak.ReqModel.Pricing.BillingItems, "image_generation") {
+
+		billingData := &mcommon.BillingData{
+			ImageGenerationRequest: params,
+		}
+
+		common.Billing(ctx, mak, billingData, "image_generation")
+	}
+
+	response = smodel.ImageJobResponse{
+		Id:        imageId,
+		Object:    "image",
+		Model:     mak.ReqModel.Name,
+		Status:    "queued",
+		Progress:  0,
+		CreatedAt: time.Now().Unix(),
+		N:         params.N,
+		Quality:   params.Quality,
+		Size:      params.Size,
+		Prompt:    params.Prompt,
+	}
+
+	return response, nil
+}
+
+// List
+func (s *sImage) List(ctx context.Context, params *v1.ListReq) (response smodel.ImageListResponse, err error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sImage List time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	var (
+		mak       = &common.MAK{}
+		retryInfo *mcommon.Retry
+	)
+
+	defer func() {
+
+		response.TotalTime = gtime.TimestampMilli() - now
+		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
+		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
+
+		if mak.ReqModel != nil && mak.RealModel != nil {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+				afterHandler := &mcommon.AfterHandler{
+					Action:       consts.ACTION_LIST,
+					RequestData:  util.ConvToMap(params.ImageListRequest),
+					ResponseData: util.ConvToMap(response),
+					Error:        err,
+					RetryInfo:    retryInfo,
+					TotalTime:    response.TotalTime,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
+				}
+
+				common.AfterHandler(ctx, mak, afterHandler)
+
+			}); err != nil {
+				logger.Error(ctx, err)
+			}
+		}
+	}()
+
+	limit := params.Limit
+
+	if limit > 1000 {
+		err = errors.NewError(404, "integer_above_max_value", fmt.Sprintf("Invalid 'limit': integer above maximum value. Expected a value <= 1000, but got %d instead.", params.Limit), "invalid_request_error", "limit")
+		return response, err
+	} else if limit == 0 {
+		limit = 1000
+	}
+
+	filter := bson.M{
+		"creator":    service.Session().GetSecretKey(ctx),
+		"status":     bson.M{"$nin": []string{"deleted", "expired"}},
+		"created_at": bson.M{"$gt": time.Now().Add(-24 * time.Hour).UnixMilli()},
+	}
+
+	if params.After != "" {
+
+		taskImage, err := dao.TaskImage.FindOne(ctx, bson.M{"image_id": params.After, "creator": service.Session().GetSecretKey(ctx)})
+		if err != nil {
+			if errors.Is(err, mongo.ErrNoDocuments) {
+				err = errors.NewError(404, "invalid_request_error", "Image with id '"+params.After+"' not found.", "invalid_request_error", nil)
+			}
+			logger.Error(ctx, err)
+			return response, err
+		}
+
+		filter["created_at"] = bson.M{"$lte": taskImage.CreatedAt}
+
+		if params.Order == "asc" {
+			filter["created_at"] = bson.M{"$gte": taskImage.CreatedAt}
+		}
+
+		filter["_id"] = bson.M{"$ne": taskImage.Id}
+	}
+
+	sort := "-created_at"
+	if params.Order == "asc" {
+		sort = "created_at"
+	}
+
+	paging := &db.Paging{
+		Page:     1,
+		PageSize: limit,
+	}
+
+	results, err := dao.TaskImage.FindByPage(ctx, paging, filter, &dao.FindOptions{SortFields: []string{sort}})
+	if err != nil {
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	if len(results) == 0 {
+		response = smodel.ImageListResponse{
+			Object: "list",
+			Data:   make([]smodel.ImageJobResponse, 0),
+		}
+		return response, nil
+	}
+
+	mak.Model = results[0].Model
+
+	if err = mak.InitMAK(ctx); err != nil {
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	response = smodel.ImageListResponse{
+		Object:  "list",
+		FirstId: &results[0].ImageId,
+		LastId:  &results[len(results)-1].ImageId,
+		HasMore: paging.PageCount > 1,
+	}
+
+	for _, result := range results {
+
+		imageJobResponse := smodel.ImageJobResponse{
+			Id:        result.ImageId,
+			Object:    "image",
+			Model:     result.Model,
+			Status:    result.Status,
+			Progress:  result.Progress,
+			CreatedAt: result.CreatedAt / 1000,
+			Size:      result.Size,
+			Quality:   result.Quality,
+			N:         result.N,
+			Prompt:    result.Prompt,
+			Error:     result.Error,
+		}
+
+		if result.CompletedAt != 0 {
+			imageJobResponse.CompletedAt = &result.CompletedAt
+		}
+
+		if result.ExpiresAt != 0 {
+			imageJobResponse.ExpiresAt = &result.ExpiresAt
+		}
+
+		if config.Cfg.ImageTask.IsEnableStorage && result.ImageUrl != "" {
+
+			if config.Cfg.ImageTask.StorageBaseUrl != "" {
+				if gstr.HasSuffix(config.Cfg.ImageTask.StorageBaseUrl, "/") {
+					result.ImageUrl = gstr.TrimLeft(result.ImageUrl, "/")
+				} else if !gstr.HasPrefix(result.ImageUrl, "/") {
+					result.ImageUrl = "/" + result.ImageUrl
+				}
+			}
+
+			imageJobResponse.ImageUrl = config.Cfg.ImageTask.StorageBaseUrl + result.ImageUrl
+		}
+
+		response.Data = append(response.Data, imageJobResponse)
+	}
+
+	return response, nil
+}
+
+// Retrieve
+func (s *sImage) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response smodel.ImageJobResponse, err error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sImage Retrieve time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	var (
+		mak       = &common.MAK{}
+		retryInfo *mcommon.Retry
+	)
+
+	defer func() {
+
+		response.TotalTime = gtime.TimestampMilli() - now
+		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
+		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
+
+		if mak.ReqModel != nil && mak.RealModel != nil {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+				afterHandler := &mcommon.AfterHandler{
+					Action:       consts.ACTION_RETRIEVE,
+					ImageId:      params.ImageId,
+					RequestData:  util.ConvToMap(params.ImageRetrieveRequest),
+					ResponseData: util.ConvToMap(response),
+					Error:        err,
+					RetryInfo:    retryInfo,
+					TotalTime:    response.TotalTime,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
+				}
+
+				common.AfterHandler(ctx, mak, afterHandler)
+
+			}); err != nil {
+				logger.Error(ctx, err)
+			}
+		}
+	}()
+
+	taskImage, err := dao.TaskImage.FindOne(ctx, bson.M{"image_id": params.ImageId, "creator": service.Session().GetSecretKey(ctx)})
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			err = errors.NewError(404, "invalid_request_error", "Image with id '"+params.ImageId+"' not found.", "invalid_request_error", nil)
+		}
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	mak.Model = taskImage.Model
+
+	if err = mak.InitMAK(ctx); err != nil {
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	response = smodel.ImageJobResponse{
+		Id:        taskImage.ImageId,
+		Object:    "image",
+		Model:     taskImage.Model,
+		Status:    taskImage.Status,
+		Progress:  taskImage.Progress,
+		CreatedAt: taskImage.CreatedAt / 1000,
+		Size:      taskImage.Size,
+		Quality:   taskImage.Quality,
+		N:         taskImage.N,
+		Prompt:    taskImage.Prompt,
+		Error:     taskImage.Error,
+	}
+
+	if taskImage.CompletedAt != 0 {
+		response.CompletedAt = &taskImage.CompletedAt
+	}
+
+	if taskImage.ExpiresAt != 0 {
+		response.ExpiresAt = &taskImage.ExpiresAt
+	}
+
+	if config.Cfg.ImageTask.IsEnableStorage && taskImage.ImageUrl != "" {
+
+		if config.Cfg.ImageTask.StorageBaseUrl != "" {
+			if gstr.HasSuffix(config.Cfg.ImageTask.StorageBaseUrl, "/") {
+				taskImage.ImageUrl = gstr.TrimLeft(taskImage.ImageUrl, "/")
+			} else if !gstr.HasPrefix(taskImage.ImageUrl, "/") {
+				taskImage.ImageUrl = "/" + taskImage.ImageUrl
+			}
+		}
+
+		response.ImageUrl = config.Cfg.ImageTask.StorageBaseUrl + taskImage.ImageUrl
+	}
+
+	return response, nil
+}
+
+// Delete
+func (s *sImage) Delete(ctx context.Context, params *v1.DeleteReq) (response smodel.ImageJobResponse, err error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sImage Delete time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	var (
+		mak       = &common.MAK{}
+		retryInfo *mcommon.Retry
+	)
+
+	defer func() {
+
+		response.TotalTime = gtime.TimestampMilli() - now
+		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
+		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
+
+		if mak.ReqModel != nil && mak.RealModel != nil {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+				afterHandler := &mcommon.AfterHandler{
+					Action:       consts.ACTION_DELETE,
+					ImageId:      params.ImageId,
+					RequestData:  util.ConvToMap(params.ImageDeleteRequest),
+					ResponseData: util.ConvToMap(response),
+					Error:        err,
+					RetryInfo:    retryInfo,
+					TotalTime:    response.TotalTime,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
+				}
+
+				common.AfterHandler(ctx, mak, afterHandler)
+
+			}); err != nil {
+				logger.Error(ctx, err)
+			}
+		}
+	}()
+
+	taskImage, err := dao.TaskImage.FindOne(ctx, bson.M{"image_id": params.ImageId, "creator": service.Session().GetSecretKey(ctx)})
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			err = errors.NewError(404, "invalid_request_error", "Image with id '"+params.ImageId+"' not found.", "invalid_request_error", nil)
+		}
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	mak.Model = taskImage.Model
+
+	if err = mak.InitMAK(ctx); err != nil {
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	if err := dao.TaskImage.UpdateById(ctx, taskImage.Id, bson.M{"status": "deleted", "image_url": "", "file_name": "", "file_path": ""}); err != nil {
+		logger.Error(ctx, err)
+	}
+
+	response = smodel.ImageJobResponse{
+		Id:        taskImage.ImageId,
+		Object:    "image.deleted",
+		Model:     taskImage.Model,
+		Status:    "deleted",
+		Progress:  taskImage.Progress,
+		CreatedAt: taskImage.CreatedAt / 1000,
+		Size:      taskImage.Size,
+		Quality:   taskImage.Quality,
+		N:         taskImage.N,
+		Prompt:    taskImage.Prompt,
+		Error:     taskImage.Error,
+		Deleted:   true,
+	}
+
+	if taskImage.CompletedAt != 0 {
+		response.CompletedAt = &taskImage.CompletedAt
+	}
+
+	if taskImage.ExpiresAt != 0 {
+		response.ExpiresAt = &taskImage.ExpiresAt
+	}
+
+	return response, nil
+}
+
+// Content
+func (s *sImage) Content(ctx context.Context, params *v1.ContentReq) (response smodel.ImageContentResponse, err error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sImage Content time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	var (
+		mak       = &common.MAK{}
+		retryInfo *mcommon.Retry
+	)
+
+	defer func() {
+
+		if response.TotalTime == 0 {
+			response.TotalTime = gtime.TimestampMilli() - now
+		}
+
+		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
+		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
+
+		if mak.ReqModel != nil && mak.RealModel != nil {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+				afterHandler := &mcommon.AfterHandler{
+					Action:       consts.ACTION_CONTENT,
+					ImageId:      params.ImageId,
+					RequestData:  util.ConvToMap(params.ImageContentRequest),
+					Error:        err,
+					RetryInfo:    retryInfo,
+					TotalTime:    response.TotalTime,
+					InternalTime: internalTime,
+					EnterTime:    enterTime,
+				}
+
+				common.AfterHandler(ctx, mak, afterHandler)
+
+			}); err != nil {
+				logger.Error(ctx, err)
+			}
+		}
+	}()
+
+	taskImage, err := dao.TaskImage.FindOne(ctx, bson.M{"image_id": params.ImageId, "creator": service.Session().GetSecretKey(ctx)})
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			err = errors.NewError(404, "invalid_request_error", "Image with id '"+params.ImageId+"' not found.", "invalid_request_error", nil)
+		}
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	if taskImage.Status != "completed" {
+		err = errors.NewError(404, "invalid_request_error", "Image is not ready yet, use GET /v1/images/generations/{image_id} to check status.", "invalid_request_error", nil)
+		return response, err
+	}
+
+	mak.Model = taskImage.Model
+
+	if err = mak.InitMAK(ctx); err != nil {
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	if config.Cfg.ImageTask.IsEnableStorage && taskImage.FilePath != "" {
+		if bytes := gfile.GetBytes(taskImage.FilePath); bytes != nil {
+			response = smodel.ImageContentResponse{Data: bytes}
+			return response, nil
+		}
+	}
+
+	return response, nil
 }

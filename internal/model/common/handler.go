@@ -21,6 +21,8 @@ type AfterHandler struct {
 	Completion             string
 	ServiceTier            string
 	Action                 string
+	IsAsync                bool
+	ImageId                string
 	VideoId                string
 	VideoMode              string
 	IsVolcEngine           bool
