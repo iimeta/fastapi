@@ -28,6 +28,7 @@ type LogImage struct {
 	FallbackModelAgent *ModelAgent
 	FallbackModel      *Model
 	Key                *Key
+	Action             string
 	ImageReq           *smodel.ImageGenerationRequest
 	ImageRes           *ImageRes
 	RetryInfo          *mcommon.Retry

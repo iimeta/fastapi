@@ -77,6 +77,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ImageGenerationRequest: params,
 					ImageResponse:          response,
+					Action:                 consts.ACTION_GENERATIONS,
 					Usage:                  &usage,
 					Error:                  err,
 					RetryInfo:              retryInfo,
@@ -244,6 +245,7 @@ func (s *sImage) GenerationsStream(ctx context.Context, data []byte, fallbackMod
 				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ImageGenerationRequest: params,
 					ImageResponse:          imageResponse,
+					Action:                 consts.ACTION_GENERATIONS,
 					Usage:                  usage,
 					Error:                  err,
 					RetryInfo:              retryInfo,
@@ -466,6 +468,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ImageGenerationRequest: imageReq,
 					ImageResponse:          response,
+					Action:                 consts.ACTION_EDITS,
 					Usage:                  &usage,
 					Error:                  err,
 					RetryInfo:              retryInfo,
@@ -637,6 +640,7 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ImageGenerationRequest: imageReq,
 					ImageResponse:          imageResponse,
+					Action:                 consts.ACTION_EDITS,
 					Usage:                  usage,
 					Error:                  err,
 					RetryInfo:              retryInfo,
@@ -841,6 +845,11 @@ func (s *sImage) GenerationsAsync(ctx context.Context, data []byte, fallbackMode
 
 	imageId := "img-" + util.GenerateId()
 
+	action := consts.ACTION_GENERATIONS
+	if params.Image != nil {
+		action = consts.ACTION_EDITS
+	}
+
 	defer func() {
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
@@ -852,6 +861,7 @@ func (s *sImage) GenerationsAsync(ctx context.Context, data []byte, fallbackMode
 
 				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ImageGenerationRequest: params,
+					Action:                 action,
 					IsAsync:                true,
 					ImageId:                imageId,
 					RequestData:            util.ConvToMap(params),

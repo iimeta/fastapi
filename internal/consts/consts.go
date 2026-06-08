@@ -25,10 +25,10 @@ const (
 
 // 会话保持Redis Key — fastapi-admin内对应常量: internal/consts/consts.go SESSION_KEEP_*
 const (
-	SESSION_KEEP_VALUE_PREFIX     = "session:agent:v:%s"                   // sk.Raw
-	SESSION_KEEP_FAIL_PREFIX      = "session:agent:fail:%s:a:%s"           // sk.Raw, agentId
+	SESSION_KEEP_VALUE_PREFIX     = "session:agent:v:%s"                  // sk.Raw
+	SESSION_KEEP_FAIL_PREFIX      = "session:agent:fail:%s:a:%s"          // sk.Raw, agentId
 	SESSION_KEEP_KEY_FAIL_PREFIX  = "session:agent:key:fail:%s:a:%s:k:%s" // sk.Raw, agentId, keyId
-	SESSION_KEEP_AGENT_SET_PREFIX = "session:agent:set:%s"                 // agentId
+	SESSION_KEEP_AGENT_SET_PREFIX = "session:agent:set:%s"                // agentId
 	SESSION_KEEP_USER_AGENT_SET   = "session:agent:user:set:%d:a:%s"      // sk.UserId, agentId
 	SESSION_KEEP_GLOBAL_SET       = "session:agent:global"
 	SESSION_KEEP_LOCAL_KEY_PREFIX = "session_keep:%s" // sk.Raw
@@ -69,18 +69,20 @@ const (
 )
 
 const (
-	ACTION_CREATE   = "create"
-	ACTION_UPDATE   = "update"
-	ACTION_DELETE   = "delete"
-	ACTION_STATUS   = "status"
-	ACTION_MODELS   = "models"
-	ACTION_CACHE    = "cache"
-	ACTION_REMIX    = "remix"
-	ACTION_LIST     = "list"
-	ACTION_RETRIEVE = "retrieve"
-	ACTION_CONTENT  = "content"
-	ACTION_UPLOAD   = "upload"
-	ACTION_CANCEL   = "cancel"
+	ACTION_CREATE      = "create"
+	ACTION_UPDATE      = "update"
+	ACTION_DELETE      = "delete"
+	ACTION_STATUS      = "status"
+	ACTION_MODELS      = "models"
+	ACTION_CACHE       = "cache"
+	ACTION_REMIX       = "remix"
+	ACTION_LIST        = "list"
+	ACTION_RETRIEVE    = "retrieve"
+	ACTION_CONTENT     = "content"
+	ACTION_UPLOAD      = "upload"
+	ACTION_CANCEL      = "cancel"
+	ACTION_GENERATIONS = "generations"
+	ACTION_EDITS       = "edits"
 )
 
 var RESOLUTION_ASPECT_RATIO = map[string]string{

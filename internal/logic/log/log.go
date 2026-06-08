@@ -440,6 +440,7 @@ func (s *sLog) Image(ctx context.Context, imageLog model.LogImage, retry ...int)
 		TraceId:        gtrace.GetTraceID(ctx),
 		UserId:         service.Session().GetUserId(ctx),
 		AppId:          service.Session().GetAppId(ctx),
+		Action:         imageLog.Action,
 		Prompt:         imageLog.ImageReq.Prompt,
 		Stream:         imageLog.ImageReq.Stream,
 		Size:           imageLog.ImageReq.Size,

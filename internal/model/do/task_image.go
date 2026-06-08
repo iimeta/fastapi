@@ -11,6 +11,7 @@ type TaskImage struct {
 	UserId         int                `bson:"user_id,omitempty"`         // 用户ID
 	AppId          int                `bson:"app_id,omitempty"`          // 应用ID
 	Model          string             `bson:"model,omitempty"`           // 模型
+	Action         string             `bson:"action,omitempty"`          // 接口
 	ImageId        string             `bson:"image_id,omitempty"`        // 图像ID
 	Width          int                `bson:"width,omitempty"`           // 宽度
 	Height         int                `bson:"height,omitempty"`          // 高度
