@@ -199,17 +199,21 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		// 计算花费
 		after.Spend = Billing(ctx, mak, billingData)
 
-		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-			// 记录花费
-			if err := RecordSpend(ctx, after.Spend, mak); err != nil {
+		if (after.IsAsync && (after.Action == consts.ACTION_GENERATIONS || after.Action == consts.ACTION_EDITS)) || (after.Action != consts.ACTION_GENERATIONS && after.Action != consts.ACTION_EDITS) {
+			after.Spend.TotalSpendTokens = 0
+		} else {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+				// 记录花费
+				if err := RecordSpend(ctx, after.Spend, mak); err != nil {
+					logger.Error(ctx, err)
+					panic(err)
+				}
+			}); err != nil {
 				logger.Error(ctx, err)
-				panic(err)
 			}
-		}); err != nil {
-			logger.Error(ctx, err)
 		}
 
-		if after.IsAsync {
+		if after.IsAsync && (after.Action == consts.ACTION_GENERATIONS || after.Action == consts.ACTION_EDITS) {
 
 			taskImage := do.TaskImage{
 				TraceId:        gtrace.GetTraceID(ctx),

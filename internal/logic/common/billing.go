@@ -142,10 +142,6 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 		}
 	}
 
-	if billingData.IsAsync {
-		spend.TotalSpendTokens = 0
-	}
-
 	return spend
 }
 
