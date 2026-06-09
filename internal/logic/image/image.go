@@ -9,6 +9,7 @@ import (
 
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/os/grpool"
@@ -843,7 +844,9 @@ func (s *sImage) GenerationsAsync(ctx context.Context, data []byte, fallbackMode
 		retryInfo *mcommon.Retry
 	)
 
-	imageId := "img-" + util.GenerateId()
+	params.N = 1
+
+	imageId := "image_" + gtrace.GetTraceID(ctx)
 
 	action := consts.ACTION_GENERATIONS
 	if params.Image != nil {
@@ -884,26 +887,18 @@ func (s *sImage) GenerationsAsync(ctx context.Context, data []byte, fallbackMode
 		return response, err
 	}
 
-	if slices.Contains(mak.ReqModel.Pricing.BillingItems, "image_generation") {
-
-		billingData := &mcommon.BillingData{
-			ImageGenerationRequest: params,
-		}
-
-		common.Billing(ctx, mak, billingData, "image_generation")
-	}
-
 	response = smodel.ImageJobResponse{
-		Id:        imageId,
-		Object:    "image",
-		Model:     mak.ReqModel.Name,
-		Status:    "queued",
-		Progress:  0,
-		CreatedAt: time.Now().Unix(),
-		N:         params.N,
-		Quality:   params.Quality,
-		Size:      params.Size,
-		Prompt:    params.Prompt,
+		Id:           imageId,
+		Object:       "image",
+		Model:        mak.ReqModel.Name,
+		Status:       "queued",
+		Progress:     0,
+		CreatedAt:    time.Now().Unix(),
+		N:            params.N,
+		Quality:      params.Quality,
+		Size:         params.Size,
+		Prompt:       params.Prompt,
+		OutputFormat: params.OutputFormat,
 	}
 
 	return response, nil
@@ -1051,7 +1046,7 @@ func (s *sImage) List(ctx context.Context, params *v1.ListReq) (response smodel.
 
 			if config.Cfg.ImageTask.StorageBaseUrl != "" {
 				if gstr.HasSuffix(config.Cfg.ImageTask.StorageBaseUrl, "/") {
-					result.ImageUrl = gstr.TrimLeft(result.ImageUrl, "/")
+					result.ImageUrl = gstr.TrimLeftStr(result.ImageUrl, "/")
 				} else if !gstr.HasPrefix(result.ImageUrl, "/") {
 					result.ImageUrl = "/" + result.ImageUrl
 				}
@@ -1150,7 +1145,7 @@ func (s *sImage) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 
 		if config.Cfg.ImageTask.StorageBaseUrl != "" {
 			if gstr.HasSuffix(config.Cfg.ImageTask.StorageBaseUrl, "/") {
-				taskImage.ImageUrl = gstr.TrimLeft(taskImage.ImageUrl, "/")
+				taskImage.ImageUrl = gstr.TrimLeftStr(taskImage.ImageUrl, "/")
 			} else if !gstr.HasPrefix(taskImage.ImageUrl, "/") {
 				taskImage.ImageUrl = "/" + taskImage.ImageUrl
 			}

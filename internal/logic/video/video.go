@@ -467,7 +467,7 @@ func (s *sVideo) List(ctx context.Context, params *v1.ListReq) (response smodel.
 
 			if config.Cfg.VideoTask.StorageBaseUrl != "" {
 				if gstr.HasSuffix(config.Cfg.VideoTask.StorageBaseUrl, "/") {
-					result.VideoUrl = gstr.TrimLeft(result.VideoUrl, "/")
+					result.VideoUrl = gstr.TrimLeftStr(result.VideoUrl, "/")
 				} else if !gstr.HasPrefix(result.VideoUrl, "/") {
 					result.VideoUrl = "/" + result.VideoUrl
 				}
@@ -569,7 +569,7 @@ func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 
 		if config.Cfg.VideoTask.StorageBaseUrl != "" {
 			if gstr.HasSuffix(config.Cfg.VideoTask.StorageBaseUrl, "/") {
-				taskVideo.VideoUrl = gstr.TrimLeft(taskVideo.VideoUrl, "/")
+				taskVideo.VideoUrl = gstr.TrimLeftStr(taskVideo.VideoUrl, "/")
 			} else if !gstr.HasPrefix(taskVideo.VideoUrl, "/") {
 				taskVideo.VideoUrl = "/" + taskVideo.VideoUrl
 			}

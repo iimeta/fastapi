@@ -220,6 +220,7 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 				N:              after.ImageGenerationRequest.N,
 				Quality:        after.ImageGenerationRequest.Quality,
 				Size:           after.ImageGenerationRequest.Size,
+				OutputFormat:   after.ImageGenerationRequest.OutputFormat,
 				ResponseFormat: after.ImageGenerationRequest.ResponseFormat,
 				Prompt:         after.ImageGenerationRequest.Prompt,
 				Status:         "queued",

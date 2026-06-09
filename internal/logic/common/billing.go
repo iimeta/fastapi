@@ -159,31 +159,28 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 
 	if mak.ReqModel.Type == 2 || mak.ReqModel.Type == 3 || mak.ReqModel.Type == 4 {
 
-		if billingData.Usage.InputTokensDetails.TextTokens+billingData.Usage.CompletionTokensDetails.TextTokens+billingData.Usage.OutputTokensDetails.ReasoningTokens > 0 {
-
-			if spend.Text == nil {
-				spend.Text = new(common.TextSpend)
-			}
-
-			serviceTier := "all"
-			if billingData.ServiceTier != "" {
-				serviceTier = billingData.ServiceTier
-			} else if billingData.ChatCompletionRequest.ServiceTier != "" {
-				serviceTier = billingData.ChatCompletionRequest.ServiceTier
-			}
-
-			for i, text := range mak.ReqModel.Pricing.Text {
-				if serviceTier == text.ServiceTier || i == len(mak.ReqModel.Pricing.Text)-1 {
-					spend.Text.Pricing = text
-					break
-				}
-			}
-
-			spend.Text.InputTokens = billingData.Usage.InputTokensDetails.TextTokens
-			spend.Text.OutputTokens = billingData.Usage.CompletionTokensDetails.TextTokens
-			spend.Text.ReasoningTokens = billingData.Usage.OutputTokensDetails.ReasoningTokens
-			spend.Text.SpendTokens = int(math.Ceil(float64(spend.Text.InputTokens)*spend.Text.Pricing.InputRatio)) + int(math.Ceil(float64(spend.Text.OutputTokens)*spend.Text.Pricing.OutputRatio)) + int(math.Ceil(float64(spend.Text.ReasoningTokens)*spend.Text.Pricing.ReasoningRatio))
+		if spend.Text == nil {
+			spend.Text = new(common.TextSpend)
 		}
+
+		serviceTier := "all"
+		if billingData.ServiceTier != "" {
+			serviceTier = billingData.ServiceTier
+		} else if billingData.ChatCompletionRequest.ServiceTier != "" {
+			serviceTier = billingData.ChatCompletionRequest.ServiceTier
+		}
+
+		for i, text := range mak.ReqModel.Pricing.Text {
+			if serviceTier == text.ServiceTier || i == len(mak.ReqModel.Pricing.Text)-1 {
+				spend.Text.Pricing = text
+				break
+			}
+		}
+
+		spend.Text.InputTokens = billingData.Usage.InputTokensDetails.TextTokens
+		spend.Text.OutputTokens = billingData.Usage.CompletionTokensDetails.TextTokens
+		spend.Text.ReasoningTokens = billingData.Usage.OutputTokensDetails.ReasoningTokens
+		spend.Text.SpendTokens = int(math.Ceil(float64(spend.Text.InputTokens)*spend.Text.Pricing.InputRatio)) + int(math.Ceil(float64(spend.Text.OutputTokens)*spend.Text.Pricing.OutputRatio)) + int(math.Ceil(float64(spend.Text.ReasoningTokens)*spend.Text.Pricing.ReasoningRatio))
 
 		return
 	}

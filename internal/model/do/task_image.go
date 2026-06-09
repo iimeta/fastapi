@@ -17,7 +17,8 @@ type TaskImage struct {
 	Height         int                `bson:"height,omitempty"`          // 高度
 	N              int                `bson:"n,omitempty"`               // 生成数量
 	Quality        string             `bson:"quality,omitempty"`         // 质量
-	Size           string             `bson:"size,omitempty"`            // 尺寸
+	Size           string             `bson:"size,omitempty"`            // 尺寸大小
+	OutputFormat   string             `bson:"output_format,omitempty"`   // 输出格式
 	ResponseFormat string             `bson:"response_format,omitempty"` // 响应格式
 	Prompt         string             `bson:"prompt,omitempty"`          // 提示
 	Progress       int                `bson:"progress,omitempty"`        // 进度
