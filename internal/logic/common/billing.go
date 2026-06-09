@@ -142,6 +142,10 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 		}
 	}
 
+	if billingData.IsAsync {
+		spend.TotalSpendTokens = 0
+	}
+
 	return spend
 }
 
@@ -260,10 +264,6 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 
 // 文本缓存
 func textCache(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
-
-	if billingData.Usage == nil || billingData.Usage.PromptTokensDetails.CachedTokens+billingData.Usage.CompletionTokensDetails.CachedTokens+billingData.Usage.CacheReadInputTokens+billingData.Usage.CacheCreationInputTokens == 0 {
-		return
-	}
 
 	if spend.TextCache == nil {
 		spend.TextCache = new(common.CacheSpend)
@@ -419,10 +419,6 @@ func tieredText(ctx context.Context, mak *MAK, billingData *common.BillingData, 
 // 阶梯文本缓存
 func tieredTextCache(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
 
-	if billingData.Usage == nil || billingData.Usage.PromptTokensDetails.CachedTokens+billingData.Usage.CompletionTokensDetails.CachedTokens+billingData.Usage.CacheReadInputTokens+billingData.Usage.CacheCreationInputTokens == 0 {
-		return
-	}
-
 	if spend.TieredTextCache == nil {
 		spend.TieredTextCache = new(common.CacheSpend)
 	}
@@ -495,10 +491,6 @@ func tieredTextCache(ctx context.Context, mak *MAK, billingData *common.BillingD
 
 // 图像
 func image(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
-
-	if billingData.Usage == nil || billingData.Usage.InputTokensDetails.ImageTokens+billingData.Usage.OutputTokensDetails.ImageTokens+billingData.Usage.CompletionTokensDetails.ImageTokens == 0 {
-		return
-	}
 
 	if spend.Image == nil {
 		spend.Image = new(common.ImageSpend)
@@ -623,10 +615,6 @@ func imageGeneration(ctx context.Context, mak *MAK, billingData *common.BillingD
 
 // 图像缓存
 func imageCache(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
-
-	if billingData.Usage == nil || billingData.Usage.InputTokensDetails.CachedTokens == 0 {
-		return
-	}
 
 	if spend.ImageCache == nil {
 		spend.ImageCache = new(common.CacheSpend)

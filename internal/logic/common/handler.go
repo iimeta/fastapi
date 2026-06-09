@@ -193,6 +193,7 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 			ImageGenerationRequest: after.ImageGenerationRequest,
 			Usage:                  after.Usage,
 			IsAborted:              IsAborted(after.Error),
+			IsAsync:                after.IsAsync,
 		}
 
 		// 计算花费

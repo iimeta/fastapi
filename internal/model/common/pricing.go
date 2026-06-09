@@ -132,6 +132,7 @@ type BillingData struct {
 	IsAborted              bool
 	IsVolcEngine           bool
 	VolcVideoCreateReq     *smodel.VolcVideoCreateReq
+	IsAsync                bool
 }
 
 type Spend struct {
