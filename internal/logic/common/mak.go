@@ -264,80 +264,63 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 		}
 	}
 
-	if mak.ModelAgent != nil {
+	if mak.ModelAgent == nil {
+		return errors.ERR_NO_AVAILABLE_MODEL_AGENT
+	}
 
-		mak.Provider = mak.ModelAgent.ProviderId
-		mak.BaseUrl = mak.ModelAgent.BaseUrl
-		mak.Path = mak.ModelAgent.Path
+	mak.Provider = mak.ModelAgent.ProviderId
+	mak.BaseUrl = mak.ModelAgent.BaseUrl
+	mak.Path = mak.ModelAgent.Path
 
-		// PickModelAgent 通过 r.SetCtxVar 设置了会话保持首选密钥等变量,
-		// 但 ctx 是调用前的快照, 需要刷新才能读到最新值
-		if r := g.RequestFromCtx(ctx); r != nil {
-			ctx = r.GetCtx()
+	// PickModelAgent 通过 r.SetCtxVar 设置了会话保持首选密钥等变量,
+	// 但 ctx 是调用前的快照, 需要刷新才能读到最新值
+	if r := g.RequestFromCtx(ctx); r != nil {
+		ctx = r.GetCtx()
+	}
+
+	if mak.KeyTotal, mak.Key, err = service.ModelAgent().PickKey(ctx, mak.ModelAgent); err != nil {
+		logger.Error(ctx, err)
+
+		if errors.Is(err, errors.ERR_ALL_MODEL_AGENT_KEY) && service.Session().GetSessionKeepHit(ctx) {
+
+			service.Session().RecordErrorModelAgent(ctx, mak.ModelAgent.Id)
+
+			if sk := service.Session().GetSessionKey(ctx); sk != nil {
+				if delErr := service.SessionKeepModelAgent().Delete(ctx, sk, mak.ModelAgent.Id); delErr != nil {
+					logger.Error(ctx, delErr)
+				}
+			}
+
+			service.Session().SaveSessionKeepHit(ctx, false)
+			service.Session().SaveSessionKeepPreferredKey(ctx, "")
+			mak.ModelAgent = nil
+
+			return mak.InitMAK(ctx)
 		}
 
-		if mak.KeyTotal, mak.Key, err = service.ModelAgent().PickKey(ctx, mak.ModelAgent); err != nil {
-			logger.Error(ctx, err)
+		service.ModelAgent().RecordError(ctx, mak.RealModel, mak.ModelAgent)
 
-			if errors.Is(err, errors.ERR_ALL_MODEL_AGENT_KEY) && service.Session().GetSessionKeepHit(ctx) {
-				service.Session().RecordErrorModelAgent(ctx, mak.ModelAgent.Id)
-				if sk := service.Session().GetSessionKey(ctx); sk != nil {
-					if delErr := service.SessionKeepModelAgent().Delete(ctx, sk, mak.ModelAgent.Id); delErr != nil {
-						logger.Error(ctx, delErr)
-					}
-				}
-				service.Session().SaveSessionKeepHit(ctx, false)
-				service.Session().SaveSessionKeepPreferredKey(ctx, "")
-				mak.ModelAgent = nil
-				return mak.InitMAK(ctx)
-			}
-
-			service.ModelAgent().RecordError(ctx, mak.RealModel, mak.ModelAgent)
-
-			if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY) {
-				service.ModelAgent().Disabled(ctx, mak.ModelAgent, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY.(errors.IFastApiError).ErrMessage())
-			}
-
-			if mak.RealModel.IsEnableFallback {
-
-				if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id && mak.FallbackModelAgent == nil {
-					if mak.FallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); mak.FallbackModelAgent != nil {
-						return mak.InitMAK(ctx)
-					}
-				}
-
-				if mak.RealModel.FallbackConfig.Model != "" && mak.FallbackModel == nil {
-					if mak.FallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); mak.FallbackModel != nil {
-						return mak.InitMAK(ctx)
-					}
-				}
-			}
-
-			return err
+		if errors.Is(err, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY) {
+			service.ModelAgent().Disabled(ctx, mak.ModelAgent, errors.ERR_NO_AVAILABLE_MODEL_AGENT_KEY.(errors.IFastApiError).ErrMessage())
+			return mak.InitMAK(ctx)
 		}
 
-	} else {
+		if mak.RealModel.IsEnableFallback {
 
-		if mak.KeyTotal, mak.Key, err = service.Key().Pick(ctx, mak.RealModel); err != nil {
-			logger.Error(ctx, err)
-
-			if mak.RealModel.IsEnableFallback {
-
-				if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.FallbackModelAgent == nil {
-					if mak.FallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); mak.FallbackModelAgent != nil {
-						return mak.InitMAK(ctx)
-					}
-				}
-
-				if mak.RealModel.FallbackConfig.Model != "" && mak.FallbackModel == nil {
-					if mak.FallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); mak.FallbackModel != nil {
-						return mak.InitMAK(ctx)
-					}
+			if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id && mak.FallbackModelAgent == nil {
+				if mak.FallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); mak.FallbackModelAgent != nil {
+					return mak.InitMAK(ctx)
 				}
 			}
 
-			return err
+			if mak.RealModel.FallbackConfig.Model != "" && mak.FallbackModel == nil {
+				if mak.FallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); mak.FallbackModel != nil {
+					return mak.InitMAK(ctx)
+				}
+			}
 		}
+
+		return err
 	}
 
 	if err = getRealKey(ctx, mak); err != nil {
