@@ -26,5 +26,6 @@ func (c *ControllerV1) Content(ctx context.Context, req *v1.ContentReq) (res *v1
 	}
 
 	g.RequestFromCtx(ctx).Response.ServeContent(fmt.Sprintf("%s_image_%d.png", req.ImageId, req.Index), time.Now(), bytes.NewReader(response.Data))
+
 	return
 }

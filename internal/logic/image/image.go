@@ -1062,7 +1062,7 @@ func (s *sImage) List(ctx context.Context, params *v1.ListReq) (response smodel.
 }
 
 // Retrieve
-func (s *sImage) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response smodel.ImageJobResponse, err error) {
+func (s *sImage) Retrieve(ctx context.Context, params smodel.ImageRetrieveRequest) (response smodel.ImageJobResponse, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -1086,7 +1086,7 @@ func (s *sImage) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_RETRIEVE,
 					ImageId:      params.ImageId,
-					RequestData:  util.ConvToMap(params.ImageRetrieveRequest),
+					RequestData:  util.ConvToMap(params),
 					ResponseData: util.ConvToMap(response),
 					Error:        err,
 					RetryInfo:    retryInfo,

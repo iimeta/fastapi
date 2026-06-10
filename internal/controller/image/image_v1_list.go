@@ -23,5 +23,6 @@ func (c *ControllerV1) List(ctx context.Context, req *v1.ListReq) (res *v1.ListR
 	}
 
 	g.RequestFromCtx(ctx).Response.WriteJson(response)
+
 	return
 }
