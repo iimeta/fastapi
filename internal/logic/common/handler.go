@@ -199,7 +199,7 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		// 计算花费
 		after.Spend = Billing(ctx, mak, billingData)
 
-		if (after.IsAsync && (after.Action == consts.ACTION_GENERATIONS || after.Action == consts.ACTION_EDITS)) || (after.Action != consts.ACTION_GENERATIONS && after.Action != consts.ACTION_EDITS) {
+		if (after.IsAsync && (after.Action == consts.ACTION_GENERATIONS || after.Action == consts.ACTION_EDITS)) || (after.Action != "" && after.Action != consts.ACTION_GENERATIONS && after.Action != consts.ACTION_EDITS) {
 			after.Spend.TotalSpendTokens = 0
 		} else {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
