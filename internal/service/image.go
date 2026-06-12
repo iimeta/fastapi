@@ -25,6 +25,8 @@ type (
 		EditsStream(ctx context.Context, params smodel.ImageEditRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (err error)
 		// GenerationsAsync
 		GenerationsAsync(ctx context.Context, data []byte, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.ImageJobResponse, err error)
+		// EditsAsync
+		EditsAsync(ctx context.Context, params smodel.ImageEditRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.ImageJobResponse, err error)
 		// List
 		List(ctx context.Context, params *v1.ListReq) (response smodel.ImageListResponse, err error)
 		// Retrieve

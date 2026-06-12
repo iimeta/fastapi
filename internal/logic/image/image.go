@@ -904,6 +904,132 @@ func (s *sImage) GenerationsAsync(ctx context.Context, data []byte, fallbackMode
 	return response, nil
 }
 
+// EditsAsync
+func (s *sImage) EditsAsync(ctx context.Context, params smodel.ImageEditRequest, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.ImageJobResponse, err error) {
+
+	now := gtime.TimestampMilli()
+	defer func() {
+		logger.Debugf(ctx, "sImage EditsAsync time: %d", gtime.TimestampMilli()-now)
+	}()
+
+	// 异步编辑仅支持图像URL或file_id, 不支持上传文件和base64
+	if err = checkAsyncEditImage(params); err != nil {
+		logger.Errorf(ctx, "sImage EditsAsync checkAsyncEditImage error: %v", err)
+		return response, err
+	}
+
+	var (
+		mak = &common.MAK{
+			Model:              params.Model,
+			FallbackModelAgent: fallbackModelAgent,
+			FallbackModel:      fallbackModel,
+		}
+		retryInfo *mcommon.Retry
+	)
+
+	params.N = 1
+
+	imageId := "image_" + gtrace.GetTraceID(ctx)
+
+	defer func() {
+
+		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
+		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
+		usage := smodel.Usage{}
+
+		if mak.ReqModel != nil && mak.RealModel != nil {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+
+				imageReq := smodel.ImageGenerationRequest{
+					Prompt:         params.Prompt,
+					Background:     params.Background,
+					Model:          params.Model,
+					N:              params.N,
+					Quality:        params.Quality,
+					ResponseFormat: params.ResponseFormat,
+					Size:           params.Size,
+					User:           params.User,
+				}
+
+				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+					ImageGenerationRequest: imageReq,
+					Action:                 consts.ACTION_EDITS,
+					IsAsync:                true,
+					ImageId:                imageId,
+					RequestData:            util.ConvToMap(params),
+					Usage:                  &usage,
+					Error:                  err,
+					RetryInfo:              retryInfo,
+					TotalTime:              response.TotalTime,
+					InternalTime:           internalTime,
+					EnterTime:              enterTime,
+				})
+
+			}); err != nil {
+				logger.Error(ctx, err)
+			}
+		}
+	}()
+
+	if err = mak.InitMAK(ctx); err != nil {
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	response = smodel.ImageJobResponse{
+		Id:        imageId,
+		Object:    "image",
+		Model:     mak.ReqModel.Name,
+		Status:    "queued",
+		Progress:  0,
+		CreatedAt: time.Now().Unix(),
+		N:         params.N,
+		Quality:   params.Quality,
+		Size:      params.Size,
+		Prompt:    params.Prompt,
+	}
+
+	return response, nil
+}
+
+// 校验异步编辑的图像输入, 仅支持图像URL或file_id
+func checkAsyncEditImage(params smodel.ImageEditRequest) error {
+
+	isInvalid := func(s string) bool {
+		return s == "" || gstr.HasPrefix(s, "data:")
+	}
+
+	if len(params.Images) > 0 {
+		for _, image := range params.Images {
+			if image.FileId != "" {
+				continue
+			}
+			if isInvalid(image.ImageUrl) {
+				return errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id.", "invalid_request_error", "image")
+			}
+		}
+		return nil
+	}
+
+	switch v := params.Image.(type) {
+	case string:
+		if isInvalid(v) {
+			return errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id.", "invalid_request_error", "image")
+		}
+	case []any:
+		for _, item := range v {
+			s, ok := item.(string)
+			if !ok || isInvalid(s) {
+				return errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id.", "invalid_request_error", "image")
+			}
+		}
+	default:
+		return errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id.", "invalid_request_error", "image")
+	}
+
+	return nil
+}
+
 // List
 func (s *sImage) List(ctx context.Context, params *v1.ListReq) (response smodel.ImageListResponse, err error) {
 
@@ -1213,6 +1339,20 @@ func (s *sImage) Delete(ctx context.Context, params *v1.DeleteReq) (response smo
 	if err = mak.InitMAK(ctx); err != nil {
 		logger.Error(ctx, err)
 		return response, err
+	}
+
+	// 进行中的任务不允许删除, 直接报错
+	if taskImage.Status == "in_progress" {
+		err = errors.NewError(409, "invalid_request_error", "Image with id '"+params.ImageId+"' is in progress and cannot be deleted.", "invalid_request_error", nil)
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	// 开启存储时, 删除已落盘的图片文件, 避免无人回收
+	if config.Cfg.ImageTask.IsEnableStorage && taskImage.FilePath != "" {
+		if err := gfile.RemoveFile(taskImage.FilePath); err != nil {
+			logger.Error(ctx, err)
+		}
 	}
 
 	if err := dao.TaskImage.UpdateById(ctx, taskImage.Id, bson.M{"status": "deleted", "image_url": "", "file_name": "", "file_path": ""}); err != nil {
