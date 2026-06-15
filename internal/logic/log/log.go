@@ -397,6 +397,7 @@ func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 		logger.Errorf(ctx, "sLog Text error: %v", err)
 
 		if isTooLarge(err) {
+
 			if textLog.CompletionsReq != nil {
 				textLog.CompletionsReq.Messages = []smodel.ChatCompletionMessage{{
 					Role:    sconsts.ROLE_SYSTEM,
@@ -406,6 +407,10 @@ func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 				textLog.EmbeddingReq.Input = err.Error()
 			} else if textLog.ModerationReq != nil {
 				textLog.ModerationReq.Input = err.Error()
+			}
+
+			if textLog.CompletionsRes != nil {
+				textLog.CompletionsRes.Completion = err.Error()
 			}
 		}
 
