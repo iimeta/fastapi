@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"slices"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/logic/common"
 	"github.com/iimeta/fastapi/v2/internal/model"
 	mcommon "github.com/iimeta/fastapi/v2/internal/model/common"
+	"github.com/iimeta/fastapi/v2/internal/model/entity"
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/db"
 	"github.com/iimeta/fastapi/v2/utility/logger"
@@ -1229,11 +1231,15 @@ func (s *sImage) Retrieve(ctx context.Context, params smodel.ImageRetrieveReques
 		}
 	}()
 
-	taskImage, err := dao.TaskImage.FindOne(ctx, bson.M{"image_id": params.ImageId, "creator": service.Session().GetSecretKey(ctx)})
+	taskImages, err := dao.TaskImage.Find(ctx, bson.M{"image_id": params.ImageId, "creator": service.Session().GetSecretKey(ctx)})
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			err = errors.NewError(404, "invalid_request_error", "Image with id '"+params.ImageId+"' not found.", "invalid_request_error", nil)
-		}
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	taskImage := pickRepresentativeTaskImage(taskImages)
+	if taskImage == nil {
+		err = errors.NewError(404, "invalid_request_error", "Image with id '"+params.ImageId+"' not found.", "invalid_request_error", nil)
 		logger.Error(ctx, err)
 		return response, err
 	}
@@ -1325,11 +1331,15 @@ func (s *sImage) Delete(ctx context.Context, params *v1.DeleteReq) (response smo
 		}
 	}()
 
-	taskImage, err := dao.TaskImage.FindOne(ctx, bson.M{"image_id": params.ImageId, "creator": service.Session().GetSecretKey(ctx)})
+	taskImages, err := dao.TaskImage.Find(ctx, bson.M{"image_id": params.ImageId, "creator": service.Session().GetSecretKey(ctx)})
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			err = errors.NewError(404, "invalid_request_error", "Image with id '"+params.ImageId+"' not found.", "invalid_request_error", nil)
-		}
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	taskImage := pickRepresentativeTaskImage(taskImages)
+	if taskImage == nil {
+		err = errors.NewError(404, "invalid_request_error", "Image with id '"+params.ImageId+"' not found.", "invalid_request_error", nil)
 		logger.Error(ctx, err)
 		return response, err
 	}
@@ -1341,22 +1351,31 @@ func (s *sImage) Delete(ctx context.Context, params *v1.DeleteReq) (response smo
 		return response, err
 	}
 
-	// 进行中的任务不允许删除, 直接报错
-	if taskImage.Status == "in_progress" {
-		err = errors.NewError(409, "invalid_request_error", "Image with id '"+params.ImageId+"' is in progress and cannot be deleted.", "invalid_request_error", nil)
-		logger.Error(ctx, err)
-		return response, err
-	}
-
-	// 开启存储时, 删除已落盘的图片文件, 避免无人回收
-	if config.Cfg.ImageTask.IsEnableStorage && taskImage.FilePath != "" {
-		if err := gfile.RemoveFile(taskImage.FilePath); err != nil {
+	// 同一 image_id 只要有进行中的任务, 整体拒绝删除
+	for _, t := range taskImages {
+		if t.Status == "in_progress" {
+			err = errors.NewError(409, "invalid_request_error", "Image with id '"+params.ImageId+"' is in progress and cannot be deleted.", "invalid_request_error", nil)
 			logger.Error(ctx, err)
+			return response, err
 		}
 	}
 
-	if err := dao.TaskImage.UpdateById(ctx, taskImage.Id, bson.M{"status": "deleted", "image_url": "", "file_name": "", "file_path": ""}); err != nil {
-		logger.Error(ctx, err)
+	// 删除同一 image_id 的全部记录: 清理已落盘文件并置为 deleted
+	for _, t := range taskImages {
+
+		if t.Status == "deleted" {
+			continue
+		}
+
+		if config.Cfg.ImageTask.IsEnableStorage && t.FilePath != "" {
+			if err := gfile.RemoveFile(t.FilePath); err != nil {
+				logger.Error(ctx, err)
+			}
+		}
+
+		if err := dao.TaskImage.UpdateById(ctx, t.Id, bson.M{"status": "deleted", "image_url": "", "file_name": "", "file_path": ""}); err != nil {
+			logger.Error(ctx, err)
+		}
 	}
 
 	response = smodel.ImageJobResponse{
@@ -1429,11 +1448,15 @@ func (s *sImage) Content(ctx context.Context, params *v1.ContentReq) (response s
 		}
 	}()
 
-	taskImage, err := dao.TaskImage.FindOne(ctx, bson.M{"image_id": params.ImageId, "creator": service.Session().GetSecretKey(ctx)})
+	taskImages, err := dao.TaskImage.Find(ctx, bson.M{"image_id": params.ImageId, "creator": service.Session().GetSecretKey(ctx)})
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			err = errors.NewError(404, "invalid_request_error", "Image with id '"+params.ImageId+"' not found.", "invalid_request_error", nil)
-		}
+		logger.Error(ctx, err)
+		return response, err
+	}
+
+	taskImage := pickRepresentativeTaskImage(taskImages)
+	if taskImage == nil {
+		err = errors.NewError(404, "invalid_request_error", "Image with id '"+params.ImageId+"' not found.", "invalid_request_error", nil)
 		logger.Error(ctx, err)
 		return response, err
 	}
@@ -1458,4 +1481,59 @@ func (s *sImage) Content(ctx context.Context, params *v1.ContentReq) (response s
 	}
 
 	return response, nil
+}
+
+// 返回任务状态的排序权重, 数值越小优先级越高
+func statusPriority(status string) int {
+	switch status {
+	case "completed":
+		return 0
+	case "in_progress":
+		return 1
+	case "queued":
+		return 2
+	case "failed":
+		return 3
+	case "expired":
+		return 4
+	case "deleted":
+		return 5
+	default:
+		return 6
+	}
+}
+
+// 返回同状态下的排序键, 越小越靠前
+// 已完成按 completed_at 升序(为 0 视为异常, 排到最后), 其余状态按 created_at 升序
+func taskImageOrderKey(t *entity.TaskImage) int64 {
+	if t.Status == "completed" {
+		if t.CompletedAt == 0 {
+			return math.MaxInt64
+		}
+		return t.CompletedAt
+	}
+	return t.CreatedAt
+}
+
+// 从同一 image_id 的多条记录中选出代表记录
+// 优先级: completed > in_progress > queued > failed > expired > deleted
+// 同状态下: 已完成取最早完成的一条, 其余取最早创建的一条; 无记录时返回 nil
+func pickRepresentativeTaskImage(taskImages []*entity.TaskImage) *entity.TaskImage {
+
+	var best *entity.TaskImage
+
+	for _, t := range taskImages {
+
+		if best == nil {
+			best = t
+			continue
+		}
+
+		pt, pb := statusPriority(t.Status), statusPriority(best.Status)
+		if pt < pb || (pt == pb && taskImageOrderKey(t) < taskImageOrderKey(best)) {
+			best = t
+		}
+	}
+
+	return best
 }
