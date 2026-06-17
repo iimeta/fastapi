@@ -265,6 +265,10 @@ func textCache(ctx context.Context, mak *MAK, billingData *common.BillingData, s
 		spend.TextCache = new(common.CacheSpend)
 	}
 
+	if billingData.Usage == nil {
+		billingData.Usage = new(smodel.Usage)
+	}
+
 	if billingData.Usage.PromptTokensDetails.CachedTokens > 0 {
 		spend.TextCache.ReadTokens += billingData.Usage.PromptTokensDetails.CachedTokens
 	}
@@ -419,6 +423,10 @@ func tieredTextCache(ctx context.Context, mak *MAK, billingData *common.BillingD
 		spend.TieredTextCache = new(common.CacheSpend)
 	}
 
+	if billingData.Usage == nil {
+		billingData.Usage = new(smodel.Usage)
+	}
+
 	if billingData.Usage.PromptTokensDetails.CachedTokens > 0 {
 		spend.TieredTextCache.ReadTokens += billingData.Usage.PromptTokensDetails.CachedTokens
 	}
@@ -490,6 +498,10 @@ func image(ctx context.Context, mak *MAK, billingData *common.BillingData, spend
 
 	if spend.Image == nil {
 		spend.Image = new(common.ImageSpend)
+	}
+
+	if billingData.Usage == nil {
+		billingData.Usage = new(smodel.Usage)
 	}
 
 	if billingData.Usage.InputTokensDetails.ImageTokens > 0 {
@@ -616,6 +628,10 @@ func imageCache(ctx context.Context, mak *MAK, billingData *common.BillingData, 
 		spend.ImageCache = new(common.CacheSpend)
 	}
 
+	if billingData.Usage == nil {
+		billingData.Usage = new(smodel.Usage)
+	}
+
 	spend.ImageCache.Pricing = mak.ReqModel.Pricing.ImageCache
 	spend.ImageCache.ReadTokens = billingData.Usage.InputTokensDetails.CachedTokens
 	spend.ImageCache.SpendTokens = int(math.Ceil(float64(spend.ImageCache.ReadTokens) * spend.ImageCache.Pricing.ReadRatio))
@@ -676,6 +692,10 @@ func audio(ctx context.Context, mak *MAK, billingData *common.BillingData, spend
 
 	if spend.Audio == nil {
 		spend.Audio = new(common.AudioSpend)
+	}
+
+	if billingData.Usage == nil {
+		billingData.Usage = new(smodel.Usage)
 	}
 
 	if audioInputLen > 0 {
