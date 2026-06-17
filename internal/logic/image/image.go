@@ -851,7 +851,7 @@ func (s *sImage) GenerationsAsync(ctx context.Context, data []byte, fallbackMode
 	imageId := "image_" + gtrace.GetTraceID(ctx)
 
 	action := consts.ACTION_GENERATIONS
-	if params.Image != nil {
+	if params.Image != nil || len(params.Images) > 0 {
 		action = consts.ACTION_EDITS
 	}
 
