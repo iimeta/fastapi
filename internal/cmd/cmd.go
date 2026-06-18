@@ -60,6 +60,8 @@ var (
 
 			s.SetServerRoot("./resource/index/")
 
+			s.AddStaticPath("/public", "./resource/public")
+
 			s.Group("/", func(g *ghttp.RouterGroup) {
 				g.Middleware(middlewareHandlerResponse)
 				g.Bind(

@@ -17,6 +17,7 @@ type SysConfig struct {
 	NotShieldError            *common.NotShieldError            `bson:"not_shield_error,omitempty"`              // 不屏蔽错误
 	Quota                     *common.Quota                     `bson:"quota,omitempty"`                         // 额度
 	ImageTask                 *common.ImageTask                 `bson:"image_task,omitempty"`                    // 绘图任务
+	ImageStorage              *common.ImageStorage              `bson:"image_storage,omitempty"`                 // 绘图转储
 	VideoTask                 *common.VideoTask                 `bson:"video_task,omitempty"`                    // 视频任务
 	FileTask                  *common.FileTask                  `bson:"file_task,omitempty"`                     // 文件任务
 	ModelAgentHealthCheckTask *common.ModelAgentHealthCheckTask `bson:"model_agent_health_check_task,omitempty"` // 模型代理健康检查任务

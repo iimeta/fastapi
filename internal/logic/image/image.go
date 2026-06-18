@@ -2,9 +2,11 @@ package image
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"math"
+	"net/http"
 	"slices"
 	"time"
 
@@ -65,7 +67,9 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo *mcommon.Retry
+		retryInfo      *mcommon.Retry
+		imageFilePaths []string
+		imageExpiresAt int64
 	)
 
 	defer func() {
@@ -81,6 +85,8 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 					ImageGenerationRequest: params,
 					ImageResponse:          response,
 					Action:                 consts.ACTION_GENERATIONS,
+					ImageFilePaths:         imageFilePaths,
+					ImageExpiresAt:         imageExpiresAt,
 					Usage:                  &usage,
 					Error:                  err,
 					RetryInfo:              retryInfo,
@@ -203,6 +209,8 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 
 		return response, err
 	}
+
+	imageFilePaths, imageExpiresAt = saveImageStorage(ctx, &response, params.OutputFormat)
 
 	return response, nil
 }
@@ -444,8 +452,22 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo *mcommon.Retry
+		retryInfo      *mcommon.Retry
+		imageFilePaths []string
+		imageExpiresAt int64
 	)
+
+	if gstr.Contains(g.RequestFromCtx(ctx).Header.Get("Content-Type"), "multipart/form-data") {
+		// form 文件方式提交, image 必填
+		if params.Image == nil {
+			return response, errors.ERR_MISSING_REQUIRED_PARAMETER_IMAGE
+		}
+	} else {
+		// json 方式提交, images 必填
+		if len(params.Images) == 0 {
+			return response, errors.ERR_MISSING_REQUIRED_PARAMETER_IMAGES
+		}
+	}
 
 	defer func() {
 
@@ -472,6 +494,8 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 					ImageGenerationRequest: imageReq,
 					ImageResponse:          response,
 					Action:                 consts.ACTION_EDITS,
+					ImageFilePaths:         imageFilePaths,
+					ImageExpiresAt:         imageExpiresAt,
 					Usage:                  &usage,
 					Error:                  err,
 					RetryInfo:              retryInfo,
@@ -593,6 +617,8 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 		return response, err
 	}
 
+	imageFilePaths, imageExpiresAt = saveImageStorage(ctx, &response, "")
+
 	return response, nil
 }
 
@@ -617,6 +643,18 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 		totalTime     int64
 		retryInfo     *mcommon.Retry
 	)
+
+	if gstr.Contains(g.RequestFromCtx(ctx).Header.Get("Content-Type"), "multipart/form-data") {
+		// form 文件方式提交, image 必填
+		if params.Image == nil {
+			return errors.ERR_MISSING_REQUIRED_PARAMETER_IMAGE
+		}
+	} else {
+		// json 方式提交, images 必填
+		if len(params.Images) == 0 {
+			return errors.ERR_MISSING_REQUIRED_PARAMETER_IMAGES
+		}
+	}
 
 	defer func() {
 
@@ -1536,4 +1574,113 @@ func pickRepresentativeTaskImage(taskImages []*entity.TaskImage) *entity.TaskIma
 	}
 
 	return best
+}
+
+// 同步转储图片到本地存储, 改写response中图片的访问地址, 返回与response.Data等长的文件路径列表及过期时间
+func saveImageStorage(ctx context.Context, response *smodel.ImageResponse, outputFormat string) (filePaths []string, expiresAt int64) {
+
+	imageStorage := config.Cfg.ImageStorage
+	if imageStorage == nil || !imageStorage.Open || len(response.Data) == 0 {
+		return nil, 0
+	}
+
+	storageDir := imageStorage.StorageDir
+	if storageDir == "" {
+		storageDir = "./resource/public/image/"
+	} else if !gstr.HasSuffix(storageDir, "/") {
+		storageDir = storageDir + "/"
+	}
+
+	if outputFormat == "" {
+		outputFormat = "png"
+	}
+
+	traceId := gtrace.GetTraceID(ctx)
+	filePaths = make([]string, len(response.Data))
+	hasStored := false
+
+	for i := range response.Data {
+
+		imageData := response.Data[i]
+		var imageBytes []byte
+
+		if len(imageData.B64Json) > 0 {
+			if decoded, err := base64.StdEncoding.DecodeString(imageData.B64Json); err == nil {
+				imageBytes = decoded
+			} else {
+				logger.Error(ctx, err)
+			}
+		} else if len(imageData.Url) > 0 {
+
+			if gstr.HasPrefix(imageData.Url, "data:image/png;base64,") {
+
+				if decoded, err := base64.StdEncoding.DecodeString(gstr.TrimLeftStr(imageData.Url, "data:image/png;base64,")); err == nil {
+					imageBytes = decoded
+				} else {
+					logger.Error(ctx, err)
+				}
+
+			} else if gstr.HasPrefix(imageData.Url, "http") {
+
+				client := &http.Client{Timeout: imageStorage.DownloadTimeout * time.Second}
+
+				resp, err := client.Get(imageData.Url)
+				if err != nil {
+					logger.Error(ctx, err)
+					if resp != nil && resp.Body != nil {
+						_ = resp.Body.Close()
+					}
+				} else {
+					imageBytes, err = io.ReadAll(resp.Body)
+					_ = resp.Body.Close()
+					if err != nil {
+						logger.Error(ctx, err)
+					}
+				}
+			}
+		}
+
+		if imageBytes == nil {
+			continue
+		}
+
+		fileName := fmt.Sprintf("%s%d.%s", traceId, i, outputFormat)
+
+		if err := gfile.PutBytes(storageDir+fileName, imageBytes); err != nil {
+			logger.Error(ctx, err)
+			continue
+		}
+
+		var imageUrl string
+		if gstr.HasPrefix(storageDir, "./resource/public/") {
+			imageUrl = "/public/" + gstr.TrimLeftStr(storageDir, "./resource/public/") + fileName
+		} else if imageStorage.StorageBaseUrl == "" {
+			imageUrl = "/open/image/" + fileName
+		} else {
+			imageUrl = fileName
+		}
+
+		if imageStorage.StorageBaseUrl != "" {
+			if gstr.HasSuffix(imageStorage.StorageBaseUrl, "/") {
+				imageUrl = gstr.TrimLeftStr(imageUrl, "/")
+			} else if !gstr.HasPrefix(imageUrl, "/") {
+				imageUrl = "/" + imageUrl
+			}
+			imageUrl = imageStorage.StorageBaseUrl + imageUrl
+		}
+
+		response.Data[i].Url = imageUrl
+		filePaths[i] = storageDir + fileName
+		hasStored = true
+	}
+
+	if !hasStored {
+		return nil, 0
+	}
+
+	if imageStorage.StorageExpiresAt > 0 {
+		expiresAt = gtime.NewFromTimeStamp(gtime.TimestampMilli() / 1000).Add(imageStorage.StorageExpiresAt * time.Minute).Unix()
+	}
+
+	return filePaths, expiresAt
 }

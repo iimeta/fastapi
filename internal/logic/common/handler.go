@@ -275,6 +275,8 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		Action:             after.Action,
 		ImageReq:           &after.ImageGenerationRequest,
 		ImageRes:           imageRes,
+		ImageFilePaths:     after.ImageFilePaths,
+		ImageExpiresAt:     after.ImageExpiresAt,
 		RetryInfo:          after.RetryInfo,
 		Spend:              after.Spend,
 	})

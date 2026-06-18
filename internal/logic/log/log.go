@@ -468,13 +468,18 @@ func (s *sLog) Image(ctx context.Context, imageLog model.LogImage, retry ...int)
 		Method:         g.RequestFromCtx(ctx).Method,
 		Path:           g.RequestFromCtx(ctx).URL.Path,
 		Rid:            service.Session().GetRid(ctx),
+		ExpiresAt:      imageLog.ImageExpiresAt,
 	}
 
-	for _, data := range imageLog.ImageRes.Data {
-		image.ImageData = append(image.ImageData, mcommon.ImageData{
+	for i, data := range imageLog.ImageRes.Data {
+		imageData := mcommon.ImageData{
 			Url:           data.Url,
 			RevisedPrompt: data.RevisedPrompt,
-		})
+		}
+		if i < len(imageLog.ImageFilePaths) {
+			imageData.FilePath = imageLog.ImageFilePaths[i]
+		}
+		image.ImageData = append(image.ImageData, imageData)
 	}
 
 	if imageLog.ReqModel != nil {

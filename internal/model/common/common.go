@@ -52,6 +52,7 @@ type ImageData struct {
 	Url           string `bson:"url,omitempty"`
 	B64Json       string `bson:"b64_json,omitempty"`
 	RevisedPrompt string `bson:"revised_prompt,omitempty"`
+	FilePath      string `bson:"file_path,omitempty"`
 }
 
 type UserPrivacy struct {

@@ -31,6 +31,8 @@ type LogImage struct {
 	Action             string
 	ImageReq           *smodel.ImageGenerationRequest
 	ImageRes           *ImageRes
+	ImageFilePaths     []string
+	ImageExpiresAt     int64
 	RetryInfo          *mcommon.Retry
 	Spend              mcommon.Spend
 }

@@ -30,3 +30,4 @@ bin/*.zip
 **/resource/file/*.webm
 **/resource/file/*.wmv
 **/resource/file/*.3gpp
+**/resource/public/image/*.*

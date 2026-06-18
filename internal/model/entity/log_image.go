@@ -39,6 +39,7 @@ type LogImage struct {
 	Style                string                 `bson:"style,omitempty"`                   // 图像样式[vivid, natural]
 	ResponseFormat       string                 `bson:"response_format,omitempty"`         // 图像格式[url, b64_json]
 	ImageData            []common.ImageData     `bson:"image_data,omitempty"`              // 生成图像数据
+	ExpiresAt            int64                  `bson:"expires_at,omitempty"`              // 转储过期时间
 	Spend                common.Spend           `bson:"spend,omitempty"`                   // 花费
 	ConnTime             int64                  `bson:"conn_time,omitempty"`               // 连接时间
 	Duration             int64                  `bson:"duration,omitempty"`                // 持续时间

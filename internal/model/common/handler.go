@@ -23,6 +23,8 @@ type AfterHandler struct {
 	Action                 string
 	IsAsync                bool
 	ImageId                string
+	ImageFilePaths         []string
+	ImageExpiresAt         int64
 	VideoId                string
 	VideoMode              string
 	IsVolcEngine           bool
