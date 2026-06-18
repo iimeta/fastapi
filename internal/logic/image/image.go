@@ -139,6 +139,10 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 		}
 	}
 
+	if config.Cfg.ImageStorage.Open {
+		request.ResponseFormat = "b64_json"
+	}
+
 	response, err = common.NewAdapter(ctx, mak, false).ImageGenerations(ctx, gjson.MustEncode(request))
 	if err != nil {
 		logger.Error(ctx, err)
@@ -544,6 +548,10 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 				break
 			}
 		}
+	}
+
+	if config.Cfg.ImageStorage.Open {
+		params.ResponseFormat = "b64_json"
 	}
 
 	response, err = common.NewAdapter(ctx, mak, false).ImageEdits(ctx, params)
@@ -1579,12 +1587,11 @@ func pickRepresentativeTaskImage(taskImages []*entity.TaskImage) *entity.TaskIma
 // 同步转储图片到本地存储, 改写response中图片的访问地址, 返回与response.Data等长的文件路径列表及过期时间
 func saveImageStorage(ctx context.Context, response *smodel.ImageResponse, outputFormat string) (filePaths []string, expiresAt int64) {
 
-	imageStorage := config.Cfg.ImageStorage
-	if imageStorage == nil || !imageStorage.Open || len(response.Data) == 0 {
+	if !config.Cfg.ImageStorage.Open || len(response.Data) == 0 {
 		return nil, 0
 	}
 
-	storageDir := imageStorage.StorageDir
+	storageDir := config.Cfg.ImageStorage.StorageDir
 	if storageDir == "" {
 		storageDir = "./resource/public/image/"
 	} else if !gstr.HasSuffix(storageDir, "/") {
@@ -1622,7 +1629,12 @@ func saveImageStorage(ctx context.Context, response *smodel.ImageResponse, outpu
 
 			} else if gstr.HasPrefix(imageData.Url, "http") {
 
-				client := &http.Client{Timeout: imageStorage.DownloadTimeout * time.Second}
+				timeout := config.Cfg.ImageStorage.DownloadTimeout * time.Second
+				if timeout <= 0 {
+					timeout = config.Cfg.Base.ShortTimeout * time.Second
+				}
+
+				client := &http.Client{Timeout: timeout}
 
 				resp, err := client.Get(imageData.Url)
 				if err != nil {
@@ -1630,11 +1642,13 @@ func saveImageStorage(ctx context.Context, response *smodel.ImageResponse, outpu
 					if resp != nil && resp.Body != nil {
 						_ = resp.Body.Close()
 					}
+					response.Data[i].Url = ""
 				} else {
 					imageBytes, err = io.ReadAll(resp.Body)
 					_ = resp.Body.Close()
 					if err != nil {
 						logger.Error(ctx, err)
+						response.Data[i].Url = ""
 					}
 				}
 			}
@@ -1654,19 +1668,19 @@ func saveImageStorage(ctx context.Context, response *smodel.ImageResponse, outpu
 		var imageUrl string
 		if gstr.HasPrefix(storageDir, "./resource/public/") {
 			imageUrl = "/public/" + gstr.TrimLeftStr(storageDir, "./resource/public/") + fileName
-		} else if imageStorage.StorageBaseUrl == "" {
+		} else if config.Cfg.ImageStorage.StorageBaseUrl == "" {
 			imageUrl = "/open/image/" + fileName
 		} else {
 			imageUrl = fileName
 		}
 
-		if imageStorage.StorageBaseUrl != "" {
-			if gstr.HasSuffix(imageStorage.StorageBaseUrl, "/") {
+		if config.Cfg.ImageStorage.StorageBaseUrl != "" {
+			if gstr.HasSuffix(config.Cfg.ImageStorage.StorageBaseUrl, "/") {
 				imageUrl = gstr.TrimLeftStr(imageUrl, "/")
 			} else if !gstr.HasPrefix(imageUrl, "/") {
 				imageUrl = "/" + imageUrl
 			}
-			imageUrl = imageStorage.StorageBaseUrl + imageUrl
+			imageUrl = config.Cfg.ImageStorage.StorageBaseUrl + imageUrl
 		}
 
 		response.Data[i].Url = imageUrl
@@ -1678,8 +1692,8 @@ func saveImageStorage(ctx context.Context, response *smodel.ImageResponse, outpu
 		return nil, 0
 	}
 
-	if imageStorage.StorageExpiresAt > 0 {
-		expiresAt = gtime.NewFromTimeStamp(gtime.TimestampMilli() / 1000).Add(imageStorage.StorageExpiresAt * time.Minute).Unix()
+	if config.Cfg.ImageStorage.StorageExpiresAt > 0 {
+		expiresAt = gtime.NewFromTimeStamp(gtime.TimestampMilli() / 1000).Add(config.Cfg.ImageStorage.StorageExpiresAt * time.Minute).Unix()
 	}
 
 	return filePaths, expiresAt
