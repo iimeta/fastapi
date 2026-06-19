@@ -239,12 +239,14 @@ func (s *sImage) GenerationsStream(ctx context.Context, data []byte, fallbackMod
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		imageResponse smodel.ImageResponse
-		usage         *smodel.Usage
-		connTime      int64
-		duration      int64
-		totalTime     int64
-		retryInfo     *mcommon.Retry
+		imageResponse  smodel.ImageResponse
+		usage          *smodel.Usage
+		connTime       int64
+		duration       int64
+		totalTime      int64
+		retryInfo      *mcommon.Retry
+		imageFilePaths []string
+		imageExpiresAt int64
 	)
 
 	defer func() {
@@ -261,6 +263,8 @@ func (s *sImage) GenerationsStream(ctx context.Context, data []byte, fallbackMod
 					ImageGenerationRequest: params,
 					ImageResponse:          imageResponse,
 					Action:                 consts.ACTION_GENERATIONS,
+					ImageFilePaths:         imageFilePaths,
+					ImageExpiresAt:         imageExpiresAt,
 					Usage:                  usage,
 					Error:                  err,
 					RetryInfo:              retryInfo,
@@ -399,6 +403,7 @@ func (s *sImage) GenerationsStream(ctx context.Context, data []byte, fallbackMod
 		if response.Error != nil {
 
 			if errors.Is(response.Error, io.EOF) {
+				imageFilePaths, imageExpiresAt = saveImageStorage(ctx, &imageResponse, params.OutputFormat)
 				return nil
 			}
 
@@ -625,7 +630,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 		return response, err
 	}
 
-	imageFilePaths, imageExpiresAt = saveImageStorage(ctx, &response, "")
+	imageFilePaths, imageExpiresAt = saveImageStorage(ctx, &response, params.OutputFormat)
 
 	return response, nil
 }
@@ -644,12 +649,14 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		imageResponse smodel.ImageResponse
-		usage         *smodel.Usage
-		connTime      int64
-		duration      int64
-		totalTime     int64
-		retryInfo     *mcommon.Retry
+		imageResponse  smodel.ImageResponse
+		usage          *smodel.Usage
+		connTime       int64
+		duration       int64
+		totalTime      int64
+		retryInfo      *mcommon.Retry
+		imageFilePaths []string
+		imageExpiresAt int64
 	)
 
 	if gstr.Contains(g.RequestFromCtx(ctx).Header.Get("Content-Type"), "multipart/form-data") {
@@ -690,6 +697,8 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 					ImageGenerationRequest: imageReq,
 					ImageResponse:          imageResponse,
 					Action:                 consts.ACTION_EDITS,
+					ImageFilePaths:         imageFilePaths,
+					ImageExpiresAt:         imageExpiresAt,
 					Usage:                  usage,
 					Error:                  err,
 					RetryInfo:              retryInfo,
@@ -826,6 +835,7 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 		if response.Error != nil {
 
 			if errors.Is(response.Error, io.EOF) {
+				imageFilePaths, imageExpiresAt = saveImageStorage(ctx, &imageResponse, params.OutputFormat)
 				return nil
 			}
 
@@ -1025,16 +1035,17 @@ func (s *sImage) EditsAsync(ctx context.Context, params smodel.ImageEditRequest,
 	}
 
 	response = smodel.ImageJobResponse{
-		Id:        imageId,
-		Object:    "image",
-		Model:     mak.ReqModel.Name,
-		Status:    "queued",
-		Progress:  0,
-		CreatedAt: time.Now().Unix(),
-		N:         params.N,
-		Quality:   params.Quality,
-		Size:      params.Size,
-		Prompt:    params.Prompt,
+		Id:           imageId,
+		Object:       "image",
+		Model:        mak.ReqModel.Name,
+		Status:       "queued",
+		Progress:     0,
+		CreatedAt:    time.Now().Unix(),
+		N:            params.N,
+		Quality:      params.Quality,
+		Size:         params.Size,
+		Prompt:       params.Prompt,
+		OutputFormat: params.OutputFormat,
 	}
 
 	return response, nil
