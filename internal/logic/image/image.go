@@ -1056,23 +1056,35 @@ func checkAsyncEditImage(params smodel.ImageEditRequest) error {
 				return errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id.", "invalid_request_error", "image")
 			}
 		}
-		return nil
-	}
+	} else {
 
-	switch v := params.Image.(type) {
-	case string:
-		if isInvalid(v) {
-			return errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id.", "invalid_request_error", "image")
-		}
-	case []any:
-		for _, item := range v {
-			s, ok := item.(string)
-			if !ok || isInvalid(s) {
+		switch v := params.Image.(type) {
+		case string:
+			if isInvalid(v) {
 				return errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id.", "invalid_request_error", "image")
 			}
+		case []any:
+			for _, item := range v {
+				s, ok := item.(string)
+				if !ok || isInvalid(s) {
+					return errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id.", "invalid_request_error", "image")
+				}
+			}
+		default:
+			return errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id.", "invalid_request_error", "image")
 		}
-	default:
-		return errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id.", "invalid_request_error", "image")
+	}
+
+	// 校验mask: 异步仅支持URL, 不支持上传文件和base64
+	if params.Mask != nil {
+		switch v := params.Mask.(type) {
+		case string:
+			if isInvalid(v) {
+				return errors.NewError(400, "invalid_request_error", "Async edits only support mask url.", "invalid_request_error", "mask")
+			}
+		default:
+			return errors.NewError(400, "invalid_request_error", "Async edits only support mask url.", "invalid_request_error", "mask")
+		}
 	}
 
 	return nil
