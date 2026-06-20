@@ -26,8 +26,11 @@ type TaskImage struct {
 	CompletedAt    int64              `bson:"completed_at,omitempty"`    // 完成时间
 	ExpiresAt      int64              `bson:"expires_at,omitempty"`      // 过期时间
 	ImageUrl       string             `bson:"image_url,omitempty"`       // 图像地址
+	ImageUrls      []string           `bson:"image_urls,omitempty"`      // 图像地址列表
 	FileName       string             `bson:"file_name,omitempty"`       // 文件名
+	FileNames      []string           `bson:"file_names,omitempty"`      // 文件名列表
 	FilePath       string             `bson:"file_path,omitempty"`       // 文件路径
+	FilePaths      []string           `bson:"file_paths,omitempty"`      // 文件路径列表
 	RequestData    map[string]any     `bson:"request_data,omitempty"`    // 请求数据
 	ResponseData   map[string]any     `bson:"response_data,omitempty"`   // 响应数据
 	Error          *smodel.ImageError `bson:"error,omitempty"`           // 错误信息

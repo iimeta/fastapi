@@ -8,6 +8,7 @@ import (
 // Generations接口请求参数
 type GenerationsReq struct {
 	g.Meta `path:"/generations" tags:"image" method:"post" summary:"Generations接口"`
+	Async  bool `json:"async,omitempty"`
 	smodel.ImageGenerationRequest
 }
 
@@ -19,6 +20,7 @@ type GenerationsRes struct {
 // Edits接口请求参数
 type EditsReq struct {
 	g.Meta `path:"/edits" tags:"image" method:"post" summary:"Edits接口"`
+	Async  bool `json:"async,omitempty"`
 	smodel.ImageEditRequest
 }
 

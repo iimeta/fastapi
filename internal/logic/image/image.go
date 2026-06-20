@@ -114,7 +114,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 
 		// 计算花费
 		spend := common.Billing(ctx, mak, billingData, "image_generation")
-		if spend.ImageGeneration.Pricing.Width > 0 {
+		if spend.ImageGeneration.Pricing.Width > 0 && spend.ImageGeneration.Pricing.Height > 0 {
 			if spend.ImageGeneration.Pricing.Quality != "" {
 				params.Quality = spend.ImageGeneration.Pricing.Quality
 			}
@@ -294,7 +294,7 @@ func (s *sImage) GenerationsStream(ctx context.Context, data []byte, fallbackMod
 
 		// 计算花费
 		spend := common.Billing(ctx, mak, billingData, "image_generation")
-		if spend.ImageGeneration.Pricing.Width > 0 {
+		if spend.ImageGeneration.Pricing.Width > 0 && spend.ImageGeneration.Pricing.Height > 0 {
 			if spend.ImageGeneration.Pricing.Quality != "" {
 				params.Quality = spend.ImageGeneration.Pricing.Quality
 			}
@@ -532,7 +532,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 
 		// 计算花费
 		spend := common.Billing(ctx, mak, billingData, "image_generation")
-		if spend.ImageGeneration.Pricing.Width > 0 {
+		if spend.ImageGeneration.Pricing.Width > 0 && spend.ImageGeneration.Pricing.Height > 0 {
 			if spend.ImageGeneration.Pricing.Quality != "" {
 				params.Quality = spend.ImageGeneration.Pricing.Quality
 			}
@@ -728,7 +728,7 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 
 		// 计算花费
 		spend := common.Billing(ctx, mak, billingData, "image_generation")
-		if spend.ImageGeneration.Pricing.Width > 0 {
+		if spend.ImageGeneration.Pricing.Width > 0 && spend.ImageGeneration.Pricing.Height > 0 {
 			if spend.ImageGeneration.Pricing.Quality != "" {
 				params.Quality = spend.ImageGeneration.Pricing.Quality
 			}
@@ -902,8 +902,6 @@ func (s *sImage) GenerationsAsync(ctx context.Context, data []byte, fallbackMode
 		retryInfo *mcommon.Retry
 	)
 
-	params.N = 1
-
 	imageId := "image_" + gtrace.GetTraceID(ctx)
 
 	action := consts.ACTION_GENERATIONS
@@ -984,8 +982,6 @@ func (s *sImage) EditsAsync(ctx context.Context, params smodel.ImageEditRequest,
 		}
 		retryInfo *mcommon.Retry
 	)
-
-	params.N = 1
 
 	imageId := "image_" + gtrace.GetTraceID(ctx)
 
@@ -1263,6 +1259,13 @@ func (s *sImage) List(ctx context.Context, params *v1.ListReq) (response smodel.
 			imageJobResponse.ImageUrl = config.Cfg.ImageTask.StorageBaseUrl + result.ImageUrl
 		}
 
+		if config.Cfg.ImageTask.IsEnableStorage && len(result.ImageUrls) > 0 {
+			imageJobResponse.ImageUrls = make([]string, 0, len(result.ImageUrls))
+			for _, u := range result.ImageUrls {
+				imageJobResponse.ImageUrls = append(imageJobResponse.ImageUrls, buildStorageUrl(u))
+			}
+		}
+
 		response.Data = append(response.Data, imageJobResponse)
 	}
 
@@ -1366,6 +1369,13 @@ func (s *sImage) Retrieve(ctx context.Context, params smodel.ImageRetrieveReques
 		response.ImageUrl = config.Cfg.ImageTask.StorageBaseUrl + taskImage.ImageUrl
 	}
 
+	if config.Cfg.ImageTask.IsEnableStorage && len(taskImage.ImageUrls) > 0 {
+		response.ImageUrls = make([]string, 0, len(taskImage.ImageUrls))
+		for _, u := range taskImage.ImageUrls {
+			response.ImageUrls = append(response.ImageUrls, buildStorageUrl(u))
+		}
+	}
+
 	return response, nil
 }
 
@@ -1453,7 +1463,17 @@ func (s *sImage) Delete(ctx context.Context, params *v1.DeleteReq) (response smo
 			}
 		}
 
-		if err := dao.TaskImage.UpdateById(ctx, t.Id, bson.M{"status": "deleted", "image_url": "", "file_name": "", "file_path": ""}); err != nil {
+		if config.Cfg.ImageTask.IsEnableStorage && len(t.FilePaths) > 0 {
+			for _, fp := range t.FilePaths {
+				if fp != "" && fp != t.FilePath {
+					if err := gfile.RemoveFile(fp); err != nil {
+						logger.Error(ctx, err)
+					}
+				}
+			}
+		}
+
+		if err := dao.TaskImage.UpdateById(ctx, t.Id, bson.M{"status": "deleted", "image_url": "", "image_urls": nil, "file_name": "", "file_names": nil, "file_path": "", "file_paths": nil}); err != nil {
 			logger.Error(ctx, err)
 		}
 	}
@@ -1553,10 +1573,25 @@ func (s *sImage) Content(ctx context.Context, params *v1.ContentReq) (response s
 		return response, err
 	}
 
-	if config.Cfg.ImageTask.IsEnableStorage && taskImage.FilePath != "" {
-		if bytes := gfile.GetBytes(taskImage.FilePath); bytes != nil {
-			response = smodel.ImageContentResponse{Data: bytes}
-			return response, nil
+	if config.Cfg.ImageTask.IsEnableStorage {
+
+		// 优先使用FilePaths按Index取对应文件, 兼容历史数据回退到FilePath
+		var targetPath string
+		if len(taskImage.FilePaths) > 0 {
+			index := params.Index
+			if index < 0 || index >= len(taskImage.FilePaths) {
+				index = 0
+			}
+			targetPath = taskImage.FilePaths[index]
+		} else if taskImage.FilePath != "" {
+			targetPath = taskImage.FilePath
+		}
+
+		if targetPath != "" {
+			if bytes := gfile.GetBytes(targetPath); bytes != nil {
+				response = smodel.ImageContentResponse{Data: bytes}
+				return response, nil
+			}
 		}
 	}
 
@@ -1616,6 +1651,21 @@ func pickRepresentativeTaskImage(taskImages []*entity.TaskImage) *entity.TaskIma
 	}
 
 	return best
+}
+
+// 为相对路径的图像URL添加StorageBaseUrl前缀
+func buildStorageUrl(imageUrl string) string {
+	if imageUrl == "" {
+		return ""
+	}
+	if config.Cfg.ImageTask.StorageBaseUrl != "" {
+		if gstr.HasSuffix(config.Cfg.ImageTask.StorageBaseUrl, "/") {
+			imageUrl = gstr.TrimLeftStr(imageUrl, "/")
+		} else if !gstr.HasPrefix(imageUrl, "/") {
+			imageUrl = "/" + imageUrl
+		}
+	}
+	return config.Cfg.ImageTask.StorageBaseUrl + imageUrl
 }
 
 // 同步转储图片到本地存储, 改写response中图片的访问地址, 返回与response.Data等长的文件路径列表及过期时间
