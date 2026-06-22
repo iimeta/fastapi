@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"net/http"
 	"slices"
 	"time"
 
@@ -20,6 +19,7 @@ import (
 	"github.com/gogf/gf/v2/text/gstr"
 	sconsts "github.com/iimeta/fastapi-sdk/v2/consts"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
+	sutil "github.com/iimeta/fastapi-sdk/v2/util"
 	v1 "github.com/iimeta/fastapi/v2/api/image/v1"
 	"github.com/iimeta/fastapi/v2/internal/config"
 	"github.com/iimeta/fastapi/v2/internal/consts"
@@ -1718,22 +1718,11 @@ func saveImageStorage(ctx context.Context, response *smodel.ImageResponse, outpu
 					timeout = config.Cfg.Base.ShortTimeout * time.Second
 				}
 
-				client := &http.Client{Timeout: timeout}
-
-				resp, err := client.Get(imageData.Url)
-				if err != nil {
+				if body, _, err := sutil.HttpGet(ctx, imageData.Url, nil, nil, nil, timeout, config.Cfg.Http.ProxyUrl, nil); err != nil {
 					logger.Error(ctx, err)
-					if resp != nil && resp.Body != nil {
-						_ = resp.Body.Close()
-					}
 					response.Data[i].Url = ""
 				} else {
-					imageBytes, err = io.ReadAll(resp.Body)
-					_ = resp.Body.Close()
-					if err != nil {
-						logger.Error(ctx, err)
-						response.Data[i].Url = ""
-					}
+					imageBytes = body
 				}
 			}
 		}
