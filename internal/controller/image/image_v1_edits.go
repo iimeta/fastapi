@@ -28,15 +28,7 @@ func (c *ControllerV1) Edits(ctx context.Context, req *v1.EditsReq) (res *v1.Edi
 		}
 	}
 
-	if req.Stream {
-
-		if err = service.Image().EditsStream(ctx, req.ImageEditRequest, nil, nil); err != nil {
-			return nil, err
-		}
-
-		g.RequestFromCtx(ctx).SetCtxVar("stream", req.Stream)
-
-	} else if req.Async {
+	if req.Async {
 
 		response, err := service.Image().EditsAsync(ctx, req.ImageEditRequest, nil, nil)
 		if err != nil {
@@ -44,6 +36,14 @@ func (c *ControllerV1) Edits(ctx context.Context, req *v1.EditsReq) (res *v1.Edi
 		}
 
 		g.RequestFromCtx(ctx).Response.WriteJson(response)
+
+	} else if req.Stream {
+
+		if err = service.Image().EditsStream(ctx, req.ImageEditRequest, nil, nil); err != nil {
+			return nil, err
+		}
+
+		g.RequestFromCtx(ctx).SetCtxVar("stream", req.Stream)
 
 	} else {
 

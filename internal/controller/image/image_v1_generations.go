@@ -19,15 +19,7 @@ func (c *ControllerV1) Generations(ctx context.Context, req *v1.GenerationsReq) 
 		logger.Debugf(ctx, "Controller Generations time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	if req.Stream {
-
-		if err = service.Image().GenerationsStream(ctx, g.RequestFromCtx(ctx).GetBody(), nil, nil); err != nil {
-			return nil, err
-		}
-
-		g.RequestFromCtx(ctx).SetCtxVar("stream", req.Stream)
-
-	} else if req.Async {
+	if req.Async {
 
 		response, err := service.Image().GenerationsAsync(ctx, g.RequestFromCtx(ctx).GetBody(), nil, nil)
 		if err != nil {
@@ -35,6 +27,14 @@ func (c *ControllerV1) Generations(ctx context.Context, req *v1.GenerationsReq) 
 		}
 
 		g.RequestFromCtx(ctx).Response.WriteJson(response)
+
+	} else if req.Stream {
+
+		if err = service.Image().GenerationsStream(ctx, g.RequestFromCtx(ctx).GetBody(), nil, nil); err != nil {
+			return nil, err
+		}
+
+		g.RequestFromCtx(ctx).SetCtxVar("stream", req.Stream)
 
 	} else {
 
