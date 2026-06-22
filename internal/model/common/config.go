@@ -148,6 +148,7 @@ type ImageStorage struct {
 	Cron                 string        `bson:"cron"                   json:"cron"`                         // CRON表达式
 	LockMinutes          time.Duration `bson:"lock_minutes"           json:"lock_minutes"`                 // 锁定时长, 单位: 分钟
 	DownloadTimeout      time.Duration `bson:"download_timeout"       json:"download_timeout"`             // 下载图片超时时间, 单位: 秒
+	RetryCount           int           `bson:"retry_count"            json:"retry_count"`                  // 重试次数
 	StorageDir           string        `bson:"storage_dir"            json:"storage_dir"`                  // 存储目录
 	StorageBaseUrl       string        `bson:"storage_base_url"       json:"storage_base_url"`             // 访问地址
 	StorageExpiresAt     time.Duration `bson:"storage_expires_at"     json:"storage_expires_at,omitempty"` // 存储过期时间, 单位: 分钟

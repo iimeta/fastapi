@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net/http"
 	"slices"
 	"time"
 
@@ -1718,7 +1719,7 @@ func saveImageStorage(ctx context.Context, response *smodel.ImageResponse, outpu
 					timeout = config.Cfg.Base.ShortTimeout * time.Second
 				}
 
-				if body, _, err := sutil.HttpGet(ctx, imageData.Url, nil, nil, nil, timeout, config.Cfg.Http.ProxyUrl, nil); err != nil {
+				if body, _, err := downloadImage(ctx, imageData.Url, timeout); err != nil {
 					logger.Error(ctx, err)
 					response.Data[i].Url = ""
 				} else {
@@ -1770,4 +1771,37 @@ func saveImageStorage(ctx context.Context, response *smodel.ImageResponse, outpu
 	}
 
 	return filePaths, expiresAt
+}
+
+// 通过URL下载图像字节数据, 下载失败或内容为空时按配置重试
+func downloadImage(ctx context.Context, imageUrl string, timeout time.Duration, retry ...int) ([]byte, http.Header, error) {
+
+	body, respHeader, err := sutil.HttpGet(ctx, imageUrl, nil, nil, nil, timeout, config.Cfg.Http.ProxyUrl, nil)
+	if err == nil && len(body) > 0 {
+		return body, respHeader, nil
+	}
+
+	if err != nil {
+		logger.Errorf(ctx, "sImage downloadImage url: %s, error: %v", imageUrl, err)
+	} else {
+		err = errors.New("downloaded image content is empty")
+		logger.Errorf(ctx, "sImage downloadImage url: %s, empty content", imageUrl)
+	}
+
+	retryCount := config.Cfg.ImageStorage.RetryCount
+	if retryCount < 0 {
+		retryCount = 0
+	}
+
+	if len(retry) == retryCount {
+		return nil, nil, err
+	}
+
+	retry = append(retry, 1)
+
+	time.Sleep(time.Duration(len(retry)*5) * time.Second)
+
+	logger.Infof(ctx, "sImage downloadImage retry: %d, url: %s", len(retry), imageUrl)
+
+	return downloadImage(ctx, imageUrl, timeout, retry...)
 }
