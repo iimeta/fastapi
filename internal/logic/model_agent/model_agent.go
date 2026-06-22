@@ -971,6 +971,52 @@ func (s *sModelAgent) UpdateCache(ctx context.Context, oldData *entity.ModelAgen
 		logger.Debugf(ctx, "sModelAgent UpdateCache time: %d", gtime.TimestampMilli()-now)
 	}()
 
+	// 查找缓存中此模型代理的旧对象, 用于平滑加权轮询(SWRR)的当前权重(CurrentWeight)处理
+	var oldAgent *model.ModelAgent
+	if groups, err := s.groupModelAgentsCache.Keys(ctx); err == nil {
+		for _, id := range groups {
+
+			if modelAgentsValue := s.groupModelAgentsCache.GetVal(ctx, id); modelAgentsValue != nil {
+				for _, agent := range modelAgentsValue.([]*model.ModelAgent) {
+					if agent.Id == newData.Id {
+						oldAgent = agent
+						break
+					}
+				}
+			}
+
+			if oldAgent != nil {
+				break
+			}
+		}
+	}
+
+	if oldAgent == nil {
+		for _, id := range newData.Models {
+
+			if modelAgentsValue := s.modelAgentsCache.GetVal(ctx, id); modelAgentsValue != nil {
+				for _, agent := range modelAgentsValue.([]*model.ModelAgent) {
+					if agent.Id == newData.Id {
+						oldAgent = agent
+						break
+					}
+				}
+			}
+
+			if oldAgent != nil {
+				break
+			}
+		}
+	}
+
+	// 权重值是否发生变化: 未变化则继承旧的当前权重(避免编辑后被重置为0破坏均衡), 变化则整组归零重新起跑
+	weightChanged := oldAgent != nil && oldAgent.Weight != newData.Weight
+	if oldAgent != nil && !weightChanged {
+		newData.CurrentWeight = oldAgent.CurrentWeight
+	} else {
+		newData.CurrentWeight = 0
+	}
+
 	if err := s.SaveCacheList(ctx, []*model.ModelAgent{{
 		Id:                    newData.Id,
 		ProviderId:            newData.ProviderId,
@@ -978,6 +1024,7 @@ func (s *sModelAgent) UpdateCache(ctx context.Context, oldData *entity.ModelAgen
 		BaseUrl:               newData.BaseUrl,
 		Path:                  newData.Path,
 		Weight:                newData.Weight,
+		CurrentWeight:         newData.CurrentWeight,
 		BillingMethods:        newData.BillingMethods,
 		Models:                newData.Models,
 		IsEnableModelReplace:  newData.IsEnableModelReplace,
@@ -1013,8 +1060,15 @@ func (s *sModelAgent) UpdateCache(ctx context.Context, oldData *entity.ModelAgen
 			for _, agent := range modelAgents {
 
 				if agent.Id != newData.Id {
+
+					// 权重变化时, 同列表其他代理的当前权重一并归零, 整组重新起跑
+					if weightChanged {
+						agent.CurrentWeight = 0
+					}
+
 					newModelAgents = append(newModelAgents, agent)
 					modelAgentMap[agent.Id] = agent
+
 				} else {
 					newModelAgents = append(newModelAgents, newData)
 					modelAgentMap[newData.Id] = newData
@@ -1065,10 +1119,26 @@ func (s *sModelAgent) UpdateCache(ctx context.Context, oldData *entity.ModelAgen
 
 				if modelAgents := modelAgentsValue.([]*model.ModelAgent); len(modelAgents) > 0 {
 
+					// 该分组是否包含被编辑的模型代理
+					contains := false
+					for _, agent := range modelAgents {
+						if agent.Id == newData.Id {
+							contains = true
+							break
+						}
+					}
+
 					newModelAgents := make([]*model.ModelAgent, 0)
 					for _, agent := range modelAgents {
 						if agent.Id != newData.Id {
+
+							// 权重变化且该分组包含此代理时, 同组其他代理的当前权重一并归零
+							if weightChanged && contains {
+								agent.CurrentWeight = 0
+							}
+
 							newModelAgents = append(newModelAgents, agent)
+
 						} else {
 							newModelAgents = append(newModelAgents, newData)
 						}
