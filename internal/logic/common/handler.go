@@ -230,6 +230,7 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 				Prompt:         after.ImageGenerationRequest.Prompt,
 				Status:         "queued",
 				RequestData:    after.RequestData,
+				InputFilePaths: after.InputFilePaths,
 				Rid:            service.Session().GetRid(ctx),
 				Creator:        service.Session().GetSecretKey(ctx),
 			}

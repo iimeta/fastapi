@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"slices"
@@ -901,7 +902,8 @@ func (s *sImage) GenerationsAsync(ctx context.Context, data []byte, fallbackMode
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo *mcommon.Retry
+		retryInfo      *mcommon.Retry
+		inputFilePaths []string
 	)
 
 	imageId := "image_" + gtrace.GetTraceID(ctx)
@@ -909,9 +911,17 @@ func (s *sImage) GenerationsAsync(ctx context.Context, data []byte, fallbackMode
 	action := consts.ACTION_GENERATIONS
 	if params.Image != nil || len(params.Images) > 0 {
 		action = consts.ACTION_EDITS
-		if err = checkAsyncEditImage(smodel.ImageEditRequest{Image: params.Image, Images: params.Images}); err != nil {
+		var needStorage bool
+		if needStorage, err = checkAsyncEditImage(smodel.ImageEditRequest{Image: params.Image, Images: params.Images}); err != nil {
 			logger.Errorf(ctx, "sImage GenerationsAsync checkAsyncEditImage error: %v", err)
 			return response, err
+		}
+
+		if needStorage {
+			if inputFilePaths, err = convertToStorage(ctx, &params); err != nil {
+				logger.Errorf(ctx, "sImage GenerationsAsync convertToStorage error: %v", err)
+				return response, err
+			}
 		}
 	}
 
@@ -929,6 +939,7 @@ func (s *sImage) GenerationsAsync(ctx context.Context, data []byte, fallbackMode
 					Action:                 action,
 					IsAsync:                true,
 					ImageId:                imageId,
+					InputFilePaths:         inputFilePaths,
 					RequestData:            util.ConvToMap(gjson.MustEncode(params)),
 					Usage:                  &usage,
 					Error:                  err,
@@ -974,10 +985,19 @@ func (s *sImage) EditsAsync(ctx context.Context, params smodel.ImageEditRequest,
 		logger.Debugf(ctx, "sImage EditsAsync time: %d", gtime.TimestampMilli()-now)
 	}()
 
-	// 异步编辑仅支持图像URL或file_id, 不支持上传文件和base64
-	if err = checkAsyncEditImage(params); err != nil {
+	// 异步编辑仅支持图像URL或file_id, 开启转储时允许base64和文件上传
+	needStorage, err := checkAsyncEditImage(params)
+	if err != nil {
 		logger.Errorf(ctx, "sImage EditsAsync checkAsyncEditImage error: %v", err)
 		return response, err
+	}
+
+	var inputFilePaths []string
+	if needStorage {
+		if inputFilePaths, err = convertEditToStorage(ctx, &params); err != nil {
+			logger.Errorf(ctx, "sImage EditsAsync convertEditToStorage error: %v", err)
+			return response, err
+		}
 	}
 
 	var (
@@ -1016,6 +1036,7 @@ func (s *sImage) EditsAsync(ctx context.Context, params smodel.ImageEditRequest,
 					Action:                 consts.ACTION_EDITS,
 					IsAsync:                true,
 					ImageId:                imageId,
+					InputFilePaths:         inputFilePaths,
 					RequestData:            util.ConvToMap(gjson.MustEncode(params)),
 					Usage:                  &usage,
 					Error:                  err,
@@ -1054,10 +1075,14 @@ func (s *sImage) EditsAsync(ctx context.Context, params smodel.ImageEditRequest,
 }
 
 // 校验异步编辑的图像输入, 仅支持图像URL或file_id
-func checkAsyncEditImage(params smodel.ImageEditRequest) error {
+// 当开启绘图转储时, 允许base64数据并返回hasBase64=true, 否则base64数据报错
+// 始终拒绝上传的文件流
+func checkAsyncEditImage(params smodel.ImageEditRequest) (needStorage bool, err error) {
 
-	isInvalid := func(s string) bool {
-		return s == "" || gstr.HasPrefix(s, "data:")
+	storageOpen := config.Cfg.ImageStorage.Open
+
+	isBase64 := func(s string) bool {
+		return gstr.HasPrefix(s, "data:")
 	}
 
 	if len(params.Images) > 0 {
@@ -1065,53 +1090,105 @@ func checkAsyncEditImage(params smodel.ImageEditRequest) error {
 			if image.FileId != "" {
 				continue
 			}
-			if isInvalid(image.ImageUrl) {
-				return errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id.", "invalid_request_error", "image")
+			if image.ImageUrl == "" {
+				return false, errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id.", "invalid_request_error", "image")
+			}
+			if isBase64(image.ImageUrl) {
+				if !storageOpen {
+					return false, errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id.", "invalid_request_error", "image")
+				}
+				needStorage = true
 			}
 		}
 	} else {
 
 		switch v := params.Image.(type) {
 		case string:
-			if isInvalid(v) {
-				return errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id.", "invalid_request_error", "image")
+			if v == "" {
+				return false, errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id.", "invalid_request_error", "image")
+			}
+			if isBase64(v) {
+				if !storageOpen {
+					return false, errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id.", "invalid_request_error", "image")
+				}
+				needStorage = true
 			}
 		case []any:
 			for _, item := range v {
 				s, ok := item.(string)
-				if !ok || isInvalid(s) {
-					return errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id.", "invalid_request_error", "image")
+				if !ok {
+					return false, errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id, file uploads are not supported.", "invalid_request_error", "image")
+				}
+				if s == "" {
+					return false, errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id.", "invalid_request_error", "image")
+				}
+				if isBase64(s) {
+					if !storageOpen {
+						return false, errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id.", "invalid_request_error", "image")
+					}
+					needStorage = true
 				}
 			}
+		case []*multipart.FileHeader:
+			if !storageOpen {
+				return false, errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id, file uploads are not supported.", "invalid_request_error", "image")
+			}
+			needStorage = true
 		default:
-			return errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id.", "invalid_request_error", "image")
+			return false, errors.NewError(400, "invalid_request_error", "Async edits only support image url or file_id, file uploads are not supported.", "invalid_request_error", "image")
 		}
 	}
 
-	// 校验mask: 异步仅支持URL或file_id, 不支持上传文件和base64
+	// 校验mask
 	if params.Mask != nil {
 		switch v := params.Mask.(type) {
 		case string:
-			// 字符串视为URL
-			if isInvalid(v) {
-				return errors.NewError(400, "invalid_request_error", "Async edits only support mask url or file_id.", "invalid_request_error", "mask")
+			if v == "" {
+				return false, errors.NewError(400, "invalid_request_error", "Async edits only support mask url or file_id.", "invalid_request_error", "mask")
 			}
+			if isBase64(v) {
+				if !storageOpen {
+					return false, errors.NewError(400, "invalid_request_error", "Async edits only support mask url or file_id.", "invalid_request_error", "mask")
+				}
+				needStorage = true
+			}
+		case *multipart.FileHeader:
+			if !storageOpen {
+				return false, errors.NewError(400, "invalid_request_error", "Async edits only support mask url or file_id, file uploads are not supported.", "invalid_request_error", "mask")
+			}
+			needStorage = true
 		case smodel.ImageEditImage:
-			if v.FileId == "" && isInvalid(v.ImageUrl) {
-				return errors.NewError(400, "invalid_request_error", "Async edits only support mask url or file_id.", "invalid_request_error", "mask")
+			if v.FileId == "" {
+				if v.ImageUrl == "" {
+					return false, errors.NewError(400, "invalid_request_error", "Async edits only support mask url or file_id.", "invalid_request_error", "mask")
+				}
+				if isBase64(v.ImageUrl) {
+					if !storageOpen {
+						return false, errors.NewError(400, "invalid_request_error", "Async edits only support mask url or file_id.", "invalid_request_error", "mask")
+					}
+					needStorage = true
+				}
 			}
 		case map[string]any:
 			fileId, _ := v["file_id"].(string)
 			imageUrl, _ := v["image_url"].(string)
-			if fileId == "" && isInvalid(imageUrl) {
-				return errors.NewError(400, "invalid_request_error", "Async edits only support mask url or file_id.", "invalid_request_error", "mask")
+			if fileId == "" {
+				if imageUrl == "" {
+					return false, errors.NewError(400, "invalid_request_error", "Async edits only support mask url or file_id.", "invalid_request_error", "mask")
+				}
+				if isBase64(imageUrl) {
+					if !storageOpen {
+						return false, errors.NewError(400, "invalid_request_error", "Async edits only support mask url or file_id.", "invalid_request_error", "mask")
+					}
+					needStorage = true
+				}
 			}
 		default:
-			return errors.NewError(400, "invalid_request_error", "Async edits only support mask url or file_id.", "invalid_request_error", "mask")
+			return false, errors.NewError(400, "invalid_request_error", "Async edits only support mask url or file_id.", "invalid_request_error", "mask")
 		}
 	}
 
-	return nil
+	return needStorage, nil
 }
 
 // List
@@ -1479,7 +1556,16 @@ func (s *sImage) Delete(ctx context.Context, params *v1.DeleteReq) (response smo
 			}
 		}
 
-		if err := dao.TaskImage.UpdateById(ctx, t.Id, bson.M{"status": "deleted", "image_url": "", "image_urls": nil, "file_name": "", "file_names": nil, "file_path": "", "file_paths": nil}); err != nil {
+		// 清理输入文件(异步任务base64转储)
+		for _, fp := range t.InputFilePaths {
+			if fp != "" {
+				if err := gfile.RemoveFile(fp); err != nil {
+					logger.Error(ctx, err)
+				}
+			}
+		}
+
+		if err := dao.TaskImage.UpdateById(ctx, t.Id, bson.M{"status": "deleted"}); err != nil {
 			logger.Error(ctx, err)
 		}
 	}
@@ -1776,6 +1862,254 @@ func saveImageStorage(ctx context.Context, response *smodel.ImageResponse, outpu
 	}
 
 	return filePaths, expiresAt
+}
+
+// 将异步任务请求中的base64数据和上传文件转储为本地文件, 替换为可访问的URL, 返回转储后的文件路径列表
+func convertToStorage(ctx context.Context, params *smodel.ImageGenerationRequest) (inputFilePaths []string, err error) {
+
+	storeFuncs := makeStoreFuncs(ctx)
+
+	// 处理 Images 字段
+	if len(params.Images) > 0 {
+		for i, image := range params.Images {
+			if image.FileId != "" || !storeFuncs.isBase64(image.ImageUrl) {
+				continue
+			}
+			imageUrl, filePath, err := storeFuncs.storeBase64(image.ImageUrl)
+			if err != nil {
+				logger.Errorf(ctx, "sImage convertToStorage images[%d] error: %v", i, err)
+				return inputFilePaths, err
+			}
+			params.Images[i].ImageUrl = imageUrl
+			inputFilePaths = append(inputFilePaths, filePath)
+		}
+	}
+
+	// 处理 Image 字段
+	fps, err := convertImageField(ctx, &params.Image, storeFuncs)
+	if err != nil {
+		return inputFilePaths, err
+	}
+	inputFilePaths = append(inputFilePaths, fps...)
+
+	return inputFilePaths, nil
+}
+
+// 将异步编辑请求中的base64数据和上传文件转储为本地文件, 替换为可访问的URL, 返回转储后的文件路径列表
+func convertEditToStorage(ctx context.Context, params *smodel.ImageEditRequest) (inputFilePaths []string, err error) {
+
+	storeFuncs := makeStoreFuncs(ctx)
+
+	// 处理 Images 字段
+	if len(params.Images) > 0 {
+		for i, image := range params.Images {
+			if image.FileId != "" || !storeFuncs.isBase64(image.ImageUrl) {
+				continue
+			}
+			imageUrl, filePath, err := storeFuncs.storeBase64(image.ImageUrl)
+			if err != nil {
+				logger.Errorf(ctx, "sImage convertEditToStorage images[%d] error: %v", i, err)
+				return inputFilePaths, err
+			}
+			params.Images[i].ImageUrl = imageUrl
+			inputFilePaths = append(inputFilePaths, filePath)
+		}
+	}
+
+	// 处理 Image 字段
+	fps, err := convertImageField(ctx, &params.Image, storeFuncs)
+	if err != nil {
+		return inputFilePaths, err
+	}
+	inputFilePaths = append(inputFilePaths, fps...)
+
+	// 处理 Mask 字段
+	if params.Mask != nil {
+		switch v := params.Mask.(type) {
+		case string:
+			if storeFuncs.isBase64(v) {
+				imageUrl, filePath, err := storeFuncs.storeBase64(v)
+				if err != nil {
+					logger.Errorf(ctx, "sImage convertEditToStorage mask error: %v", err)
+					return inputFilePaths, err
+				}
+				params.Mask = imageUrl
+				inputFilePaths = append(inputFilePaths, filePath)
+			}
+		case *multipart.FileHeader:
+			imageUrl, filePath, err := storeFuncs.storeFile(v)
+			if err != nil {
+				logger.Errorf(ctx, "sImage convertEditToStorage mask file error: %v", err)
+				return inputFilePaths, err
+			}
+			params.Mask = imageUrl
+			inputFilePaths = append(inputFilePaths, filePath)
+		case smodel.ImageEditImage:
+			if v.FileId == "" && storeFuncs.isBase64(v.ImageUrl) {
+				imageUrl, filePath, err := storeFuncs.storeBase64(v.ImageUrl)
+				if err != nil {
+					logger.Errorf(ctx, "sImage convertEditToStorage mask error: %v", err)
+					return inputFilePaths, err
+				}
+				v.ImageUrl = imageUrl
+				params.Mask = v
+				inputFilePaths = append(inputFilePaths, filePath)
+			}
+		case map[string]any:
+			imageUrl, _ := v["image_url"].(string)
+			fileId, _ := v["file_id"].(string)
+			if fileId == "" && storeFuncs.isBase64(imageUrl) {
+				newUrl, filePath, err := storeFuncs.storeBase64(imageUrl)
+				if err != nil {
+					logger.Errorf(ctx, "sImage convertEditToStorage mask error: %v", err)
+					return inputFilePaths, err
+				}
+				v["image_url"] = newUrl
+				params.Mask = v
+				inputFilePaths = append(inputFilePaths, filePath)
+			}
+		}
+	}
+
+	return inputFilePaths, nil
+}
+
+type storeFuncsT struct {
+	storeBase64 func(string) (string, string, error)
+	storeFile   func(*multipart.FileHeader) (string, string, error)
+	isBase64    func(string) bool
+}
+
+// 创建转储辅助函数
+func makeStoreFuncs(ctx context.Context) storeFuncsT {
+
+	storageDir := config.Cfg.ImageStorage.StorageDir
+	if storageDir == "" {
+		storageDir = "./resource/public/image/"
+	} else if !gstr.HasSuffix(storageDir, "/") {
+		storageDir = storageDir + "/"
+	}
+
+	traceId := gtrace.GetTraceID(ctx)
+	idx := 0
+
+	buildUrl := func(fileName string) string {
+		var imageUrl string
+		if gstr.HasPrefix(storageDir, "./resource/public/") {
+			imageUrl = "/public/" + gstr.TrimLeftStr(storageDir, "./resource/public/") + fileName
+		} else if config.Cfg.ImageStorage.StorageBaseUrl == "" {
+			imageUrl = "/open/image/" + fileName
+		} else {
+			imageUrl = fileName
+		}
+
+		if config.Cfg.ImageStorage.StorageBaseUrl != "" {
+			if gstr.HasSuffix(config.Cfg.ImageStorage.StorageBaseUrl, "/") {
+				imageUrl = gstr.TrimLeftStr(imageUrl, "/")
+			} else if !gstr.HasPrefix(imageUrl, "/") {
+				imageUrl = "/" + imageUrl
+			}
+			imageUrl = config.Cfg.ImageStorage.StorageBaseUrl + imageUrl
+		}
+
+		return imageUrl
+	}
+
+	storeBytes := func(data []byte, ext string) (string, string, error) {
+		fileName := fmt.Sprintf("%s_input_%d%s", traceId, idx, ext)
+		idx++
+
+		filePath := storageDir + fileName
+		if err := gfile.PutBytes(filePath, data); err != nil {
+			return "", "", err
+		}
+
+		return buildUrl(fileName), filePath, nil
+	}
+
+	return storeFuncsT{
+		storeBase64: func(dataUri string) (string, string, error) {
+			decoded, err := decodeDataURI(dataUri)
+			if err != nil {
+				return "", "", err
+			}
+			return storeBytes(decoded, ".png")
+		},
+		storeFile: func(fh *multipart.FileHeader) (string, string, error) {
+			f, err := fh.Open()
+			if err != nil {
+				return "", "", err
+			}
+			defer f.Close()
+
+			data, err := io.ReadAll(f)
+			if err != nil {
+				return "", "", err
+			}
+
+			ext := gfile.Ext(fh.Filename)
+			if ext == "" {
+				ext = ".png"
+			}
+
+			return storeBytes(data, ext)
+		},
+		isBase64: func(s string) bool {
+			return gstr.HasPrefix(s, "data:")
+		},
+	}
+}
+
+// 处理 Image 字段(any类型)中的base64数据和上传文件转储
+func convertImageField(ctx context.Context, image *any, sf storeFuncsT) ([]string, error) {
+
+	if *image == nil {
+		return nil, nil
+	}
+
+	var inputFilePaths []string
+
+	switch v := (*image).(type) {
+	case string:
+		if sf.isBase64(v) {
+			imageUrl, filePath, err := sf.storeBase64(v)
+			if err != nil {
+				logger.Errorf(ctx, "sImage convertImageField image error: %v", err)
+				return nil, err
+			}
+			*image = imageUrl
+			inputFilePaths = append(inputFilePaths, filePath)
+		}
+	case []any:
+		for i, item := range v {
+			s, ok := item.(string)
+			if !ok || !sf.isBase64(s) {
+				continue
+			}
+			imageUrl, filePath, err := sf.storeBase64(s)
+			if err != nil {
+				logger.Errorf(ctx, "sImage convertImageField image[%d] error: %v", i, err)
+				return nil, err
+			}
+			v[i] = imageUrl
+			inputFilePaths = append(inputFilePaths, filePath)
+		}
+		*image = v
+	case []*multipart.FileHeader:
+		var urls []any
+		for i, fh := range v {
+			imageUrl, filePath, err := sf.storeFile(fh)
+			if err != nil {
+				logger.Errorf(ctx, "sImage convertImageField file[%d] error: %v", i, err)
+				return nil, err
+			}
+			urls = append(urls, imageUrl)
+			inputFilePaths = append(inputFilePaths, filePath)
+		}
+		*image = urls
+	}
+
+	return inputFilePaths, nil
 }
 
 // 通过URL下载图像字节数据, 下载失败或内容为空时按配置重试

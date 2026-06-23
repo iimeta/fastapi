@@ -25,6 +25,7 @@ type AfterHandler struct {
 	ImageId                string
 	ImageFilePaths         []string
 	ImageExpiresAt         int64
+	InputFilePaths         []string
 	VideoId                string
 	VideoMode              string
 	IsVolcEngine           bool
