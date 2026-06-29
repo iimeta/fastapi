@@ -25,8 +25,6 @@ type (
 		File(ctx context.Context, fileLog model.LogFile, retry ...int)
 		// 批处理日志
 		Batch(ctx context.Context, batchLog model.LogBatch, retry ...int)
-		// Midjourney日志
-		Midjourney(ctx context.Context, midjourneyLog model.LogMidjourney, retry ...int)
 		// 通用日志
 		General(ctx context.Context, generalLog model.LogGeneral, retry ...int)
 	}

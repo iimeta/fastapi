@@ -9,7 +9,6 @@ type SysConfig struct {
 	Core                      *common.Core                      `bson:"core,omitempty"`                          // 核心
 	Http                      *common.Http                      `bson:"http,omitempty"`                          // HTTP
 	Base                      *common.Base                      `bson:"base,omitempty"`                          // 基础
-	Midjourney                *common.Midjourney                `bson:"midjourney,omitempty"`                    // Midjourney
 	Log                       *common.Log                       `bson:"log,omitempty"`                           // 日志
 	AutoDisabledError         *common.AutoDisabledError         `bson:"auto_disabled_error,omitempty"`           // 自动禁用错误
 	AutoRetryError            *common.AutoRetryError            `bson:"auto_retry_error,omitempty"`              // 自动重试错误

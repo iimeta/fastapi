@@ -41,15 +41,6 @@ type Base struct {
 	AllowRequestAbort       bool          `bson:"allow_request_abort"         json:"allow_request_abort"`         // 允许请求中止
 }
 
-type Midjourney struct {
-	Open            bool   `bson:"open"              json:"open"` // 开关
-	CdnUrl          string `bson:"cdn_url"           json:"cdn_url"`
-	ApiBaseUrl      string `bson:"api_base_url"      json:"api_base_url"`
-	ApiSecret       string `bson:"api_secret"        json:"api_secret"`
-	ApiSecretHeader string `bson:"api_secret_header" json:"api_secret_header"`
-	CdnOriginalUrl  string `bson:"cdn_original_url"  json:"cdn_original_url"`
-}
-
 type Log struct {
 	Open           bool          `bson:"open"            json:"open"`            // 开关
 	TextRecords    []string      `bson:"text_records"    json:"text_records"`    // 文本日志记录内容

@@ -23,7 +23,6 @@ import (
 	_ "github.com/iimeta/fastapi/v2/internal/logic/image"
 	_ "github.com/iimeta/fastapi/v2/internal/logic/key"
 	_ "github.com/iimeta/fastapi/v2/internal/logic/log"
-	_ "github.com/iimeta/fastapi/v2/internal/logic/midjourney"
 	_ "github.com/iimeta/fastapi/v2/internal/logic/model"
 	_ "github.com/iimeta/fastapi/v2/internal/logic/model_agent"
 	_ "github.com/iimeta/fastapi/v2/internal/logic/moderation"

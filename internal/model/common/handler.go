@@ -38,11 +38,6 @@ type AfterHandler struct {
 	Prompt                 string
 	Seconds                int
 	Size                   string
-	MidjourneyPath         string
-	MidjourneyResponse     smodel.MidjourneyResponse
-	MidjourneyReqUrl       string
-	MidjourneyTaskId       string
-	MidjourneyPrompt       string
 	RequestData            map[string]any
 	ResponseData           map[string]any
 	Usage                  *smodel.Usage

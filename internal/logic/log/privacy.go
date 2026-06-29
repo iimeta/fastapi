@@ -162,28 +162,6 @@ func applyBatchPrivacy(batch *do.LogBatch, privacy *common.UserPrivacy) {
 	}
 }
 
-func applyMidjourneyPrivacy(midjourney *do.LogMidjourney, privacy *common.UserPrivacy) {
-
-	midjourney.Privacy = privacy
-
-	if !allowRequestField(privacy, "prompt") {
-		midjourney.Prompt = ""
-		midjourney.PromptEn = ""
-	}
-
-	if !allowResponseField(privacy, "upstream_response") {
-		midjourney.Response = nil
-	}
-
-	if !allowResourceField(privacy, "image_url") {
-		midjourney.ImageUrl = ""
-	}
-
-	if !allowNetworkField(privacy, "client_ip") {
-		midjourney.ClientIp = ""
-	}
-}
-
 func applyGeneralPrivacy(general *do.LogGeneral, privacy *common.UserPrivacy) {
 
 	general.Privacy = privacy

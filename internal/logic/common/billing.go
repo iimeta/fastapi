@@ -53,8 +53,6 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 			videoGeneration(ctx, mak, billingData, &spend)
 		case "search":
 			search(ctx, mak, billingData, &spend)
-		case "midjourney":
-			midjourney(ctx, mak, billingData, &spend)
 		case "once":
 			once(ctx, mak, billingData, &spend)
 		}
@@ -114,10 +112,6 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 
 	if spend.Search != nil {
 		spend.TotalSpendTokens += spend.Search.SpendTokens
-	}
-
-	if spend.Midjourney != nil {
-		spend.TotalSpendTokens += spend.Midjourney.SpendTokens
 	}
 
 	if spend.Once != nil && (spend.TotalSpendTokens == 0 || mak.AppKey == nil || slices.Contains(mak.AppKey.BillingMethods, 2)) {
@@ -854,27 +848,6 @@ func search(ctx context.Context, mak *MAK, billingData *common.BillingData, spen
 	}
 
 	spend.Search.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT * spend.Search.Pricing.OnceRatio))
-}
-
-// Midjourney
-func midjourney(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
-
-	if billingData.Path == "" {
-		return
-	}
-
-	for _, midjourney := range mak.ReqModel.Pricing.Midjourney {
-		if billingData.Path == midjourney.Path {
-
-			if spend.Midjourney == nil {
-				spend.Midjourney = new(common.MidjourneySpend)
-			}
-
-			spend.Midjourney.Pricing = midjourney
-			spend.Midjourney.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT * spend.Midjourney.Pricing.OnceRatio))
-			return
-		}
-	}
 }
 
 // 一次

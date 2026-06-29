@@ -89,18 +89,6 @@ type LogBatch struct {
 	Spend              mcommon.Spend
 }
 
-type LogMidjourney struct {
-	ReqModel           *Model
-	RealModel          *Model
-	ModelAgent         *ModelAgent
-	FallbackModelAgent *ModelAgent
-	FallbackModel      *Model
-	Key                *Key
-	Response           MidjourneyResponse
-	RetryInfo          *mcommon.Retry
-	Spend              mcommon.Spend
-}
-
 type LogGeneral struct {
 	ReqModel           *Model
 	RealModel          *Model

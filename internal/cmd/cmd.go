@@ -28,7 +28,6 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/controller/google"
 	"github.com/iimeta/fastapi/v2/internal/controller/health"
 	"github.com/iimeta/fastapi/v2/internal/controller/image"
-	"github.com/iimeta/fastapi/v2/internal/controller/midjourney"
 	"github.com/iimeta/fastapi/v2/internal/controller/moderation"
 	"github.com/iimeta/fastapi/v2/internal/controller/openai"
 	"github.com/iimeta/fastapi/v2/internal/controller/video"
@@ -155,14 +154,6 @@ var (
 				)
 			})
 
-			s.Group("/mj**", func(v1 *ghttp.RouterGroup) {
-				v1.Middleware(middlewareHandlerResponse)
-				v1.Middleware(middleware)
-				v1.Bind(
-					midjourney.NewV1(),
-				)
-			})
-
 			s.Group("/api/v3", func(v1 *ghttp.RouterGroup) {
 				v1.Middleware(middlewareHandlerResponse)
 				v1.Middleware(middleware)
@@ -258,10 +249,6 @@ func middleware(r *ghttp.Request) {
 
 	if secretKey == "" {
 		secretKey = r.Header.Get("x-goog-api-key")
-	}
-
-	if secretKey == "" {
-		secretKey = r.GetHeader(config.Cfg.Midjourney.ApiSecretHeader)
 	}
 
 	if secretKey == "" {
