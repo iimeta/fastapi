@@ -290,7 +290,7 @@ func middleware(r *ghttp.Request) {
 		if gstr.HasPrefix(r.GetHeader("Content-Type"), "application/json") {
 			logger.Debugf(r.GetCtx(), "middleware url: %s, request body: %s", r.GetUrl(), r.GetBodyString())
 		} else {
-			logger.Debugf(r.GetCtx(), "middleware url: %s, Content-Type: %s", r.GetUrl(), r.GetHeader("Content-Type"))
+			logger.Debugf(r.GetCtx(), "middleware url: %s, Content-Type: %s, form data: %+v", r.GetUrl(), r.GetHeader("Content-Type"), parseMultipartFormData(r))
 		}
 	}
 
@@ -394,4 +394,35 @@ func middlewareHandlerResponse(r *ghttp.Request) {
 			r.Response.WriteJson(content)
 		}
 	}
+}
+
+func parseMultipartFormData(r *ghttp.Request) map[string]interface{} {
+
+	formData := make(map[string]interface{})
+
+	for k, v := range r.GetFormMap() {
+		formData[k] = v
+	}
+
+	if form := r.GetMultipartForm(); form != nil {
+		for field, files := range form.File {
+
+			fileNames := make([]string, 0, len(files))
+			for _, file := range files {
+				if file == nil {
+					fileNames = append(fileNames, "")
+				} else {
+					fileNames = append(fileNames, file.Filename)
+				}
+			}
+
+			if existing, ok := formData[field].([]string); ok {
+				formData[field] = append(existing, fileNames...)
+			} else {
+				formData[field] = fileNames
+			}
+		}
+	}
+
+	return formData
 }
