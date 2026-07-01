@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"slices"
 	"strings"
 
 	"github.com/gogf/gf/v2/frame/g"
@@ -13,8 +14,6 @@ import (
 	"github.com/gogf/gf/v2/text/gregex"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
-	sconsts "github.com/iimeta/fastapi-sdk/v2/consts"
-	smodel "github.com/iimeta/fastapi-sdk/v2/model"
 	"github.com/iimeta/fastapi/v2/internal/config"
 	"github.com/iimeta/fastapi/v2/internal/errors"
 	"github.com/iimeta/fastapi/v2/internal/model"
@@ -152,24 +151,26 @@ func IsMaxRetry(isEnableModelAgent bool, agentTotal, keyTotal, retry int) bool {
 	return false
 }
 
-func HandleMessages(messages []smodel.ChatCompletionMessage) []smodel.ChatCompletionMessage {
-
-	var (
-		newMessages = make([]smodel.ChatCompletionMessage, 0)
-	)
-
-	for _, message := range messages {
-		if message.Content != "" || message.Role != sconsts.ROLE_USER {
-			newMessages = append(newMessages, message)
-		}
-	}
-
-	return newMessages
-}
-
 func CheckIp(ctx context.Context, ipWhitelist, ipBlacklist []string) error {
 
 	clientIp := g.RequestFromCtx(ctx).GetClientIp()
+	remoteIp := g.RequestFromCtx(ctx).GetRemoteIp()
+
+	err := checkIp(clientIp, ipWhitelist, ipBlacklist)
+	if err == nil {
+		return nil
+	}
+
+	if remoteIp != "" && remoteIp != clientIp {
+		if checkIp(remoteIp, ipWhitelist, ipBlacklist) == nil {
+			return nil
+		}
+	}
+
+	return err
+}
+
+func checkIp(clientIp string, ipWhitelist, ipBlacklist []string) error {
 
 	if clientIp == "127.0.0.1" || clientIp == "::1" {
 		return nil
@@ -177,7 +178,6 @@ func CheckIp(ctx context.Context, ipWhitelist, ipBlacklist []string) error {
 
 	if addrs, err := net.InterfaceAddrs(); err == nil {
 		for _, addr := range addrs {
-			// 检查是否为IP地址, 而不是其他类型的地址(例如MAC地址)
 			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 				if ipnet.IP.To4() != nil && clientIp == ipnet.IP.String() {
 					return nil
@@ -227,6 +227,10 @@ func CheckIp(ctx context.Context, ipWhitelist, ipBlacklist []string) error {
 
 	if (len(ipWhitelist) > 0 && ipWhitelist[0] != "") || len(ipWhitelist) > 1 {
 
+		if slices.Contains(ipWhitelist, "0.0.0.0") {
+			return nil
+		}
+
 		for _, whitelist := range ipWhitelist {
 
 			if whitelist == "" {
@@ -263,7 +267,7 @@ func CheckIp(ctx context.Context, ipWhitelist, ipBlacklist []string) error {
 			}
 		}
 
-		return errors.NewError(403, "fastapi_error", fmt.Sprintf("IP: %s Forbidden.", g.RequestFromCtx(ctx).GetClientIp()), "fastapi_error", nil)
+		return errors.NewError(403, "fastapi_error", fmt.Sprintf("IP: %s Forbidden.", clientIp), "fastapi_error", nil)
 	}
 
 	return nil
