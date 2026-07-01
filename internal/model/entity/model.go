@@ -20,7 +20,6 @@ type Model struct {
 	ResHeaderPassthroughMode int                    `bson:"res_header_passthrough_mode,omitempty"` // 响应头透传模式[1:全量, 2:指定]
 	ResHeaderPassthroughList []string               `bson:"res_header_passthrough_list,omitempty"` // 响应头透传白名单
 	IsPublic                 bool                   `bson:"is_public,omitempty"`                   // 是否公开
-	IsEnableModelAgent       bool                   `bson:"is_enable_model_agent,omitempty"`       // 是否启用模型代理
 	LbStrategy               int                    `bson:"lb_strategy,omitempty"`                 // 代理负载均衡策略[1:轮询, 2:权重]
 	IsEnableForward          bool                   `bson:"is_enable_forward,omitempty"`           // 是否启用模型转发
 	ForwardConfig            *common.ForwardConfig  `bson:"forward_config,omitempty"`              // 模型转发配置

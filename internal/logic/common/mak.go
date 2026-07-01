@@ -194,7 +194,7 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 
 	mak.Provider = mak.RealModel.ProviderId
 
-	if mak.Group != nil && mak.Group.IsEnableModelAgent && mak.RealModel.IsEnableModelAgent {
+	if mak.Group != nil && mak.Group.IsEnableModelAgent {
 
 		if service.Session().GetModelAgentBillingMethod(ctx) == 0 {
 			if slices.Contains(mak.AppKey.BillingMethods, 2) && slices.Contains(mak.RealModel.Pricing.BillingMethods, 2) {
@@ -217,12 +217,11 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 			}
 		}
 
-	} else if mak.FallbackModelAgent != nil || mak.RealModel.IsEnableModelAgent {
+	} else {
 
 		if mak.FallbackModelAgent != nil {
 			mak.ModelAgent = mak.FallbackModelAgent
 			mak.AgentTotal = 1
-			mak.RealModel.IsEnableModelAgent = true
 		} else {
 
 			if service.Session().GetModelAgentBillingMethod(ctx) == 0 {
@@ -333,18 +332,16 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 
 		if isDisabled {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if mak.RealModel.IsEnableModelAgent {
-					service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
-				} else {
-					service.Key().Disabled(ctx, mak.Key, err.Error())
-				}
+
+				service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
+
 			}, nil); err != nil {
 				logger.Error(ctx, err)
 			}
 		}
 
 		if isRetry {
-			if IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
+			if IsMaxRetry(mak.AgentTotal, len(retry)) {
 				return err
 			}
 			return mak.InitMAK(ctx, append(retry, 1)...)

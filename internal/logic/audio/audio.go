@@ -103,11 +103,9 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 
 		if isDisabled {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if mak.RealModel.IsEnableModelAgent {
-					service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
-				} else {
-					service.Key().Disabled(ctx, mak.Key, err.Error())
-				}
+
+				service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
+
 			}, nil); err != nil {
 				logger.Error(ctx, err)
 			}
@@ -115,7 +113,7 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 
 		if isRetry {
 
-			if common.IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
+			if common.IsMaxRetry(mak.AgentTotal, len(retry)) {
 
 				if service.Session().GetModelAgentBillingMethod(ctx) == 2 && slices.Contains(mak.RealModel.Pricing.BillingMethods, 1) {
 					service.Session().SaveModelAgentBillingMethod(ctx, 1)
@@ -243,11 +241,9 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 
 		if isDisabled {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if mak.RealModel.IsEnableModelAgent {
-					service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
-				} else {
-					service.Key().Disabled(ctx, mak.Key, err.Error())
-				}
+
+				service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
+
 			}, nil); err != nil {
 				logger.Error(ctx, err)
 			}
@@ -255,7 +251,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 
 		if isRetry {
 
-			if common.IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
+			if common.IsMaxRetry(mak.AgentTotal, len(retry)) {
 
 				if service.Session().GetModelAgentBillingMethod(ctx) == 2 && slices.Contains(mak.RealModel.Pricing.BillingMethods, 1) {
 					service.Session().SaveModelAgentBillingMethod(ctx, 1)

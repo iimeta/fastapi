@@ -75,7 +75,6 @@ func (s *sModel) GetModel(ctx context.Context, m string) (*model.Model, error) {
 		ResHeaderPassthroughMode: result.ResHeaderPassthroughMode,
 		ResHeaderPassthroughList: result.ResHeaderPassthroughList,
 		IsPublic:                 result.IsPublic,
-		IsEnableModelAgent:       result.IsEnableModelAgent,
 		LbStrategy:               result.LbStrategy,
 		IsEnableForward:          result.IsEnableForward,
 		ForwardConfig:            result.ForwardConfig,
@@ -128,7 +127,6 @@ func (s *sModel) GetModelById(ctx context.Context, id string) (*model.Model, err
 		ResHeaderPassthroughMode: result.ResHeaderPassthroughMode,
 		ResHeaderPassthroughList: result.ResHeaderPassthroughList,
 		IsPublic:                 result.IsPublic,
-		IsEnableModelAgent:       result.IsEnableModelAgent,
 		LbStrategy:               result.LbStrategy,
 		IsEnableForward:          result.IsEnableForward,
 		ForwardConfig:            result.ForwardConfig,
@@ -319,7 +317,6 @@ func (s *sModel) List(ctx context.Context, ids []string) ([]*model.Model, error)
 			ResHeaderPassthroughMode: result.ResHeaderPassthroughMode,
 			ResHeaderPassthroughList: result.ResHeaderPassthroughList,
 			IsPublic:                 result.IsPublic,
-			IsEnableModelAgent:       result.IsEnableModelAgent,
 			LbStrategy:               result.LbStrategy,
 			IsEnableForward:          result.IsEnableForward,
 			ForwardConfig:            result.ForwardConfig,
@@ -385,7 +382,6 @@ func (s *sModel) ListAll(ctx context.Context) ([]*model.Model, error) {
 			ResHeaderPassthroughMode: result.ResHeaderPassthroughMode,
 			ResHeaderPassthroughList: result.ResHeaderPassthroughList,
 			IsPublic:                 result.IsPublic,
-			IsEnableModelAgent:       result.IsEnableModelAgent,
 			LbStrategy:               result.LbStrategy,
 			IsEnableForward:          result.IsEnableForward,
 			ForwardConfig:            result.ForwardConfig,
@@ -406,48 +402,6 @@ func (s *sModel) ListAll(ctx context.Context) ([]*model.Model, error) {
 	}
 
 	return items, nil
-}
-
-// 获取模型与密钥列表
-func (s *sModel) GetModelsAndKeys(ctx context.Context) ([]*model.Model, map[string][]*model.Key, error) {
-
-	now := gtime.TimestampMilli()
-	defer func() {
-		logger.Debugf(ctx, "sModel GetModelsAndKeys time: %d", gtime.TimestampMilli()-now)
-	}()
-
-	models, err := s.ListAll(ctx)
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, nil, err
-	}
-
-	results, err := dao.Key.Find(ctx, bson.M{"is_agents_only": false}, &dao.FindOptions{SortFields: []string{"status", "-weight", "-updated_at"}})
-	if err != nil {
-		logger.Error(ctx, err)
-		return nil, nil, err
-	}
-
-	modelKeyMap := make(map[string][]*model.Key)
-	for _, result := range results {
-
-		key := &model.Key{
-			Id:          result.Id,
-			ProviderId:  result.ProviderId,
-			Key:         result.Key,
-			Weight:      result.Weight,
-			Models:      result.Models,
-			ModelAgents: result.ModelAgents,
-			UsedQuota:   result.UsedQuota,
-			Status:      result.Status,
-		}
-
-		for _, modelId := range result.Models {
-			modelKeyMap[modelId] = append(modelKeyMap[modelId], key)
-		}
-	}
-
-	return models, modelKeyMap, nil
 }
 
 // 根据模型ID获取模型信息并保存到缓存
@@ -596,7 +550,6 @@ func (s *sModel) UpdateCacheModel(ctx context.Context, oldData *entity.Model, ne
 		ResHeaderPassthroughMode: newData.ResHeaderPassthroughMode,
 		ResHeaderPassthroughList: newData.ResHeaderPassthroughList,
 		IsPublic:                 newData.IsPublic,
-		IsEnableModelAgent:       newData.IsEnableModelAgent,
 		LbStrategy:               newData.LbStrategy,
 		IsEnableForward:          newData.IsEnableForward,
 		ForwardConfig:            newData.ForwardConfig,

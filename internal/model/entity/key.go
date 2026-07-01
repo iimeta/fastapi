@@ -5,9 +5,7 @@ type Key struct {
 	ProviderId         string   `bson:"provider_id,omitempty"`          // 提供商ID
 	Key                string   `bson:"key,omitempty"`                  // 密钥
 	Weight             int      `bson:"weight,omitempty"`               // 权重
-	Models             []string `bson:"models,omitempty"`               // 模型
 	ModelAgents        []string `bson:"model_agents,omitempty"`         // 模型代理
-	IsAgentsOnly       bool     `bson:"is_agents_only,omitempty"`       // 是否代理专用
 	IsNeverDisable     bool     `bson:"is_never_disable,omitempty"`     // 是否永不禁用
 	UsedQuota          int      `bson:"used_quota,omitempty"`           // 已用额度
 	Remark             string   `bson:"remark,omitempty"`               // 备注

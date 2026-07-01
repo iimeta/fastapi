@@ -214,14 +214,12 @@ func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 		text.PresetConfig = textLog.RealModel.PresetConfig
 		text.IsEnableForward = textLog.RealModel.IsEnableForward
 		text.ForwardConfig = textLog.RealModel.ForwardConfig
-		text.IsEnableModelAgent = textLog.RealModel.IsEnableModelAgent
 		text.RealModelId = textLog.RealModel.Id
 		text.RealModelName = textLog.RealModel.Name
 		text.RealModel = textLog.RealModel.Model
 	}
 
 	if textLog.ModelAgent != nil {
-		text.IsEnableModelAgent = true
 		text.ModelAgentId = textLog.ModelAgent.Id
 		text.ModelAgent = &do.ModelAgent{
 			ProviderId: textLog.ModelAgent.ProviderId,
@@ -500,13 +498,12 @@ func (s *sLog) Image(ctx context.Context, imageLog model.LogImage, retry ...int)
 		image.PresetConfig = imageLog.RealModel.PresetConfig
 		image.IsEnableForward = imageLog.RealModel.IsEnableForward
 		image.ForwardConfig = imageLog.RealModel.ForwardConfig
-		image.IsEnableModelAgent = imageLog.RealModel.IsEnableModelAgent
 		image.RealModelId = imageLog.RealModel.Id
 		image.RealModelName = imageLog.RealModel.Name
 		image.RealModel = imageLog.RealModel.Model
 	}
 
-	if image.IsEnableModelAgent && imageLog.ModelAgent != nil {
+	if imageLog.ModelAgent != nil {
 		image.ModelAgentId = imageLog.ModelAgent.Id
 		image.ModelAgent = &do.ModelAgent{
 			ProviderId: imageLog.ModelAgent.ProviderId,
@@ -645,13 +642,12 @@ func (s *sLog) Audio(ctx context.Context, audioLog model.LogAudio, retry ...int)
 		audio.PresetConfig = audioLog.RealModel.PresetConfig
 		audio.IsEnableForward = audioLog.RealModel.IsEnableForward
 		audio.ForwardConfig = audioLog.RealModel.ForwardConfig
-		audio.IsEnableModelAgent = audioLog.RealModel.IsEnableModelAgent
 		audio.RealModelId = audioLog.RealModel.Id
 		audio.RealModelName = audioLog.RealModel.Name
 		audio.RealModel = audioLog.RealModel.Model
 	}
 
-	if audio.IsEnableModelAgent && audioLog.ModelAgent != nil {
+	if audioLog.ModelAgent != nil {
 		audio.ModelAgentId = audioLog.ModelAgent.Id
 		audio.ModelAgent = &do.ModelAgent{
 			ProviderId: audioLog.ModelAgent.ProviderId,
@@ -793,13 +789,12 @@ func (s *sLog) Video(ctx context.Context, videoLog model.LogVideo, retry ...int)
 		video.PresetConfig = videoLog.RealModel.PresetConfig
 		video.IsEnableForward = videoLog.RealModel.IsEnableForward
 		video.ForwardConfig = videoLog.RealModel.ForwardConfig
-		video.IsEnableModelAgent = videoLog.RealModel.IsEnableModelAgent
 		video.RealModelId = videoLog.RealModel.Id
 		video.RealModelName = videoLog.RealModel.Name
 		video.RealModel = videoLog.RealModel.Model
 	}
 
-	if video.IsEnableModelAgent && videoLog.ModelAgent != nil {
+	if videoLog.ModelAgent != nil {
 		video.ModelAgentId = videoLog.ModelAgent.Id
 		video.ModelAgent = &do.ModelAgent{
 			ProviderId: videoLog.ModelAgent.ProviderId,
@@ -941,13 +936,12 @@ func (s *sLog) File(ctx context.Context, fileLog model.LogFile, retry ...int) {
 		file.PresetConfig = fileLog.RealModel.PresetConfig
 		file.IsEnableForward = fileLog.RealModel.IsEnableForward
 		file.ForwardConfig = fileLog.RealModel.ForwardConfig
-		file.IsEnableModelAgent = fileLog.RealModel.IsEnableModelAgent
 		file.RealModelId = fileLog.RealModel.Id
 		file.RealModelName = fileLog.RealModel.Name
 		file.RealModel = fileLog.RealModel.Model
 	}
 
-	if file.IsEnableModelAgent && fileLog.ModelAgent != nil {
+	if fileLog.ModelAgent != nil {
 		file.ModelAgentId = fileLog.ModelAgent.Id
 		file.ModelAgent = &do.ModelAgent{
 			ProviderId: fileLog.ModelAgent.ProviderId,
@@ -1089,13 +1083,12 @@ func (s *sLog) Batch(ctx context.Context, batchLog model.LogBatch, retry ...int)
 		batch.PresetConfig = batchLog.RealModel.PresetConfig
 		batch.IsEnableForward = batchLog.RealModel.IsEnableForward
 		batch.ForwardConfig = batchLog.RealModel.ForwardConfig
-		batch.IsEnableModelAgent = batchLog.RealModel.IsEnableModelAgent
 		batch.RealModelId = batchLog.RealModel.Id
 		batch.RealModelName = batchLog.RealModel.Name
 		batch.RealModel = batchLog.RealModel.Model
 	}
 
-	if batch.IsEnableModelAgent && batchLog.ModelAgent != nil {
+	if batchLog.ModelAgent != nil {
 		batch.ModelAgentId = batchLog.ModelAgent.Id
 		batch.ModelAgent = &do.ModelAgent{
 			ProviderId: batchLog.ModelAgent.ProviderId,
@@ -1239,13 +1232,12 @@ func (s *sLog) General(ctx context.Context, generalLog model.LogGeneral, retry .
 		general.PresetConfig = generalLog.RealModel.PresetConfig
 		general.IsEnableForward = generalLog.RealModel.IsEnableForward
 		general.ForwardConfig = generalLog.RealModel.ForwardConfig
-		general.IsEnableModelAgent = generalLog.RealModel.IsEnableModelAgent
 		general.RealModelId = generalLog.RealModel.Id
 		general.RealModelName = generalLog.RealModel.Name
 		general.RealModel = generalLog.RealModel.Model
 	}
 
-	if general.IsEnableModelAgent && generalLog.ModelAgent != nil {
+	if generalLog.ModelAgent != nil {
 		general.ModelAgentId = generalLog.ModelAgent.Id
 		general.ModelAgent = &do.ModelAgent{
 			ProviderId: generalLog.ModelAgent.ProviderId,

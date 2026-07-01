@@ -278,24 +278,16 @@ func (s *sCore) Refresh(ctx context.Context) error {
 		}
 	}
 
-	models, modelKeyMap, err := service.Model().GetModelsAndKeys(ctx)
+	models, err := service.Model().ListAll(ctx)
 	if err != nil {
 		logger.Error(ctx, err)
 		return err
 	}
 
 	if len(models) > 0 {
-
 		if err = service.Model().SaveCacheList(ctx, models); err != nil {
 			logger.Error(ctx, err)
 			return err
-		}
-
-		for _, model := range models {
-			if err = service.Key().SaveCache(ctx, model.Id, modelKeyMap[model.Id]); err != nil {
-				logger.Error(ctx, err)
-				return err
-			}
 		}
 	}
 

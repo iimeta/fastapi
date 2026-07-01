@@ -61,7 +61,9 @@ func getGcpToken(ctx context.Context, key *model.Key, proxyUrl string) (string, 
 			for _, autoDisabledError := range config.Cfg.AutoDisabledError.Errors {
 				if gstr.Contains(err.Error(), autoDisabledError) {
 					if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-						service.Key().Disabled(ctx, key, err.Error())
+
+						service.ModelAgent().DisabledKey(ctx, key, err.Error())
+
 					}); err != nil {
 						logger.Error(ctx, err)
 					}

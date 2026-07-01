@@ -132,11 +132,9 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 
 		if isDisabled {
 			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-				if mak.RealModel.IsEnableModelAgent {
-					service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
-				} else {
-					service.Key().Disabled(ctx, mak.Key, err.Error())
-				}
+
+				service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
+
 			}, nil); err != nil {
 				logger.Error(ctx, err)
 			}
@@ -144,7 +142,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 
 		if isRetry {
 
-			if common.IsMaxRetry(mak.RealModel.IsEnableModelAgent, mak.AgentTotal, mak.KeyTotal, len(retry)) {
+			if common.IsMaxRetry(mak.AgentTotal, len(retry)) {
 
 				if service.Session().GetModelAgentBillingMethod(ctx) == 2 && slices.Contains(mak.RealModel.Pricing.BillingMethods, 1) {
 					service.Session().SaveModelAgentBillingMethod(ctx, 1)

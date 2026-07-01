@@ -69,14 +69,13 @@ func (s *sCommon) RecordError(ctx context.Context, model *model.Model, key *mode
 	}
 
 	if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-		if model.IsEnableModelAgent {
-			service.ModelAgent().RecordErrorKey(ctx, modelAgent, key)
-			if !sessionKeepHit {
-				service.ModelAgent().RecordError(ctx, model, modelAgent)
-			}
-		} else {
-			service.Key().RecordError(ctx, model, key)
+
+		service.ModelAgent().RecordErrorKey(ctx, modelAgent, key)
+
+		if !sessionKeepHit {
+			service.ModelAgent().RecordError(ctx, model, modelAgent)
 		}
+
 	}, nil); err != nil {
 		logger.Error(ctx, err)
 	}
@@ -132,18 +131,12 @@ func IsNeedRetry(err error) (isRetry bool, isDisabled bool) {
 	return config.Cfg.AutoRetryError.Open, false
 }
 
-func IsMaxRetry(isEnableModelAgent bool, agentTotal, keyTotal, retry int) bool {
+func IsMaxRetry(agentTotal, retry int) bool {
 
 	if config.Cfg.Base.ErrRetry > 0 && retry == config.Cfg.Base.ErrRetry {
 		return true
-	} else if config.Cfg.Base.ErrRetry < 0 {
-		if isEnableModelAgent {
-			if retry == agentTotal {
-				return true
-			}
-		} else if retry == keyTotal {
-			return true
-		}
+	} else if config.Cfg.Base.ErrRetry < 0 && retry == agentTotal {
+		return true
 	} else if config.Cfg.Base.ErrRetry == 0 {
 		return true
 	}

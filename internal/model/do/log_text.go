@@ -20,7 +20,6 @@ type LogText struct {
 	Key                  string                 `bson:"key,omitempty"`                     // 密钥
 	IsEnablePresetConfig bool                   `bson:"is_enable_preset_config,omitempty"` // 是否启用预设配置
 	PresetConfig         common.PresetConfig    `bson:"preset_config,omitempty"`           // 预设配置
-	IsEnableModelAgent   bool                   `bson:"is_enable_model_agent,omitempty"`   // 是否启用模型代理
 	ModelAgentId         string                 `bson:"model_agent_id,omitempty"`          // 模型代理ID
 	ModelAgent           *ModelAgent            `bson:"model_agent,omitempty"`             // 模型代理信息
 	IsEnableForward      bool                   `bson:"is_enable_forward,omitempty"`       // 是否启用模型转发
