@@ -11,6 +11,7 @@ import (
 	sconsts "github.com/iimeta/fastapi-sdk/v2/consts"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
 	v1 "github.com/iimeta/fastapi/v2/api/audio/v1"
+	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/logic/common"
 	"github.com/iimeta/fastapi/v2/internal/model"
 	mcommon "github.com/iimeta/fastapi/v2/internal/model/common"
@@ -62,6 +63,7 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 
 				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					AudioInput:   params.Input,
+					Action:       consts.ACTION_SPEECH,
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
@@ -191,6 +193,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 
 				afterHandler := &mcommon.AfterHandler{
 					AudioText:    response.Text,
+					Action:       consts.ACTION_TRANSCRIPTIONS,
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,

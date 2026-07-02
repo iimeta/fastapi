@@ -10,6 +10,7 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
+	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/logic/common"
 	"github.com/iimeta/fastapi/v2/internal/model"
 	mcommon "github.com/iimeta/fastapi/v2/internal/model/common"
@@ -60,6 +61,7 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 
 				afterHandler := &mcommon.AfterHandler{
 					ModerationReq: params,
+					Action:        consts.ACTION_MODERATIONS,
 					Usage:         response.Usage,
 					Error:         err,
 					RetryInfo:     retryInfo,

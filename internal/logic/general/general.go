@@ -72,6 +72,7 @@ func (s *sGeneral) General(ctx context.Context, request *ghttp.Request, fallback
 					ResponseData:      util.ConvToMap(response.ResponseBytes),
 					ChatCompletionReq: params,
 					ChatCompletionRes: response,
+					Action:            generalAction(request.URL.Path),
 					Usage:             response.Usage,
 					Error:             err,
 					RetryInfo:         retryInfo,
@@ -217,6 +218,7 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 					ChatCompletionReq: params,
 					Completion:        completion,
 					ServiceTier:       serviceTier,
+					Action:            generalAction(request.URL.Path),
 					Usage:             usage,
 					Error:             err,
 					RetryInfo:         retryInfo,
@@ -445,4 +447,12 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 			}
 		}
 	}
+}
+
+// 自动取请求路径最后一段作为接口, 如 /v1/xxx/completions => completions
+func generalAction(path string) string {
+	if i := gstr.PosR(path, "/"); i != -1 {
+		return path[i+1:]
+	}
+	return path
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/gogf/gf/v2/util/gconv"
 	sconsts "github.com/iimeta/fastapi-sdk/v2/consts"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
+	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/logic/common"
 	"github.com/iimeta/fastapi/v2/internal/model"
 	mcommon "github.com/iimeta/fastapi/v2/internal/model/common"
@@ -67,6 +68,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 
 				afterHandler := &mcommon.AfterHandler{
 					EmbeddingReq: params,
+					Action:       consts.ACTION_EMBEDDINGS,
 					Usage:        response.Usage,
 					Error:        err,
 					RetryInfo:    retryInfo,

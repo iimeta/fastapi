@@ -99,6 +99,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 
 				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ChatCompletionReq: smodel.ChatCompletionRequest{Stream: true},
+					Action:            consts.ACTION_REALTIME,
 					Error:             err,
 					RetryInfo:         retryInfo,
 					ConnTime:          connTime,
@@ -228,6 +229,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 
 					common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 						ChatCompletionReq: smodel.ChatCompletionRequest{Stream: true},
+						Action:            consts.ACTION_REALTIME,
 						Error:             response.Error,
 						RetryInfo:         retryInfo,
 						ConnTime:          connTime,
@@ -319,6 +321,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 					common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 						ChatCompletionReq: smodel.ChatCompletionRequest{Stream: true, Messages: []smodel.ChatCompletionMessage{{Content: message}}},
 						Completion:        completion,
+						Action:            consts.ACTION_REALTIME,
 						Usage:             usage,
 						Error:             err,
 						RetryInfo:         retryInfo,

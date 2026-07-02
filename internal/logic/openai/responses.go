@@ -15,6 +15,7 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
+	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/errors"
 	"github.com/iimeta/fastapi/v2/internal/logic/common"
 	"github.com/iimeta/fastapi/v2/internal/model"
@@ -75,6 +76,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					ChatCompletionRes: chatCompletionResponse,
+					Action:            consts.ACTION_RESPONSES,
 					Usage:             chatCompletionResponse.Usage,
 					Error:             err,
 					RetryInfo:         retryInfo,
@@ -236,6 +238,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 					ChatCompletionReq: params,
 					Completion:        completion,
 					ServiceTier:       serviceTier,
+					Action:            consts.ACTION_RESPONSES,
 					Usage:             usage,
 					Error:             err,
 					RetryInfo:         retryInfo,
@@ -620,6 +623,7 @@ func (s *sOpenAI) ResponsesCompact(ctx context.Context, request *ghttp.Request, 
 				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					ChatCompletionRes: chatCompletionResponse,
+					Action:            consts.ACTION_COMPACT,
 					Usage:             chatCompletionResponse.Usage,
 					Error:             err,
 					RetryInfo:         retryInfo,

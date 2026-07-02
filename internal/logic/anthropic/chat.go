@@ -16,6 +16,7 @@ import (
 	"github.com/gogf/gf/v2/util/gconv"
 	sconsts "github.com/iimeta/fastapi-sdk/v2/consts"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
+	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/errors"
 	"github.com/iimeta/fastapi/v2/internal/logic/common"
 	"github.com/iimeta/fastapi/v2/internal/model"
@@ -72,6 +73,7 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					ChatCompletionRes: response,
+					Action:            consts.ACTION_MESSAGES,
 					Usage:             response.Usage,
 					Error:             err,
 					RetryInfo:         retryInfo,
@@ -299,6 +301,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					Completion:        completion,
+					Action:            consts.ACTION_MESSAGES,
 					Usage:             usage,
 					Error:             err,
 					RetryInfo:         retryInfo,

@@ -12,6 +12,7 @@ type LogText struct {
 	FallbackModelAgent *ModelAgent
 	FallbackModel      *Model
 	Key                *Key
+	Action             string
 	CompletionsReq     *smodel.ChatCompletionRequest
 	EmbeddingReq       *smodel.EmbeddingRequest
 	ModerationReq      *smodel.ModerationRequest
@@ -44,6 +45,7 @@ type LogAudio struct {
 	FallbackModelAgent *ModelAgent
 	FallbackModel      *Model
 	Key                *Key
+	Action             string
 	AudioReq           *AudioReq
 	AudioRes           *AudioRes
 	RetryInfo          *mcommon.Retry
@@ -96,6 +98,7 @@ type LogGeneral struct {
 	FallbackModelAgent *ModelAgent
 	FallbackModel      *Model
 	Key                *Key
+	Action             string
 	GeneralReq         *GeneralReq
 	GeneralRes         *GeneralRes
 	RetryInfo          *mcommon.Retry

@@ -13,6 +13,7 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	sconsts "github.com/iimeta/fastapi-sdk/v2/consts"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
@@ -72,6 +73,7 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 				after := &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					ChatCompletionRes: response,
+					Action:            googleAction(request.URL.Path),
 					Usage:             response.Usage,
 					Error:             err,
 					RetryInfo:         retryInfo,
@@ -318,6 +320,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 				after := &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					Completion:        completion,
+					Action:            googleAction(request.URL.Path),
 					Usage:             usage,
 					Error:             err,
 					RetryInfo:         retryInfo,
@@ -722,4 +725,16 @@ func convToChatCompletionRequest(request *ghttp.Request) smodel.ChatCompletionRe
 		Temperature: googleChatCompletionReq.GenerationConfig.Temperature,
 		TopP:        googleChatCompletionReq.GenerationConfig.TopP,
 	}
+}
+
+// 从请求路径中提取冒号后的接口动作, 如 models/gemini-pro:generateContent => generateContent
+func googleAction(path string) string {
+	lastSegment := path
+	if i := gstr.PosR(path, "/"); i != -1 {
+		lastSegment = path[i+1:]
+	}
+	if i := gstr.PosR(lastSegment, ":"); i != -1 {
+		return lastSegment[i+1:]
+	}
+	return lastSegment
 }

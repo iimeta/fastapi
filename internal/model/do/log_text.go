@@ -30,6 +30,7 @@ type LogText struct {
 	RealModelId          string                 `bson:"real_model_id,omitempty"`           // 真实模型ID
 	RealModelName        string                 `bson:"real_model_name,omitempty"`         // 真实模型名称
 	RealModel            string                 `bson:"real_model,omitempty"`              // 真实模型
+	Action               string                 `bson:"action,omitempty"`                  // 接口
 	Stream               bool                   `bson:"stream,omitempty"`                  // 流式
 	Messages             []common.Message       `bson:"messages,omitempty"`                // 完整提示(提问)
 	Prompt               string                 `bson:"prompt,omitempty"`                  // 提示(提问)

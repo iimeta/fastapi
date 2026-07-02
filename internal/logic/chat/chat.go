@@ -15,6 +15,7 @@ import (
 	"github.com/gogf/gf/v2/util/gconv"
 	sconsts "github.com/iimeta/fastapi-sdk/v2/consts"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
+	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/errors"
 	"github.com/iimeta/fastapi/v2/internal/logic/common"
 	"github.com/iimeta/fastapi/v2/internal/model"
@@ -69,6 +70,7 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					ChatCompletionRes: response,
+					Action:            consts.ACTION_COMPLETIONS,
 					Usage:             response.Usage,
 					Error:             err,
 					RetryInfo:         retryInfo,
@@ -243,6 +245,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 					ChatCompletionReq: params,
 					Completion:        completion,
 					ServiceTier:       serviceTier,
+					Action:            consts.ACTION_COMPLETIONS,
 					Usage:             usage,
 					Error:             err,
 					RetryInfo:         retryInfo,

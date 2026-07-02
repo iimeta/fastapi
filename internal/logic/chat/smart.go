@@ -10,6 +10,7 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 	sconsts "github.com/iimeta/fastapi-sdk/v2/consts"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
+	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/logic/common"
 	"github.com/iimeta/fastapi/v2/internal/model"
 	mcommon "github.com/iimeta/fastapi/v2/internal/model/common"
@@ -47,6 +48,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					ChatCompletionRes: response,
+					Action:            consts.ACTION_COMPLETIONS,
 					Usage:             response.Usage,
 					Error:             err,
 					RetryInfo:         retryInfo,

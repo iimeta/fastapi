@@ -30,6 +30,7 @@ type LogAudio struct {
 	RealModelId          string                 `bson:"real_model_id,omitempty"`           // 真实模型ID
 	RealModelName        string                 `bson:"real_model_name,omitempty"`         // 真实模型名称
 	RealModel            string                 `bson:"real_model,omitempty"`              // 真实模型
+	Action               string                 `bson:"action,omitempty"`                  // 接口
 	Input                string                 `bson:"input,omitempty"`                   // 输入文本
 	Text                 string                 `bson:"text,omitempty"`                    // 输出文本
 	Spend                common.Spend           `bson:"spend,omitempty"`                   // 花费
