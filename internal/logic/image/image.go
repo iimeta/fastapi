@@ -67,6 +67,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 	var (
 		mak = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           consts.ENDPOINT_IMAGE_GENERATIONS,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
@@ -237,6 +238,7 @@ func (s *sImage) GenerationsStream(ctx context.Context, data []byte, fallbackMod
 	var (
 		mak = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           consts.ENDPOINT_IMAGE_GENERATIONS,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
@@ -455,6 +457,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 	var (
 		mak = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           consts.ENDPOINT_IMAGE_EDITS,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
@@ -641,6 +644,7 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 	var (
 		mak = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           consts.ENDPOINT_IMAGE_EDITS,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
@@ -887,6 +891,7 @@ func (s *sImage) GenerationsAsync(ctx context.Context, data []byte, fallbackMode
 	var (
 		mak = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           consts.ENDPOINT_IMAGE_GENERATIONS,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
@@ -991,6 +996,7 @@ func (s *sImage) EditsAsync(ctx context.Context, params smodel.ImageEditRequest,
 	var (
 		mak = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           consts.ENDPOINT_IMAGE_EDITS,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}

@@ -49,6 +49,7 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 		params    = convToChatCompletionRequest(request)
 		mak       = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           googleAction(request.URL.Path),
 			Messages:           params.Messages,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
@@ -295,6 +296,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 		params    = convToChatCompletionRequest(request)
 		mak       = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           googleAction(request.URL.Path),
 			Messages:           params.Messages,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,

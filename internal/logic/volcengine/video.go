@@ -52,6 +52,7 @@ func (s *sVolcEngine) VideoCreate(ctx context.Context, request *ghttp.Request, f
 		params = convCreateRequest(request)
 		mak    = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           consts.ENDPOINT_VIDEO_GENERATIONS,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}

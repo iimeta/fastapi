@@ -53,6 +53,7 @@ func (s *sVideo) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 	var (
 		mak = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           consts.ENDPOINT_VIDEO_GENERATIONS,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
@@ -196,6 +197,7 @@ func (s *sVideo) Remix(ctx context.Context, params *v1.RemixReq, fallbackModelAg
 
 	var (
 		mak = &common.MAK{
+			Endpoint:           consts.ENDPOINT_VIDEO_GENERATIONS,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}

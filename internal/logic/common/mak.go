@@ -21,6 +21,7 @@ import (
 type MAK struct {
 	Provider           string
 	Model              string
+	Endpoint           string
 	Messages           []smodel.ChatCompletionMessage
 	ReqModel           *model.Model
 	RealModel          *model.Model
@@ -170,6 +171,17 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 		} else if len(mak.AppKey.Models) > 0 && !slices.Contains(mak.AppKey.Models, mak.ReqModel.Id) {
 			err = errors.ERR_MODEL_NOT_FOUND
 			logger.Info(ctx, err)
+			return err
+		}
+	}
+
+	if mak.Endpoint != "" {
+
+		service.Session().SaveEndpoint(ctx, mak.Endpoint)
+
+		if len(mak.ReqModel.Endpoints) > 0 && !slices.Contains(mak.ReqModel.Endpoints, mak.Endpoint) {
+			err = errors.ERR_UNSUPPORTED_ENDPOINT
+			logger.Errorf(ctx, "MAK InitMAK model: %s, unsupported endpoint: %s, supported: %+v", mak.ReqModel.Model, mak.Endpoint, mak.ReqModel.Endpoints)
 			return err
 		}
 	}

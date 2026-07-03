@@ -45,6 +45,7 @@ var (
 	ERR_UNSUPPORTED_FILE_FORMAT           = NewError(400, "unsupported_file_format", "Unsupported file format.", "fastapi_request_error", nil)
 	ERR_UNSUPPORTED_BILLING_METHOD_MODEL  = NewError(400, "unsupported_billing_method_model", "Billing methods not supported by the current model.", "fastapi_request_error", nil)
 	ERR_UNSUPPORTED_BILLING_METHOD_GROUP  = NewError(400, "unsupported_billing_method_group", "Billing methods not supported by the current group.", "fastapi_request_error", nil)
+	ERR_UNSUPPORTED_ENDPOINT              = NewError(400, "unsupported_endpoint", "This endpoint is not supported by the current model.", "fastapi_request_error", nil)
 	ERR_NOT_API_KEY                       = NewError(401, "invalid_request_error", "You didn't provide an API key.", "fastapi_request_error", nil)
 	ERR_INVALID_API_KEY                   = NewError(401, "invalid_api_key", "Incorrect API key provided or has been disabled.", "fastapi_request_error", nil)
 	ERR_API_KEY_DISABLED                  = NewError(401, "api_key_disabled", "Key has been disabled.", "fastapi_request_error", nil)

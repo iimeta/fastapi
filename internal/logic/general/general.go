@@ -52,6 +52,7 @@ func (s *sGeneral) General(ctx context.Context, request *ghttp.Request, fallback
 	var (
 		mak = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           request.URL.Path,
 			Messages:           params.Messages,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
@@ -192,6 +193,7 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 	var (
 		mak = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           request.URL.Path,
 			Messages:           params.Messages,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,

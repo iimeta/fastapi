@@ -21,6 +21,7 @@ const (
 	SESSION_MODEL_AGENT_BILLING_METHOD = "session_model_agent_billing_method"
 	SESSION_KEEP_PREFERRED_KEY         = "session_keep_preferred_key"
 	SESSION_KEEP_HIT                   = "session_keep_hit"
+	SESSION_ENDPOINT                   = "session_endpoint"
 )
 
 // 会话保持Redis Key — fastapi-admin内对应常量: internal/consts/consts.go SESSION_KEEP_*
@@ -93,6 +94,21 @@ const (
 	ACTION_SPEECH         = "speech"
 	ACTION_TRANSCRIPTIONS = "transcriptions"
 	ACTION_REALTIME       = "realtime"
+)
+
+// 支持的端点[OpenAI风格用规范化路径, Google用action, general用请求路径]
+const (
+	ENDPOINT_CHAT_COMPLETIONS     = "/v1/chat/completions"
+	ENDPOINT_RESPONSES            = "/v1/responses"
+	ENDPOINT_MESSAGES             = "/v1/messages"
+	ENDPOINT_IMAGE_GENERATIONS    = "/v1/images/generations"
+	ENDPOINT_IMAGE_EDITS          = "/v1/images/edits"
+	ENDPOINT_AUDIO_SPEECH         = "/v1/audio/speech"
+	ENDPOINT_AUDIO_TRANSCRIPTIONS = "/v1/audio/transcriptions"
+	ENDPOINT_VIDEO_GENERATIONS    = "/v1/videos"
+	ENDPOINT_EMBEDDINGS           = "/v1/embeddings"
+	ENDPOINT_MODERATIONS          = "/v1/moderations"
+	ENDPOINT_REALTIME             = "/v1/realtime"
 )
 
 var RESOLUTION_ASPECT_RATIO = map[string]string{

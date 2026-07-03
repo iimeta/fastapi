@@ -67,6 +67,7 @@ func (s *sModelAgent) GetById(ctx context.Context, id string) (*model.ModelAgent
 		Name:                     modelAgent.Name,
 		BaseUrl:                  modelAgent.BaseUrl,
 		Path:                     modelAgent.Path,
+		Endpoints:                modelAgent.Endpoints,
 		Weight:                   modelAgent.Weight,
 		BillingMethods:           modelAgent.BillingMethods,
 		Models:                   modelAgent.Models,
@@ -119,6 +120,7 @@ func (s *sModelAgent) List(ctx context.Context, ids []string) ([]*model.ModelAge
 			Name:                     result.Name,
 			BaseUrl:                  result.BaseUrl,
 			Path:                     result.Path,
+			Endpoints:                result.Endpoints,
 			Weight:                   result.Weight,
 			BillingMethods:           result.BillingMethods,
 			Models:                   result.Models,
@@ -170,6 +172,7 @@ func (s *sModelAgent) ListAll(ctx context.Context) ([]*model.ModelAgent, error) 
 			Name:                     result.Name,
 			BaseUrl:                  result.BaseUrl,
 			Path:                     result.Path,
+			Endpoints:                result.Endpoints,
 			Weight:                   result.Weight,
 			BillingMethods:           result.BillingMethods,
 			Models:                   result.Models,
@@ -409,6 +412,24 @@ func (s *sModelAgent) Pick(ctx context.Context, m *model.Model) (int, *model.Mod
 		}
 	}
 
+	// 根据请求端点过滤模型代理
+	if endpoint := service.Session().GetEndpoint(ctx); endpoint != "" {
+
+		i := 0
+		for _, modelAgent := range filterModelAgentList {
+			if len(modelAgent.Endpoints) == 0 || slices.Contains(modelAgent.Endpoints, endpoint) {
+				filterModelAgentList[i] = modelAgent
+				i++
+			}
+		}
+
+		filterModelAgentList = filterModelAgentList[:i]
+
+		if len(filterModelAgentList) == 0 {
+			return 0, nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT
+		}
+	}
+
 	// 负载策略-权重
 	if m.LbStrategy == 2 {
 		return len(filterModelAgentList), lb.NewModelAgentWeight(filterModelAgentList).PickModelAgent(), nil
@@ -571,6 +592,24 @@ func (s *sModelAgent) PickGroup(ctx context.Context, m *model.Model, group *mode
 		i := 0
 		for _, modelAgent := range filterModelAgentList {
 			if len(modelAgent.BillingMethods) == 0 || slices.Contains(modelAgent.BillingMethods, billingMethod) {
+				filterModelAgentList[i] = modelAgent
+				i++
+			}
+		}
+
+		filterModelAgentList = filterModelAgentList[:i]
+
+		if len(filterModelAgentList) == 0 {
+			return 0, nil, errors.ERR_NO_AVAILABLE_MODEL_AGENT
+		}
+	}
+
+	// 根据请求端点过滤模型代理
+	if endpoint := service.Session().GetEndpoint(ctx); endpoint != "" {
+
+		i := 0
+		for _, modelAgent := range filterModelAgentList {
+			if len(modelAgent.Endpoints) == 0 || slices.Contains(modelAgent.Endpoints, endpoint) {
 				filterModelAgentList[i] = modelAgent
 				i++
 			}
@@ -934,6 +973,7 @@ func (s *sModelAgent) AddCache(ctx context.Context, newData *model.ModelAgent) {
 		Name:                  newData.Name,
 		BaseUrl:               newData.BaseUrl,
 		Path:                  newData.Path,
+		Endpoints:             newData.Endpoints,
 		Weight:                newData.Weight,
 		BillingMethods:        newData.BillingMethods,
 		Models:                newData.Models,
@@ -1020,6 +1060,7 @@ func (s *sModelAgent) UpdateCache(ctx context.Context, oldData *entity.ModelAgen
 		Name:                  newData.Name,
 		BaseUrl:               newData.BaseUrl,
 		Path:                  newData.Path,
+		Endpoints:             newData.Endpoints,
 		Weight:                newData.Weight,
 		CurrentWeight:         newData.CurrentWeight,
 		BillingMethods:        newData.BillingMethods,

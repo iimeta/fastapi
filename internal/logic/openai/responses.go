@@ -47,6 +47,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 		params = common.ConvResponsesToChatCompletionsRequest(request, isChatCompletions)
 		mak    = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           responsesEndpoint(isChatCompletions),
 			Messages:           params.Messages,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
@@ -213,6 +214,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 		params = common.ConvResponsesToChatCompletionsRequest(request, isChatCompletions)
 		mak    = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           responsesEndpoint(isChatCompletions),
 			Messages:           params.Messages,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
@@ -594,6 +596,7 @@ func (s *sOpenAI) ResponsesCompact(ctx context.Context, request *ghttp.Request, 
 		params = common.ConvResponsesToChatCompletionsRequest(request, isChatCompletions)
 		mak    = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           responsesEndpoint(isChatCompletions),
 			Messages:           params.Messages,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
@@ -746,4 +749,12 @@ func (s *sOpenAI) ResponsesCompact(ctx context.Context, request *ghttp.Request, 
 	}
 
 	return response, nil
+}
+
+// 请求端点[兼容以ChatCompletions格式请求Responses的情况]
+func responsesEndpoint(isChatCompletions bool) string {
+	if isChatCompletions {
+		return consts.ENDPOINT_CHAT_COMPLETIONS
+	}
+	return consts.ENDPOINT_RESPONSES
 }

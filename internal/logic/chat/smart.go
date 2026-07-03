@@ -29,6 +29,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 	var (
 		mak = &common.MAK{
 			Model:              reqModel.Model,
+			Endpoint:           consts.ENDPOINT_CHAT_COMPLETIONS,
 			Messages:           params.Messages,
 			ReqModel:           reqModel,
 			FallbackModelAgent: fallbackModelAgent,

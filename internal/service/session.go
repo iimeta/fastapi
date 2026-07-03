@@ -64,6 +64,10 @@ type (
 		SaveModelAgentBillingMethod(ctx context.Context, billingMethod int)
 		// 获取模型代理计费方式
 		GetModelAgentBillingMethod(ctx context.Context) int
+		// 保存当前请求端点
+		SaveEndpoint(ctx context.Context, endpoint string)
+		// 获取当前请求端点
+		GetEndpoint(ctx context.Context) string
 		// 保存会话保持首选密钥ID
 		SaveSessionKeepPreferredKey(ctx context.Context, keyId string)
 		// 获取会话保持首选密钥ID

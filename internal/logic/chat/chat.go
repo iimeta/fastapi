@@ -46,6 +46,7 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 	var (
 		mak = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           consts.ENDPOINT_CHAT_COMPLETIONS,
 			Messages:           params.Messages,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
@@ -220,6 +221,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 	var (
 		mak = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           consts.ENDPOINT_CHAT_COMPLETIONS,
 			Messages:           params.Messages,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,

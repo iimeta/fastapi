@@ -46,6 +46,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 	var (
 		mak = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           consts.ENDPOINT_EMBEDDINGS,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}

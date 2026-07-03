@@ -47,6 +47,7 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 	var (
 		mak = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           consts.ENDPOINT_AUDIO_SPEECH,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
@@ -177,6 +178,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 	var (
 		mak = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           consts.ENDPOINT_AUDIO_TRANSCRIPTIONS,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}

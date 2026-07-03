@@ -80,6 +80,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 	var (
 		mak = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           consts.ENDPOINT_REALTIME,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}

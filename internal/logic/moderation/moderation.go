@@ -39,6 +39,7 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 	var (
 		mak = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           consts.ENDPOINT_MODERATIONS,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}

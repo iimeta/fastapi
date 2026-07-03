@@ -274,6 +274,24 @@ func (s *sSession) GetModelAgentBillingMethod(ctx context.Context) int {
 	return billingMethod.(int)
 }
 
+// 保存当前请求端点
+func (s *sSession) SaveEndpoint(ctx context.Context, endpoint string) {
+	if r := g.RequestFromCtx(ctx); r != nil {
+		r.SetCtxVar(consts.SESSION_ENDPOINT, endpoint)
+	}
+}
+
+// 获取当前请求端点
+func (s *sSession) GetEndpoint(ctx context.Context) string {
+
+	endpoint := ctx.Value(consts.SESSION_ENDPOINT)
+	if endpoint == nil {
+		return ""
+	}
+
+	return endpoint.(string)
+}
+
 // 保存会话保持首选密钥ID
 func (s *sSession) SaveSessionKeepPreferredKey(ctx context.Context, keyId string) {
 	if r := g.RequestFromCtx(ctx); r != nil {

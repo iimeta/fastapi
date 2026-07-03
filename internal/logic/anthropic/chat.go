@@ -49,6 +49,7 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 		params    = convToChatCompletionRequest(request)
 		mak       = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           consts.ENDPOINT_MESSAGES,
 			Messages:           params.Messages,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
@@ -278,6 +279,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 		params    = convToChatCompletionRequest(request)
 		mak       = &common.MAK{
 			Model:              params.Model,
+			Endpoint:           consts.ENDPOINT_MESSAGES,
 			Messages:           params.Messages,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
