@@ -49,7 +49,7 @@ logger:
   timeFormat: "2006-01-02 15:04:05.000"           # 自定义日志输出的时间格式，使用Golang标准的时间格式配置
   ctxKeys: [ "host", "user_id", "app_id", "sk" ]  # 自定义Context上下文变量名称，自动打印Context的变量到日志中。默认为空
   header: true                                    # 是否打印日志的头信息。默认true
-  stdout: true                                    # 日志是否同时输出到终端。默认true
+  stdout: false                                   # 日志是否同时输出到终端。默认true
   rotateSize: 0                                   # 按照日志文件大小对文件进行滚动切分。默认为0，表示关闭滚动切分特性
   rotateExpire: 0                                 # 按照日志文件时间间隔对文件滚动切分。默认为0，表示关闭滚动切分特性
   rotateBackupLimit: 0                            # 按照切分的文件数量清理切分文件，当滚动切分特性开启时有效。默认为0，表示不备份，切分则删除
