@@ -596,7 +596,7 @@ func (s *sOpenAI) ResponsesCompact(ctx context.Context, request *ghttp.Request, 
 		params = common.ConvResponsesToChatCompletionsRequest(request, isChatCompletions)
 		mak    = &common.MAK{
 			Model:              params.Model,
-			Endpoint:           responsesEndpoint(isChatCompletions),
+			Endpoint:           consts.ENDPOINT_RESPONSES_COMPACT,
 			Messages:           params.Messages,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,

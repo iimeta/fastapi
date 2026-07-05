@@ -100,6 +100,7 @@ const (
 const (
 	ENDPOINT_CHAT_COMPLETIONS     = "/v1/chat/completions"
 	ENDPOINT_RESPONSES            = "/v1/responses"
+	ENDPOINT_RESPONSES_COMPACT    = "/v1/responses/compact"
 	ENDPOINT_MESSAGES             = "/v1/messages"
 	ENDPOINT_IMAGE_GENERATIONS    = "/v1/images/generations"
 	ENDPOINT_IMAGE_EDITS          = "/v1/images/edits"
