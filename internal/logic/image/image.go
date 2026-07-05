@@ -71,6 +71,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
+		imageResponse  smodel.ImageResponse
 		retryInfo      *mcommon.Retry
 		imageFilePaths []string
 		imageExpiresAt int64
@@ -79,22 +80,22 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 	defer func() {
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		usage := response.Usage
+		internalTime := gtime.TimestampMilli() - enterTime - imageResponse.TotalTime
+		usage := imageResponse.Usage
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ImageGenerationRequest: params,
-					ImageResponse:          response,
+					ImageResponse:          imageResponse,
 					Action:                 consts.ACTION_GENERATIONS,
 					ImageFilePaths:         imageFilePaths,
 					ImageExpiresAt:         imageExpiresAt,
 					Usage:                  &usage,
 					Error:                  err,
 					RetryInfo:              retryInfo,
-					TotalTime:              response.TotalTime,
+					TotalTime:              imageResponse.TotalTime,
 					InternalTime:           internalTime,
 					EnterTime:              enterTime,
 				})
@@ -217,6 +218,8 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 	}
 
 	imageFilePaths, imageExpiresAt = saveImageStorage(ctx, &response, params.OutputFormat)
+
+	imageResponse = response
 
 	return response, nil
 }
@@ -461,6 +464,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
+		imageResponse  smodel.ImageResponse
 		retryInfo      *mcommon.Retry
 		imageFilePaths []string
 		imageExpiresAt int64
@@ -481,8 +485,8 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 	defer func() {
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-		usage := response.Usage
+		internalTime := gtime.TimestampMilli() - enterTime - imageResponse.TotalTime
+		usage := imageResponse.Usage
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -501,14 +505,14 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 
 				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ImageGenerationRequest: imageReq,
-					ImageResponse:          response,
+					ImageResponse:          imageResponse,
 					Action:                 consts.ACTION_EDITS,
 					ImageFilePaths:         imageFilePaths,
 					ImageExpiresAt:         imageExpiresAt,
 					Usage:                  &usage,
 					Error:                  err,
 					RetryInfo:              retryInfo,
-					TotalTime:              response.TotalTime,
+					TotalTime:              imageResponse.TotalTime,
 					InternalTime:           internalTime,
 					EnterTime:              enterTime,
 				})
@@ -629,6 +633,8 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 	}
 
 	imageFilePaths, imageExpiresAt = saveImageStorage(ctx, &response, params.OutputFormat)
+
+	imageResponse = response
 
 	return response, nil
 }
@@ -920,6 +926,7 @@ func (s *sImage) GenerationsAsync(ctx context.Context, data []byte, fallbackMode
 
 	defer func() {
 
+		response.TotalTime = gtime.TimestampMilli() - now
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := smodel.Usage{}
@@ -1007,6 +1014,7 @@ func (s *sImage) EditsAsync(ctx context.Context, params smodel.ImageEditRequest,
 
 	defer func() {
 
+		response.TotalTime = gtime.TimestampMilli() - now
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := smodel.Usage{}
