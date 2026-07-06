@@ -78,12 +78,12 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 		spend.TotalSpendTokens += spend.Image.SpendTokens
 	}
 
-	if spend.ImageGeneration != nil {
-		spend.TotalSpendTokens += spend.ImageGeneration.SpendTokens
-	}
-
 	if spend.ImageCache != nil {
 		spend.TotalSpendTokens += spend.ImageCache.SpendTokens
+	}
+
+	if spend.ImageGeneration != nil {
+		spend.TotalSpendTokens = spend.ImageGeneration.SpendTokens
 	}
 
 	if spend.Vision != nil {
