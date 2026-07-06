@@ -401,7 +401,7 @@ func parseMultipartFormData(r *ghttp.Request) map[string]interface{} {
 	formData := make(map[string]interface{})
 
 	for k, v := range r.GetFormMap() {
-		formData[k] = v
+		formData[k] = sanitizeFormValue(v)
 	}
 
 	if form := r.GetMultipartForm(); form != nil {
@@ -425,4 +425,24 @@ func parseMultipartFormData(r *ghttp.Request) map[string]interface{} {
 	}
 
 	return formData
+}
+
+func sanitizeFormValue(v interface{}) interface{} {
+	switch val := v.(type) {
+	case string:
+		return sanitizeLogString(val)
+	case []string:
+		res := make([]string, len(val))
+		for i, s := range val {
+			res[i] = sanitizeLogString(s)
+		}
+		return res
+	default:
+		return v
+	}
+}
+
+func sanitizeLogString(s string) string {
+	replacer := strings.NewReplacer("\r\n", "\\n", "\r", "\\n", "\n", "\\n")
+	return replacer.Replace(s)
 }
