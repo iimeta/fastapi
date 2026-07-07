@@ -1713,7 +1713,8 @@ func statusPriority(status string) int {
 }
 
 // 返回同状态下的排序键, 越小越靠前
-// 已完成按 completed_at 升序(为 0 视为异常, 排到最后), 其余状态按 created_at 升序
+// 已完成按 completed_at 升序(为 0 视为异常, 排到最后), 取最早完成的一条;
+// 其余状态按 created_at 降序(取负), 取最新创建的一条: 同一 image_id 多次重试/重新生成会产生多条同状态记录, 失败等非完成态应以最后一次尝试为准, 避免返回过早的陈旧记录
 func taskImageOrderKey(t *entity.TaskImage) int64 {
 	if t.Status == "completed" {
 		if t.CompletedAt == 0 {
@@ -1721,12 +1722,12 @@ func taskImageOrderKey(t *entity.TaskImage) int64 {
 		}
 		return t.CompletedAt
 	}
-	return t.CreatedAt
+	return -t.CreatedAt
 }
 
 // 从同一 image_id 的多条记录中选出代表记录
 // 优先级: completed > in_progress > queued > failed > expired > deleted
-// 同状态下: 已完成取最早完成的一条, 其余取最早创建的一条; 无记录时返回 nil
+// 同状态下: 已完成取最早完成的一条, 其余取最新创建的一条; 无记录时返回 nil
 func pickRepresentativeTaskImage(taskImages []*entity.TaskImage) *entity.TaskImage {
 
 	var best *entity.TaskImage
