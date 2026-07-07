@@ -122,7 +122,7 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 	if mak.ReqModel.TimeRules != nil {
 		if modelTimeRule := MatchTimeRule(ctx, mak.ReqModel.TimeRules); modelTimeRule != nil {
 			spend.ModelTimeRule = modelTimeRule
-			spend.TotalSpendTokens = int(math.Ceil(float64(spend.TotalSpendTokens) * modelTimeRule.Discount))
+			spend.TotalSpendTokens = discountTokens(spend.TotalSpendTokens, modelTimeRule.Discount)
 		}
 	}
 
@@ -132,7 +132,7 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 		spend.GroupName = mak.Group.Name
 		if groupTimeRule := MatchTimeRule(ctx, mak.Group.TimeRules, mak.ReqModel); groupTimeRule != nil {
 			spend.GroupTimeRule = groupTimeRule
-			spend.TotalSpendTokens = int(math.Ceil(float64(spend.TotalSpendTokens) * groupTimeRule.Discount))
+			spend.TotalSpendTokens = discountTokens(spend.TotalSpendTokens, groupTimeRule.Discount)
 		}
 	}
 
@@ -945,4 +945,16 @@ func matchTimeRange(enterTimeMs, startTime, endTime int64) bool {
 		return enterTimeMs >= startTime && enterTimeMs <= endTime
 	}
 	return enterTimeMs >= startTime || enterTimeMs <= endTime
+}
+
+// 按折扣计算消费 token, 全程使用整数运算, 避免浮点精度误差
+func discountTokens(tokens int, discount float64) int {
+
+	const scale = 1_000_000 // 折扣精度: 保留 6 位小数
+
+	// 折扣先四舍五入成整数基数, 消除小数本身的表示误差
+	basis := int64(math.Round(discount * scale))
+
+	// 整数向上取整除法: ceil(a/b) = (a + b - 1) / b (a, b 均非负)
+	return int((int64(tokens)*basis + scale - 1) / scale)
 }
