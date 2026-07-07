@@ -32,6 +32,11 @@ func RecordSpend(ctx context.Context, spend common.Spend, mak *MAK) error {
 	appId := service.Session().GetAppId(ctx)
 	appKey := service.Session().GetSecretKey(ctx)
 
+	if spend.TotalSpendTokens < 0 || spend.TotalSpendTokens > consts.MAX_SPEND_TOKENS {
+		logger.Errorf(ctx, "RecordSpend abnormal totalSpendTokens: %d, userId: %d, appId: %d, appKey: %s, force clamp to %d", spend.TotalSpendTokens, userId, appId, appKey, consts.MAX_SPEND_TOKENS)
+		spend.TotalSpendTokens = consts.MAX_SPEND_TOKENS
+	}
+
 	logger.Infof(ctx, "RecordSpend rid: %d, userId: %d, appId: %d, appKey: %s, totalSpendTokens: %d, key: %s", rid, userId, appId, appKey, spend.TotalSpendTokens, mak.Key.Key)
 
 	usageKey := getUserUsageKey(ctx)
