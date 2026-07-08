@@ -32,6 +32,8 @@ type TaskImage struct {
 	RequestData    map[string]any     `bson:"request_data,omitempty"`     // 请求数据
 	ResponseData   map[string]any     `bson:"response_data,omitempty"`    // 响应数据
 	Error          *smodel.ImageError `bson:"error,omitempty"`            // 错误信息
+	ModelAgentId   string             `bson:"model_agent_id,omitempty"`   // 模型代理ID
+	ModelAgent     *ModelAgent        `bson:"model_agent,omitempty"`      // 模型代理信息
 	Rid            int                `bson:"rid,omitempty"`              // 代理商ID
 	Creator        string             `bson:"creator,omitempty"`          // 创建人
 	Updater        string             `bson:"updater,omitempty"`          // 更新人

@@ -236,6 +236,18 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 				taskImage.Height = after.Spend.ImageGeneration.Pricing.Height
 			}
 
+			if mak.ModelAgent != nil {
+				taskImage.ModelAgentId = mak.ModelAgent.Id
+				taskImage.ModelAgent = &do.ModelAgent{
+					ProviderId: mak.ModelAgent.ProviderId,
+					Name:       mak.ModelAgent.Name,
+					BaseUrl:    mak.ModelAgent.BaseUrl,
+					Path:       mak.ModelAgent.Path,
+					Weight:     mak.ModelAgent.Weight,
+					Remark:     mak.ModelAgent.Remark,
+				}
+			}
+
 			if _, err := dao.TaskImage.Insert(ctx, taskImage); err != nil {
 				logger.Error(ctx, err)
 			}
