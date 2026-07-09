@@ -271,6 +271,10 @@ func textCache(ctx context.Context, mak *MAK, billingData *common.BillingData, s
 		spend.TextCache.ReadTokens += billingData.Usage.CompletionTokensDetails.CachedTokens
 	}
 
+	if billingData.Usage.PromptTokensDetails.CacheWriteTokens > 0 {
+		spend.TextCache.WriteTokens += billingData.Usage.PromptTokensDetails.CacheWriteTokens
+	}
+
 	// Claude
 	if billingData.Usage.CacheReadInputTokens > 0 {
 		spend.TextCache.ReadTokens += billingData.Usage.CacheReadInputTokens
@@ -427,6 +431,10 @@ func tieredTextCache(ctx context.Context, mak *MAK, billingData *common.BillingD
 
 	if billingData.Usage.CompletionTokensDetails.CachedTokens > 0 {
 		spend.TieredTextCache.ReadTokens += billingData.Usage.CompletionTokensDetails.CachedTokens
+	}
+
+	if billingData.Usage.PromptTokensDetails.CacheWriteTokens > 0 {
+		spend.TieredTextCache.WriteTokens += billingData.Usage.PromptTokensDetails.CacheWriteTokens
 	}
 
 	// Claude

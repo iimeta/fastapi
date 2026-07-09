@@ -155,8 +155,9 @@ func ConvResponsesToChatCompletionsResponse(ctx context.Context, res smodel.Open
 			CompletionTokens: responsesRes.Usage.OutputTokens,
 			TotalTokens:      responsesRes.Usage.TotalTokens,
 			PromptTokensDetails: smodel.PromptTokensDetails{
-				CachedTokens: responsesRes.Usage.InputTokensDetails.CachedTokens,
-				TextTokens:   responsesRes.Usage.InputTokensDetails.TextTokens,
+				TextTokens:       responsesRes.Usage.InputTokensDetails.TextTokens,
+				CachedTokens:     responsesRes.Usage.InputTokensDetails.CachedTokens,
+				CacheWriteTokens: responsesRes.Usage.InputTokensDetails.CacheWriteTokens,
 			},
 			CompletionTokensDetails: smodel.CompletionTokensDetails{
 				ReasoningTokens: responsesRes.Usage.OutputTokensDetails.ReasoningTokens,
@@ -226,8 +227,9 @@ func ConvResponsesStreamToChatCompletionsResponse(ctx context.Context, res smode
 			CompletionTokens: responsesStreamRes.Response.Usage.OutputTokens,
 			TotalTokens:      responsesStreamRes.Response.Usage.TotalTokens,
 			PromptTokensDetails: smodel.PromptTokensDetails{
-				CachedTokens: responsesStreamRes.Response.Usage.InputTokensDetails.CachedTokens,
-				TextTokens:   responsesStreamRes.Response.Usage.InputTokensDetails.TextTokens,
+				TextTokens:       responsesStreamRes.Response.Usage.InputTokensDetails.TextTokens,
+				CachedTokens:     responsesStreamRes.Response.Usage.InputTokensDetails.CachedTokens,
+				CacheWriteTokens: responsesStreamRes.Response.Usage.InputTokensDetails.CacheWriteTokens,
 			},
 			CompletionTokensDetails: smodel.CompletionTokensDetails{
 				ReasoningTokens: responsesStreamRes.Response.Usage.OutputTokensDetails.ReasoningTokens,
