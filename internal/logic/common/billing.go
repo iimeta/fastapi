@@ -480,8 +480,8 @@ func tieredTextCache(ctx context.Context, mak *MAK, billingData *common.BillingD
 		readTokens = spend.TieredTextCache.Write1HTokens
 	}
 
-	if readTokens > 0 && billingData.Usage.PromptTokens > 0 {
-		readTokens += billingData.Usage.PromptTokens
+	if billingData.Usage.PromptTokens > readTokens {
+		readTokens = billingData.Usage.PromptTokens
 	}
 
 	for i, tieredTextCache := range mak.ReqModel.Pricing.TieredTextCache {
