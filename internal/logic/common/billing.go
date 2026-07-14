@@ -276,12 +276,12 @@ func textCache(ctx context.Context, mak *MAK, billingData *common.BillingData, s
 	}
 
 	// Claude
-	if billingData.Usage.CacheReadInputTokens > 0 {
+	if billingData.Usage.CacheReadInputTokens > 0 && billingData.Usage.CacheReadInputTokens != billingData.Usage.PromptTokensDetails.CachedTokens {
 		spend.TextCache.ReadTokens += billingData.Usage.CacheReadInputTokens
 	}
 
 	// Claude
-	if billingData.Usage.CacheCreationInputTokens > 0 {
+	if billingData.Usage.CacheCreationInputTokens > 0 && billingData.Usage.CacheCreationInputTokens != billingData.Usage.PromptTokensDetails.CacheWriteTokens {
 		spend.TextCache.WriteTokens += billingData.Usage.CacheCreationInputTokens
 	}
 
