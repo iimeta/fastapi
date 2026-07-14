@@ -438,12 +438,12 @@ func tieredTextCache(ctx context.Context, mak *MAK, billingData *common.BillingD
 	}
 
 	// Claude
-	if billingData.Usage.CacheReadInputTokens > 0 {
+	if billingData.Usage.CacheReadInputTokens > 0 && billingData.Usage.CacheReadInputTokens != billingData.Usage.PromptTokensDetails.CachedTokens {
 		spend.TieredTextCache.ReadTokens += billingData.Usage.CacheReadInputTokens
 	}
 
 	// Claude
-	if billingData.Usage.CacheCreationInputTokens > 0 {
+	if billingData.Usage.CacheCreationInputTokens > 0 && billingData.Usage.CacheCreationInputTokens != billingData.Usage.PromptTokensDetails.CacheWriteTokens {
 		spend.TieredTextCache.WriteTokens += billingData.Usage.CacheCreationInputTokens
 	}
 
