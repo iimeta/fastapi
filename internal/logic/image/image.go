@@ -1331,23 +1331,14 @@ func (s *sImage) List(ctx context.Context, params *v1.ListReq) (response smodel.
 			imageJobResponse.ExpiresAt = &result.ExpiresAt
 		}
 
-		if config.Cfg.ImageTask.IsEnableStorage && result.ImageUrl != "" {
-
-			if config.Cfg.ImageTask.StorageBaseUrl != "" {
-				if gstr.HasSuffix(config.Cfg.ImageTask.StorageBaseUrl, "/") {
-					result.ImageUrl = gstr.TrimLeftStr(result.ImageUrl, "/")
-				} else if !gstr.HasPrefix(result.ImageUrl, "/") {
-					result.ImageUrl = "/" + result.ImageUrl
-				}
-			}
-
-			imageJobResponse.ImageUrl = config.Cfg.ImageTask.StorageBaseUrl + result.ImageUrl
+		if result.ImageUrl != "" {
+			imageJobResponse.ImageUrl = resolveImageUrl(result.ImageUrl)
 		}
 
-		if config.Cfg.ImageTask.IsEnableStorage && len(result.ImageUrls) > 0 {
+		if len(result.ImageUrls) > 0 {
 			imageJobResponse.ImageUrls = make([]string, 0, len(result.ImageUrls))
 			for _, u := range result.ImageUrls {
-				imageJobResponse.ImageUrls = append(imageJobResponse.ImageUrls, buildStorageUrl(u))
+				imageJobResponse.ImageUrls = append(imageJobResponse.ImageUrls, resolveImageUrl(u))
 			}
 		}
 
@@ -1441,23 +1432,14 @@ func (s *sImage) Retrieve(ctx context.Context, params smodel.ImageRetrieveReques
 		response.ExpiresAt = &taskImage.ExpiresAt
 	}
 
-	if config.Cfg.ImageTask.IsEnableStorage && taskImage.ImageUrl != "" {
-
-		if config.Cfg.ImageTask.StorageBaseUrl != "" {
-			if gstr.HasSuffix(config.Cfg.ImageTask.StorageBaseUrl, "/") {
-				taskImage.ImageUrl = gstr.TrimLeftStr(taskImage.ImageUrl, "/")
-			} else if !gstr.HasPrefix(taskImage.ImageUrl, "/") {
-				taskImage.ImageUrl = "/" + taskImage.ImageUrl
-			}
-		}
-
-		response.ImageUrl = config.Cfg.ImageTask.StorageBaseUrl + taskImage.ImageUrl
+	if taskImage.ImageUrl != "" {
+		response.ImageUrl = resolveImageUrl(taskImage.ImageUrl)
 	}
 
-	if config.Cfg.ImageTask.IsEnableStorage && len(taskImage.ImageUrls) > 0 {
+	if len(taskImage.ImageUrls) > 0 {
 		response.ImageUrls = make([]string, 0, len(taskImage.ImageUrls))
 		for _, u := range taskImage.ImageUrls {
-			response.ImageUrls = append(response.ImageUrls, buildStorageUrl(u))
+			response.ImageUrls = append(response.ImageUrls, resolveImageUrl(u))
 		}
 	}
 
@@ -1761,6 +1743,22 @@ func buildStorageUrl(imageUrl string) string {
 		}
 	}
 	return config.Cfg.ImageTask.StorageBaseUrl + imageUrl
+}
+
+// 根据是否开启转储决定图片对外地址
+// 开启转储: 图片落在本地, 拼接 StorageBaseUrl 前缀
+// 未开启转储: 图片由上游托管, image_url 存的即上游完整地址, 原样返回, 不再拼本地前缀
+func resolveImageUrl(imageUrl string) string {
+
+	if imageUrl == "" {
+		return ""
+	}
+
+	if config.Cfg.ImageTask.IsEnableStorage {
+		return buildStorageUrl(imageUrl)
+	}
+
+	return imageUrl
 }
 
 // 同步转储图片到本地存储, 改写response中图片的访问地址, 返回与response.Data等长的文件路径列表及过期时间
