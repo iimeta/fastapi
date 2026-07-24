@@ -144,6 +144,7 @@ type ImageStorage struct {
 	StorageBaseUrl       string        `bson:"storage_base_url"       json:"storage_base_url"`             // 访问地址
 	StorageExpiresAt     time.Duration `bson:"storage_expires_at"     json:"storage_expires_at,omitempty"` // 存储过期时间, 单位: 分钟
 	StorageExpiredDelete bool          `bson:"storage_expired_delete" json:"storage_expired_delete"`       // 存储过期删除开关
+	IsReturnBase64       bool          `bson:"is_return_base64"       json:"is_return_base64"`             // 是否返回base64, 关闭后按用户response_format控制
 }
 
 type VideoTask struct {

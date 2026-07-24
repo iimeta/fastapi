@@ -144,6 +144,8 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 		}
 	}
 
+	// 开启转储时强制向上游请求b64_json以便落盘, 用户原始response_format另行保留用于控制是否回传base64
+	originalResponseFormat := request.ResponseFormat
 	if config.Cfg.ImageStorage.Open {
 		request.ResponseFormat = "b64_json"
 	}
@@ -217,7 +219,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 		return response, err
 	}
 
-	imageFilePaths, imageExpiresAt = saveImageStorage(ctx, &response, params.OutputFormat)
+	imageFilePaths, imageExpiresAt = saveImageStorage(ctx, &response, params.OutputFormat, originalResponseFormat)
 
 	imageResponse = response
 
@@ -407,7 +409,7 @@ func (s *sImage) GenerationsStream(ctx context.Context, data []byte, fallbackMod
 		if response.Error != nil {
 
 			if errors.Is(response.Error, io.EOF) {
-				imageFilePaths, imageExpiresAt = saveImageStorage(ctx, &imageResponse, params.OutputFormat)
+				imageFilePaths, imageExpiresAt = saveImageStorage(ctx, &imageResponse, params.OutputFormat, params.ResponseFormat)
 				return nil
 			}
 
@@ -559,6 +561,8 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 		}
 	}
 
+	// 开启转储时强制向上游请求b64_json以便落盘, 用户原始response_format另行保留用于控制是否回传base64
+	originalResponseFormat := params.ResponseFormat
 	if config.Cfg.ImageStorage.Open {
 		params.ResponseFormat = "b64_json"
 	}
@@ -632,7 +636,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 		return response, err
 	}
 
-	imageFilePaths, imageExpiresAt = saveImageStorage(ctx, &response, params.OutputFormat)
+	imageFilePaths, imageExpiresAt = saveImageStorage(ctx, &response, params.OutputFormat, originalResponseFormat)
 
 	imageResponse = response
 
@@ -838,7 +842,7 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 		if response.Error != nil {
 
 			if errors.Is(response.Error, io.EOF) {
-				imageFilePaths, imageExpiresAt = saveImageStorage(ctx, &imageResponse, params.OutputFormat)
+				imageFilePaths, imageExpiresAt = saveImageStorage(ctx, &imageResponse, params.OutputFormat, params.ResponseFormat)
 				return nil
 			}
 
@@ -1762,7 +1766,7 @@ func resolveImageUrl(imageUrl string) string {
 }
 
 // 同步转储图片到本地存储, 改写response中图片的访问地址, 返回与response.Data等长的文件路径列表及过期时间
-func saveImageStorage(ctx context.Context, response *smodel.ImageResponse, outputFormat string) (filePaths []string, expiresAt int64) {
+func saveImageStorage(ctx context.Context, response *smodel.ImageResponse, outputFormat string, responseFormat string) (filePaths []string, expiresAt int64) {
 
 	if !config.Cfg.ImageStorage.Open || len(response.Data) == 0 {
 		return nil, 0
@@ -1860,6 +1864,14 @@ func saveImageStorage(ctx context.Context, response *smodel.ImageResponse, outpu
 
 	if config.Cfg.ImageStorage.StorageExpiresAt > 0 {
 		expiresAt = gtime.NewFromTimeStamp(gtime.TimestampMilli() / 1000).Add(config.Cfg.ImageStorage.StorageExpiresAt * time.Minute).Unix()
+	}
+
+	// is_return_base64关闭且用户指定response_format=url时, 仅返回url不返回base64, 节省带宽
+	// 开启(默认)或response_format为空/b64_json时, 保持base64与url一并返回
+	if !config.Cfg.ImageStorage.IsReturnBase64 && responseFormat == "url" {
+		for i := range response.Data {
+			response.Data[i].B64Json = ""
+		}
 	}
 
 	return filePaths, expiresAt
