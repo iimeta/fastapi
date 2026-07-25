@@ -1866,9 +1866,7 @@ func saveImageStorage(ctx context.Context, response *smodel.ImageResponse, outpu
 		expiresAt = gtime.NewFromTimeStamp(gtime.TimestampMilli() / 1000).Add(config.Cfg.ImageStorage.StorageExpiresAt * time.Minute).Unix()
 	}
 
-	// is_return_base64关闭且用户指定response_format=url时, 仅返回url不返回base64, 节省带宽
-	// 开启(默认)或response_format为空/b64_json时, 保持base64与url一并返回
-	if !config.Cfg.ImageStorage.IsReturnBase64 && responseFormat == "url" {
+	if !config.Cfg.ImageStorage.IsReturnBase64 && (responseFormat == "" || responseFormat == "url") {
 		for i := range response.Data {
 			response.Data[i].B64Json = ""
 		}
