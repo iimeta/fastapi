@@ -441,6 +441,8 @@ func (s *sImage) GenerationsStream(ctx context.Context, data []byte, fallbackMod
 		}
 
 		if response.Usage.TotalTokens != 0 || response.Usage.InputTokens != 0 || response.Usage.OutputTokens != 0 {
+			logger.Infof(ctx, "sImage GenerationsStream Usage: %s", response.ResponseBytes)
+
 			usage = &response.Usage
 		}
 
@@ -874,6 +876,8 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 		}
 
 		if response.Usage.TotalTokens != 0 || response.Usage.InputTokens != 0 || response.Usage.OutputTokens != 0 {
+			logger.Infof(ctx, "sImage EditsStream Usage: %s", response.ResponseBytes)
+
 			usage = &response.Usage
 		}
 

@@ -607,6 +607,8 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 		}
 
 		if response.Usage != nil {
+			logger.Infof(ctx, "sAnthropic CompletionsStream Usage: %s", response.ResponseBytes)
+
 			if usage == nil {
 				usage = response.Usage
 			} else {

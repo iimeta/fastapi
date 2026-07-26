@@ -641,6 +641,8 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 		}
 
 		if response.Usage != nil {
+			logger.Infof(ctx, "sGoogle CompletionsStream Usage: %s", response.ResponseBytes)
+
 			if usage == nil {
 				usage = response.Usage
 			} else {

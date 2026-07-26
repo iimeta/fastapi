@@ -454,6 +454,8 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 		}
 
 		if response.Usage != nil {
+			logger.Infof(ctx, "sChat CompletionsStream Usage: %s", response.ResponseBytes)
+
 			if usage == nil {
 				usage = response.Usage
 			} else {

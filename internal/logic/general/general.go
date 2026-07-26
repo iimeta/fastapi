@@ -391,6 +391,8 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 		}
 
 		if response.Usage != nil {
+			logger.Infof(ctx, "sGeneral GeneralStream Usage: %s", response.ResponseBytes)
+
 			if usage == nil {
 				usage = response.Usage
 			} else {

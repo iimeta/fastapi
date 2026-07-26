@@ -430,6 +430,8 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 			if errors.Is(response.Error, io.EOF) {
 
 				if response.Usage != nil {
+					logger.Infof(ctx, "sOpenAI ResponsesStream Usage: %s", response.ResponseBytes)
+
 					if usage == nil {
 						usage = response.Usage
 					} else {
@@ -549,6 +551,8 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 		}
 
 		if response.Usage != nil {
+			logger.Infof(ctx, "sOpenAI ResponsesStream Usage: %s", response.ResponseBytes)
+
 			if usage == nil {
 				usage = response.Usage
 			} else {
