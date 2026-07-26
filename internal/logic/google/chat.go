@@ -54,7 +54,10 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo *mcommon.Retry
+		retryInfo       *mcommon.Retry
+		imageFilePaths  []string
+		imageExpiresAt  int64
+		storedImageData []smodel.ImageResponseData
 	)
 
 	defer func() {
@@ -98,6 +101,13 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 					if after.ImageResponse, err = converter.ConvImageGenerationsResponse(ctx, response.ResponseBytes); err != nil {
 						logger.Error(ctx, err)
 					}
+
+					// 转储后用带 Url 的数据覆盖, 保证日志按 url/filepath 形式记录
+					if len(storedImageData) > 0 {
+						after.ImageResponse.Data = storedImageData
+					}
+					after.ImageFilePaths = imageFilePaths
+					after.ImageExpiresAt = imageExpiresAt
 				}
 
 				common.AfterHandler(ctx, mak, after)
@@ -280,6 +290,11 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 		}
 	}
 
+	// 绘图类型开启转储时, 将 inlineData base64 落盘并按配置替换为 URL
+	if mak.ReqModel != nil && mak.ReqModel.Type == 2 && response.ResponseBytes != nil {
+		response.ResponseBytes, imageFilePaths, imageExpiresAt, storedImageData = saveGoogleImageStorage(ctx, response.ResponseBytes, 0)
+	}
+
 	return response, nil
 }
 
@@ -301,12 +316,15 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		completion string
-		connTime   int64
-		duration   int64
-		totalTime  int64
-		usage      *smodel.Usage
-		retryInfo  *mcommon.Retry
+		completion      string
+		connTime        int64
+		duration        int64
+		totalTime       int64
+		usage           *smodel.Usage
+		retryInfo       *mcommon.Retry
+		imageFilePaths  []string
+		imageExpiresAt  int64
+		storedImageData []smodel.ImageResponseData
 	)
 
 	params.Stream = true
@@ -344,8 +362,11 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 					}
 
 					after.ImageResponse = smodel.ImageResponse{
+						Data:      storedImageData,
 						TotalTime: totalTime,
 					}
+					after.ImageFilePaths = imageFilePaths
+					after.ImageExpiresAt = imageExpiresAt
 				}
 
 				common.AfterHandler(ctx, mak, after)
@@ -662,6 +683,21 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 				}
 				if response.Usage.CacheReadInputTokens != 0 {
 					usage.CacheReadInputTokens = response.Usage.CacheReadInputTokens
+				}
+			}
+		}
+
+		// 绘图类型开启转储时, 将 inlineData base64 落盘并按配置替换为 URL
+		if mak.ReqModel != nil && mak.ReqModel.Type == 2 && response.ResponseBytes != nil {
+			var paths []string
+			var exp int64
+			var imgData []smodel.ImageResponseData
+			response.ResponseBytes, paths, exp, imgData = saveGoogleImageStorage(ctx, response.ResponseBytes, len(imageFilePaths))
+			if len(paths) > 0 {
+				imageFilePaths = append(imageFilePaths, paths...)
+				storedImageData = append(storedImageData, imgData...)
+				if exp > 0 {
+					imageExpiresAt = exp
 				}
 			}
 		}
