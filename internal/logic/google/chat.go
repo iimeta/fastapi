@@ -102,9 +102,13 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 						logger.Error(ctx, err)
 					}
 
-					// 转储后用带 Url 的数据覆盖, 保证日志按 url/filepath 形式记录
+					// 日志优先用转储结果; 未转储时从响应提取 URL(上游已返回 url 的场景)
 					if len(storedImageData) > 0 {
 						after.ImageResponse.Data = storedImageData
+					} else if logData := extractGoogleImageDataForLog(response.ResponseBytes); len(logData) > 0 {
+						after.ImageResponse.Data = normalizeImageDataUrls(logData)
+					} else {
+						after.ImageResponse.Data = normalizeImageDataUrls(after.ImageResponse.Data)
 					}
 					after.ImageFilePaths = imageFilePaths
 					after.ImageExpiresAt = imageExpiresAt
@@ -362,7 +366,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 					}
 
 					after.ImageResponse = smodel.ImageResponse{
-						Data:      storedImageData,
+						Data:      normalizeImageDataUrls(storedImageData),
 						TotalTime: totalTime,
 					}
 					after.ImageFilePaths = imageFilePaths
@@ -687,17 +691,23 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 			}
 		}
 
-		// 绘图类型开启转储时, 将 inlineData base64 落盘并按配置替换为 URL
+		// 绘图类型: 开启转储则落盘并按配置替换 URL; 未转储时提取响应中已有 URL 供日志记录
 		if mak.ReqModel != nil && mak.ReqModel.Type == 2 && response.ResponseBytes != nil {
 			var paths []string
 			var exp int64
 			var imgData []smodel.ImageResponseData
 			response.ResponseBytes, paths, exp, imgData = saveGoogleImageStorage(ctx, response.ResponseBytes, len(imageFilePaths))
-			if len(paths) > 0 {
+			if len(imgData) > 0 {
 				imageFilePaths = append(imageFilePaths, paths...)
 				storedImageData = append(storedImageData, imgData...)
 				if exp > 0 {
 					imageExpiresAt = exp
+				}
+			} else {
+				for _, item := range extractGoogleImageDataForLog(response.ResponseBytes) {
+					if item.Url != "" {
+						storedImageData = append(storedImageData, item)
+					}
 				}
 			}
 		}

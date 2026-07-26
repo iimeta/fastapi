@@ -470,13 +470,22 @@ func (s *sLog) Image(ctx context.Context, imageLog model.LogImage, retry ...int)
 	}
 
 	for i, data := range imageLog.ImageRes.Data {
+
+		// 未开启转储时上游可能直接返回 url, 却被转换进 B64Json; 只要是 URL 就记入日志
+		url := data.Url
+		if url == "" && isLogImageUrl(data.B64Json) {
+			url = data.B64Json
+		}
+
 		imageData := mcommon.ImageData{
-			Url:           data.Url,
+			Url:           url,
 			RevisedPrompt: data.RevisedPrompt,
 		}
+
 		if i < len(imageLog.ImageFilePaths) {
 			imageData.FilePath = imageLog.ImageFilePaths[i]
 		}
+
 		image.ImageData = append(image.ImageData, imageData)
 	}
 
@@ -1325,6 +1334,20 @@ func (s *sLog) General(ctx context.Context, generalLog model.LogGeneral, retry .
 
 		s.General(ctx, generalLog, retry...)
 	}
+}
+
+// 判断是否为可记录的图像 URL(http/https 或站点相对路径), 避免把 base64 误记为 url
+func isLogImageUrl(s string) bool {
+
+	if s == "" {
+		return false
+	}
+
+	if gstr.HasPrefix(s, "http://") || gstr.HasPrefix(s, "https://") {
+		return true
+	}
+
+	return gstr.HasPrefix(s, "/") && !gstr.HasPrefix(s, "data:")
 }
 
 func checkError(err error) bool {

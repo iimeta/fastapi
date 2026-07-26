@@ -80,7 +80,7 @@ func saveGoogleImageStorage(ctx context.Context, responseBytes []byte, imageInde
 			}
 
 			// 已是 URL 的不再处理(避免流式重复转储)
-			if gstr.HasPrefix(dataStr, "http://") || gstr.HasPrefix(dataStr, "https://") || gstr.HasPrefix(dataStr, "/") {
+			if isImageUrl(dataStr) {
 				continue
 			}
 
@@ -177,4 +177,96 @@ func mimeToExt(mimeType string) string {
 		}
 		return "png"
 	}
+}
+
+// 判断字符串是否为可访问的图像 URL(http/https 或站点相对路径), 用于把上游已返回的 URL 记入日志
+func isImageUrl(s string) bool {
+	if s == "" {
+		return false
+	}
+	if gstr.HasPrefix(s, "http://") || gstr.HasPrefix(s, "https://") {
+		return true
+	}
+	// 相对路径, 排除 data URI 与纯 base64
+	return gstr.HasPrefix(s, "/") && !gstr.HasPrefix(s, "data:")
+}
+
+// 从 Google 原生响应中提取图像数据供日志记录.
+// 不落盘: inlineData.data 已是 URL 时写入 Url; 仍是 base64 时写入 B64Json(日志层可再归一化).
+// 支持多 candidate / 多 part, 弥补 SDK 转换只保留最后一张图的问题.
+func extractGoogleImageDataForLog(responseBytes []byte) []smodel.ImageResponseData {
+
+	if len(responseBytes) == 0 {
+		return nil
+	}
+
+	var root map[string]any
+	if err := gjson.Unmarshal(responseBytes, &root); err != nil {
+		return nil
+	}
+
+	candidates, _ := root["candidates"].([]any)
+	if len(candidates) == 0 {
+		return nil
+	}
+
+	var result []smodel.ImageResponseData
+
+	for _, candidate := range candidates {
+
+		candMap, ok := candidate.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		content, _ := candMap["content"].(map[string]any)
+		if content == nil {
+			continue
+		}
+
+		var revisedPrompt string
+		parts, _ := content["parts"].([]any)
+		for _, part := range parts {
+
+			partMap, ok := part.(map[string]any)
+			if !ok {
+				continue
+			}
+
+			if text, _ := partMap["text"].(string); text != "" {
+				revisedPrompt = text
+			}
+
+			inlineData, _ := partMap["inlineData"].(map[string]any)
+			if inlineData == nil {
+				continue
+			}
+
+			dataStr, _ := inlineData["data"].(string)
+			if dataStr == "" {
+				continue
+			}
+
+			item := smodel.ImageResponseData{RevisedPrompt: revisedPrompt}
+			if isImageUrl(dataStr) {
+				item.Url = dataStr
+			} else {
+				item.B64Json = dataStr
+			}
+			result = append(result, item)
+		}
+	}
+
+	return result
+}
+
+// 将 Data 中误放在 B64Json 的 URL 挪到 Url 字段, 便于日志只读 Url 时也能记到
+func normalizeImageDataUrls(data []smodel.ImageResponseData) []smodel.ImageResponseData {
+	for i := range data {
+		if data[i].Url == "" && isImageUrl(data[i].B64Json) {
+			data[i].Url = data[i].B64Json
+			data[i].B64Json = ""
+		}
+	}
+	return data
 }
