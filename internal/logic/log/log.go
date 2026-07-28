@@ -1336,7 +1336,8 @@ func (s *sLog) General(ctx context.Context, generalLog model.LogGeneral, retry .
 	}
 }
 
-// 判断是否为可记录的图像 URL(http/https 或站点相对路径), 避免把 base64 误记为 url
+// 判断是否为可记录的图像 URL(http/https 或本服务转储后的相对路径), 避免把 base64 误记为 url.
+// 注意: 不可用单独的 "/" 前缀判断 — JPEG 的 base64 常以 /9j/ 开头, 会被误判为 URL 写入日志.
 func isLogImageUrl(s string) bool {
 
 	if s == "" {
@@ -1347,7 +1348,12 @@ func isLogImageUrl(s string) bool {
 		return true
 	}
 
-	return gstr.HasPrefix(s, "/") && !gstr.HasPrefix(s, "data:")
+	// 仅匹配转储生成的相对路径, 避免把 base64 当 URL
+	if gstr.HasPrefix(s, "/public/") || gstr.HasPrefix(s, "/open/image/") {
+		return true
+	}
+
+	return false
 }
 
 func checkError(err error) bool {

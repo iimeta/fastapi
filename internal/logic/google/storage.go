@@ -179,16 +179,24 @@ func mimeToExt(mimeType string) string {
 	}
 }
 
-// 判断字符串是否为可访问的图像 URL(http/https 或站点相对路径), 用于把上游已返回的 URL 记入日志
+// 判断字符串是否为可访问的图像 URL(http/https 或本服务转储后的相对路径).
+// 注意: 不可用单独的 "/" 前缀判断 — JPEG 的 base64 常以 /9j/ 开头, 会被误判为 URL 从而跳过转储.
 func isImageUrl(s string) bool {
+
 	if s == "" {
 		return false
 	}
+
 	if gstr.HasPrefix(s, "http://") || gstr.HasPrefix(s, "https://") {
 		return true
 	}
-	// 相对路径, 排除 data URI 与纯 base64
-	return gstr.HasPrefix(s, "/") && !gstr.HasPrefix(s, "data:")
+
+	// 仅匹配 buildImageStorageUrl 生成的相对路径, 避免把 base64 当 URL
+	if gstr.HasPrefix(s, "/public/") || gstr.HasPrefix(s, "/open/image/") {
+		return true
+	}
+
+	return false
 }
 
 // 从 Google 原生响应中提取图像数据供日志记录.
