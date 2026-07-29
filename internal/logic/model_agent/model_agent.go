@@ -348,6 +348,9 @@ func (s *sModelAgent) Pick(ctx context.Context, m *model.Model) (int, *model.Mod
 					filterModelAgentList = append(filterModelAgentList, modelAgent)
 				}
 			}
+			if len(filterModelAgentList) == 0 {
+				filterModelAgentList = modelAgentList
+			}
 		} else {
 			filterModelAgentList = modelAgentList
 		}
@@ -539,6 +542,9 @@ func (s *sModelAgent) PickGroup(ctx context.Context, m *model.Model, group *mode
 				if !slices.Contains(errorModelAgents, modelAgent.Id) {
 					filterModelAgentList = append(filterModelAgentList, modelAgent)
 				}
+			}
+			if len(filterModelAgentList) == 0 {
+				filterModelAgentList = modelAgentList
 			}
 		} else {
 			filterModelAgentList = modelAgentList
