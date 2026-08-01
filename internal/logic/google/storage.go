@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/gogf/gf/v2/encoding/gjson"
@@ -13,12 +14,14 @@ import (
 	"github.com/gogf/gf/v2/text/gstr"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
 	"github.com/iimeta/fastapi/v2/internal/config"
+	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/logger"
 )
 
 // 转储 Google 原生响应中的 inlineData 图像:
 // 开启 ImageStorage 时将 base64 落盘并生成访问 URL;
 // IsReturnBase64=false 时把 inlineData.data 替换为 URL, true 时保留 base64 给客户端;
+// 命中 RawUserIds/RawKeys 名单时视同 IsReturnBase64=true: 仍落盘并按 URL 记日志, 但回传体保留 base64 不替换;
 // 返回值中的 imageData 始终带 Url, 供日志按 url/filepath 形式记录.
 // imageIndexOffset 用于流式场景下跨 chunk 的文件名序号.
 func saveGoogleImageStorage(ctx context.Context, responseBytes []byte, imageIndexOffset int) (newBytes []byte, filePaths []string, expiresAt int64, imageData []smodel.ImageResponseData) {
@@ -48,6 +51,9 @@ func saveGoogleImageStorage(ctx context.Context, responseBytes []byte, imageInde
 	traceId := gtrace.GetTraceID(ctx)
 	idx := imageIndexOffset
 	hasStored := false
+
+	// 命中原始名单(RawUserIds/RawKeys)时仍落盘并按 URL 记日志, 但回传体保留 base64 不替换
+	isRaw := isImageStorageRaw(ctx)
 
 	for _, candidate := range candidates {
 
@@ -112,8 +118,8 @@ func saveGoogleImageStorage(ctx context.Context, responseBytes []byte, imageInde
 			filePaths = append(filePaths, storageDir+fileName)
 			imageData = append(imageData, smodel.ImageResponseData{Url: imageUrl})
 
-			// 关闭 IsReturnBase64 时用 URL 替换 base64 回传给客户端
-			if !config.Cfg.ImageStorage.IsReturnBase64 {
+			// 关闭 IsReturnBase64 且未命中原始名单时, 才用 URL 替换 base64 回传给客户端
+			if !config.Cfg.ImageStorage.IsReturnBase64 && !isRaw {
 				inlineData["data"] = imageUrl
 			}
 
@@ -131,6 +137,31 @@ func saveGoogleImageStorage(ctx context.Context, responseBytes []byte, imageInde
 	}
 
 	return gjson.MustEncode(root), filePaths, expiresAt, imageData
+}
+
+// 判断当前请求是否命中"返回原始 base64"名单(按用户ID或用户请求密钥 sk- 匹配).
+// 命中后转储照常(落盘/记 URL), 仅回传体保留 base64 不替换为 URL.
+func isImageStorageRaw(ctx context.Context) bool {
+
+	if config.Cfg.ImageStorage == nil {
+		return false
+	}
+
+	// 按用户ID匹配
+	if len(config.Cfg.ImageStorage.RawUserIds) > 0 {
+		if slices.Contains(config.Cfg.ImageStorage.RawUserIds, service.Session().GetUserId(ctx)) {
+			return true
+		}
+	}
+
+	// 按用户请求密钥(sk-)匹配
+	if len(config.Cfg.ImageStorage.RawKeys) > 0 {
+		if slices.Contains(config.Cfg.ImageStorage.RawKeys, service.Session().GetSecretKey(ctx)) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // 根据存储目录规则拼接对外可访问的图像 URL, 逻辑与 image.saveImageStorage 保持一致

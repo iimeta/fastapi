@@ -145,6 +145,8 @@ type ImageStorage struct {
 	StorageExpiresAt     time.Duration `bson:"storage_expires_at"     json:"storage_expires_at,omitempty"` // 存储过期时间, 单位: 分钟
 	StorageExpiredDelete bool          `bson:"storage_expired_delete" json:"storage_expired_delete"`       // 存储过期删除开关
 	IsReturnBase64       bool          `bson:"is_return_base64"       json:"is_return_base64"`             // 是否返回base64, 关闭后按用户response_format控制
+	RawUserIds           []int         `bson:"raw_user_ids"           json:"raw_user_ids,omitempty"`       // 返回原始base64的用户ID名单: 命中后仍落盘并按URL记日志, 但回传体保留base64不替换
+	RawKeys              []string      `bson:"raw_keys"               json:"raw_keys,omitempty"`           // 返回原始base64的用户请求密钥(sk-)名单: 命中后仍落盘并按URL记日志, 但回传体保留base64不替换
 }
 
 type VideoTask struct {
