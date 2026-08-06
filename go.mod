@@ -10,7 +10,7 @@ require (
 	github.com/gogf/gf/v2 v2.10.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/iimeta/fastapi-sdk/v2 v2.4.0
-	github.com/redis/go-redis/v9 v9.18.0
+	github.com/redis/go-redis/v9 v9.22.0
 	github.com/tjfoc/gmsm v1.4.1
 	go.mongodb.org/mongo-driver/v2 v2.5.1
 )
@@ -23,7 +23,6 @@ require (
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect
-	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dlclark/regexp2 v1.11.4 // indirect
 	github.com/emirpasic/gods/v2 v2.0.0-alpha // indirect
 	github.com/fatih/color v1.18.0 // indirect
