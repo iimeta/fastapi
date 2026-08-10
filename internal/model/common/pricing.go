@@ -39,7 +39,7 @@ type TimeRule struct {
 }
 
 type TextPricing struct {
-	ServiceTier    string  `bson:"service_tier,omitempty"    json:"service_tier,omitempty"`    // 服务层[all:全部, default:默认, priority:优先, flex:弹性]
+	ServiceTier    string  `bson:"service_tier,omitempty"    json:"service_tier,omitempty"`    // 服务层[all:全部, default:默认, priority:优先, flex:弹性, fast:快速]
 	InputRatio     float64 `bson:"input_ratio,omitempty"     json:"input_ratio,omitempty"`     // 输入倍率
 	OutputRatio    float64 `bson:"output_ratio,omitempty"    json:"output_ratio,omitempty"`    // 输出倍率
 	ReasoningRatio float64 `bson:"reasoning_ratio,omitempty" json:"reasoning_ratio,omitempty"` // 思考倍率
@@ -49,7 +49,7 @@ type TextPricing struct {
 }
 
 type CachePricing struct {
-	ServiceTier  string  `bson:"service_tier,omitempty"   json:"service_tier,omitempty"`   // 服务层[all:全部, default:默认, priority:优先, flex:弹性]
+	ServiceTier  string  `bson:"service_tier,omitempty"   json:"service_tier,omitempty"`   // 服务层[all:全部, default:默认, priority:优先, flex:弹性, fast:快速]
 	ReadRatio    float64 `bson:"read_ratio,omitempty"     json:"read_ratio,omitempty"`     // 读取/命中倍率
 	WriteRatio   float64 `bson:"write_ratio,omitempty"    json:"write_ratio,omitempty"`    // 写入倍率
 	Write5MRatio float64 `bson:"write_5m_ratio,omitempty" json:"write_5m_ratio,omitempty"` // 5分钟缓存写入倍率
