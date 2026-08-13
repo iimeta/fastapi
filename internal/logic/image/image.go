@@ -548,28 +548,30 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 		}
 	}
 
+	request := params
+
 	if !gstr.Contains(mak.RealModel.Model, "*") {
-		params.Model = mak.RealModel.Model
+		request.Model = mak.RealModel.Model
 	}
 
 	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
 		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
-			if replaceModel == params.Model {
-				logger.Infof(ctx, "sImage Edits request.Model: %s replaced %s", params.Model, mak.ModelAgent.TargetModels[i])
-				params.Model = mak.ModelAgent.TargetModels[i]
-				mak.RealModel.Model = params.Model
+			if replaceModel == request.Model {
+				logger.Infof(ctx, "sImage Edits request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
+				request.Model = mak.ModelAgent.TargetModels[i]
+				mak.RealModel.Model = request.Model
 				break
 			}
 		}
 	}
 
 	// 开启转储时强制向上游请求b64_json以便落盘, 用户原始response_format另行保留用于控制是否回传base64
-	originalResponseFormat := params.ResponseFormat
+	originalResponseFormat := request.ResponseFormat
 	if config.Cfg.ImageStorage.Open {
-		params.ResponseFormat = "b64_json"
+		request.ResponseFormat = "b64_json"
 	}
 
-	response, err = common.NewAdapter(ctx, mak, false).ImageEdits(ctx, params)
+	response, err = common.NewAdapter(ctx, mak, false).ImageEdits(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -747,22 +749,24 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 		}
 	}
 
+	request := params
+
 	if !gstr.Contains(mak.RealModel.Model, "*") {
-		params.Model = mak.RealModel.Model
+		request.Model = mak.RealModel.Model
 	}
 
 	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
 		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
-			if replaceModel == params.Model {
-				logger.Infof(ctx, "sImage EditsStream request.Model: %s replaced %s", params.Model, mak.ModelAgent.TargetModels[i])
-				params.Model = mak.ModelAgent.TargetModels[i]
-				mak.RealModel.Model = params.Model
+			if replaceModel == request.Model {
+				logger.Infof(ctx, "sImage EditsStream request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
+				request.Model = mak.ModelAgent.TargetModels[i]
+				mak.RealModel.Model = request.Model
 				break
 			}
 		}
 	}
 
-	response, err := common.NewAdapter(ctx, mak, true).ImageEditsStream(ctx, params)
+	response, err := common.NewAdapter(ctx, mak, true).ImageEditsStream(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
 
