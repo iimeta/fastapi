@@ -1795,6 +1795,11 @@ func saveImageStorage(ctx context.Context, response *smodel.ImageResponse, outpu
 	filePaths = make([]string, len(response.Data))
 	hasStored := false
 
+	// 命中原始名单(RawUserIds/RawKeys)时视同 IsReturnBase64=true: 仍落盘并按 URL 记日志, 但回传体保留 base64
+	isRaw := isImageStorageRaw(ctx)
+
+	needReturnB64 := config.Cfg.ImageStorage.IsReturnBase64 || isRaw || (responseFormat != "" && responseFormat != "url")
+
 	for i := range response.Data {
 
 		imageData := response.Data[i]
@@ -1836,6 +1841,11 @@ func saveImageStorage(ctx context.Context, response *smodel.ImageResponse, outpu
 			continue
 		}
 
+		// 上游只返回 url 时, 用下载到的图片补齐 b64_json, 再按 needReturnB64 决定是否回传
+		if response.Data[i].B64Json == "" && needReturnB64 {
+			response.Data[i].B64Json = base64.StdEncoding.EncodeToString(imageBytes)
+		}
+
 		fileName := fmt.Sprintf("%s%d.%s", traceId, i, outputFormat)
 
 		if err := gfile.PutBytes(storageDir+fileName, imageBytes); err != nil {
@@ -1874,7 +1884,7 @@ func saveImageStorage(ctx context.Context, response *smodel.ImageResponse, outpu
 		expiresAt = gtime.NewFromTimeStamp(gtime.TimestampMilli() / 1000).Add(config.Cfg.ImageStorage.StorageExpiresAt * time.Minute).Unix()
 	}
 
-	if !config.Cfg.ImageStorage.IsReturnBase64 && (responseFormat == "" || responseFormat == "url") {
+	if !needReturnB64 {
 		for i := range response.Data {
 			response.Data[i].B64Json = ""
 		}
@@ -2193,4 +2203,29 @@ func decodeDataURI(dataURI string) ([]byte, error) {
 	}
 
 	return []byte(decoded), nil
+}
+
+// 判断当前请求是否命中"返回原始 base64"名单(按用户ID或用户请求密钥 sk- 匹配).
+// 命中后转储照常(落盘/记 URL), 仅回传体保留 base64 不替换为 URL.
+func isImageStorageRaw(ctx context.Context) bool {
+
+	if config.Cfg.ImageStorage == nil {
+		return false
+	}
+
+	// 按用户ID匹配
+	if len(config.Cfg.ImageStorage.RawUserIds) > 0 {
+		if slices.Contains(config.Cfg.ImageStorage.RawUserIds, service.Session().GetUserId(ctx)) {
+			return true
+		}
+	}
+
+	// 按用户请求密钥(sk-)匹配
+	if len(config.Cfg.ImageStorage.RawKeys) > 0 {
+		if slices.Contains(config.Cfg.ImageStorage.RawKeys, service.Session().GetSecretKey(ctx)) {
+			return true
+		}
+	}
+
+	return false
 }
