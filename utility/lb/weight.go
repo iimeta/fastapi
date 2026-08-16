@@ -1,21 +1,12 @@
 package lb
 
 import (
-	"sync"
-
 	"github.com/iimeta/fastapi/v2/internal/model"
 )
 
 type Weight struct {
 	ModelAgents []*model.ModelAgent
 	Keys        []*model.Key
-	mutex       sync.Mutex
-}
-
-type Server struct {
-	Name           string
-	OriginalWeight int
-	CurrentWeight  int
 }
 
 func NewModelAgentWeight(modelAgents []*model.ModelAgent) *Weight {
@@ -31,8 +22,6 @@ func NewKeyWeight(keys []*model.Key) *Weight {
 }
 
 func (w *Weight) PickModelAgent() *model.ModelAgent {
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
 
 	if len(w.ModelAgents) == 0 {
 		return nil
@@ -62,8 +51,6 @@ func (w *Weight) PickModelAgent() *model.ModelAgent {
 }
 
 func (w *Weight) PickKey() *model.Key {
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
 
 	if len(w.Keys) == 0 {
 		return nil
