@@ -173,10 +173,41 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 			}
 		}
 
+		var allText *common.TextPricing
+
 		for i, text := range mak.ReqModel.Pricing.Text {
-			if (serviceTier == text.ServiceTier && (text.Mode == "" || mode == text.Mode)) || i == len(mak.ReqModel.Pricing.Text)-1 {
+
+			if text.Mode != "" && mode != text.Mode {
+				if i == len(mak.ReqModel.Pricing.Text)-1 {
+					if allText != nil {
+						spend.Text.Pricing = allText
+					} else {
+						spend.Text.Pricing = text
+					}
+				}
+				continue
+			}
+
+			configTier := text.ServiceTier
+			if configTier == "" {
+				configTier = "all"
+			}
+
+			if serviceTier == configTier {
 				spend.Text.Pricing = text
 				break
+			}
+
+			if configTier == "all" && allText == nil {
+				allText = text
+			}
+
+			if i == len(mak.ReqModel.Pricing.Text)-1 {
+				if allText != nil {
+					spend.Text.Pricing = allText
+				} else {
+					spend.Text.Pricing = text
+				}
 			}
 		}
 
@@ -257,10 +288,41 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 		}
 	}
 
+	var allText *common.TextPricing
+
 	for i, text := range mak.ReqModel.Pricing.Text {
-		if (serviceTier == text.ServiceTier && (text.Mode == "" || mode == text.Mode)) || i == len(mak.ReqModel.Pricing.Text)-1 {
+
+		if text.Mode != "" && mode != text.Mode {
+			if i == len(mak.ReqModel.Pricing.Text)-1 {
+				if allText != nil {
+					spend.Text.Pricing = allText
+				} else {
+					spend.Text.Pricing = text
+				}
+			}
+			continue
+		}
+
+		configTier := text.ServiceTier
+		if configTier == "" {
+			configTier = "all"
+		}
+
+		if serviceTier == configTier {
 			spend.Text.Pricing = text
 			break
+		}
+
+		if configTier == "all" && allText == nil {
+			allText = text
+		}
+
+		if i == len(mak.ReqModel.Pricing.Text)-1 {
+			if allText != nil {
+				spend.Text.Pricing = allText
+			} else {
+				spend.Text.Pricing = text
+			}
 		}
 	}
 
@@ -333,10 +395,41 @@ func textCache(ctx context.Context, mak *MAK, billingData *common.BillingData, s
 		}
 	}
 
+	var allTextCache *common.CachePricing
+
 	for i, textCache := range mak.ReqModel.Pricing.TextCache {
-		if (serviceTier == textCache.ServiceTier && (textCache.Mode == "" || mode == textCache.Mode)) || i == len(mak.ReqModel.Pricing.TextCache)-1 {
+
+		if textCache.Mode != "" && mode != textCache.Mode {
+			if i == len(mak.ReqModel.Pricing.TextCache)-1 {
+				if allTextCache != nil {
+					spend.TextCache.Pricing = allTextCache
+				} else {
+					spend.TextCache.Pricing = textCache
+				}
+			}
+			continue
+		}
+
+		configTier := textCache.ServiceTier
+		if configTier == "" {
+			configTier = "all"
+		}
+
+		if serviceTier == configTier {
 			spend.TextCache.Pricing = textCache
 			break
+		}
+
+		if configTier == "all" && allTextCache == nil {
+			allTextCache = textCache
+		}
+
+		if i == len(mak.ReqModel.Pricing.TextCache)-1 {
+			if allTextCache != nil {
+				spend.TextCache.Pricing = allTextCache
+			} else {
+				spend.TextCache.Pricing = textCache
+			}
 		}
 	}
 
@@ -440,9 +533,43 @@ func tieredText(ctx context.Context, mak *MAK, billingData *common.BillingData, 
 		promptTokens = billingData.Usage.OutputTokensDetails.ReasoningTokens
 	}
 
+	var allTieredText *common.TextPricing
+
 	for i, tieredText := range mak.ReqModel.Pricing.TieredText {
-		if ((tieredText.ServiceTier == "" || serviceTier == tieredText.ServiceTier) && mode == tieredText.Mode && promptTokens > tieredText.Gt && promptTokens <= tieredText.Lte) || i == len(mak.ReqModel.Pricing.TieredText)-1 {
-			spend.TieredText.Pricing = tieredText
+
+		if mode == tieredText.Mode && promptTokens > tieredText.Gt && promptTokens <= tieredText.Lte {
+
+			configTier := tieredText.ServiceTier
+			if configTier == "" {
+				configTier = "all"
+			}
+
+			if serviceTier == configTier {
+				spend.TieredText.Pricing = tieredText
+				if spend.TieredText.InputTokens = billingData.Usage.PromptTokens - billingData.Usage.PromptTokensDetails.CachedTokens - billingData.Usage.PromptTokensDetails.CacheWriteTokens; spend.TieredText.InputTokens <= 0 {
+					spend.TieredText.InputTokens = billingData.Usage.PromptTokens
+				}
+				if spend.TieredText.OutputTokens = billingData.Usage.CompletionTokens - billingData.Usage.OutputTokensDetails.ReasoningTokens; spend.TieredText.OutputTokens <= 0 || spend.TieredText.Pricing.ReasoningRatio <= 0 {
+					spend.TieredText.OutputTokens = billingData.Usage.CompletionTokens
+				}
+				spend.TieredText.ReasoningTokens = billingData.Usage.OutputTokensDetails.ReasoningTokens
+				spend.TieredText.SpendTokens = int(math.Ceil(float64(spend.TieredText.InputTokens)*spend.TieredText.Pricing.InputRatio)) + int(math.Ceil(float64(spend.TieredText.OutputTokens)*spend.TieredText.Pricing.OutputRatio)) + int(math.Ceil(float64(spend.TieredText.ReasoningTokens)*spend.TieredText.Pricing.ReasoningRatio))
+				return
+			}
+
+			if configTier == "all" && allTieredText == nil {
+				allTieredText = tieredText
+			}
+		}
+
+		if i == len(mak.ReqModel.Pricing.TieredText)-1 {
+
+			if allTieredText != nil {
+				spend.TieredText.Pricing = allTieredText
+			} else {
+				spend.TieredText.Pricing = tieredText
+			}
+
 			if spend.TieredText.InputTokens = billingData.Usage.PromptTokens - billingData.Usage.PromptTokensDetails.CachedTokens - billingData.Usage.PromptTokensDetails.CacheWriteTokens; spend.TieredText.InputTokens <= 0 {
 				spend.TieredText.InputTokens = billingData.Usage.PromptTokens
 			}
@@ -533,9 +660,42 @@ func tieredTextCache(ctx context.Context, mak *MAK, billingData *common.BillingD
 		readTokens = billingData.Usage.PromptTokens
 	}
 
+	var allTieredTextCache *common.CachePricing
+
 	for i, tieredTextCache := range mak.ReqModel.Pricing.TieredTextCache {
-		if ((tieredTextCache.ServiceTier == "" || serviceTier == tieredTextCache.ServiceTier) && mode == tieredTextCache.Mode && readTokens > tieredTextCache.Gt && readTokens <= tieredTextCache.Lte) || i == len(mak.ReqModel.Pricing.TieredTextCache)-1 {
-			spend.TieredTextCache.Pricing = tieredTextCache
+
+		if mode == tieredTextCache.Mode && readTokens > tieredTextCache.Gt && readTokens <= tieredTextCache.Lte {
+
+			configTier := tieredTextCache.ServiceTier
+			if configTier == "" {
+				configTier = "all"
+			}
+
+			if serviceTier == configTier {
+				spend.TieredTextCache.Pricing = tieredTextCache
+				if spend.TieredTextCache.Pricing.Write5MRatio > 0 || spend.TieredTextCache.Pricing.Write1HRatio > 0 {
+					spend.TieredTextCache.SpendTokens = int(math.Ceil(float64(spend.TieredTextCache.ReadTokens)*spend.TieredTextCache.Pricing.ReadRatio)) +
+						int(math.Ceil(float64(spend.TieredTextCache.Write5MTokens)*spend.TieredTextCache.Pricing.Write5MRatio)) +
+						int(math.Ceil(float64(spend.TieredTextCache.Write1HTokens)*spend.TieredTextCache.Pricing.Write1HRatio))
+				} else {
+					spend.TieredTextCache.SpendTokens = int(math.Ceil(float64(spend.TieredTextCache.ReadTokens)*spend.TieredTextCache.Pricing.ReadRatio)) + int(math.Ceil(float64(spend.TieredTextCache.WriteTokens)*spend.TieredTextCache.Pricing.WriteRatio))
+				}
+				return
+			}
+
+			if configTier == "all" && allTieredTextCache == nil {
+				allTieredTextCache = tieredTextCache
+			}
+		}
+
+		if i == len(mak.ReqModel.Pricing.TieredTextCache)-1 {
+
+			if allTieredTextCache != nil {
+				spend.TieredTextCache.Pricing = allTieredTextCache
+			} else {
+				spend.TieredTextCache.Pricing = tieredTextCache
+			}
+
 			if spend.TieredTextCache.Pricing.Write5MRatio > 0 || spend.TieredTextCache.Pricing.Write1HRatio > 0 {
 				spend.TieredTextCache.SpendTokens = int(math.Ceil(float64(spend.TieredTextCache.ReadTokens)*spend.TieredTextCache.Pricing.ReadRatio)) +
 					int(math.Ceil(float64(spend.TieredTextCache.Write5MTokens)*spend.TieredTextCache.Pricing.Write5MRatio)) +
