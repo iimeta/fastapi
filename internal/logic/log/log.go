@@ -58,6 +58,8 @@ func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 		Action:       textLog.Action,
 		IsSmartMatch: textLog.IsSmartMatch,
 		Stream:       textLog.CompletionsReq.Stream,
+		ServiceTier:  textLog.CompletionsReq.ServiceTier,
+		Reasoning:    textLog.CompletionsReq.ReasoningEffort,
 		Spend:        textLog.Spend,
 		ConnTime:     textLog.CompletionsRes.ConnTime,
 		Duration:     textLog.CompletionsRes.Duration,
@@ -73,6 +75,14 @@ func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 		Method:       g.RequestFromCtx(ctx).Method,
 		Path:         g.RequestFromCtx(ctx).URL.Path,
 		Rid:          service.Session().GetRid(ctx),
+	}
+
+	if textLog.CompletionsReq.EnableThinking != nil {
+		if *textLog.CompletionsReq.EnableThinking {
+			text.Mode = "thinking"
+		} else {
+			text.Mode = "non_thinking"
+		}
 	}
 
 	if config.Cfg.Log.Open && slices.Contains(config.Cfg.Log.TextRecords, "prompt") {

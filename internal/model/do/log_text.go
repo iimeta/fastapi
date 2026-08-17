@@ -35,6 +35,9 @@ type LogText struct {
 	Messages             []common.Message       `bson:"messages,omitempty"`                // 完整提示(提问)
 	Prompt               string                 `bson:"prompt,omitempty"`                  // 提示(提问)
 	Completion           string                 `bson:"completion,omitempty"`              // 补全(回答)
+	ServiceTier          string                 `bson:"service_tier,omitempty"`            // 服务层
+	Mode                 string                 `bson:"mode,omitempty"`                    // 模式
+	Reasoning            string                 `bson:"reasoning,omitempty"`               // 推理
 	Spend                common.Spend           `bson:"spend,omitempty"`                   // 花费
 	ConnTime             int64                  `bson:"conn_time,omitempty"`               // 连接时间
 	Duration             int64                  `bson:"duration,omitempty"`                // 持续时间
