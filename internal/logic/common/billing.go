@@ -211,8 +211,12 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 			}
 		}
 
-		spend.Text.InputTokens = billingData.Usage.InputTokensDetails.TextTokens
-		spend.Text.OutputTokens = billingData.Usage.CompletionTokensDetails.TextTokens
+		if spend.Text.InputTokens = billingData.Usage.InputTokensDetails.TextTokens; spend.Text.InputTokens <= 0 {
+			spend.Text.InputTokens = billingData.Usage.PromptTokens
+		}
+		if spend.Text.OutputTokens = billingData.Usage.CompletionTokensDetails.TextTokens; spend.Text.OutputTokens <= 0 {
+			spend.Text.OutputTokens = billingData.Usage.CompletionTokens
+		}
 		spend.Text.ReasoningTokens = billingData.Usage.OutputTokensDetails.ReasoningTokens
 		spend.Text.SpendTokens = int(math.Ceil(float64(spend.Text.InputTokens)*spend.Text.Pricing.InputRatio)) + int(math.Ceil(float64(spend.Text.OutputTokens)*spend.Text.Pricing.OutputRatio)) + int(math.Ceil(float64(spend.Text.ReasoningTokens)*spend.Text.Pricing.ReasoningRatio))
 
