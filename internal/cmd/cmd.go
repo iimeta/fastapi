@@ -367,6 +367,14 @@ func middlewareHandlerResponse(r *ghttp.Request) {
 
 	if err != nil {
 
+		// SSE 响应头已刷出后不能再改成 JSON, 否则会在流末尾追加一行非 event/data 的错误体
+		if gstr.Contains(r.Response.Header().Get("Content-Type"), "text/event-stream") {
+			if config.Cfg.Debug.Open {
+				logger.Debugf(r.GetCtx(), "middlewareHandlerResponse url: %s, skip json error for sse, error: %v", r.GetUrl(), gjson.MustEncodeString(err))
+			}
+			return
+		}
+
 		err := errors.Error(r.GetCtx(), err)
 
 		if config.Cfg.Debug.Open {

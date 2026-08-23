@@ -410,6 +410,11 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 
 	defer close(response)
 
+	var (
+		streamResponseId    string
+		streamResponseModel string
+	)
+
 	for {
 
 		res := <-response
@@ -509,6 +514,11 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 							}
 						}
 
+						if werr := writeResponsesStreamError(ctx, isChatCompletions, res, err, streamResponseId, streamResponseModel); werr != nil {
+							logger.Error(ctx, werr)
+							return werr
+						}
+
 						return err
 					}
 				}
@@ -522,7 +532,20 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 				return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 			}
 
+			if werr := writeResponsesStreamError(ctx, isChatCompletions, res, err, streamResponseId, streamResponseModel); werr != nil {
+				logger.Error(ctx, werr)
+				return werr
+			}
+
 			return err
+		}
+
+		if response.Id != "" {
+			streamResponseId = response.Id
+		}
+
+		if response.Model != "" {
+			streamResponseModel = response.Model
 		}
 
 		if len(response.Choices) > 0 && response.Choices[0].Delta != nil {
@@ -761,4 +784,64 @@ func responsesEndpoint(isChatCompletions bool) string {
 		return consts.ENDPOINT_CHAT_COMPLETIONS
 	}
 	return consts.ENDPOINT_RESPONSES
+}
+
+// 流式中途失败按 SSE 写出, 避免被中间件追加成普通 JSON 错误体
+func writeResponsesStreamError(ctx context.Context, isChatCompletions bool, streamRes *smodel.OpenAIResponsesStreamRes, streamErr error, fallbackId, fallbackModel string) error {
+
+	if streamRes == nil {
+		return nil
+	}
+
+	apiErr := errors.Error(ctx, streamErr)
+
+	if isChatCompletions {
+		return util.SSEServer(ctx, gjson.MustEncodeString(apiErr))
+	}
+
+	event := streamRes.SSEEvent
+	if event == "" {
+		event = "response.failed"
+	}
+
+	if len(streamRes.ResponseBytes) > 0 {
+
+		payload := make(map[string]any)
+		if err := json.Unmarshal(streamRes.ResponseBytes, &payload); err == nil {
+			if t := gconv.String(payload["type"]); t != "" {
+				event = t
+			}
+		}
+
+		return util.SSEServer(ctx, string(streamRes.ResponseBytes), event)
+	}
+
+	responseId := streamRes.Response.Id
+	if responseId == "" {
+		responseId = fallbackId
+	}
+
+	responseModel := streamRes.Response.Model
+	if responseModel == "" {
+		responseModel = fallbackModel
+	}
+
+	payload := map[string]any{
+		"type":            event,
+		"sequence_number": streamRes.SequenceNumber,
+		"response": map[string]any{
+			"id":     responseId,
+			"object": "response",
+			"model":  responseModel,
+			"status": "failed",
+			"error": map[string]any{
+				"code":    apiErr.ErrCode(),
+				"message": apiErr.ErrMessage(),
+				"type":    apiErr.ErrType(),
+				"param":   apiErr.ErrParam(),
+			},
+		},
+	}
+
+	return util.SSEServer(ctx, gjson.MustEncodeString(payload), event)
 }
