@@ -16,6 +16,7 @@ type User struct {
 	Remark         string              `json:"remark,omitempty"`           // 备注
 	Privacy        *common.UserPrivacy `json:"privacy,omitempty"`          // 隐私设置
 	Status         int                 `json:"status,omitempty"`           // 状态[1:正常, 2:禁用, -1:删除]
+	ExpiresAt      int64               `json:"expires_at,omitempty"`       // 过期时间
 	Rid            int                 `json:"rid,omitempty"`              // 代理商ID
 	CreatedAt      string              `json:"created_at,omitempty"`       // 创建时间
 	UpdatedAt      string              `json:"updated_at,omitempty"`       // 更新时间

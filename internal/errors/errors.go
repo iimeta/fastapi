@@ -53,6 +53,7 @@ var (
 	ERR_RESELLER_DISABLED                 = NewError(401, "reseller_disabled", "Reseller has been disabled.", "fastapi_request_error", nil)
 	ERR_INVALID_USER                      = NewError(401, "invalid_user", "User does not exist or has been disabled.", "fastapi_request_error", nil)
 	ERR_USER_DISABLED                     = NewError(401, "user_disabled", "User has been disabled.", "fastapi_request_error", nil)
+	ERR_USER_EXPIRED                      = NewError(401, "user_expired", "User has expired.", "fastapi_request_error", nil)
 	ERR_INVALID_APP                       = NewError(401, "invalid_app", "App does not exist or has been disabled.", "fastapi_request_error", nil)
 	ERR_APP_DISABLED                      = NewError(401, "app_disabled", "App has been disabled.", "fastapi_request_error", nil)
 	ERR_MODEL_DISABLED                    = NewError(401, "model_disabled", "Model has been disabled.", "fastapi_request_error", nil)

@@ -122,6 +122,12 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 		return err
 	}
 
+	if user.ExpiresAt != 0 && user.ExpiresAt < gtime.TimestampMilli() {
+		err = errors.ERR_USER_EXPIRED
+		logger.Error(ctx, err)
+		return err
+	}
+
 	if path != modelsPath && service.User().GetCacheQuota(ctx, user.UserId) <= 0 {
 		err = errors.ERR_INSUFFICIENT_QUOTA
 		logger.Error(ctx, err)

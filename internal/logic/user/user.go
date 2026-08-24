@@ -62,6 +62,7 @@ func (s *sUser) GetByUserId(ctx context.Context, userId int) (*model.User, error
 		Groups:         user.Groups,
 		Privacy:        user.Privacy,
 		Status:         user.Status,
+		ExpiresAt:      user.ExpiresAt,
 		Rid:            user.Rid,
 	}, nil
 }
@@ -97,6 +98,7 @@ func (s *sUser) List(ctx context.Context) ([]*model.User, error) {
 			Groups:         result.Groups,
 			Privacy:        result.Privacy,
 			Status:         result.Status,
+			ExpiresAt:      result.ExpiresAt,
 			Rid:            result.Rid,
 		})
 	}
@@ -194,6 +196,7 @@ func (s *sUser) UpdateCache(ctx context.Context, user *entity.User) {
 		Groups:         user.Groups,
 		Privacy:        user.Privacy,
 		Status:         user.Status,
+		ExpiresAt:      user.ExpiresAt,
 		Rid:            user.Rid,
 	}); err != nil {
 		logger.Error(ctx, err)
