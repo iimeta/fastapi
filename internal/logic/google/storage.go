@@ -14,6 +14,7 @@ import (
 	"github.com/gogf/gf/v2/text/gstr"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
 	"github.com/iimeta/fastapi/v2/internal/config"
+	"github.com/iimeta/fastapi/v2/internal/logic/common"
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/logger"
 )
@@ -27,18 +28,18 @@ import (
 func saveGoogleImageStorage(ctx context.Context, responseBytes []byte, imageIndexOffset int) (newBytes []byte, filePaths []string, expiresAt int64, imageData []smodel.ImageResponseData) {
 
 	if config.Cfg.ImageStorage == nil || !config.Cfg.ImageStorage.Open || len(responseBytes) == 0 {
-		return responseBytes, nil, 0, nil
+		return common.ReplaceImageUrlsInJSON(responseBytes), nil, 0, nil
 	}
 
 	var root map[string]any
 	if err := gjson.Unmarshal(responseBytes, &root); err != nil {
 		logger.Error(ctx, err)
-		return responseBytes, nil, 0, nil
+		return common.ReplaceImageUrlsInJSON(responseBytes), nil, 0, nil
 	}
 
 	candidates, _ := root["candidates"].([]any)
 	if len(candidates) == 0 {
-		return responseBytes, nil, 0, nil
+		return common.ReplaceImageUrlsInJSON(responseBytes), nil, 0, nil
 	}
 
 	storageDir := config.Cfg.ImageStorage.StorageDir
@@ -129,14 +130,16 @@ func saveGoogleImageStorage(ctx context.Context, responseBytes []byte, imageInde
 	}
 
 	if !hasStored {
-		return responseBytes, nil, 0, nil
+		return common.ReplaceImageUrlsInJSON(responseBytes), nil, 0, nil
 	}
 
 	if config.Cfg.ImageStorage.StorageExpiresAt > 0 {
 		expiresAt = gtime.NewFromTimeStamp(gtime.TimestampMilli() / 1000).Add(config.Cfg.ImageStorage.StorageExpiresAt * time.Minute).Unix()
 	}
 
-	return gjson.MustEncode(root), filePaths, expiresAt, imageData
+	common.ReplaceImageDataUrls(imageData)
+
+	return common.ReplaceImageUrlsInJSON(gjson.MustEncode(root)), filePaths, expiresAt, imageData
 }
 
 // 判断当前请求是否命中"返回原始 base64"名单(按用户ID或用户请求密钥 sk- 匹配).

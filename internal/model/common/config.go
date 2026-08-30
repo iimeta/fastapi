@@ -149,6 +149,16 @@ type ImageStorage struct {
 	RawKeys              []string      `bson:"raw_keys"               json:"raw_keys,omitempty"`           // 返回原始base64的用户请求密钥(sk-)名单: 命中后仍落盘并按URL记日志, 但回传体保留base64不替换
 }
 
+type ImageUrl struct {
+	Open bool           `bson:"open" json:"open"` // 开关
+	Urls []ImageUrlItem `bson:"urls" json:"urls"` // 图像URL替换列表
+}
+
+type ImageUrlItem struct {
+	ReplaceUrl string `bson:"replace_url" json:"replace_url"` // 替换URL
+	TargetUrl  string `bson:"target_url"  json:"target_url"`  // 目标URL
+}
+
 type VideoTask struct {
 	Open                 bool          `bson:"open"                   json:"open"`                         // 开关
 	Cron                 string        `bson:"cron"                   json:"cron"`                         // CRON表达式

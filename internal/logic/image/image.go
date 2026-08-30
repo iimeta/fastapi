@@ -446,7 +446,7 @@ func (s *sImage) GenerationsStream(ctx context.Context, data []byte, fallbackMod
 			usage = &response.Usage
 		}
 
-		if err = util.SSEServer(ctx, string(response.ResponseBytes), response.Event); err != nil {
+		if err = util.SSEServer(ctx, string(common.ReplaceImageUrlsInJSON(response.ResponseBytes)), response.Event); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -885,7 +885,7 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 			usage = &response.Usage
 		}
 
-		if err = util.SSEServer(ctx, string(response.ResponseBytes), response.Event); err != nil {
+		if err = util.SSEServer(ctx, string(common.ReplaceImageUrlsInJSON(response.ResponseBytes)), response.Event); err != nil {
 			logger.Error(ctx, err)
 			return err
 		}
@@ -1767,16 +1767,18 @@ func resolveImageUrl(imageUrl string) string {
 	}
 
 	if config.Cfg.ImageTask.IsEnableStorage {
-		return buildStorageUrl(imageUrl)
+		return common.ReplaceImageUrl(buildStorageUrl(imageUrl))
 	}
 
-	return imageUrl
+	return common.ReplaceImageUrl(imageUrl)
 }
 
 // 同步转储图片到本地存储, 改写response中图片的访问地址, 返回与response.Data等长的文件路径列表及过期时间
 func saveImageStorage(ctx context.Context, response *smodel.ImageResponse, outputFormat string, responseFormat string) (filePaths []string, expiresAt int64) {
 
-	if !config.Cfg.ImageStorage.Open || len(response.Data) == 0 {
+	common.ReplaceImageResponseUrls(response)
+
+	if config.Cfg.ImageStorage == nil || !config.Cfg.ImageStorage.Open || len(response.Data) == 0 {
 		return nil, 0
 	}
 
@@ -1877,6 +1879,7 @@ func saveImageStorage(ctx context.Context, response *smodel.ImageResponse, outpu
 	}
 
 	if !hasStored {
+		common.ReplaceImageResponseUrls(response)
 		return nil, 0
 	}
 
@@ -1889,6 +1892,8 @@ func saveImageStorage(ctx context.Context, response *smodel.ImageResponse, outpu
 			response.Data[i].B64Json = ""
 		}
 	}
+
+	common.ReplaceImageResponseUrls(response)
 
 	return filePaths, expiresAt
 }
