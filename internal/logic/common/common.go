@@ -17,6 +17,7 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/config"
 	"github.com/iimeta/fastapi/v2/internal/errors"
 	"github.com/iimeta/fastapi/v2/internal/model"
+	"github.com/iimeta/fastapi/v2/internal/model/common"
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/logger"
 )
@@ -264,4 +265,71 @@ func checkIp(clientIp string, ipWhitelist, ipBlacklist []string) error {
 	}
 
 	return nil
+}
+
+// 记录命中的图像生成定价, 空模式按尺寸写入日志
+func recordImageGenerationPricing(spend *common.Spend, pricing *common.ImageGenerationPricing) {
+
+	if spend.ImageGeneration == nil {
+		spend.ImageGeneration = new(common.ImageGenerationSpend)
+	}
+
+	if pricing == nil {
+		return
+	}
+
+	p := *pricing
+	if p.Mode == "" {
+		p.Mode = "size"
+	}
+
+	spend.ImageGeneration.Pricing = &p
+}
+
+// 按像素区间匹配图像生成价格, 区间为 [gte, lte], 0 表示该侧不限制
+func matchImageGenerationPixel(pixels int, pricing *common.ImageGenerationPricing) bool {
+
+	if pixels <= 0 || pricing == nil {
+		return false
+	}
+
+	gte := parsePixelSize(pricing.PixelGte)
+	lte := parsePixelSize(pricing.PixelLte)
+
+	if gte > 0 && pixels < gte {
+		return false
+	}
+
+	if lte > 0 && pixels > lte {
+		return false
+	}
+
+	return true
+}
+
+// 解析像素配置, 支持 1024x1024 / 1024×1024 / 1024*1024 或直接填像素个数
+func parsePixelSize(size string) int {
+
+	size = gstr.Trim(size)
+	if size == "" {
+		return 0
+	}
+
+	size = gstr.ReplaceByMap(size, map[string]string{
+		"×": "x",
+		"X": "x",
+		"*": "x",
+	})
+
+	parts := gstr.Split(size, "x")
+
+	if len(parts) >= 2 {
+		w := gconv.Int(gstr.Trim(parts[0]))
+		h := gconv.Int(gstr.Trim(parts[1]))
+		if w > 0 && h > 0 {
+			return w * h
+		}
+	}
+
+	return gconv.Int(size)
 }

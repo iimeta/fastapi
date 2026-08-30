@@ -65,9 +65,12 @@ type ImagePricing struct {
 }
 
 type ImageGenerationPricing struct {
+	Mode      string  `bson:"mode,omitempty"       json:"mode,omitempty"`       // 模式[size:按尺寸, pixel:按像素], 空为按尺寸
 	Quality   string  `bson:"quality,omitempty"    json:"quality,omitempty"`    // 质量[high, medium, low, hd, standard]
 	Width     int     `bson:"width,omitempty"      json:"width,omitempty"`      // 宽度
 	Height    int     `bson:"height,omitempty"     json:"height,omitempty"`     // 高度
+	PixelGte  string  `bson:"pixel_gte,omitempty"  json:"pixel_gte,omitempty"`  // 像素大于等于, 如 1024x1024
+	PixelLte  string  `bson:"pixel_lte,omitempty"  json:"pixel_lte,omitempty"`  // 像素小于等于, 如 2048x2048, 空为不限制
 	OnceRatio float64 `bson:"once_ratio,omitempty" json:"once_ratio,omitempty"` // 一次倍率
 	IsDefault bool    `bson:"is_default,omitempty" json:"is_default,omitempty"` // 是否默认选项
 }

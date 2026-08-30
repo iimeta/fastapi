@@ -817,15 +817,24 @@ func imageGeneration(ctx context.Context, mak *MAK, billingData *common.BillingD
 		}
 	}
 
+	pixels := width * height
+
 	for _, imageGeneration := range mak.ReqModel.Pricing.ImageGeneration {
 
-		if (imageGeneration.Quality == quality || imageGeneration.Quality == "") && imageGeneration.Width == width && imageGeneration.Height == height {
-			spend.ImageGeneration.Pricing = imageGeneration
+		qualityMatch := imageGeneration.Quality == quality || imageGeneration.Quality == ""
+
+		if imageGeneration.Mode == "pixel" {
+			if qualityMatch && matchImageGenerationPixel(pixels, imageGeneration) {
+				recordImageGenerationPricing(spend, imageGeneration)
+				break
+			}
+		} else if qualityMatch && imageGeneration.Width == width && imageGeneration.Height == height {
+			recordImageGenerationPricing(spend, imageGeneration)
 			break
 		}
 
 		if imageGeneration.IsDefault {
-			spend.ImageGeneration.Pricing = imageGeneration
+			recordImageGenerationPricing(spend, imageGeneration)
 		}
 	}
 
