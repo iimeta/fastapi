@@ -192,6 +192,16 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 	if err != nil {
 		logger.Error(ctx, err)
 
+		if r, ok := res.(*smodel.GoogleChatCompletionRes); ok {
+			response.ConnTime = r.ConnTime
+			response.Duration = r.Duration
+			response.TotalTime = r.TotalTime
+		} else if r, ok := res.(*smodel.ChatCompletionResponse); ok {
+			response.ConnTime = r.ConnTime
+			response.Duration = r.Duration
+			response.TotalTime = r.TotalTime
+		}
+
 		// 记录错误次数和禁用
 		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
 
@@ -262,6 +272,8 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 		if r.Err == nil && r.ResponseBytes != nil {
 			if response, err = converter.ConvChatCompletionsResponse(ctx, r.ResponseBytes); err != nil {
 				logger.Error(ctx, err)
+				response.TotalTime = r.TotalTime
+				response.ResponseHeaders = r.ResponseHeaders
 				return response, err
 			}
 		} else {
@@ -277,6 +289,8 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 		if r.Error == nil && r.ResponseBytes != nil {
 			if response, err = converter.ConvChatCompletionsResponse(ctx, r.ResponseBytes); err != nil {
 				logger.Error(ctx, err)
+				response.TotalTime = r.TotalTime
+				response.ResponseHeaders = r.ResponseHeaders
 				return response, err
 			}
 		} else {
@@ -451,6 +465,8 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 	if err != nil {
 		logger.Error(ctx, err)
 
+		totalTime = gtime.TimestampMilli() - now
+
 		// 记录错误次数和禁用
 		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
 
@@ -529,6 +545,9 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 			if r.Err == nil && r.ResponseBytes != nil {
 				if response, err = converter.ConvChatCompletionsStreamResponse(ctx, r.ResponseBytes); err != nil {
 					logger.Error(ctx, err)
+					connTime = r.ConnTime
+					duration = r.Duration
+					totalTime = r.TotalTime
 					return err
 				}
 			} else {
@@ -546,6 +565,9 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 			if r.Error == nil && r.ResponseBytes != nil {
 				if response, err = converter.ConvChatCompletionsStreamResponse(ctx, r.ResponseBytes); err != nil {
 					logger.Error(ctx, err)
+					connTime = r.ConnTime
+					duration = r.Duration
+					totalTime = r.TotalTime
 					return err
 				}
 			} else {

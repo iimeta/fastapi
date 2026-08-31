@@ -79,6 +79,10 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 
 	defer func() {
 
+		if imageResponse.TotalTime == 0 {
+			imageResponse.TotalTime = response.TotalTime
+		}
+
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - imageResponse.TotalTime
 		usage := imageResponse.Usage
@@ -331,6 +335,8 @@ func (s *sImage) GenerationsStream(ctx context.Context, data []byte, fallbackMod
 	if err != nil {
 		logger.Error(ctx, err)
 
+		totalTime = gtime.TimestampMilli() - now
+
 		// 记录错误次数和禁用
 		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
 
@@ -487,6 +493,10 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 	}
 
 	defer func() {
+
+		if imageResponse.TotalTime == 0 {
+			imageResponse.TotalTime = response.TotalTime
+		}
 
 		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
 		internalTime := gtime.TimestampMilli() - enterTime - imageResponse.TotalTime
@@ -769,6 +779,8 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 	response, err := common.NewAdapter(ctx, mak, true).ImageEditsStream(ctx, request)
 	if err != nil {
 		logger.Error(ctx, err)
+
+		totalTime = gtime.TimestampMilli() - now
 
 		// 记录错误次数和禁用
 		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
