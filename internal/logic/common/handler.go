@@ -232,7 +232,7 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 				Creator:        service.Session().GetSecretKey(ctx),
 			}
 
-			if taskImage.Size == "" {
+			if taskImage.Size == "" && (after.ImageGenerationRequest.Quality != "" || after.ImageGenerationRequest.AspectRatio != "") {
 				taskImage.Size = fmt.Sprintf("%s %s", after.ImageGenerationRequest.Quality, after.ImageGenerationRequest.AspectRatio)
 			}
 

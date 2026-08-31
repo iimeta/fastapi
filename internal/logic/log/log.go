@@ -480,7 +480,7 @@ func (s *sLog) Image(ctx context.Context, imageLog model.LogImage, retry ...int)
 		ExpiresAt:      imageLog.ImageExpiresAt,
 	}
 
-	if image.Size == "" {
+	if image.Size == "" && (imageLog.ImageReq.Quality != "" || imageLog.ImageReq.AspectRatio != "") {
 		image.Size = fmt.Sprintf("%s %s", imageLog.ImageReq.Quality, imageLog.ImageReq.AspectRatio)
 	}
 
