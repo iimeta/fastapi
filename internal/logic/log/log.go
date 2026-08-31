@@ -2,6 +2,7 @@ package log
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 	"time"
@@ -477,6 +478,10 @@ func (s *sLog) Image(ctx context.Context, imageLog model.LogImage, retry ...int)
 		Path:           g.RequestFromCtx(ctx).URL.Path,
 		Rid:            service.Session().GetRid(ctx),
 		ExpiresAt:      imageLog.ImageExpiresAt,
+	}
+
+	if image.Size == "" {
+		image.Size = fmt.Sprintf("%s %s", imageLog.ImageReq.Quality, imageLog.ImageReq.AspectRatio)
 	}
 
 	for i, data := range imageLog.ImageRes.Data {
