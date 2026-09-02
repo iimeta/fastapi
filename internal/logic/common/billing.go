@@ -18,7 +18,7 @@ import (
 // 计算花费
 func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, billingItems ...string) (spend common.Spend) {
 
-	if billingItems == nil || len(billingItems) == 0 {
+	if billingItems == nil {
 		billingItems = mak.ReqModel.Pricing.BillingItems
 	}
 
@@ -41,6 +41,8 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 			image(ctx, mak, billingData, &spend)
 		case "image_generation":
 			imageGeneration(ctx, mak, billingData, &spend)
+		case "layer_decomp":
+			layerDecomp(ctx, mak, billingData, &spend)
 		case "image_cache":
 			imageCache(ctx, mak, billingData, &spend)
 		case "vision":
@@ -84,6 +86,10 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 
 	if spend.ImageGeneration != nil {
 		spend.TotalSpendTokens = spend.ImageGeneration.SpendTokens
+	}
+
+	if spend.LayerDecomp != nil {
+		spend.TotalSpendTokens += spend.LayerDecomp.SpendTokens
 	}
 
 	if spend.Vision != nil {
@@ -838,6 +844,10 @@ func imageGeneration(ctx context.Context, mak *MAK, billingData *common.BillingD
 		}
 	}
 
+	if billImageGenerationByOutputs(mak, billingData, spend, quality) {
+		return
+	}
+
 	spend.ImageGeneration.N = billingData.ImageGenerationRequest.N
 	if spend.ImageGeneration.N == 0 {
 		spend.ImageGeneration.N = billingData.ImageEditRequest.N
@@ -847,6 +857,124 @@ func imageGeneration(ctx context.Context, mak *MAK, billingData *common.BillingD
 	}
 
 	spend.ImageGeneration.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT*spend.ImageGeneration.Pricing.OnceRatio)) * spend.ImageGeneration.N
+}
+
+// 图层拆分
+func layerDecomp(ctx context.Context, mak *MAK, billingData *common.BillingData, spend *common.Spend) {
+
+	if spend.LayerDecomp == nil {
+		spend.LayerDecomp = new(common.LayerDecompSpend)
+	}
+
+	var (
+		quality     = billingData.ImageGenerationRequest.Quality
+		size        = billingData.ImageGenerationRequest.Size
+		aspectRatio = billingData.ImageGenerationRequest.AspectRatio
+		width       int
+		height      int
+	)
+
+	if quality == "" {
+		quality = billingData.ImageEditRequest.Quality
+	}
+
+	if size == "" {
+		size = billingData.ImageEditRequest.Size
+	}
+
+	if aspectRatio == "" {
+		aspectRatio = billingData.ImageEditRequest.AspectRatio
+	}
+
+	if aspectRatio == "" {
+		aspectRatio = "1:1"
+	}
+
+	if size != "" {
+
+		widthHeight := gstr.Split(size, `×`)
+
+		if len(widthHeight) != 2 {
+			widthHeight = gstr.Split(size, `x`)
+		}
+
+		if len(widthHeight) != 2 {
+			widthHeight = gstr.Split(size, `X`)
+		}
+
+		if len(widthHeight) != 2 {
+			widthHeight = gstr.Split(size, `*`)
+		}
+
+		if len(widthHeight) != 2 {
+			widthHeight = gstr.Split(size, `:`)
+		}
+
+		if len(widthHeight) == 2 {
+			width = gconv.Int(widthHeight[0])
+			height = gconv.Int(widthHeight[1])
+		} else {
+
+			if gstr.HasSuffix(size, "K") {
+				quality = size
+			}
+
+			if quality == "" || !gstr.HasSuffix(quality, "K") {
+				quality = "1K"
+			}
+
+			if size = consts.RESOLUTION_ASPECT_RATIO[quality+aspectRatio]; size != "" {
+				widthHeight = gstr.Split(size, `x`)
+				width = gconv.Int(widthHeight[0])
+				height = gconv.Int(widthHeight[1])
+			}
+		}
+
+	} else if gstr.HasSuffix(quality, "K") {
+
+		if size = consts.RESOLUTION_ASPECT_RATIO[quality+aspectRatio]; size != "" {
+			widthHeight := gstr.Split(size, `x`)
+			width = gconv.Int(widthHeight[0])
+			height = gconv.Int(widthHeight[1])
+		}
+	}
+
+	pixels := width * height
+
+	for _, item := range mak.ReqModel.Pricing.LayerDecomp {
+
+		qualityMatch := item.Quality == quality || item.Quality == ""
+
+		if item.Mode == "pixel" {
+			if qualityMatch && matchLayerDecompPixel(pixels, item) {
+				recordLayerDecompPricing(spend, item)
+				break
+			}
+		} else if qualityMatch && item.Width == width && item.Height == height {
+			recordLayerDecompPricing(spend, item)
+			break
+		}
+
+		if item.IsDefault {
+			recordLayerDecompPricing(spend, item)
+		}
+	}
+
+	if billLayerDecompByOutputs(mak, billingData, spend, quality) {
+		return
+	}
+
+	spend.LayerDecomp.N = billingData.ImageGenerationRequest.N
+	if spend.LayerDecomp.N == 0 {
+		spend.LayerDecomp.N = billingData.ImageEditRequest.N
+		if spend.LayerDecomp.N == 0 {
+			spend.LayerDecomp.N = 1
+		}
+	}
+
+	if spend.LayerDecomp.Pricing != nil {
+		spend.LayerDecomp.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT*spend.LayerDecomp.Pricing.OnceRatio)) * spend.LayerDecomp.N
+	}
 }
 
 // 图像缓存
@@ -1191,4 +1319,157 @@ func discountTokens(tokens int, discount float64) int {
 
 	// 整数向上取整除法: ceil(a/b) = (a + b - 1) / b (a, b 均非负)
 	return int((int64(tokens)*basis + scale - 1) / scale)
+}
+
+func outputImageSizes(billingData *common.BillingData) []string {
+
+	if billingData == nil || billingData.ImageResponse == nil {
+		return nil
+	}
+
+	sizes := make([]string, 0, len(billingData.ImageResponse.Data))
+	for _, item := range billingData.ImageResponse.Data {
+		if item.Size != "" {
+			sizes = append(sizes, item.Size)
+		}
+	}
+
+	return sizes
+}
+
+func parseSizeWH(size string) (width, height int) {
+
+	size = gstr.Trim(size)
+	if size == "" {
+		return 0, 0
+	}
+
+	size = gstr.ReplaceByMap(size, map[string]string{
+		"×": "x",
+		"X": "x",
+		"*": "x",
+	})
+
+	parts := gstr.Split(size, "x")
+	if len(parts) == 2 {
+		return gconv.Int(gstr.Trim(parts[0])), gconv.Int(gstr.Trim(parts[1]))
+	}
+
+	return 0, 0
+}
+
+func pickImageGenerationPricing(pricings []*common.ImageGenerationPricing, quality string, width, height int) *common.ImageGenerationPricing {
+
+	pixels := width * height
+	var fallback *common.ImageGenerationPricing
+
+	for _, item := range pricings {
+
+		qualityMatch := item.Quality == quality || item.Quality == ""
+
+		if item.Mode == "pixel" {
+			if qualityMatch && matchImageGenerationPixel(pixels, item) {
+				return item
+			}
+		} else if qualityMatch && item.Width == width && item.Height == height {
+			return item
+		}
+
+		if item.IsDefault {
+			fallback = item
+		}
+	}
+
+	return fallback
+}
+
+func pickLayerDecompPricing(pricings []*common.LayerDecompPricing, quality string, width, height int) *common.LayerDecompPricing {
+
+	pixels := width * height
+	var fallback *common.LayerDecompPricing
+
+	for _, item := range pricings {
+
+		qualityMatch := item.Quality == quality || item.Quality == ""
+
+		if item.Mode == "pixel" {
+			if qualityMatch && matchLayerDecompPixel(pixels, item) {
+				return item
+			}
+		} else if qualityMatch && item.Width == width && item.Height == height {
+			return item
+		}
+
+		if item.IsDefault {
+			fallback = item
+		}
+	}
+
+	return fallback
+}
+
+func billImageGenerationByOutputs(mak *MAK, billingData *common.BillingData, spend *common.Spend, quality string) bool {
+
+	if billingData.IsAsync {
+		return false
+	}
+
+	if billingData.ImageResponse != nil && len(billingData.ImageResponse.Data) == 0 {
+		spend.ImageGeneration.N = 0
+		spend.ImageGeneration.SpendTokens = 0
+		return true
+	}
+
+	sizes := outputImageSizes(billingData)
+	if len(sizes) == 0 {
+		return false
+	}
+
+	total := 0
+	for _, sz := range sizes {
+		w, h := parseSizeWH(sz)
+		p := pickImageGenerationPricing(mak.ReqModel.Pricing.ImageGeneration, quality, w, h)
+		if p != nil {
+			recordImageGenerationPricing(spend, p)
+			total += int(math.Ceil(consts.QUOTA_DEFAULT_UNIT * p.OnceRatio))
+		}
+	}
+
+	spend.ImageGeneration.N = len(sizes)
+	spend.ImageGeneration.SpendTokens = total
+
+	return true
+}
+
+func billLayerDecompByOutputs(mak *MAK, billingData *common.BillingData, spend *common.Spend, quality string) bool {
+
+	if billingData.IsAsync {
+		return false
+	}
+
+	if billingData.ImageResponse != nil && len(billingData.ImageResponse.Data) == 0 {
+		spend.LayerDecomp.N = 0
+		spend.LayerDecomp.SpendTokens = 0
+		return true
+	}
+
+	sizes := outputImageSizes(billingData)
+	if len(sizes) == 0 {
+		return false
+	}
+
+	total := 0
+	for _, sz := range sizes {
+		w, h := parseSizeWH(sz)
+		p := pickLayerDecompPricing(mak.ReqModel.Pricing.LayerDecomp, quality, w, h)
+		if p != nil {
+			recordLayerDecompPricing(spend, p)
+			total += int(math.Ceil(consts.QUOTA_DEFAULT_UNIT * p.OnceRatio))
+		}
+	}
+
+	spend.LayerDecomp.N = len(sizes)
+	spend.LayerDecomp.SpendTokens = total
+
+	return true
 }

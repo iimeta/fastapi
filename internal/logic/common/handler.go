@@ -187,13 +187,16 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 		billingData := &mcommon.BillingData{
 			ImageGenerationRequest: after.ImageGenerationRequest,
+			ImageResponse:          &after.ImageResponse,
 			Usage:                  after.Usage,
 			IsAborted:              IsAborted(after.Error),
 			IsAsync:                after.IsAsync,
 		}
 
+		billingItems := filterImageBillingItems(mak.ReqModel.Pricing.BillingItems, after.ImageGenerationRequest.LayerDecomposition)
+
 		// 计算花费
-		after.Spend = Billing(ctx, mak, billingData)
+		after.Spend = Billing(ctx, mak, billingData, billingItems...)
 
 		if (after.IsAsync && (after.Action == consts.ACTION_GENERATIONS || after.Action == consts.ACTION_EDITS)) ||
 			(after.Action != "" && (after.Action == consts.ACTION_LIST || after.Action == consts.ACTION_RETRIEVE || after.Action == consts.ACTION_CONTENT || after.Action == consts.ACTION_DELETE)) {
@@ -239,6 +242,11 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 			if after.Spend.ImageGeneration != nil && after.Spend.ImageGeneration.Pricing != nil {
 				taskImage.Width = after.Spend.ImageGeneration.Pricing.Width
 				taskImage.Height = after.Spend.ImageGeneration.Pricing.Height
+			}
+
+			if after.Spend.LayerDecomp != nil && after.Spend.LayerDecomp.Pricing != nil {
+				taskImage.Width = after.Spend.LayerDecomp.Pricing.Width
+				taskImage.Height = after.Spend.LayerDecomp.Pricing.Height
 			}
 
 			if mak.ModelAgent != nil {
@@ -774,4 +782,24 @@ func handleSessionKeep(ctx context.Context, mak *MAK, after *mcommon.AfterHandle
 	}
 
 	HandleSessionKeepFailure(ctx, mak)
+}
+
+func filterImageBillingItems(items []string, layerDecomp bool) []string {
+
+	filtered := make([]string, 0, len(items))
+
+	for _, item := range items {
+
+		if layerDecomp {
+			if item == "image_generation" {
+				continue
+			}
+		} else if item == "layer_decomp" {
+			continue
+		}
+
+		filtered = append(filtered, item)
+	}
+
+	return filtered
 }

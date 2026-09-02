@@ -15,4 +15,5 @@ type IVolcengineV1 interface {
 	VideoList(ctx context.Context, req *v1.VideoListReq) (res *v1.VideoListRes, err error)
 	VideoRetrieve(ctx context.Context, req *v1.VideoRetrieveReq) (res *v1.VideoRetrieveRes, err error)
 	VideoDelete(ctx context.Context, req *v1.VideoDeleteReq) (res *v1.VideoDeleteRes, err error)
+	ImageGenerations(ctx context.Context, req *v1.ImageGenerationsReq) (res *v1.ImageGenerationsRes, err error)
 }

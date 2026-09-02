@@ -131,6 +131,22 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 		}
 	}
 
+	if slices.Contains(mak.ReqModel.Pricing.BillingItems, "layer_decomp") {
+
+		billingData := &mcommon.BillingData{
+			ImageGenerationRequest: params,
+		}
+
+		// 计算花费
+		spend := common.Billing(ctx, mak, billingData, "layer_decomp")
+		if spend.LayerDecomp != nil && spend.LayerDecomp.Pricing != nil && spend.LayerDecomp.Pricing.Width > 0 && spend.LayerDecomp.Pricing.Height > 0 {
+			if spend.LayerDecomp.Pricing.Quality != "" {
+				params.Quality = spend.LayerDecomp.Pricing.Quality
+			}
+			params.Size = fmt.Sprintf("%dx%d", spend.LayerDecomp.Pricing.Width, spend.LayerDecomp.Pricing.Height)
+		}
+	}
+
 	request := params
 
 	if !gstr.Contains(mak.RealModel.Model, "*") {
@@ -311,6 +327,22 @@ func (s *sImage) GenerationsStream(ctx context.Context, data []byte, fallbackMod
 				params.Quality = spend.ImageGeneration.Pricing.Quality
 			}
 			params.Size = fmt.Sprintf("%dx%d", spend.ImageGeneration.Pricing.Width, spend.ImageGeneration.Pricing.Height)
+		}
+	}
+
+	if slices.Contains(mak.ReqModel.Pricing.BillingItems, "layer_decomp") {
+
+		billingData := &mcommon.BillingData{
+			ImageGenerationRequest: params,
+		}
+
+		// 计算花费
+		spend := common.Billing(ctx, mak, billingData, "layer_decomp")
+		if spend.LayerDecomp != nil && spend.LayerDecomp.Pricing != nil && spend.LayerDecomp.Pricing.Width > 0 && spend.LayerDecomp.Pricing.Height > 0 {
+			if spend.LayerDecomp.Pricing.Quality != "" {
+				params.Quality = spend.LayerDecomp.Pricing.Quality
+			}
+			params.Size = fmt.Sprintf("%dx%d", spend.LayerDecomp.Pricing.Width, spend.LayerDecomp.Pricing.Height)
 		}
 	}
 
@@ -558,6 +590,22 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 		}
 	}
 
+	if slices.Contains(mak.ReqModel.Pricing.BillingItems, "layer_decomp") {
+
+		billingData := &mcommon.BillingData{
+			ImageEditRequest: params,
+		}
+
+		// 计算花费
+		spend := common.Billing(ctx, mak, billingData, "layer_decomp")
+		if spend.LayerDecomp != nil && spend.LayerDecomp.Pricing != nil && spend.LayerDecomp.Pricing.Width > 0 && spend.LayerDecomp.Pricing.Height > 0 {
+			if spend.LayerDecomp.Pricing.Quality != "" {
+				params.Quality = spend.LayerDecomp.Pricing.Quality
+			}
+			params.Size = fmt.Sprintf("%dx%d", spend.LayerDecomp.Pricing.Width, spend.LayerDecomp.Pricing.Height)
+		}
+	}
+
 	request := params
 
 	if !gstr.Contains(mak.RealModel.Model, "*") {
@@ -756,6 +804,22 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 				params.Quality = spend.ImageGeneration.Pricing.Quality
 			}
 			params.Size = fmt.Sprintf("%dx%d", spend.ImageGeneration.Pricing.Width, spend.ImageGeneration.Pricing.Height)
+		}
+	}
+
+	if slices.Contains(mak.ReqModel.Pricing.BillingItems, "layer_decomp") {
+
+		billingData := &mcommon.BillingData{
+			ImageEditRequest: params,
+		}
+
+		// 计算花费
+		spend := common.Billing(ctx, mak, billingData, "layer_decomp")
+		if spend.LayerDecomp != nil && spend.LayerDecomp.Pricing != nil && spend.LayerDecomp.Pricing.Width > 0 && spend.LayerDecomp.Pricing.Height > 0 {
+			if spend.LayerDecomp.Pricing.Quality != "" {
+				params.Quality = spend.LayerDecomp.Pricing.Quality
+			}
+			params.Size = fmt.Sprintf("%dx%d", spend.LayerDecomp.Pricing.Width, spend.LayerDecomp.Pricing.Height)
 		}
 	}
 

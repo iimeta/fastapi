@@ -14,6 +14,10 @@ import (
 
 type (
 	IVolcEngine interface {
+		// ImageGenerations
+		ImageGenerations(ctx context.Context, data []byte, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (responseBytes []byte, err error)
+		// ImageGenerationsStream
+		ImageGenerationsStream(ctx context.Context, data []byte, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (err error)
 		// VideoCreate
 		VideoCreate(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (responseBytes []byte, err error)
 		// VideoList

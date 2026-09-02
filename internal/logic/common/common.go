@@ -286,15 +286,53 @@ func recordImageGenerationPricing(spend *common.Spend, pricing *common.ImageGene
 	spend.ImageGeneration.Pricing = &p
 }
 
+// 记录命中的图层拆分定价, 空模式按尺寸写入日志
+func recordLayerDecompPricing(spend *common.Spend, pricing *common.LayerDecompPricing) {
+
+	if spend.LayerDecomp == nil {
+		spend.LayerDecomp = new(common.LayerDecompSpend)
+	}
+
+	if pricing == nil {
+		return
+	}
+
+	p := *pricing
+	if p.Mode == "" {
+		p.Mode = "size"
+	}
+
+	spend.LayerDecomp.Pricing = &p
+}
+
 // 按像素区间匹配图像生成价格, 区间为 [gte, lte], 0 表示该侧不限制
 func matchImageGenerationPixel(pixels int, pricing *common.ImageGenerationPricing) bool {
 
-	if pixels <= 0 || pricing == nil {
+	if pricing == nil {
 		return false
 	}
 
-	gte := parsePixelSize(pricing.PixelGte)
-	lte := parsePixelSize(pricing.PixelLte)
+	return matchPixelRange(pixels, pricing.PixelGte, pricing.PixelLte)
+}
+
+// 按像素区间匹配图层拆分价格, 区间为 [gte, lte], 0 表示该侧不限制
+func matchLayerDecompPixel(pixels int, pricing *common.LayerDecompPricing) bool {
+
+	if pricing == nil {
+		return false
+	}
+
+	return matchPixelRange(pixels, pricing.PixelGte, pricing.PixelLte)
+}
+
+func matchPixelRange(pixels int, pixelGte, pixelLte string) bool {
+
+	if pixels <= 0 {
+		return false
+	}
+
+	gte := parsePixelSize(pixelGte)
+	lte := parsePixelSize(pixelLte)
 
 	if gte > 0 && pixels < gte {
 		return false

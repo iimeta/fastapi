@@ -8,13 +8,14 @@ type Pricing struct {
 	CurrencySymbol  string                    `bson:"currency_symbol,omitempty"   json:"currency_symbol,omitempty"`   // 货币符号
 	BillingRule     int                       `bson:"billing_rule,omitempty"      json:"billing_rule,omitempty"`      // 计费规则[1:按官方, 2:按系统]
 	BillingMethods  []int                     `bson:"billing_methods,omitempty"   json:"billing_methods,omitempty"`   // 计费方式[1:按Tokens, 2:按次]
-	BillingItems    []string                  `bson:"billing_items,omitempty"     json:"billing_items,omitempty"`     // 计费项[text:文本, text_cache:文本缓存, tiered_text:阶梯文本, tiered_text_cache:阶梯文本缓存, image:图像, image_generation:图像生成, image_cache:图像缓存, vision:识图, audio:音频, audio_cache:音频缓存, video:视频, video_generation:视频生成, video_cache:视频缓存, search:搜索, once:一次]
+	BillingItems    []string                  `bson:"billing_items,omitempty"     json:"billing_items,omitempty"`     // 计费项[text:文本, text_cache:文本缓存, tiered_text:阶梯文本, tiered_text_cache:阶梯文本缓存, image:图像, image_generation:图像生成, layer_decomp:图层拆分, image_cache:图像缓存, vision:识图, audio:音频, audio_cache:音频缓存, video:视频, video_generation:视频生成, video_cache:视频缓存, search:搜索, once:一次]
 	Text            []*TextPricing            `bson:"text,omitempty"              json:"text,omitempty"`              // 文本
 	TextCache       []*CachePricing           `bson:"text_cache,omitempty"        json:"text_cache,omitempty"`        // 文本缓存
 	TieredText      []*TextPricing            `bson:"tiered_text,omitempty"       json:"tiered_text,omitempty"`       // 阶梯文本
 	TieredTextCache []*CachePricing           `bson:"tiered_text_cache,omitempty" json:"tiered_text_cache,omitempty"` // 阶梯文本缓存
 	Image           *ImagePricing             `bson:"image,omitempty"             json:"image,omitempty"`             // 图像
 	ImageGeneration []*ImageGenerationPricing `bson:"image_generation,omitempty"  json:"image_generation,omitempty"`  // 图像生成
+	LayerDecomp     []*LayerDecompPricing     `bson:"layer_decomp,omitempty"      json:"layer_decomp,omitempty"`      // 图层拆分
 	ImageCache      *CachePricing             `bson:"image_cache,omitempty"       json:"image_cache,omitempty"`       // 图像缓存
 	Vision          []*VisionPricing          `bson:"vision,omitempty"            json:"vision,omitempty"`            // 识图
 	Audio           *AudioPricing             `bson:"audio,omitempty"             json:"audio,omitempty"`             // 音频
@@ -75,6 +76,17 @@ type ImageGenerationPricing struct {
 	IsDefault bool    `bson:"is_default,omitempty" json:"is_default,omitempty"` // 是否默认选项
 }
 
+type LayerDecompPricing struct {
+	Mode      string  `bson:"mode,omitempty"       json:"mode,omitempty"`       // 模式[size:按尺寸, pixel:按像素], 空为按尺寸
+	Quality   string  `bson:"quality,omitempty"    json:"quality,omitempty"`    // 质量[high, medium, low, hd, standard]
+	Width     int     `bson:"width,omitempty"      json:"width,omitempty"`      // 宽度
+	Height    int     `bson:"height,omitempty"     json:"height,omitempty"`     // 高度
+	PixelGte  string  `bson:"pixel_gte,omitempty"  json:"pixel_gte,omitempty"`  // 像素大于等于, 如 1024x1024
+	PixelLte  string  `bson:"pixel_lte,omitempty"  json:"pixel_lte,omitempty"`  // 像素小于等于, 如 2048x2048, 空为不限制
+	OnceRatio float64 `bson:"once_ratio,omitempty" json:"once_ratio,omitempty"` // 一次倍率
+	IsDefault bool    `bson:"is_default,omitempty" json:"is_default,omitempty"` // 是否默认选项
+}
+
 type VisionPricing struct {
 	Mode      string  `bson:"mode,omitempty"       json:"mode,omitempty"`       // 模式[low, high, auto]
 	OnceRatio float64 `bson:"once_ratio,omitempty" json:"once_ratio,omitempty"` // 一次倍率
@@ -114,6 +126,7 @@ type BillingData struct {
 	ChatCompletionRequest  smodel.ChatCompletionRequest
 	ImageGenerationRequest smodel.ImageGenerationRequest
 	ImageEditRequest       smodel.ImageEditRequest
+	ImageResponse          *smodel.ImageResponse
 	Completion             string
 	ServiceTier            string
 	AudioInput             string
@@ -135,13 +148,14 @@ type Spend struct {
 	ModelTimeRule       *TimeRule             `bson:"model_time_rule,omitempty"       json:"model_time_rule,omitempty"`       // 模型时段规则
 	BillingRule         int                   `bson:"billing_rule,omitempty"          json:"billing_rule,omitempty"`          // 计费规则[1:按官方, 2:按系统]
 	BillingMethods      []int                 `bson:"billing_methods,omitempty"       json:"billing_methods,omitempty"`       // 计费方式[1:按Tokens, 2:按次]
-	BillingItems        []string              `bson:"billing_items,omitempty"         json:"billing_items,omitempty"`         // 计费项[text:文本, text_cache:文本缓存, tiered_text:阶梯文本, tiered_text_cache:阶梯文本缓存, image:图像, image_generation:图像生成, image_cache:图像缓存, vision:识图, audio:音频, audio_cache:音频缓存, video:视频, video_generation:视频生成, video_cache:视频缓存, search:搜索, once:一次]
+	BillingItems        []string              `bson:"billing_items,omitempty"         json:"billing_items,omitempty"`         // 计费项[text:文本, text_cache:文本缓存, tiered_text:阶梯文本, tiered_text_cache:阶梯文本缓存, image:图像, image_generation:图像生成, layer_decomp:图层拆分, image_cache:图像缓存, vision:识图, audio:音频, audio_cache:音频缓存, video:视频, video_generation:视频生成, video_cache:视频缓存, search:搜索, once:一次]
 	Text                *TextSpend            `bson:"text,omitempty"                  json:"text,omitempty"`                  // 文本
 	TextCache           *CacheSpend           `bson:"text_cache,omitempty"            json:"text_cache,omitempty"`            // 文本缓存
 	TieredText          *TextSpend            `bson:"tiered_text,omitempty"           json:"tiered_text,omitempty"`           // 阶梯文本
 	TieredTextCache     *CacheSpend           `bson:"tiered_text_cache,omitempty"     json:"tiered_text_cache,omitempty"`     // 阶梯文本缓存
 	Image               *ImageSpend           `bson:"image,omitempty"                 json:"image,omitempty"`                 // 图像
 	ImageGeneration     *ImageGenerationSpend `bson:"image_generation,omitempty"      json:"image_generation,omitempty"`      // 图像生成
+	LayerDecomp         *LayerDecompSpend     `bson:"layer_decomp,omitempty"          json:"layer_decomp,omitempty"`          // 图层拆分
 	ImageCache          *CacheSpend           `bson:"image_cache,omitempty"           json:"image_cache,omitempty"`           // 图像缓存
 	Vision              *VisionSpend          `bson:"vision,omitempty"                json:"vision,omitempty"`                // 识图
 	Audio               *AudioSpend           `bson:"audio,omitempty"                 json:"audio,omitempty"`                 // 音频
@@ -186,6 +200,12 @@ type ImageGenerationSpend struct {
 	Pricing     *ImageGenerationPricing `bson:"pricing,omitempty"      json:"pricing,omitempty"`      // 定价
 	N           int                     `bson:"n,omitempty"            json:"n,omitempty"`            // 图像数
 	SpendTokens int                     `bson:"spend_tokens,omitempty" json:"spend_tokens,omitempty"` // 花费Token数
+}
+
+type LayerDecompSpend struct {
+	Pricing     *LayerDecompPricing `bson:"pricing,omitempty"      json:"pricing,omitempty"`      // 定价
+	N           int                 `bson:"n,omitempty"            json:"n,omitempty"`            // 图像数
+	SpendTokens int                 `bson:"spend_tokens,omitempty" json:"spend_tokens,omitempty"` // 花费Token数
 }
 
 type VisionSpend struct {
