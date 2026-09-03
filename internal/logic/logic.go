@@ -10,6 +10,7 @@ import (
 	_ "github.com/iimeta/fastapi/v2/internal/logic/app_key"
 	_ "github.com/iimeta/fastapi/v2/internal/logic/audio"
 	_ "github.com/iimeta/fastapi/v2/internal/logic/auth"
+	_ "github.com/iimeta/fastapi/v2/internal/logic/bailian"
 	_ "github.com/iimeta/fastapi/v2/internal/logic/batch"
 	_ "github.com/iimeta/fastapi/v2/internal/logic/chat"
 	_ "github.com/iimeta/fastapi/v2/internal/logic/common"

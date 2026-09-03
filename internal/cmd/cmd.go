@@ -19,6 +19,7 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/controller/anthropic"
 	"github.com/iimeta/fastapi/v2/internal/controller/audio"
+	"github.com/iimeta/fastapi/v2/internal/controller/bailian"
 	"github.com/iimeta/fastapi/v2/internal/controller/batch"
 	"github.com/iimeta/fastapi/v2/internal/controller/chat"
 	"github.com/iimeta/fastapi/v2/internal/controller/dashboard"
@@ -94,6 +95,7 @@ var (
 						embedding.NewV1(),
 						moderation.NewV1(),
 						general.NewV1(),
+						bailian.NewV1(),
 					)
 				})
 
@@ -159,6 +161,14 @@ var (
 				v1.Middleware(middleware)
 				v1.Bind(
 					volcengine.NewV1(),
+				)
+			})
+
+			s.Group("/api/v1", func(v1 *ghttp.RouterGroup) {
+				v1.Middleware(middlewareHandlerResponse)
+				v1.Middleware(middleware)
+				v1.Bind(
+					bailian.NewV1(),
 				)
 			})
 
