@@ -704,11 +704,11 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 				} else {
 					usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 				}
-				if response.Usage.CacheCreationInputTokens != 0 {
-					usage.CacheCreationInputTokens = response.Usage.CacheCreationInputTokens
+				if response.Usage.PromptTokensDetails.CachedTokens != 0 || response.Usage.PromptTokensDetails.CacheWriteTokens != 0 {
+					usage.PromptTokensDetails = response.Usage.PromptTokensDetails
 				}
-				if response.Usage.CacheReadInputTokens != 0 {
-					usage.CacheReadInputTokens = response.Usage.CacheReadInputTokens
+				if response.Usage.OutputTokensDetails.ReasoningTokens != 0 {
+					usage.OutputTokensDetails = response.Usage.OutputTokensDetails
 				}
 			}
 		}
