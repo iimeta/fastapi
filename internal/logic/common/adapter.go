@@ -38,11 +38,6 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool) (adapter sdk.Adapter
 
 	provider := GetProviderCode(ctx, mak.Provider)
 
-	// 非 OpenAI 不透传
-	if provider != sconsts.PROVIDER_OPENAI {
-		mak.Passthrough = nil
-	}
-
 	options := &options.AdapterOptions{
 		Provider:             provider,
 		Model:                mak.RealModel.Model,
@@ -60,6 +55,11 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool) (adapter sdk.Adapter
 
 	if mak.Passthrough != nil && slices.Contains(mak.Passthrough.ReqParams, "req_path") {
 		options.Path = g.RequestFromCtx(ctx).URL.Path
+		if gstr.HasSuffix(options.BaseUrl, "/v1beta") && gstr.HasSuffix(options.Path, "/v1beta") {
+			options.Path = options.Path[7:]
+		} else if gstr.HasSuffix(options.BaseUrl, "/v1") && gstr.HasSuffix(options.Path, "/v1") {
+			options.Path = options.Path[3:]
+		}
 	}
 
 	if isLong {

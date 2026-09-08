@@ -3,11 +3,13 @@ package common
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
+	serrors "github.com/iimeta/fastapi-sdk/v2/errors"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
 	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/utility/logger"
@@ -198,7 +200,7 @@ func ConvResponsesStreamToChatCompletionsResponse(ctx context.Context, res smode
 		ConnTime:      responsesStreamRes.ConnTime,
 		Duration:      responsesStreamRes.Duration,
 		TotalTime:     responsesStreamRes.TotalTime,
-		Error:         responsesStreamRes.Err,
+		Error:         convResponsesStreamError(responsesStreamRes),
 	}
 
 	if chatCompletionResponse.Id == "" {
@@ -316,4 +318,31 @@ func ConvChatCompletionsToResponsesRequest(ctx context.Context, body []byte) smo
 	}
 
 	return responsesReq
+}
+
+// 流式错误可能在顶层 error / type=error, 也可能在 response.error / response.failed
+func convResponsesStreamError(res smodel.OpenAIResponsesStreamRes) error {
+
+	if res.Err != nil {
+		return res.Err
+	}
+
+	apiErr := res.Error
+	if apiErr == nil {
+		apiErr = res.Response.Error
+	}
+
+	if apiErr == nil && res.Type != "error" && res.Type != "response.failed" && res.SSEEvent != "error" && res.Response.Status != "failed" {
+		return nil
+	}
+
+	if apiErr == nil {
+		apiErr = &smodel.OpenAIResponsesError{
+			Type:           res.Type,
+			SequenceNumber: res.SequenceNumber,
+			Message:        string(res.ResponseBytes),
+		}
+	}
+
+	return serrors.NewRequestError(502, serrors.New(fmt.Sprintf("error, status code: %s, error: %s", apiErr.Code, gjson.MustEncodeString(apiErr))))
 }
