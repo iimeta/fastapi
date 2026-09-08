@@ -26,9 +26,9 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool) (adapter sdk.Adapter
 			if general, isGeneral := adapter.(*general.General); isGeneral {
 				if general.Path == "" {
 					general.Path = g.RequestFromCtx(ctx).URL.Path
-					if gstr.HasSuffix(general.BaseUrl, "/v1beta") {
+					if gstr.HasSuffix(general.BaseUrl, "/v1beta") && gstr.HasPrefix(general.Path, "/v1beta") {
 						general.Path = general.Path[7:]
-					} else if gstr.HasSuffix(general.BaseUrl, "/v1") {
+					} else if gstr.HasSuffix(general.BaseUrl, "/v1") && gstr.HasPrefix(general.Path, "/v1") {
 						general.Path = general.Path[3:]
 					}
 				}
@@ -55,9 +55,9 @@ func NewAdapter(ctx context.Context, mak *MAK, isLong bool) (adapter sdk.Adapter
 
 	if mak.Passthrough != nil && slices.Contains(mak.Passthrough.ReqParams, "req_path") {
 		options.Path = g.RequestFromCtx(ctx).URL.Path
-		if gstr.HasSuffix(options.BaseUrl, "/v1beta") && gstr.HasSuffix(options.Path, "/v1beta") {
+		if gstr.HasSuffix(options.BaseUrl, "/v1beta") && gstr.HasPrefix(options.Path, "/v1beta") {
 			options.Path = options.Path[7:]
-		} else if gstr.HasSuffix(options.BaseUrl, "/v1") && gstr.HasSuffix(options.Path, "/v1") {
+		} else if gstr.HasSuffix(options.BaseUrl, "/v1") && gstr.HasPrefix(options.Path, "/v1") {
 			options.Path = options.Path[3:]
 		}
 	}
