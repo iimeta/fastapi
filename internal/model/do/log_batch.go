@@ -37,6 +37,7 @@ type LogBatch struct {
 	Spend                common.Spend           `bson:"spend,omitempty"`                   // 花费
 	TotalTime            int64                  `bson:"total_time,omitempty"`              // 总时间
 	InternalTime         int64                  `bson:"internal_time,omitempty"`           // 内耗时间
+	ReceiveTime          int64                  `bson:"receive_time,omitempty"`            // 接收时间
 	ReqTime              int64                  `bson:"req_time,omitempty"`                // 请求时间
 	ReqDate              string                 `bson:"req_date,omitempty"`                // 请求日期
 	ClientIp             string                 `bson:"client_ip,omitempty"`               // 客户端IP

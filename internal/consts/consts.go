@@ -3,6 +3,7 @@ package consts
 const (
 	TRACE_ID               = "Trace-Id"
 	HOST_KEY               = "host"
+	RECEIVE_TIME_KEY       = "receive_time"
 	RID_KEY                = "rid"
 	USER_ID_KEY            = "user_id"
 	APP_ID_KEY             = "app_id"

@@ -14,6 +14,7 @@ import (
 	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/gogf/gf/v2/os/gcmd"
 	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/iimeta/fastapi/v2/internal/config"
 	"github.com/iimeta/fastapi/v2/internal/consts"
@@ -285,6 +286,8 @@ func middleware(r *ghttp.Request) {
 	}
 
 	logger.Infof(r.GetCtx(), "middleware secretKey: %s", secretKey)
+
+	r.SetCtxVar(consts.RECEIVE_TIME_KEY, gtime.TimestampMilli()-r.EnterTime.TimestampMilli())
 
 	if err := service.Auth().Authenticator(r.GetCtx(), secretKey); err != nil {
 		err := errors.Error(r.GetCtx(), err)

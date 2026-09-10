@@ -17,6 +17,7 @@ import (
 	serrors "github.com/iimeta/fastapi-sdk/v2/errors"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
 	"github.com/iimeta/fastapi/v2/internal/config"
+	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/dao"
 	"github.com/iimeta/fastapi/v2/internal/errors"
 	"github.com/iimeta/fastapi/v2/internal/logic/common"
@@ -52,6 +53,8 @@ func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 		return
 	}
 
+	receiveTime, internalTime := splitLogTime(ctx, textLog.CompletionsRes.InternalTime)
+
 	text := do.LogText{
 		TraceId:      gtrace.GetTraceID(ctx),
 		UserId:       service.Session().GetUserId(ctx),
@@ -65,7 +68,8 @@ func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 		ConnTime:     textLog.CompletionsRes.ConnTime,
 		Duration:     textLog.CompletionsRes.Duration,
 		TotalTime:    textLog.CompletionsRes.TotalTime,
-		InternalTime: textLog.CompletionsRes.InternalTime,
+		InternalTime: internalTime,
+		ReceiveTime:  receiveTime,
 		ReqTime:      textLog.CompletionsRes.EnterTime,
 		ReqDate:      gtime.NewFromTimeStamp(textLog.CompletionsRes.EnterTime).Format("Y-m-d"),
 		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
@@ -450,6 +454,8 @@ func (s *sLog) Image(ctx context.Context, imageLog model.LogImage, retry ...int)
 		return
 	}
 
+	receiveTime, internalTime := splitLogTime(ctx, imageLog.ImageRes.InternalTime)
+
 	image := do.LogImage{
 		TraceId:        gtrace.GetTraceID(ctx),
 		UserId:         service.Session().GetUserId(ctx),
@@ -466,7 +472,8 @@ func (s *sLog) Image(ctx context.Context, imageLog model.LogImage, retry ...int)
 		ConnTime:       imageLog.ImageRes.ConnTime,
 		Duration:       imageLog.ImageRes.Duration,
 		TotalTime:      imageLog.ImageRes.TotalTime,
-		InternalTime:   imageLog.ImageRes.InternalTime,
+		InternalTime:   internalTime,
+		ReceiveTime:    receiveTime,
 		ReqTime:        imageLog.ImageRes.EnterTime,
 		ReqDate:        gtime.NewFromTimeStamp(imageLog.ImageRes.EnterTime).Format("Y-m-d"),
 		ClientIp:       g.RequestFromCtx(ctx).GetClientIp(),
@@ -627,6 +634,8 @@ func (s *sLog) Audio(ctx context.Context, audioLog model.LogAudio, retry ...int)
 		return
 	}
 
+	receiveTime, internalTime := splitLogTime(ctx, audioLog.AudioRes.InternalTime)
+
 	audio := do.LogAudio{
 		TraceId:      gtrace.GetTraceID(ctx),
 		UserId:       service.Session().GetUserId(ctx),
@@ -636,7 +645,8 @@ func (s *sLog) Audio(ctx context.Context, audioLog model.LogAudio, retry ...int)
 		Text:         audioLog.AudioRes.Text,
 		Spend:        audioLog.Spend,
 		TotalTime:    audioLog.AudioRes.TotalTime,
-		InternalTime: audioLog.AudioRes.InternalTime,
+		InternalTime: internalTime,
+		ReceiveTime:  receiveTime,
 		ReqTime:      audioLog.AudioRes.EnterTime,
 		ReqDate:      gtime.NewFromTimeStamp(audioLog.AudioRes.EnterTime).Format("Y-m-d"),
 		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
@@ -773,6 +783,8 @@ func (s *sLog) Video(ctx context.Context, videoLog model.LogVideo, retry ...int)
 		return
 	}
 
+	receiveTime, internalTime := splitLogTime(ctx, videoLog.VideoRes.InternalTime)
+
 	video := do.LogVideo{
 		TraceId:      gtrace.GetTraceID(ctx),
 		UserId:       service.Session().GetUserId(ctx),
@@ -783,7 +795,8 @@ func (s *sLog) Video(ctx context.Context, videoLog model.LogVideo, retry ...int)
 		ResponseData: videoLog.VideoRes.ResponseData,
 		Spend:        videoLog.Spend,
 		TotalTime:    videoLog.VideoRes.TotalTime,
-		InternalTime: videoLog.VideoRes.InternalTime,
+		InternalTime: internalTime,
+		ReceiveTime:  receiveTime,
 		ReqTime:      videoLog.VideoRes.EnterTime,
 		ReqDate:      gtime.NewFromTimeStamp(videoLog.VideoRes.EnterTime).Format("Y-m-d"),
 		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
@@ -920,6 +933,8 @@ func (s *sLog) File(ctx context.Context, fileLog model.LogFile, retry ...int) {
 		return
 	}
 
+	receiveTime, internalTime := splitLogTime(ctx, fileLog.FileRes.InternalTime)
+
 	file := do.LogFile{
 		TraceId:      gtrace.GetTraceID(ctx),
 		UserId:       service.Session().GetUserId(ctx),
@@ -930,7 +945,8 @@ func (s *sLog) File(ctx context.Context, fileLog model.LogFile, retry ...int) {
 		ResponseData: fileLog.FileRes.ResponseData,
 		Spend:        fileLog.Spend,
 		TotalTime:    fileLog.FileRes.TotalTime,
-		InternalTime: fileLog.FileRes.InternalTime,
+		InternalTime: internalTime,
+		ReceiveTime:  receiveTime,
 		ReqTime:      fileLog.FileRes.EnterTime,
 		ReqDate:      gtime.NewFromTimeStamp(fileLog.FileRes.EnterTime).Format("Y-m-d"),
 		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
@@ -1067,6 +1083,8 @@ func (s *sLog) Batch(ctx context.Context, batchLog model.LogBatch, retry ...int)
 		return
 	}
 
+	receiveTime, internalTime := splitLogTime(ctx, batchLog.BatchRes.InternalTime)
+
 	batch := do.LogBatch{
 		TraceId:      gtrace.GetTraceID(ctx),
 		UserId:       service.Session().GetUserId(ctx),
@@ -1077,7 +1095,8 @@ func (s *sLog) Batch(ctx context.Context, batchLog model.LogBatch, retry ...int)
 		ResponseData: batchLog.BatchRes.ResponseData,
 		Spend:        batchLog.Spend,
 		TotalTime:    batchLog.BatchRes.TotalTime,
-		InternalTime: batchLog.BatchRes.InternalTime,
+		InternalTime: internalTime,
+		ReceiveTime:  receiveTime,
 		ReqTime:      batchLog.BatchRes.EnterTime,
 		ReqDate:      gtime.NewFromTimeStamp(batchLog.BatchRes.EnterTime).Format("Y-m-d"),
 		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
@@ -1214,6 +1233,8 @@ func (s *sLog) General(ctx context.Context, generalLog model.LogGeneral, retry .
 		return
 	}
 
+	receiveTime, internalTime := splitLogTime(ctx, generalLog.GeneralRes.InternalTime)
+
 	general := do.LogGeneral{
 		TraceId:      gtrace.GetTraceID(ctx),
 		UserId:       service.Session().GetUserId(ctx),
@@ -1227,7 +1248,8 @@ func (s *sLog) General(ctx context.Context, generalLog model.LogGeneral, retry .
 		ConnTime:     generalLog.GeneralRes.ConnTime,
 		Duration:     generalLog.GeneralRes.Duration,
 		TotalTime:    generalLog.GeneralRes.TotalTime,
-		InternalTime: generalLog.GeneralRes.InternalTime,
+		InternalTime: internalTime,
+		ReceiveTime:  receiveTime,
 		ReqTime:      generalLog.GeneralRes.EnterTime,
 		ReqDate:      gtime.NewFromTimeStamp(generalLog.GeneralRes.EnterTime).Format("Y-m-d"),
 		ClientIp:     g.RequestFromCtx(ctx).GetClientIp(),
@@ -1398,4 +1420,14 @@ func isTooLarge(err error) bool {
 	}
 
 	return false
+}
+
+func splitLogTime(ctx context.Context, internalTime int64) (int64, int64) {
+
+	receiveTime := g.RequestFromCtx(ctx).GetCtxVar(consts.RECEIVE_TIME_KEY).Int64()
+	if internalTime > receiveTime {
+		return receiveTime, internalTime - receiveTime
+	}
+
+	return receiveTime, 0
 }
