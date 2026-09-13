@@ -286,7 +286,8 @@ func middleware(r *ghttp.Request) {
 
 	logger.Infof(r.GetCtx(), "middleware secretKey: %s", secretKey)
 
-	r.SetCtxVar(consts.RECEIVE_TIME_KEY, gtime.TimestampMilli()-r.EnterTime.TimestampMilli())
+	// 计算接收耗时
+	calcReceiveTime(r)
 
 	if err := service.Auth().Authenticator(r.GetCtx(), secretKey); err != nil {
 		err := errors.Error(r.GetCtx(), err)
@@ -463,4 +464,13 @@ func sanitizeFormValue(v interface{}) interface{} {
 func sanitizeLogString(s string) string {
 	replacer := strings.NewReplacer("\r\n", "\\n", "\r", "\\n", "\n", "\\n")
 	return replacer.Replace(s)
+}
+
+func calcReceiveTime(r *ghttp.Request) {
+	if gstr.Contains(r.Header.Get("Content-Type"), "multipart/") {
+		r.GetMultipartForm()
+	} else {
+		_ = r.GetBody()
+	}
+	r.SetCtxVar(consts.RECEIVE_TIME_KEY, gtime.TimestampMilli()-r.EnterTime.TimestampMilli())
 }
