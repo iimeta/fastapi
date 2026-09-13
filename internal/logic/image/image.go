@@ -58,6 +58,8 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 		logger.Debugf(ctx, "sImage Generations time: %d", gtime.TimestampMilli()-now)
 	}()
 
+	data = compatImagesField(data)
+
 	params, err := common.NewConverter(ctx, sconsts.PROVIDER_OPENAI).ConvImageGenerationsRequest(ctx, data)
 	if err != nil {
 		logger.Errorf(ctx, "sImage Generations ConvImageGenerationsRequest error: %v", err)
@@ -253,6 +255,8 @@ func (s *sImage) GenerationsStream(ctx context.Context, data []byte, fallbackMod
 	defer func() {
 		logger.Debugf(ctx, "sImage GenerationsStream time: %d", gtime.TimestampMilli()-now)
 	}()
+
+	data = compatImagesField(data)
 
 	params, err := common.NewConverter(ctx, sconsts.PROVIDER_OPENAI).ConvImageGenerationsRequest(ctx, data)
 	if err != nil {
@@ -499,6 +503,8 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 		logger.Debugf(ctx, "sImage Edits time: %d", gtime.TimestampMilli()-now)
 	}()
 
+	compatImageEditRequest(ctx, &params)
+
 	var (
 		mak = &common.MAK{
 			Model:              params.Model,
@@ -712,6 +718,8 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 	defer func() {
 		logger.Debugf(ctx, "sImage EditsStream time: %d", gtime.TimestampMilli()-now)
 	}()
+
+	compatImageEditRequest(ctx, &params)
 
 	var (
 		mak = &common.MAK{
@@ -976,6 +984,8 @@ func (s *sImage) GenerationsAsync(ctx context.Context, data []byte, fallbackMode
 		logger.Debugf(ctx, "sImage GenerationsAsync time: %d", gtime.TimestampMilli()-now)
 	}()
 
+	data = compatImagesField(data)
+
 	params, err := common.NewConverter(ctx, sconsts.PROVIDER_OPENAI).ConvImageGenerationsRequest(ctx, data)
 	if err != nil {
 		logger.Errorf(ctx, "sImage GenerationsAsync ConvImageGenerationsRequest error: %v", err)
@@ -1072,6 +1082,8 @@ func (s *sImage) EditsAsync(ctx context.Context, params smodel.ImageEditRequest,
 	defer func() {
 		logger.Debugf(ctx, "sImage EditsAsync time: %d", gtime.TimestampMilli()-now)
 	}()
+
+	compatImageEditRequest(ctx, &params)
 
 	// 异步编辑仅支持图像URL或file_id, 开启转储时允许base64和文件上传
 	needStorage, err := checkAsyncEditImage(params)
@@ -2309,4 +2321,94 @@ func isImageStorageRaw(ctx context.Context) bool {
 	}
 
 	return false
+}
+
+// 兼容用户将 images 传成字符串或字符串数组的写法, 转成上游需要的 [{image_url: url}] 对象格式
+func compatImagesField(data []byte) []byte {
+
+	if len(data) == 0 {
+		return data
+	}
+
+	j := gjson.New(data)
+	if j == nil || j.IsNil() || !j.Contains("images") {
+		return data
+	}
+
+	converted, ok := convertImagesToImageUrlObjects(j.Get("images").Interface())
+	if !ok {
+		return data
+	}
+
+	if err := j.Set("images", converted); err != nil {
+		return data
+	}
+
+	return j.MustToJson()
+}
+
+func compatImageEditRequest(ctx context.Context, params *smodel.ImageEditRequest) {
+
+	req := g.RequestFromCtx(ctx)
+	if req == nil || gstr.Contains(req.Header.Get("Content-Type"), "multipart/form-data") {
+		return
+	}
+
+	var tmp smodel.ImageEditRequest
+	if err := gjson.Unmarshal(compatImagesField(req.GetBody()), &tmp); err != nil {
+		return
+	}
+
+	if len(tmp.Images) > 0 {
+		params.Images = tmp.Images
+	}
+}
+
+func convertImagesToImageUrlObjects(raw any) ([]map[string]any, bool) {
+
+	switch v := raw.(type) {
+	case string:
+		if v == "" {
+			return nil, false
+		}
+		return []map[string]any{{"image_url": v}}, true
+	case []string:
+		if len(v) == 0 {
+			return nil, false
+		}
+		converted := make([]map[string]any, 0, len(v))
+		for _, imageUrl := range v {
+			if imageUrl == "" {
+				continue
+			}
+			converted = append(converted, map[string]any{"image_url": imageUrl})
+		}
+		if len(converted) == 0 {
+			return nil, false
+		}
+		return converted, true
+	case []any:
+		converted := make([]map[string]any, 0, len(v))
+		changed := false
+		for _, item := range v {
+			switch iv := item.(type) {
+			case string:
+				if iv == "" {
+					continue
+				}
+				converted = append(converted, map[string]any{"image_url": iv})
+				changed = true
+			case map[string]any:
+				converted = append(converted, iv)
+			default:
+				return nil, false
+			}
+		}
+		if !changed {
+			return nil, false
+		}
+		return converted, true
+	default:
+		return nil, false
+	}
 }

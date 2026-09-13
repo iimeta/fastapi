@@ -96,7 +96,6 @@ var (
 						embedding.NewV1(),
 						moderation.NewV1(),
 						general.NewV1(),
-						bailian.NewV1(),
 					)
 				})
 
