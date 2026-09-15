@@ -30,6 +30,7 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/controller/google"
 	"github.com/iimeta/fastapi/v2/internal/controller/health"
 	"github.com/iimeta/fastapi/v2/internal/controller/image"
+	"github.com/iimeta/fastapi/v2/internal/controller/minimax"
 	"github.com/iimeta/fastapi/v2/internal/controller/moderation"
 	"github.com/iimeta/fastapi/v2/internal/controller/openai"
 	"github.com/iimeta/fastapi/v2/internal/controller/video"
@@ -169,6 +170,14 @@ var (
 				v1.Middleware(middleware)
 				v1.Bind(
 					bailian.NewV1(),
+				)
+			})
+
+			s.Group("/v2", func(v2 *ghttp.RouterGroup) {
+				v2.Middleware(middlewareHandlerResponse)
+				v2.Middleware(middleware)
+				v2.Bind(
+					minimax.NewV1(),
 				)
 			})
 
