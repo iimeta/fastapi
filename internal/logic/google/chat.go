@@ -308,6 +308,28 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 		}
 	}
 
+	// 绘图类型: 按传入的分辨率和比例校验返回图尺寸, 不符则排除当前代理并独立重试
+	if mak.ReqModel != nil && mak.ReqModel.Type == 2 && response.ResponseBytes != nil && common.ShouldCheckImageSize(mak) {
+		if imgReq, convErr := converter.ConvImageGenerationsRequest(ctx, request.GetBody()); convErr != nil {
+			logger.Error(ctx, convErr)
+		} else if expectedW, expectedH, ok := common.ExpectedGoogleImageSize(imgReq.Quality, imgReq.AspectRatio); ok {
+			if err = common.CheckGeneratedImageSize(ctx, expectedW, expectedH, extractGoogleImageDataForLog(response.ResponseBytes)); err != nil {
+				logger.Error(ctx, err)
+
+				if shouldRetry, retryCount := common.ExcludeAgentForImageSizeRetry(ctx, mak); shouldRetry {
+					retryInfo = &mcommon.Retry{
+						IsRetry:    true,
+						RetryCount: retryCount,
+						ErrMsg:     err.Error(),
+					}
+					return s.Completions(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, retry...)
+				}
+
+				return response, err
+			}
+		}
+	}
+
 	// 绘图类型开启转储时, 将 inlineData base64 落盘并按配置替换为 URL
 	if mak.ReqModel != nil && mak.ReqModel.Type == 2 && response.ResponseBytes != nil {
 		response.ResponseBytes, imageFilePaths, imageExpiresAt, storedImageData = saveGoogleImageStorage(ctx, response.ResponseBytes, 0)

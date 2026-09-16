@@ -66,6 +66,9 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 		return response, err
 	}
 
+	// 计费可能改写 params.Size, 尺寸校验始终以用户原始传入为准; 未传则跳过
+	userSize := params.Size
+
 	var (
 		mak = &common.MAK{
 			Model:              params.Model,
@@ -239,6 +242,27 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 		}
 
 		return response, err
+	}
+
+	imageResponse = response
+
+	if common.ShouldCheckImageSize(mak) {
+		if expectedW, expectedH, ok := common.ExpectedImageSize(userSize); ok {
+			if err = common.CheckGeneratedImageSize(ctx, expectedW, expectedH, response.Data); err != nil {
+				logger.Error(ctx, err)
+
+				if shouldRetry, retryCount := common.ExcludeAgentForImageSizeRetry(ctx, mak); shouldRetry {
+					retryInfo = &mcommon.Retry{
+						IsRetry:    true,
+						RetryCount: retryCount,
+						ErrMsg:     err.Error(),
+					}
+					return s.Generations(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel, retry...)
+				}
+
+				return response, err
+			}
+		}
 	}
 
 	imageFilePaths, imageExpiresAt = saveImageStorage(ctx, &response, params.OutputFormat, originalResponseFormat)
