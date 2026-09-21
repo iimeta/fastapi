@@ -8,7 +8,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/text/gregex"
@@ -20,6 +19,7 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/model/common"
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/logger"
+	"github.com/iimeta/fastapi/v2/utility/util"
 )
 
 type sCommon struct{}
@@ -146,38 +146,14 @@ func IsMaxRetry(agentTotal, retry int) bool {
 }
 
 func CheckIp(ctx context.Context, ipWhitelist, ipBlacklist []string) error {
-
-	clientIp := g.RequestFromCtx(ctx).GetClientIp()
-	remoteIp := g.RequestFromCtx(ctx).GetRemoteIp()
-
-	err := checkIp(clientIp, ipWhitelist, ipBlacklist)
-	if err == nil {
-		return nil
-	}
-
-	if remoteIp != "" && remoteIp != clientIp {
-		if checkIp(remoteIp, ipWhitelist, ipBlacklist) == nil {
-			return nil
-		}
-	}
-
-	return err
+	return checkIp(util.GetClientIpFromCtx(ctx), ipWhitelist, ipBlacklist)
 }
 
 func checkIp(clientIp string, ipWhitelist, ipBlacklist []string) error {
 
-	if clientIp == "127.0.0.1" || clientIp == "::1" {
+	// 仅真实 clientIp 为本机时放行, RemoteIp 为本机只说明经过本机反代, 不能作为放行依据.
+	if util.IsLocalIp(clientIp) {
 		return nil
-	}
-
-	if addrs, err := net.InterfaceAddrs(); err == nil {
-		for _, addr := range addrs {
-			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-				if ipnet.IP.To4() != nil && clientIp == ipnet.IP.String() {
-					return nil
-				}
-			}
-		}
 	}
 
 	if (len(ipBlacklist) > 0 && ipBlacklist[0] != "") || len(ipBlacklist) > 1 {

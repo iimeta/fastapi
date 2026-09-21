@@ -12,6 +12,7 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/logic/common"
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/logger"
+	"github.com/iimeta/fastapi/v2/utility/util"
 )
 
 func (c *ControllerV1) General(ctx context.Context, req *v1.GeneralReq) (res *v1.GeneralRes, err error) {
@@ -26,7 +27,7 @@ func (c *ControllerV1) General(ctx context.Context, req *v1.GeneralReq) (res *v1
 		return
 	}
 
-	if !config.Cfg.GeneralApi.Open || (len(config.Cfg.GeneralApi.IpWhitelist) > 0 && !slices.Contains(config.Cfg.GeneralApi.IpWhitelist, r.GetClientIp())) {
+	if !config.Cfg.GeneralApi.Open || (len(config.Cfg.GeneralApi.IpWhitelist) > 0 && !slices.Contains(config.Cfg.GeneralApi.IpWhitelist, util.GetClientIp(r))) {
 		return nil, errors.ERR_NOT_FOUND
 	}
 

@@ -225,14 +225,14 @@ func beforeServeHook(r *ghttp.Request) {
 	r.SetCtx(ctx)
 	r.SetCtxVar(consts.HOST_KEY, r.GetHost())
 
-	logger.Infof(r.GetCtx(), "beforeServeHook ClientIp: %s, RemoteIp: %s, IsFile: %t, URI: %s", r.GetClientIp(), r.GetRemoteIp(), r.IsFileRequest(), r.RequestURI)
+	logger.Infof(r.GetCtx(), "beforeServeHook ClientIp: %s, RemoteIp: %s, IsFile: %t, URI: %s", util.GetClientIp(r), r.GetRemoteIp(), r.IsFileRequest(), r.RequestURI)
 
 	r.Response.CORSDefault()
 }
 
 func middleware(r *ghttp.Request) {
 
-	if config.Cfg.ServiceUnavailable.Open && !slices.Contains(config.Cfg.ServiceUnavailable.IpWhitelist, r.GetClientIp()) {
+	if config.Cfg.ServiceUnavailable.Open && !slices.Contains(config.Cfg.ServiceUnavailable.IpWhitelist, util.GetClientIp(r)) {
 		err := errors.Error(r.GetCtx(), errors.ERR_SERVICE_UNAVAILABLE)
 		r.Response.Header().Set("Content-Type", "application/json")
 		r.Response.WriteStatus(err.Status(), gjson.MustEncodeString(err))

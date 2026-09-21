@@ -9,6 +9,7 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/logic/common"
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/logger"
+	"github.com/iimeta/fastapi/v2/utility/util"
 )
 
 type sAuth struct{}
@@ -79,7 +80,7 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 	}
 
 	if err = common.CheckIp(ctx, key.IpWhitelist, key.IpBlacklist); err != nil {
-		logger.Errorf(ctx, "sAuth Key CheckIp ClientIp: %s, RemoteIp: %s, error: %v", g.RequestFromCtx(ctx).GetClientIp(), g.RequestFromCtx(ctx).GetRemoteIp(), err)
+		logger.Errorf(ctx, "sAuth Key CheckIp ClientIp: %s, RemoteIp: %s, error: %v", util.GetClientIpFromCtx(ctx), g.RequestFromCtx(ctx).GetRemoteIp(), err)
 		return err
 	}
 
@@ -210,7 +211,7 @@ func (s *sAuth) VerifySecretKey(ctx context.Context, secretKey string) error {
 	}
 
 	if err = common.CheckIp(ctx, app.IpWhitelist, app.IpBlacklist); err != nil {
-		logger.Errorf(ctx, "sAuth App CheckIp ClientIp: %s, RemoteIp: %s, error: %v", g.RequestFromCtx(ctx).GetClientIp(), g.RequestFromCtx(ctx).GetRemoteIp(), err)
+		logger.Errorf(ctx, "sAuth App CheckIp ClientIp: %s, RemoteIp: %s, error: %v", util.GetClientIpFromCtx(ctx), g.RequestFromCtx(ctx).GetRemoteIp(), err)
 		return err
 	}
 
