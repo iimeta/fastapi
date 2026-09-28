@@ -11,6 +11,7 @@ type TaskVideo struct {
 	UserId             int                `bson:"user_id,omitempty"`               // 用户ID
 	AppId              int                `bson:"app_id,omitempty"`                // 应用ID
 	Model              string             `bson:"model,omitempty"`                 // 模型
+	Action             string             `bson:"action,omitempty"`                // 接口
 	VideoId            string             `bson:"video_id,omitempty"`              // 视频ID
 	Width              int                `bson:"width,omitempty"`                 // 宽度
 	Height             int                `bson:"height,omitempty"`                // 高度
@@ -24,8 +25,11 @@ type TaskVideo struct {
 	VideoUrl           string             `bson:"video_url,omitempty"`             // 视频地址
 	FileName           string             `bson:"file_name,omitempty"`             // 文件名
 	FilePath           string             `bson:"file_path,omitempty"`             // 文件路径
+	RequestData        map[string]any     `bson:"request_data,omitempty"`          // 请求数据
 	ResponseData       map[string]any     `bson:"response_data,omitempty"`         // 响应数据
 	Error              *smodel.VideoError `bson:"error,omitempty"`                 // 错误信息
+	ModelAgentId       string             `bson:"model_agent_id,omitempty"`        // 模型代理ID
+	ModelAgent         *ModelAgent        `bson:"model_agent,omitempty"`           // 模型代理信息
 	Rid                int                `bson:"rid,omitempty"`                   // 代理商ID
 	Creator            string             `bson:"creator,omitempty"`               // 创建人
 	Updater            string             `bson:"updater,omitempty"`               // 更新人

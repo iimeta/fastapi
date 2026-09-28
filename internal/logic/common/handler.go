@@ -382,27 +382,34 @@ func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		// 计算花费
 		after.Spend = Billing(ctx, mak, billingData)
 
-		if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-			// 记录花费
-			if err := RecordSpend(ctx, after.Spend, mak); err != nil {
+		if after.Action == consts.ACTION_LIST || after.Action == consts.ACTION_RETRIEVE || after.Action == consts.ACTION_CONTENT || after.Action == consts.ACTION_DELETE {
+			after.Spend.TotalSpendTokens = 0
+		} else {
+			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
+				// 记录花费
+				if err := RecordSpend(ctx, after.Spend, mak); err != nil {
+					logger.Error(ctx, err)
+					panic(err)
+				}
+			}); err != nil {
 				logger.Error(ctx, err)
-				panic(err)
 			}
-		}); err != nil {
-			logger.Error(ctx, err)
 		}
 
 		if after.Action == consts.ACTION_CREATE || after.Action == consts.ACTION_REMIX {
 
 			taskVideo := do.TaskVideo{
-				TraceId: gtrace.GetTraceID(ctx),
-				UserId:  service.Session().GetUserId(ctx),
-				AppId:   service.Session().GetAppId(ctx),
-				Model:   mak.ReqModel.Name,
-				VideoId: after.VideoId,
-				Prompt:  after.Prompt,
-				Status:  "queued",
-				Rid:     service.Session().GetRid(ctx),
+				TraceId:     gtrace.GetTraceID(ctx),
+				UserId:      service.Session().GetUserId(ctx),
+				AppId:       service.Session().GetAppId(ctx),
+				Model:       mak.ReqModel.Name,
+				Action:      after.Action,
+				VideoId:     after.VideoId,
+				Prompt:      after.Prompt,
+				Status:      "queued",
+				RequestData: after.RequestData,
+				Rid:         service.Session().GetRid(ctx),
+				Creator:     service.Session().GetSecretKey(ctx),
 			}
 
 			if after.Spend.VideoGeneration != nil {
@@ -410,6 +417,18 @@ func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 				if after.Spend.VideoGeneration.Pricing != nil {
 					taskVideo.Width = after.Spend.VideoGeneration.Pricing.Width
 					taskVideo.Height = after.Spend.VideoGeneration.Pricing.Height
+				}
+			}
+
+			if mak.ModelAgent != nil {
+				taskVideo.ModelAgentId = mak.ModelAgent.Id
+				taskVideo.ModelAgent = &do.ModelAgent{
+					ProviderId: mak.ModelAgent.ProviderId,
+					Name:       mak.ModelAgent.Name,
+					BaseUrl:    mak.ModelAgent.BaseUrl,
+					Path:       mak.ModelAgent.Path,
+					Weight:     mak.ModelAgent.Weight,
+					Remark:     mak.ModelAgent.Remark,
 				}
 			}
 

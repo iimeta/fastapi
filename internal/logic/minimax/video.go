@@ -13,6 +13,7 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
+	"github.com/gogf/gf/v2/util/gconv"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
 	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/dao"
@@ -123,7 +124,10 @@ func (s *sMiniMax) VideoCreate(ctx context.Context, request *ghttp.Request, fall
 
 	body := j.MustToJson()
 
-	responseBytes, responseHeader, err = common.NewAdapterOfficial(ctx, mak, false).VideoCreateOfficial(ctx, body)
+	if responseBytes, responseHeader, err = common.NewAdapterOfficial(ctx, mak, false).VideoCreateOfficial(ctx, body); err == nil {
+		err = checkVideoCreateResponse(responseBytes)
+	}
+
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -337,6 +341,38 @@ func (s *sMiniMax) VideoRetrieve(ctx context.Context, request *ghttp.Request, ta
 	common.WritePassthroughHeaders(ctx, mak.Passthrough, responseHeader)
 
 	return responseBytes, nil
+}
+
+// 创建成功必须返回 task_id; HTTP 200 但无 task_id (含错误 envelope) 视为失败
+func checkVideoCreateResponse(responseBytes []byte) error {
+
+	var createRes smodel.MiniMaxVideoCreateRes
+	if err := json.Unmarshal(responseBytes, &createRes); err != nil {
+		return errors.NewError(500, "server_error", "invalid video create response", "server_error", nil)
+	}
+
+	if createRes.TaskId != "" {
+		return nil
+	}
+
+	var errRes smodel.MiniMaxErrorRes
+	if err := json.Unmarshal(responseBytes, &errRes); err == nil && errRes.Error != nil {
+		status := 500
+		if code := gconv.Int(errRes.Error.HttpCode); code > 0 {
+			status = code
+		}
+		errType := errRes.Error.Type
+		if errType == "" {
+			errType = "server_error"
+		}
+		message := errRes.Error.Message
+		if message == "" {
+			message = "create video task failed"
+		}
+		return errors.NewError(status, errType, message, errType, nil)
+	}
+
+	return errors.NewError(500, "server_error", "create video task failed: missing task_id", "server_error", nil)
 }
 
 func convVideoCreateRequest(request *ghttp.Request) *smodel.MiniMaxVideoCreateReq {
