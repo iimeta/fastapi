@@ -10,6 +10,7 @@ import (
 	"github.com/gogf/gf/v2/util/gconv"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
 	"github.com/iimeta/fastapi-sdk/v2/tiktoken"
+	"github.com/iimeta/fastapi-sdk/v2/xai"
 	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/model"
 	"github.com/iimeta/fastapi/v2/internal/model/common"
@@ -124,6 +125,8 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 		spend.TotalSpendTokens = spend.Once.SpendTokens
 	}
 
+	applyCostTicks(mak.ReqModel.Pricing.BillingRule, billingData.Usage, &spend)
+
 	// 模型时段折扣
 	if mak.ReqModel.TimeRules != nil {
 		if modelTimeRule := MatchTimeRule(ctx, mak.ReqModel.TimeRules); modelTimeRule != nil {
@@ -140,6 +143,10 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 			spend.GroupTimeRule = groupTimeRule
 			spend.TotalSpendTokens = discountTokens(spend.TotalSpendTokens, groupTimeRule.Discount)
 		}
+	}
+
+	if billingData.Usage != nil {
+		alignTicksOnlySpend(&spend, billingData.Usage)
 	}
 
 	return spend
@@ -1472,4 +1479,101 @@ func billLayerDecompByOutputs(mak *MAK, billingData *common.BillingData, spend *
 	spend.LayerDecomp.SpendTokens = total
 
 	return true
+}
+
+// 上游只给官方价格(cost_in_usd_ticks)时用 ticks 换算总花费。
+// 按官方始终用 ticks；按系统若各项都算不出花费(常见于生图只返回 ticks)，也用 ticks，避免计费为 0。
+func applyCostTicks(billingRule int, usage *smodel.Usage, spend *common.Spend) {
+	if usage == nil || usage.CostInUsdTicks <= 0 {
+		return
+	}
+	ticksSpend := xai.SpendTokensFromCostTicks(usage.CostInUsdTicks)
+	if billingRule == 1 || spend.TotalSpendTokens == 0 {
+		spend.TotalSpendTokens = ticksSpend
+	}
+}
+
+// 官方 usage 没有 token 明细时，不要留下输入/输出全是 0 的计费项。
+// 生图 ticks-only 记到「图像」而不是「图像生成」。
+func alignTicksOnlySpend(spend *common.Spend, usage *smodel.Usage) {
+	if spend == nil || usage == nil || usage.CostInUsdTicks <= 0 || usageHasTokenBreakdown(usage) {
+		return
+	}
+	clearEmptyTokenSpend(spend)
+	total := spend.TotalSpendTokens
+	switch {
+	case spend.ImageGeneration != nil || spend.Image != nil:
+		if spend.Image == nil {
+			spend.Image = new(common.ImageSpend)
+		}
+		spend.Image.SpendTokens = total
+		spend.ImageGeneration = nil
+	case spend.LayerDecomp != nil:
+		if spend.LayerDecomp.N <= 0 {
+			spend.LayerDecomp.N = 1
+		}
+		spend.LayerDecomp.SpendTokens = total
+	case spend.VideoGeneration != nil:
+		spend.VideoGeneration.SpendTokens = total
+	case spend.Once != nil:
+		spend.Once.SpendTokens = total
+	default:
+		spend.Once = &common.OnceSpend{SpendTokens: total}
+	}
+}
+
+func usageHasTokenBreakdown(usage *smodel.Usage) bool {
+	if usage == nil {
+		return false
+	}
+	return usage.PromptTokens > 0 || usage.CompletionTokens > 0 ||
+		usage.InputTokens > 0 || usage.OutputTokens > 0 || usage.TotalTokens > 0 ||
+		usage.PromptTokensDetails.TextTokens > 0 || usage.PromptTokensDetails.ImageTokens > 0 ||
+		usage.PromptTokensDetails.CachedTokens > 0 || usage.PromptTokensDetails.AudioTokens > 0 ||
+		usage.InputTokensDetails.TextTokens > 0 || usage.InputTokensDetails.ImageTokens > 0 ||
+		usage.InputTokensDetails.CachedTokens > 0 ||
+		usage.CompletionTokensDetails.TextTokens > 0 || usage.CompletionTokensDetails.ImageTokens > 0 ||
+		usage.CompletionTokensDetails.ReasoningTokens > 0 || usage.CompletionTokensDetails.AudioTokens > 0 ||
+		usage.OutputTokensDetails.TextTokens > 0 || usage.OutputTokensDetails.ImageTokens > 0 ||
+		usage.OutputTokensDetails.ReasoningTokens > 0 ||
+		usage.CacheReadInputTokens > 0
+}
+
+func clearEmptyTokenSpend(spend *common.Spend) {
+	if spend.Text != nil && spend.Text.InputTokens == 0 && spend.Text.OutputTokens == 0 && spend.Text.ReasoningTokens == 0 {
+		spend.Text = nil
+	}
+	if spend.TieredText != nil && spend.TieredText.InputTokens == 0 && spend.TieredText.OutputTokens == 0 && spend.TieredText.ReasoningTokens == 0 {
+		spend.TieredText = nil
+	}
+	if spend.TextCache != nil && spend.TextCache.ReadTokens == 0 && spend.TextCache.WriteTokens == 0 && spend.TextCache.Write5MTokens == 0 && spend.TextCache.Write1HTokens == 0 {
+		spend.TextCache = nil
+	}
+	if spend.TieredTextCache != nil && spend.TieredTextCache.ReadTokens == 0 && spend.TieredTextCache.WriteTokens == 0 && spend.TieredTextCache.Write5MTokens == 0 && spend.TieredTextCache.Write1HTokens == 0 {
+		spend.TieredTextCache = nil
+	}
+	if spend.Image != nil && spend.Image.InputTokens == 0 && spend.Image.OutputTokens == 0 {
+		spend.Image = nil
+	}
+	if spend.ImageCache != nil && spend.ImageCache.ReadTokens == 0 {
+		spend.ImageCache = nil
+	}
+	if spend.Audio != nil && spend.Audio.InputTokens == 0 && spend.Audio.OutputTokens == 0 {
+		spend.Audio = nil
+	}
+	if spend.AudioCache != nil && spend.AudioCache.ReadTokens == 0 {
+		spend.AudioCache = nil
+	}
+	if spend.Video != nil && spend.Video.InputTokens == 0 && spend.Video.OutputTokens == 0 {
+		spend.Video = nil
+	}
+	if spend.VideoCache != nil && spend.VideoCache.ReadTokens == 0 {
+		spend.VideoCache = nil
+	}
+	if spend.Search != nil && spend.Search.SpendTokens == 0 {
+		spend.Search = nil
+	}
+	if spend.Vision != nil && spend.Vision.SpendTokens == 0 {
+		spend.Vision = nil
+	}
 }

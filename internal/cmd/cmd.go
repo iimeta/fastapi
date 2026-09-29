@@ -35,6 +35,7 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/controller/openai"
 	"github.com/iimeta/fastapi/v2/internal/controller/video"
 	"github.com/iimeta/fastapi/v2/internal/controller/volcengine"
+	"github.com/iimeta/fastapi/v2/internal/controller/xai"
 	"github.com/iimeta/fastapi/v2/internal/errors"
 	"github.com/iimeta/fastapi/v2/internal/model"
 	"github.com/iimeta/fastapi/v2/internal/service"
@@ -121,6 +122,12 @@ var (
 				v1.Group("/audio", func(g *ghttp.RouterGroup) {
 					g.Bind(
 						audio.NewV1(),
+					)
+				})
+
+				v1.Group("/videos/generations", func(g *ghttp.RouterGroup) {
+					g.Bind(
+						xai.NewV1(),
 					)
 				})
 

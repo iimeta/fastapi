@@ -38,4 +38,5 @@ import (
 	_ "github.com/iimeta/fastapi/v2/internal/logic/user"
 	_ "github.com/iimeta/fastapi/v2/internal/logic/video"
 	_ "github.com/iimeta/fastapi/v2/internal/logic/volcengine"
+	_ "github.com/iimeta/fastapi/v2/internal/logic/xai"
 )
