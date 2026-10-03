@@ -455,7 +455,8 @@ func (s *sVolcEngine) VideoRetrieve(ctx context.Context, request *ghttp.Request,
 	// 响应头透传
 	common.WritePassthroughHeaders(ctx, mak.Passthrough, responseHeader)
 
-	return responseBytes, nil
+	// 响应中的错误信息按 errors.ShieldErrorJson 逻辑处理: 屏蔽的错误统一返回未知错误, 不屏蔽的原样返回
+	return errors.ShieldErrorJson(ctx, responseBytes), nil
 }
 
 // VideoDelete

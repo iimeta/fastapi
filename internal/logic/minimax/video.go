@@ -265,7 +265,8 @@ func (s *sMiniMax) VideoRetrieve(ctx context.Context, request *ghttp.Request, ta
 
 	// 后台任务已轮询到结果则直接返回落库的官方响应, 否则实时查询上游
 	if responseBytes = convTaskVideoToMiniMaxRes(ctx, taskVideo); responseBytes != nil {
-		return responseBytes, nil
+		// 响应中的错误信息按 errors.ShieldErrorJson 逻辑处理: 屏蔽的错误统一返回未知错误, 不屏蔽的原样返回
+		return errors.ShieldErrorJson(ctx, responseBytes), nil
 	}
 
 	responseBytes, responseHeader, err = common.NewAdapterOfficial(ctx, mak, false).VideoRetrieveOfficial(ctx, taskId)
@@ -340,7 +341,8 @@ func (s *sMiniMax) VideoRetrieve(ctx context.Context, request *ghttp.Request, ta
 	// 响应头透传
 	common.WritePassthroughHeaders(ctx, mak.Passthrough, responseHeader)
 
-	return responseBytes, nil
+	// 响应中的错误信息按 errors.ShieldErrorJson 逻辑处理: 屏蔽的错误统一返回未知错误, 不屏蔽的原样返回
+	return errors.ShieldErrorJson(ctx, responseBytes), nil
 }
 
 // 创建成功必须返回 task_id; HTTP 200 但无 task_id (含错误 envelope) 视为失败

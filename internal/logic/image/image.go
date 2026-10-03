@@ -1433,6 +1433,11 @@ func (s *sImage) List(ctx context.Context, params *v1.ListReq) (response smodel.
 
 	for _, result := range results {
 
+		// 失败任务的错误信息按 errors.ShieldError 逻辑处理: 屏蔽的错误统一返回未知错误, 不屏蔽的原样返回
+		if result.Error != nil {
+			result.Error.Code, result.Error.Message = errors.ShieldError(ctx, result.Error.Code, result.Error.Message)
+		}
+
 		imageJobResponse := smodel.ImageJobResponse{
 			Id:        result.ImageId,
 			Object:    "image",
@@ -1532,6 +1537,11 @@ func (s *sImage) Retrieve(ctx context.Context, params smodel.ImageRetrieveReques
 	if err = mak.InitMAK(ctx); err != nil {
 		logger.Error(ctx, err)
 		return response, err
+	}
+
+	// 失败任务的错误信息按 errors.ShieldError 逻辑处理: 屏蔽的错误统一返回未知错误, 不屏蔽的原样返回
+	if taskImage.Error != nil {
+		taskImage.Error.Code, taskImage.Error.Message = errors.ShieldError(ctx, taskImage.Error.Code, taskImage.Error.Message)
 	}
 
 	response = smodel.ImageJobResponse{
@@ -1676,6 +1686,11 @@ func (s *sImage) Delete(ctx context.Context, params *v1.DeleteReq) (response smo
 		if err := dao.TaskImage.UpdateById(ctx, t.Id, bson.M{"status": "deleted"}); err != nil {
 			logger.Error(ctx, err)
 		}
+	}
+
+	// 失败任务的错误信息按 errors.ShieldError 逻辑处理: 屏蔽的错误统一返回未知错误, 不屏蔽的原样返回
+	if taskImage.Error != nil {
+		taskImage.Error.Code, taskImage.Error.Message = errors.ShieldError(ctx, taskImage.Error.Code, taskImage.Error.Message)
 	}
 
 	response = smodel.ImageJobResponse{

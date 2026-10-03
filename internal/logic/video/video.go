@@ -436,6 +436,11 @@ func (s *sVideo) List(ctx context.Context, params *v1.ListReq) (response smodel.
 
 	for _, result := range results {
 
+		// 失败任务的错误信息按 errors.ShieldError 逻辑处理: 屏蔽的错误统一返回未知错误, 不屏蔽的原样返回
+		if result.Error != nil {
+			result.Error.Code, result.Error.Message = errors.ShieldError(ctx, result.Error.Code, result.Error.Message)
+		}
+
 		videoJobResponse := smodel.VideoJobResponse{
 			Id:        result.VideoId,
 			Object:    "video",
@@ -536,6 +541,11 @@ func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 	if err = mak.InitMAK(ctx); err != nil {
 		logger.Error(ctx, err)
 		return response, err
+	}
+
+	// 失败任务的错误信息按 errors.ShieldError 逻辑处理: 屏蔽的错误统一返回未知错误, 不屏蔽的原样返回
+	if taskVideo.Error != nil {
+		taskVideo.Error.Code, taskVideo.Error.Message = errors.ShieldError(ctx, taskVideo.Error.Code, taskVideo.Error.Message)
 	}
 
 	response = smodel.VideoJobResponse{
@@ -639,6 +649,11 @@ func (s *sVideo) Delete(ctx context.Context, params *v1.DeleteReq) (response smo
 
 	if err := dao.TaskVideo.UpdateById(ctx, taskVideo.Id, bson.M{"status": "deleted", "video_url": "", "file_name": "", "file_path": ""}); err != nil {
 		logger.Error(ctx, err)
+	}
+
+	// 失败任务的错误信息按 errors.ShieldError 逻辑处理: 屏蔽的错误统一返回未知错误, 不屏蔽的原样返回
+	if taskVideo.Error != nil {
+		taskVideo.Error.Code, taskVideo.Error.Message = errors.ShieldError(ctx, taskVideo.Error.Code, taskVideo.Error.Message)
 	}
 
 	response = smodel.VideoJobResponse{

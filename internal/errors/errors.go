@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
+	"github.com/gogf/gf/v2/util/gconv"
 	serrors "github.com/iimeta/fastapi-sdk/v2/errors"
 	"github.com/iimeta/fastapi/v2/internal/config"
 )
@@ -157,6 +159,100 @@ func Error(ctx context.Context, err error) (iFastApiError IFastApiError) {
 	e := ERR_UNKNOWN.(IFastApiError)
 
 	return NewErrorf(e.Status(), e.ErrCode(), e.ErrMessage()+" TraceId: %s Timestamp: %d", e.ErrType(), e.ErrParam(), gtrace.GetTraceID(ctx), gtime.TimestampMilli()).(IFastApiError)
+}
+
+// 按"不屏蔽错误"配置处理需对外暴露的任务错误信息(如异步任务失败原因):
+// 命中不屏蔽名单时保留原始 code, message 清理已有 TraceId/request id 后追加新的 TraceId/Timestamp 返回;
+// 否则视为屏蔽错误, 统一返回未知错误(ERR_UNKNOWN)
+func ShieldError(ctx context.Context, code, message string) (string, string) {
+
+	// 不屏蔽错误
+	if config.Cfg.NotShieldError.Open && len(config.Cfg.NotShieldError.Errors) > 0 {
+		for _, notShieldError := range config.Cfg.NotShieldError.Errors {
+			if gstr.Contains(message, notShieldError) {
+				return code, fmt.Sprintf("%s TraceId: %s Timestamp: %d", gstr.Split(gstr.Split(message, " TraceId")[0], " (request id:")[0], gtrace.GetTraceID(ctx), gtime.TimestampMilli())
+			}
+		}
+	}
+
+	// 屏蔽的错误, 用统一描述处理
+	e := ERR_UNKNOWN.(IFastApiError)
+
+	return fmt.Sprintf("%v", e.ErrCode()), fmt.Sprintf("%s TraceId: %s Timestamp: %d", e.ErrMessage(), gtrace.GetTraceID(ctx), gtime.TimestampMilli())
+}
+
+// 处理任务查询类响应JSON中各常见位置的错误信息(如厂商视频任务查询的官方透传响应):
+// 支持顶层及 error、task.error、output 下的 code/message 字段(bailian/volcengine/xai/minimax),
+// 以及 minimax 风格的 base_resp.status_code/status_msg 信封;
+// 命中"不屏蔽错误"名单的原样返回(保留原始 code), 否则统一替换为未知错误(ERR_UNKNOWN)
+func ShieldErrorJson(ctx context.Context, responseBytes []byte) []byte {
+
+	if len(responseBytes) == 0 {
+		return responseBytes
+	}
+
+	j, err := gjson.DecodeToJson(responseBytes)
+	if err != nil {
+		return responseBytes
+	}
+
+	shielded := false
+
+	// code/message 成对出现的错误字段路径(空串为顶层)
+	for _, path := range []string{"", "error", "task.error", "output"} {
+
+		prefix := path
+		if prefix != "" {
+			prefix += "."
+		}
+
+		message := j.Get(prefix + "message").String()
+		if message == "" {
+			continue
+		}
+
+		code, msg := ShieldError(ctx, j.Get(prefix+"code").String(), message)
+		if err = j.Set(prefix+"code", code); err != nil {
+			return responseBytes
+		}
+		if err = j.Set(prefix+"message", msg); err != nil {
+			return responseBytes
+		}
+
+		shielded = true
+	}
+
+	// minimax 风格的 base_resp 信封: status_code 非 0 且 status_msg 非空时按错误处理
+	if statusMsg := j.Get("base_resp.status_msg").String(); statusMsg != "" {
+
+		if statusCode := j.Get("base_resp.status_code").Int(); statusCode != 0 {
+
+			code, msg := ShieldError(ctx, gconv.String(statusCode), statusMsg)
+
+			// status_code 保持数值类型: 不屏蔽时 ShieldError 返回原值, 屏蔽时返回 "-1"
+			if newCode := gconv.Int(code); newCode != statusCode {
+				if err = j.Set("base_resp.status_code", newCode); err != nil {
+					return responseBytes
+				}
+			}
+			if err = j.Set("base_resp.status_msg", msg); err != nil {
+				return responseBytes
+			}
+
+			shielded = true
+		}
+	}
+
+	if !shielded {
+		return responseBytes
+	}
+
+	data, err := j.ToJson()
+	if err != nil {
+		return responseBytes
+	}
+
+	return data
 }
 
 func (e *FastApiError) Error() string {
