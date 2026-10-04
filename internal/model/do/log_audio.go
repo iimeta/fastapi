@@ -50,6 +50,7 @@ type LogAudio struct {
 	Method               string                 `bson:"method,omitempty"`                  // Method
 	Path                 string                 `bson:"path,omitempty"`                    // Path
 	Privacy              *common.UserPrivacy    `bson:"privacy,omitempty"`                 // 隐私设置
+	RequestIds           map[string]string      `bson:"request_ids,omitempty"`             // 上游请求ID
 	Rid                  int                    `bson:"rid,omitempty"`                     // 代理商ID
 	Creator              string                 `bson:"creator,omitempty"`                 // 创建人
 	Updater              string                 `bson:"updater,omitempty"`                 // 更新人

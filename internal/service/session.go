@@ -80,6 +80,8 @@ type (
 		SaveSessionKey(ctx context.Context, sk *common.SessionKey)
 		// 获取会话保持SessionKey
 		GetSessionKey(ctx context.Context) *common.SessionKey
+		// 获取上游请求ID
+		GetUpstreamRequestIds(ctx context.Context) map[string]string
 	}
 )
 

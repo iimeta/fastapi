@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/gogf/gf/v2/frame/g"
+	sutil "github.com/iimeta/fastapi-sdk/v2/util"
 	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/errors"
 	"github.com/iimeta/fastapi/v2/internal/model"
@@ -348,4 +349,9 @@ func (s *sSession) GetSessionKey(ctx context.Context) *common.SessionKey {
 	}
 
 	return nil
+}
+
+// 获取上游请求ID
+func (s *sSession) GetUpstreamRequestIds(ctx context.Context) map[string]string {
+	return sutil.UpstreamRequestIds(ctx)
 }
