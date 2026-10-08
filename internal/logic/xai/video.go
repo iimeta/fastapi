@@ -345,7 +345,7 @@ func convTaskVideoToXAIRes(ctx context.Context, task *entity.TaskVideo) []byte {
 
 	if task.VideoUrl != "" {
 		res.Video = &smodel.XAIVideoGenerated{
-			Url:      common.ReplaceVideoUrl(task.VideoUrl),
+			Url:      common.ResolveVideoUrl(task.VideoUrl),
 			Duration: task.Seconds,
 		}
 	}

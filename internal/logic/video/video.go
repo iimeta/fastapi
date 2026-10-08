@@ -370,7 +370,7 @@ func (s *sVideo) List(ctx context.Context, params *v1.ListReq) (response smodel.
 		}
 
 		if result.VideoUrl != "" {
-			videoJobResponse.VideoUrl = resolveVideoUrl(result.VideoUrl)
+			videoJobResponse.VideoUrl = common.ResolveVideoUrl(result.VideoUrl)
 		}
 
 		response.Data = append(response.Data, videoJobResponse)
@@ -468,7 +468,7 @@ func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 	}
 
 	if taskVideo.VideoUrl != "" {
-		response.VideoUrl = resolveVideoUrl(taskVideo.VideoUrl)
+		response.VideoUrl = common.ResolveVideoUrl(taskVideo.VideoUrl)
 	}
 
 	return response, nil
@@ -736,24 +736,4 @@ func persistVideoCreateInput(ctx context.Context, params *v1.CreateReq) (request
 	}
 
 	return requestData, []string{filePath}, nil
-}
-
-func resolveVideoUrl(videoUrl string) string {
-
-	if videoUrl == "" {
-		return ""
-	}
-
-	if config.Cfg.VideoTask != nil && config.Cfg.VideoTask.IsEnableStorage {
-		if config.Cfg.VideoTask.StorageBaseUrl != "" {
-			if gstr.HasSuffix(config.Cfg.VideoTask.StorageBaseUrl, "/") {
-				videoUrl = gstr.TrimLeftStr(videoUrl, "/")
-			} else if !gstr.HasPrefix(videoUrl, "/") {
-				videoUrl = "/" + videoUrl
-			}
-			videoUrl = config.Cfg.VideoTask.StorageBaseUrl + videoUrl
-		}
-	}
-
-	return common.ReplaceVideoUrl(videoUrl)
 }

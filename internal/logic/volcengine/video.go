@@ -525,22 +525,28 @@ func convTaskVideoToVolcRes(ctx context.Context, task *entity.TaskVideo) *smodel
 		ServiceTier: volcReqString(task.RequestData, "service_tier"),
 		Usage:       volcUsageFromResponse(task.ResponseData),
 	}
+
 	if task.Seconds > 0 {
 		seconds := task.Seconds
 		res.Duration = &seconds
 	}
+
 	if seed := volcReqInt64(task.RequestData, "seed"); seed != nil {
 		res.Seed = seed
 	}
+
 	if frames := volcReqInt(task.RequestData, "frames"); frames != nil {
 		res.Frames = frames
 	}
+
 	if generateAudio := volcReqBool(task.RequestData, "generate_audio"); generateAudio != nil {
 		res.GenerateAudio = generateAudio
 	}
+
 	if task.VideoUrl != "" {
-		res.Content = &smodel.VolcVideoContentResult{VideoUrl: common.ReplaceVideoUrl(task.VideoUrl)}
+		res.Content = &smodel.VolcVideoContentResult{VideoUrl: common.ResolveVideoUrl(task.VideoUrl)}
 	}
+
 	if task.Error != nil {
 		res.Error = &smodel.VolcVideoError{Code: task.Error.Code, Message: task.Error.Message}
 	}
@@ -556,46 +562,59 @@ func volcReqString(m map[string]any, key string) string {
 }
 
 func volcReqInt(m map[string]any, key string) *int {
+
 	if m == nil || m[key] == nil {
 		return nil
 	}
+
 	v := gconv.Int(m[key])
 	if v == 0 && gconv.String(m[key]) != "0" {
 		return nil
 	}
+
 	return &v
 }
 
 func volcReqInt64(m map[string]any, key string) *int64 {
+
 	if m == nil || m[key] == nil {
 		return nil
 	}
+
 	v := gconv.Int64(m[key])
 	if v == 0 && gconv.String(m[key]) != "0" {
 		return nil
 	}
+
 	return &v
 }
 
 func volcReqBool(m map[string]any, key string) *bool {
+
 	if m == nil || m[key] == nil {
 		return nil
 	}
+
 	v := gconv.Bool(m[key])
+
 	return &v
 }
 
 func volcUsageFromResponse(data map[string]any) *smodel.VolcVideoUsage {
+
 	if data == nil {
 		return nil
 	}
+
 	raw := data["usage"]
 	if raw == nil {
 		return nil
 	}
+
 	usage := &smodel.VolcVideoUsage{}
 	if err := json.Unmarshal(gjson.MustEncode(raw), usage); err != nil {
 		return nil
 	}
+
 	return usage
 }

@@ -242,8 +242,10 @@ func convTaskVideoToMiniMaxRes(ctx context.Context, task *entity.TaskVideo) []by
 		status = "succeeded"
 	case "failed":
 		status = "failed"
-	case "expired", "deleted":
+	case "deleted":
 		status = "cancelled"
+	case "expired":
+		status = "expired"
 	}
 
 	item := &smodel.MiniMaxVideoTask{
@@ -263,7 +265,7 @@ func convTaskVideoToMiniMaxRes(ctx context.Context, task *entity.TaskVideo) []by
 
 	if task.VideoUrl != "" {
 		item.Content = &smodel.MiniMaxVideoContent{
-			Url: common.ReplaceVideoUrl(task.VideoUrl),
+			Url: common.ResolveVideoUrl(task.VideoUrl),
 		}
 	}
 

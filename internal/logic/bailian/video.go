@@ -322,7 +322,7 @@ func convTaskVideoToBailianRes(ctx context.Context, task *entity.TaskVideo) []by
 	}
 
 	if task.VideoUrl != "" {
-		res.Output.VideoUrl = common.ReplaceVideoUrl(task.VideoUrl)
+		res.Output.VideoUrl = common.ResolveVideoUrl(task.VideoUrl)
 	}
 
 	if task.Error != nil {
