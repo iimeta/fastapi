@@ -3,16 +3,19 @@ package bailian
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"slices"
 
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
+	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
+	"github.com/gogf/gf/v2/util/gconv"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
 	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/dao"
@@ -44,9 +47,9 @@ func (s *sBailian) VideoCreate(ctx context.Context, request *ghttp.Request, fall
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo      *mcommon.Retry
-		totalTime      int64
-		responseHeader http.Header
+		retryInfo *mcommon.Retry
+		totalTime int64
+		videoId   string
 	)
 
 	defer func() {
@@ -60,24 +63,19 @@ func (s *sBailian) VideoCreate(ctx context.Context, request *ghttp.Request, fall
 
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_CREATE,
+					IsAsync:      true,
+					VideoId:      videoId,
 					Prompt:       params.Input.Prompt,
 					Seconds:      videoSeconds(params),
 					Size:         videoSize(params),
 					VideoMode:    detectVideoMode(params),
-					RequestData:  util.ConvToMap(params),
+					RequestData:  util.ConvToMap(request.GetBody()),
 					ResponseData: util.ConvToMap(responseBytes),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    totalTime,
 					InternalTime: internalTime,
 					EnterTime:    enterTime,
-				}
-
-				if responseBytes != nil {
-					var res smodel.BailianVideoTaskRes
-					if e := json.Unmarshal(responseBytes, &res); e == nil && res.Output != nil {
-						afterHandler.VideoId = res.Output.TaskId
-					}
 				}
 
 				common.AfterHandler(ctx, mak, afterHandler)
@@ -93,97 +91,9 @@ func (s *sBailian) VideoCreate(ctx context.Context, request *ghttp.Request, fall
 		return nil, err
 	}
 
-	j := gjson.New(request.GetBody())
+	videoId = "video_" + gtrace.GetTraceID(ctx)
 
-	if mak.RealModel != nil && !gstr.Contains(mak.RealModel.Model, "*") {
-		_ = j.Set("model", mak.RealModel.Model)
-	}
-
-	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
-		reqModel := j.Get("model").String()
-		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
-			if replaceModel == reqModel {
-				logger.Infof(ctx, "sBailian VideoCreate request.Model: %s replaced %s", reqModel, mak.ModelAgent.TargetModels[i])
-				_ = j.Set("model", mak.ModelAgent.TargetModels[i])
-				mak.RealModel.Model = mak.ModelAgent.TargetModels[i]
-				break
-			}
-		}
-	}
-
-	body := j.MustToJson()
-
-	responseBytes, responseHeader, err = common.NewAdapterOfficial(ctx, mak, false).VideoCreateOfficial(ctx, body)
-	if err != nil {
-		logger.Error(ctx, err)
-
-		// 记录错误次数和禁用
-		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
-
-		isRetry, isDisabled := common.IsNeedRetry(err)
-
-		if isDisabled {
-			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-				service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
-
-			}, nil); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
-
-		if isRetry {
-
-			if common.IsMaxRetry(mak.AgentTotal, len(retry)) {
-
-				if service.Session().GetModelAgentBillingMethod(ctx) == 2 && slices.Contains(mak.RealModel.Pricing.BillingMethods, 1) {
-					service.Session().SaveModelAgentBillingMethod(ctx, 1)
-					retry = []int{}
-				} else {
-
-					if mak.RealModel.IsEnableFallback {
-
-						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id && fallbackModelAgent == nil {
-							if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
-								retryInfo = &mcommon.Retry{
-									IsRetry:    true,
-									RetryCount: len(retry),
-									ErrMsg:     err.Error(),
-								}
-								return s.VideoCreate(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
-							}
-						}
-
-						if mak.RealModel.FallbackConfig.Model != "" && fallbackModel == nil {
-							if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
-								retryInfo = &mcommon.Retry{
-									IsRetry:    true,
-									RetryCount: len(retry),
-									ErrMsg:     err.Error(),
-								}
-								return s.VideoCreate(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
-							}
-						}
-					}
-
-					return nil, err
-				}
-			}
-
-			retryInfo = &mcommon.Retry{
-				IsRetry:    true,
-				RetryCount: len(retry),
-				ErrMsg:     err.Error(),
-			}
-
-			return s.VideoCreate(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
-		}
-
-		return nil, err
-	}
-
-	// 响应头透传
-	common.WritePassthroughHeaders(ctx, mak.Passthrough, responseHeader)
+	responseBytes = gjson.MustEncode(map[string]any{"output": map[string]any{"task_id": videoId, "task_status": "PENDING"}})
 
 	return responseBytes, nil
 }
@@ -386,15 +296,137 @@ func detectVideoMode(req *smodel.BailianVideoCreateReq) string {
 
 func convTaskVideoToBailianRes(ctx context.Context, task *entity.TaskVideo) []byte {
 
-	if task.ResponseData == nil {
-		return nil
+	res := &smodel.BailianVideoTaskRes{
+		RequestId: task.VideoId,
+		Output: &smodel.BailianVideoOutput{
+			TaskId:     task.VideoId,
+			TaskStatus: bailianStatus(task.Status),
+			OrigPrompt: task.Prompt,
+		},
 	}
 
-	data, err := json.Marshal(task.ResponseData)
+	if task.CreatedAt > 0 {
+		res.Output.SubmitTime = bailianTime(task.CreatedAt)
+	}
+
+	if task.Status == "in_progress" || task.Status == "completed" || task.Status == "failed" {
+		if task.UpdatedAt > 0 {
+			res.Output.ScheduledTime = bailianTime(task.UpdatedAt)
+		}
+	}
+
+	if task.CompletedAt > 0 {
+		res.Output.EndTime = bailianTime(task.CompletedAt * 1000)
+	} else if task.Status == "failed" && task.UpdatedAt > 0 {
+		res.Output.EndTime = bailianTime(task.UpdatedAt)
+	}
+
+	if task.VideoUrl != "" {
+		res.Output.VideoUrl = common.ReplaceVideoUrl(task.VideoUrl)
+	}
+
+	if task.Error != nil {
+		res.Output.Code = task.Error.Code
+		res.Output.Message = task.Error.Message
+	}
+
+	res.Usage = bailianUsageFromTask(task)
+
+	data, err := json.Marshal(res)
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil
 	}
 
 	return data
+}
+
+func bailianStatus(status string) string {
+	switch status {
+	case "queued":
+		return "PENDING"
+	case "in_progress":
+		return "RUNNING"
+	case "completed":
+		return "SUCCEEDED"
+	case "failed":
+		return "FAILED"
+	case "deleted", "expired":
+		return "CANCELED"
+	default:
+		return "PENDING"
+	}
+}
+
+func bailianUsageFromResponse(data map[string]any) *smodel.BailianVideoUsage {
+
+	if data == nil {
+		return nil
+	}
+
+	raw, ok := data["usage"]
+	if !ok {
+		return nil
+	}
+
+	usage := &smodel.BailianVideoUsage{}
+	if err := json.Unmarshal(gjson.MustEncode(raw), usage); err != nil {
+		return nil
+	}
+
+	return usage
+}
+
+func bailianUsageFromTask(task *entity.TaskVideo) *smodel.BailianVideoUsage {
+
+	if usage := bailianUsageFromResponse(task.ResponseData); usage != nil {
+		return usage
+	}
+
+	if task.Status != "completed" {
+		return nil
+	}
+
+	return &smodel.BailianVideoUsage{
+		VideoCount:          1,
+		Duration:            float64(task.Seconds),
+		OutputVideoDuration: float64(task.Seconds),
+		Fps:                 30,
+		SR:                  bailianSR(task.RequestData),
+		Ratio:               bailianParamString(task.RequestData, "ratio", "16:9"),
+	}
+}
+
+func bailianTime(ms int64) string {
+
+	if ms <= 0 {
+		return ""
+	}
+
+	return gtime.NewFromTimeStamp(ms).Format("Y-m-d H:i:s") + fmt.Sprintf(".%03d", ms%1000)
+}
+
+func bailianParamString(req map[string]any, key, def string) string {
+
+	if req != nil {
+		if params, ok := req["parameters"].(map[string]any); ok {
+			if s := gconv.String(params[key]); s != "" {
+				return s
+			}
+		}
+	}
+
+	return def
+}
+
+func bailianSR(req map[string]any) int {
+	res := gstr.ToUpper(bailianParamString(req, "resolution", "1080P"))
+	switch {
+	case gstr.Contains(res, "480"):
+		return 480
+	case gstr.Contains(res, "720"):
+		return 720
+	default:
+		return 1080
+	}
 }

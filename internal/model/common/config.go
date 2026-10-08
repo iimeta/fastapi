@@ -159,6 +159,16 @@ type ImageUrlItem struct {
 	TargetUrl  string `bson:"target_url"  json:"target_url"`  // 目标URL
 }
 
+type VideoUrl struct {
+	Open bool           `bson:"open" json:"open"` // 开关
+	Urls []VideoUrlItem `bson:"urls" json:"urls"` // 视频URL替换列表
+}
+
+type VideoUrlItem struct {
+	ReplaceUrl string `bson:"replace_url" json:"replace_url"` // 替换URL
+	TargetUrl  string `bson:"target_url"  json:"target_url"`  // 目标URL
+}
+
 type VideoTask struct {
 	Open                 bool          `bson:"open"                   json:"open"`                         // 开关
 	Cron                 string        `bson:"cron"                   json:"cron"`                         // CRON表达式

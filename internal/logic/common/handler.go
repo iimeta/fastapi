@@ -382,7 +382,7 @@ func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		// 计算花费
 		after.Spend = Billing(ctx, mak, billingData)
 
-		if after.Action == consts.ACTION_LIST || after.Action == consts.ACTION_RETRIEVE || after.Action == consts.ACTION_CONTENT || after.Action == consts.ACTION_DELETE {
+		if after.IsAsync || after.Action == consts.ACTION_LIST || after.Action == consts.ACTION_RETRIEVE || after.Action == consts.ACTION_CONTENT || after.Action == consts.ACTION_DELETE {
 			after.Spend.TotalSpendTokens = 0
 		} else {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -399,17 +399,19 @@ func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		if after.Action == consts.ACTION_CREATE || after.Action == consts.ACTION_REMIX {
 
 			taskVideo := do.TaskVideo{
-				TraceId:     gtrace.GetTraceID(ctx),
-				UserId:      service.Session().GetUserId(ctx),
-				AppId:       service.Session().GetAppId(ctx),
-				Model:       mak.ReqModel.Name,
-				Action:      after.Action,
-				VideoId:     after.VideoId,
-				Prompt:      after.Prompt,
-				Status:      "queued",
-				RequestData: after.RequestData,
-				Rid:         service.Session().GetRid(ctx),
-				Creator:     service.Session().GetSecretKey(ctx),
+				TraceId:            gtrace.GetTraceID(ctx),
+				UserId:             service.Session().GetUserId(ctx),
+				AppId:              service.Session().GetAppId(ctx),
+				Model:              mak.ReqModel.Name,
+				Action:             after.Action,
+				VideoId:            after.VideoId,
+				Prompt:             after.Prompt,
+				Status:             "queued",
+				RequestData:        after.RequestData,
+				InputFilePaths:     after.InputFilePaths,
+				RemixedFromVideoId: after.RemixedFromVideoId,
+				Rid:                service.Session().GetRid(ctx),
+				Creator:            service.Session().GetSecretKey(ctx),
 			}
 
 			if after.Spend.VideoGeneration != nil {

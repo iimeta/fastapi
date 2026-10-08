@@ -11,9 +11,11 @@ import (
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
+	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/gogf/gf/v2/util/gconv"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
 	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/dao"
@@ -56,9 +58,9 @@ func (s *sVolcEngine) VideoCreate(ctx context.Context, request *ghttp.Request, f
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo      *mcommon.Retry
-		totalTime      int64
-		responseHeader http.Header
+		retryInfo *mcommon.Retry
+		totalTime int64
+		videoId   string
 	)
 
 	defer func() {
@@ -72,10 +74,12 @@ func (s *sVolcEngine) VideoCreate(ctx context.Context, request *ghttp.Request, f
 
 				afterHandler := &mcommon.AfterHandler{
 					Action:             consts.ACTION_CREATE,
+					IsAsync:            true,
+					VideoId:            videoId,
 					VideoMode:          detectVideoMode(params),
 					IsVolcEngine:       true,
 					VolcVideoCreateReq: params,
-					RequestData:        util.ConvToMap(params),
+					RequestData:        util.ConvToMap(request.GetBody()),
 					ResponseData:       util.ConvToMap(responseBytes),
 					Error:              err,
 					RetryInfo:          retryInfo,
@@ -88,17 +92,6 @@ func (s *sVolcEngine) VideoCreate(ctx context.Context, request *ghttp.Request, f
 					afterHandler.Seconds = int(math.Ceil(float64(*params.Frames) / 24))
 				} else if params.Duration != nil && *params.Duration > 0 {
 					afterHandler.Seconds = *params.Duration
-				}
-
-				// 解析响应获取 VideoId
-				if responseBytes != nil {
-					var res smodel.VolcVideoTaskRes
-					if e := json.Unmarshal(responseBytes, &res); e == nil {
-						afterHandler.VideoId = res.Id
-						if res.Duration != nil && afterHandler.Seconds == 0 {
-							afterHandler.Seconds = *res.Duration
-						}
-					}
 				}
 
 				common.AfterHandler(ctx, mak, afterHandler)
@@ -114,79 +107,9 @@ func (s *sVolcEngine) VideoCreate(ctx context.Context, request *ghttp.Request, f
 		return nil, err
 	}
 
-	body := request.GetBody()
+	videoId = "video_" + gtrace.GetTraceID(ctx)
 
-	responseBytes, responseHeader, err = common.NewAdapterOfficial(ctx, mak, false).VideoCreateOfficial(ctx, body)
-	if err != nil {
-		logger.Error(ctx, err)
-
-		// 记录错误次数和禁用
-		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
-
-		isRetry, isDisabled := common.IsNeedRetry(err)
-
-		if isDisabled {
-			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-				service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
-
-			}, nil); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
-
-		if isRetry {
-
-			if common.IsMaxRetry(mak.AgentTotal, len(retry)) {
-
-				if service.Session().GetModelAgentBillingMethod(ctx) == 2 && slices.Contains(mak.RealModel.Pricing.BillingMethods, 1) {
-					service.Session().SaveModelAgentBillingMethod(ctx, 1)
-					retry = []int{}
-				} else {
-
-					if mak.RealModel.IsEnableFallback {
-
-						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id && fallbackModelAgent == nil {
-							if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
-								retryInfo = &mcommon.Retry{
-									IsRetry:    true,
-									RetryCount: len(retry),
-									ErrMsg:     err.Error(),
-								}
-								return s.VideoCreate(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
-							}
-						}
-
-						if mak.RealModel.FallbackConfig.Model != "" && fallbackModel == nil {
-							if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
-								retryInfo = &mcommon.Retry{
-									IsRetry:    true,
-									RetryCount: len(retry),
-									ErrMsg:     err.Error(),
-								}
-								return s.VideoCreate(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
-							}
-						}
-					}
-
-					return nil, err
-				}
-			}
-
-			retryInfo = &mcommon.Retry{
-				IsRetry:    true,
-				RetryCount: len(retry),
-				ErrMsg:     err.Error(),
-			}
-
-			return s.VideoCreate(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
-		}
-
-		return nil, err
-	}
-
-	// 响应头透传
-	common.WritePassthroughHeaders(ctx, mak.Passthrough, responseHeader)
+	responseBytes = gjson.MustEncode(map[string]any{"id": videoId, "status": "queued"})
 
 	return responseBytes, nil
 }
@@ -252,7 +175,16 @@ func (s *sVolcEngine) VideoList(ctx context.Context, request *ghttp.Request, fal
 	}
 
 	if status := request.GetQuery("filter.status").String(); status != "" {
-		filter["status"] = status
+		switch status {
+		case "running":
+			filter["status"] = "in_progress"
+		case "succeeded":
+			filter["status"] = "completed"
+		case "cancelled":
+			filter["status"] = "deleted"
+		default:
+			filter["status"] = status
+		}
 	}
 
 	if filterModel := request.GetQuery("filter.model").String(); filterModel != "" {
@@ -566,16 +498,104 @@ func detectVideoMode(req *smodel.VolcVideoCreateReq) string {
 
 func convTaskVideoToVolcRes(ctx context.Context, task *entity.TaskVideo) *smodel.VolcVideoTaskRes {
 
-	if task.ResponseData != nil {
-
-		volcVideoTaskRes := &smodel.VolcVideoTaskRes{}
-		if err := json.Unmarshal(gjson.MustEncode(task.ResponseData), &volcVideoTaskRes); err != nil {
-			logger.Error(ctx, err)
-			return nil
-		}
-
-		return volcVideoTaskRes
+	status := "queued"
+	switch task.Status {
+	case "queued":
+		status = "queued"
+	case "in_progress":
+		status = "running"
+	case "completed":
+		status = "succeeded"
+	case "failed":
+		status = "failed"
+	case "expired":
+		status = "expired"
+	case "deleted":
+		status = "cancelled"
 	}
 
-	return nil
+	res := &smodel.VolcVideoTaskRes{
+		Id:          task.VideoId,
+		Model:       task.Model,
+		Status:      status,
+		CreatedAt:   task.CreatedAt / 1000,
+		UpdatedAt:   task.UpdatedAt / 1000,
+		Resolution:  volcReqString(task.RequestData, "resolution"),
+		Ratio:       volcReqString(task.RequestData, "ratio"),
+		ServiceTier: volcReqString(task.RequestData, "service_tier"),
+		Usage:       volcUsageFromResponse(task.ResponseData),
+	}
+	if task.Seconds > 0 {
+		seconds := task.Seconds
+		res.Duration = &seconds
+	}
+	if seed := volcReqInt64(task.RequestData, "seed"); seed != nil {
+		res.Seed = seed
+	}
+	if frames := volcReqInt(task.RequestData, "frames"); frames != nil {
+		res.Frames = frames
+	}
+	if generateAudio := volcReqBool(task.RequestData, "generate_audio"); generateAudio != nil {
+		res.GenerateAudio = generateAudio
+	}
+	if task.VideoUrl != "" {
+		res.Content = &smodel.VolcVideoContentResult{VideoUrl: common.ReplaceVideoUrl(task.VideoUrl)}
+	}
+	if task.Error != nil {
+		res.Error = &smodel.VolcVideoError{Code: task.Error.Code, Message: task.Error.Message}
+	}
+
+	return res
+}
+
+func volcReqString(m map[string]any, key string) string {
+	if m == nil {
+		return ""
+	}
+	return gconv.String(m[key])
+}
+
+func volcReqInt(m map[string]any, key string) *int {
+	if m == nil || m[key] == nil {
+		return nil
+	}
+	v := gconv.Int(m[key])
+	if v == 0 && gconv.String(m[key]) != "0" {
+		return nil
+	}
+	return &v
+}
+
+func volcReqInt64(m map[string]any, key string) *int64 {
+	if m == nil || m[key] == nil {
+		return nil
+	}
+	v := gconv.Int64(m[key])
+	if v == 0 && gconv.String(m[key]) != "0" {
+		return nil
+	}
+	return &v
+}
+
+func volcReqBool(m map[string]any, key string) *bool {
+	if m == nil || m[key] == nil {
+		return nil
+	}
+	v := gconv.Bool(m[key])
+	return &v
+}
+
+func volcUsageFromResponse(data map[string]any) *smodel.VolcVideoUsage {
+	if data == nil {
+		return nil
+	}
+	raw := data["usage"]
+	if raw == nil {
+		return nil
+	}
+	usage := &smodel.VolcVideoUsage{}
+	if err := json.Unmarshal(gjson.MustEncode(raw), usage); err != nil {
+		return nil
+	}
+	return usage
 }

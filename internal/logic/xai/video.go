@@ -9,10 +9,12 @@ import (
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
+	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
+	"github.com/gogf/gf/v2/util/gconv"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
 	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/dao"
@@ -54,9 +56,9 @@ func (s *sXAI) VideoCreate(ctx context.Context, request *ghttp.Request, fallback
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo      *mcommon.Retry
-		totalTime      int64
-		responseHeader http.Header
+		retryInfo *mcommon.Retry
+		totalTime int64
+		videoId   string
 	)
 
 	defer func() {
@@ -70,24 +72,19 @@ func (s *sXAI) VideoCreate(ctx context.Context, request *ghttp.Request, fallback
 
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_CREATE,
+					IsAsync:      true,
+					VideoId:      videoId,
 					Prompt:       params.Prompt,
 					Seconds:      videoSeconds(params),
 					Size:         videoSize(params),
 					VideoMode:    detectVideoMode(params),
-					RequestData:  util.ConvToMap(params),
+					RequestData:  util.ConvToMap(request.GetBody()),
 					ResponseData: util.ConvToMap(responseBytes),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    totalTime,
 					InternalTime: internalTime,
 					EnterTime:    enterTime,
-				}
-
-				if responseBytes != nil {
-					var res smodel.XAIVideoCreateRes
-					if e := json.Unmarshal(responseBytes, &res); e == nil {
-						afterHandler.VideoId = res.RequestId
-					}
 				}
 
 				common.AfterHandler(ctx, mak, afterHandler)
@@ -103,98 +100,9 @@ func (s *sXAI) VideoCreate(ctx context.Context, request *ghttp.Request, fallback
 		return nil, err
 	}
 
-	j := gjson.New(request.GetBody())
+	videoId = "video_" + gtrace.GetTraceID(ctx)
 
-	if mak.RealModel != nil && !gstr.Contains(mak.RealModel.Model, "*") {
-		_ = j.Set("model", mak.RealModel.Model)
-	}
-
-	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
-		reqModel := j.Get("model").String()
-		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
-			if replaceModel == reqModel {
-				logger.Infof(ctx, "sXAI VideoCreate request.Model: %s replaced %s", reqModel, mak.ModelAgent.TargetModels[i])
-				_ = j.Set("model", mak.ModelAgent.TargetModels[i])
-				mak.RealModel.Model = mak.ModelAgent.TargetModels[i]
-				break
-			}
-		}
-	}
-
-	body := j.MustToJson()
-
-	if responseBytes, responseHeader, err = common.NewAdapterOfficial(ctx, mak, false).VideoCreateOfficial(ctx, body); err == nil {
-		err = checkVideoCreateResponse(responseBytes)
-	}
-
-	if err != nil {
-		logger.Error(ctx, err)
-
-		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
-
-		isRetry, isDisabled := common.IsNeedRetry(err)
-
-		if isDisabled {
-			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-				service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
-
-			}, nil); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
-
-		if isRetry {
-
-			if common.IsMaxRetry(mak.AgentTotal, len(retry)) {
-
-				if service.Session().GetModelAgentBillingMethod(ctx) == 2 && slices.Contains(mak.RealModel.Pricing.BillingMethods, 1) {
-					service.Session().SaveModelAgentBillingMethod(ctx, 1)
-					retry = []int{}
-				} else {
-
-					if mak.RealModel.IsEnableFallback {
-
-						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id && fallbackModelAgent == nil {
-							if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
-								retryInfo = &mcommon.Retry{
-									IsRetry:    true,
-									RetryCount: len(retry),
-									ErrMsg:     err.Error(),
-								}
-								return s.VideoCreate(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
-							}
-						}
-
-						if mak.RealModel.FallbackConfig.Model != "" && fallbackModel == nil {
-							if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
-								retryInfo = &mcommon.Retry{
-									IsRetry:    true,
-									RetryCount: len(retry),
-									ErrMsg:     err.Error(),
-								}
-								return s.VideoCreate(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
-							}
-						}
-					}
-
-					return nil, err
-				}
-			}
-
-			retryInfo = &mcommon.Retry{
-				IsRetry:    true,
-				RetryCount: len(retry),
-				ErrMsg:     err.Error(),
-			}
-
-			return s.VideoCreate(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
-		}
-
-		return nil, err
-	}
-
-	common.WritePassthroughHeaders(ctx, mak.Passthrough, responseHeader)
+	responseBytes = gjson.MustEncode(map[string]any{"request_id": videoId})
 
 	return responseBytes, nil
 }
@@ -406,15 +314,77 @@ func detectVideoMode(req *smodel.XAIVideoCreateReq) string {
 
 func convTaskVideoToXAIRes(ctx context.Context, task *entity.TaskVideo) []byte {
 
-	if task.ResponseData == nil {
-		return nil
+	status := "pending"
+	switch task.Status {
+	case "queued":
+		status = "pending"
+	case "in_progress":
+		status = "in_progress"
+	case "completed":
+		status = "completed"
+	case "failed":
+		status = "failed"
+	case "expired":
+		status = "expired"
+	case "deleted":
+		status = "cancelled"
 	}
 
-	data, err := json.Marshal(task.ResponseData)
+	res := &smodel.XAIVideoJobRes{
+		RequestId:   task.VideoId,
+		Id:          task.VideoId,
+		Object:      "video",
+		Model:       task.Model,
+		Status:      status,
+		Prompt:      task.Prompt,
+		Duration:    task.Seconds,
+		AspectRatio: xaiReqString(task.RequestData, "aspect_ratio"),
+		Resolution:  xaiReqString(task.RequestData, "resolution"),
+		Usage:       xaiUsageFromResponse(task.ResponseData),
+	}
+
+	if task.VideoUrl != "" {
+		res.Video = &smodel.XAIVideoGenerated{
+			Url:      common.ReplaceVideoUrl(task.VideoUrl),
+			Duration: task.Seconds,
+		}
+	}
+
+	if task.Error != nil {
+		res.Error = &smodel.XAIVideoError{Code: task.Error.Code, Message: task.Error.Message}
+	}
+
+	data, err := json.Marshal(res)
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil
 	}
 
 	return data
+}
+
+func xaiReqString(m map[string]any, key string) string {
+	if m == nil {
+		return ""
+	}
+	return gconv.String(m[key])
+}
+
+func xaiUsageFromResponse(data map[string]any) *smodel.XAIUsage {
+
+	if data == nil {
+		return nil
+	}
+
+	raw := data["usage"]
+	if raw == nil {
+		return nil
+	}
+
+	usage := &smodel.XAIUsage{}
+	if err := json.Unmarshal(gjson.MustEncode(raw), usage); err != nil {
+		return nil
+	}
+
+	return usage
 }

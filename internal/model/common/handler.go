@@ -27,6 +27,7 @@ type AfterHandler struct {
 	ImageExpiresAt         int64
 	InputFilePaths         []string
 	VideoId                string
+	RemixedFromVideoId     string
 	VideoMode              string
 	IsVolcEngine           bool
 	VolcVideoCreateReq     *smodel.VolcVideoCreateReq

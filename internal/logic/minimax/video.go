@@ -3,12 +3,11 @@ package minimax
 import (
 	"context"
 	"encoding/json"
-	"net/http"
-	"slices"
 
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
+	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
@@ -55,9 +54,9 @@ func (s *sMiniMax) VideoCreate(ctx context.Context, request *ghttp.Request, fall
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo      *mcommon.Retry
-		totalTime      int64
-		responseHeader http.Header
+		retryInfo *mcommon.Retry
+		totalTime int64
+		videoId   string
 	)
 
 	defer func() {
@@ -71,24 +70,19 @@ func (s *sMiniMax) VideoCreate(ctx context.Context, request *ghttp.Request, fall
 
 				afterHandler := &mcommon.AfterHandler{
 					Action:       consts.ACTION_CREATE,
+					IsAsync:      true,
+					VideoId:      videoId,
 					Prompt:       videoPrompt(params),
 					Seconds:      videoSeconds(params),
 					Size:         videoSize(params),
 					VideoMode:    detectVideoMode(params),
-					RequestData:  util.ConvToMap(params),
+					RequestData:  util.ConvToMap(request.GetBody()),
 					ResponseData: util.ConvToMap(responseBytes),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    totalTime,
 					InternalTime: internalTime,
 					EnterTime:    enterTime,
-				}
-
-				if responseBytes != nil {
-					var res smodel.MiniMaxVideoCreateRes
-					if e := json.Unmarshal(responseBytes, &res); e == nil {
-						afterHandler.VideoId = res.TaskId
-					}
 				}
 
 				common.AfterHandler(ctx, mak, afterHandler)
@@ -104,100 +98,9 @@ func (s *sMiniMax) VideoCreate(ctx context.Context, request *ghttp.Request, fall
 		return nil, err
 	}
 
-	j := gjson.New(request.GetBody())
+	videoId = "video_" + gtrace.GetTraceID(ctx)
 
-	if mak.RealModel != nil && !gstr.Contains(mak.RealModel.Model, "*") {
-		_ = j.Set("model", mak.RealModel.Model)
-	}
-
-	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
-		reqModel := j.Get("model").String()
-		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
-			if replaceModel == reqModel {
-				logger.Infof(ctx, "sMiniMax VideoCreate request.Model: %s replaced %s", reqModel, mak.ModelAgent.TargetModels[i])
-				_ = j.Set("model", mak.ModelAgent.TargetModels[i])
-				mak.RealModel.Model = mak.ModelAgent.TargetModels[i]
-				break
-			}
-		}
-	}
-
-	body := j.MustToJson()
-
-	if responseBytes, responseHeader, err = common.NewAdapterOfficial(ctx, mak, false).VideoCreateOfficial(ctx, body); err == nil {
-		err = checkVideoCreateResponse(responseBytes)
-	}
-
-	if err != nil {
-		logger.Error(ctx, err)
-
-		// 记录错误次数和禁用
-		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
-
-		isRetry, isDisabled := common.IsNeedRetry(err)
-
-		if isDisabled {
-			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-				service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
-
-			}, nil); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
-
-		if isRetry {
-
-			if common.IsMaxRetry(mak.AgentTotal, len(retry)) {
-
-				if service.Session().GetModelAgentBillingMethod(ctx) == 2 && slices.Contains(mak.RealModel.Pricing.BillingMethods, 1) {
-					service.Session().SaveModelAgentBillingMethod(ctx, 1)
-					retry = []int{}
-				} else {
-
-					if mak.RealModel.IsEnableFallback {
-
-						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id && fallbackModelAgent == nil {
-							if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
-								retryInfo = &mcommon.Retry{
-									IsRetry:    true,
-									RetryCount: len(retry),
-									ErrMsg:     err.Error(),
-								}
-								return s.VideoCreate(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
-							}
-						}
-
-						if mak.RealModel.FallbackConfig.Model != "" && fallbackModel == nil {
-							if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
-								retryInfo = &mcommon.Retry{
-									IsRetry:    true,
-									RetryCount: len(retry),
-									ErrMsg:     err.Error(),
-								}
-								return s.VideoCreate(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
-							}
-						}
-					}
-
-					return nil, err
-				}
-			}
-
-			retryInfo = &mcommon.Retry{
-				IsRetry:    true,
-				RetryCount: len(retry),
-				ErrMsg:     err.Error(),
-			}
-
-			return s.VideoCreate(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
-		}
-
-		return nil, err
-	}
-
-	// 响应头透传
-	common.WritePassthroughHeaders(ctx, mak.Passthrough, responseHeader)
+	responseBytes = gjson.MustEncode(map[string]any{"task_id": videoId})
 
 	return responseBytes, nil
 }
@@ -215,9 +118,8 @@ func (s *sMiniMax) VideoRetrieve(ctx context.Context, request *ghttp.Request, ta
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo      *mcommon.Retry
-		totalTime      int64
-		responseHeader http.Header
+		retryInfo *mcommon.Retry
+		totalTime int64
 	)
 
 	defer func() {
@@ -263,118 +165,18 @@ func (s *sMiniMax) VideoRetrieve(ctx context.Context, request *ghttp.Request, ta
 		return nil, err
 	}
 
-	// 后台任务已轮询到结果则直接返回落库的官方响应, 否则实时查询上游
-	if responseBytes = convTaskVideoToMiniMaxRes(ctx, taskVideo); responseBytes != nil {
-		// 响应中的错误信息按 errors.ShieldErrorJson 逻辑处理: 屏蔽的错误统一返回未知错误, 不屏蔽的原样返回
-		return errors.ShieldErrorJson(ctx, responseBytes), nil
+	if taskVideo.Error != nil {
+		taskVideo.Error.Code, taskVideo.Error.Message = errors.ShieldError(ctx, taskVideo.Error.Code, taskVideo.Error.Message)
 	}
 
-	responseBytes, responseHeader, err = common.NewAdapterOfficial(ctx, mak, false).VideoRetrieveOfficial(ctx, taskId)
-	if err != nil {
+	responseBytes = convTaskVideoToMiniMaxRes(ctx, taskVideo)
+	if responseBytes == nil {
+		err = errors.NewError(500, "server_error", "invalid video retrieve response", "server_error", nil)
 		logger.Error(ctx, err)
-
-		// 记录错误次数和禁用
-		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
-
-		isRetry, isDisabled := common.IsNeedRetry(err)
-
-		if isDisabled {
-			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-				service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
-
-			}, nil); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
-
-		if isRetry {
-
-			if common.IsMaxRetry(mak.AgentTotal, len(retry)) {
-
-				if service.Session().GetModelAgentBillingMethod(ctx) == 2 && slices.Contains(mak.RealModel.Pricing.BillingMethods, 1) {
-					service.Session().SaveModelAgentBillingMethod(ctx, 1)
-					retry = []int{}
-				} else {
-
-					if mak.RealModel.IsEnableFallback {
-
-						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id && fallbackModelAgent == nil {
-							if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
-								retryInfo = &mcommon.Retry{
-									IsRetry:    true,
-									RetryCount: len(retry),
-									ErrMsg:     err.Error(),
-								}
-								return s.VideoRetrieve(g.RequestFromCtx(ctx).GetCtx(), request, taskId, fallbackModelAgent, fallbackModel)
-							}
-						}
-
-						if mak.RealModel.FallbackConfig.Model != "" && fallbackModel == nil {
-							if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
-								retryInfo = &mcommon.Retry{
-									IsRetry:    true,
-									RetryCount: len(retry),
-									ErrMsg:     err.Error(),
-								}
-								return s.VideoRetrieve(g.RequestFromCtx(ctx).GetCtx(), request, taskId, nil, fallbackModel)
-							}
-						}
-					}
-
-					return nil, err
-				}
-			}
-
-			retryInfo = &mcommon.Retry{
-				IsRetry:    true,
-				RetryCount: len(retry),
-				ErrMsg:     err.Error(),
-			}
-
-			return s.VideoRetrieve(g.RequestFromCtx(ctx).GetCtx(), request, taskId, fallbackModelAgent, fallbackModel, append(retry, 1)...)
-		}
-
 		return nil, err
 	}
 
-	// 响应头透传
-	common.WritePassthroughHeaders(ctx, mak.Passthrough, responseHeader)
-
-	// 响应中的错误信息按 errors.ShieldErrorJson 逻辑处理: 屏蔽的错误统一返回未知错误, 不屏蔽的原样返回
-	return errors.ShieldErrorJson(ctx, responseBytes), nil
-}
-
-// 创建成功必须返回 task_id; HTTP 200 但无 task_id (含错误 envelope) 视为失败
-func checkVideoCreateResponse(responseBytes []byte) error {
-
-	var createRes smodel.MiniMaxVideoCreateRes
-	if err := json.Unmarshal(responseBytes, &createRes); err != nil {
-		return errors.NewError(500, "server_error", "invalid video create response", "server_error", nil)
-	}
-
-	if createRes.TaskId != "" {
-		return nil
-	}
-
-	var errRes smodel.MiniMaxErrorRes
-	if err := json.Unmarshal(responseBytes, &errRes); err == nil && errRes.Error != nil {
-		status := 500
-		if code := gconv.Int(errRes.Error.HttpCode); code > 0 {
-			status = code
-		}
-		errType := errRes.Error.Type
-		if errType == "" {
-			errType = "server_error"
-		}
-		message := errRes.Error.Message
-		if message == "" {
-			message = "create video task failed"
-		}
-		return errors.NewError(status, errType, message, errType, nil)
-	}
-
-	return errors.NewError(500, "server_error", "create video task failed: missing task_id", "server_error", nil)
+	return responseBytes, nil
 }
 
 func convVideoCreateRequest(request *ghttp.Request) *smodel.MiniMaxVideoCreateReq {
@@ -432,15 +234,153 @@ func detectVideoMode(req *smodel.MiniMaxVideoCreateReq) string {
 
 func convTaskVideoToMiniMaxRes(ctx context.Context, task *entity.TaskVideo) []byte {
 
-	if task.ResponseData == nil {
-		return nil
+	status := "queued"
+	switch task.Status {
+	case "in_progress":
+		status = "running"
+	case "completed":
+		status = "succeeded"
+	case "failed":
+		status = "failed"
+	case "expired", "deleted":
+		status = "cancelled"
 	}
 
-	data, err := json.Marshal(task.ResponseData)
+	item := &smodel.MiniMaxVideoTask{
+		Id:         task.VideoId,
+		Model:      task.Model,
+		Status:     status,
+		CreatedAt:  task.CreatedAt / 1000,
+		UpdatedAt:  task.UpdatedAt / 1000,
+		Duration:   task.Seconds,
+		Resolution: miniMaxMapString(task.RequestData, "resolution", "768P"),
+		Ratio:      miniMaxMapString(task.RequestData, "ratio", "16:9"),
+		TaskType:   miniMaxMapString(task.RequestData, "task_type", "generation"),
+		Modality:   "video",
+		Progress:   miniMaxProgress(task, status),
+		Usage:      miniMaxUsageFromTask(task, status),
+	}
+
+	if task.VideoUrl != "" {
+		item.Content = &smodel.MiniMaxVideoContent{
+			Url: common.ReplaceVideoUrl(task.VideoUrl),
+		}
+	}
+
+	if task.Error != nil {
+		item.Error = &smodel.MiniMaxVideoError{Code: task.Error.Code, Message: task.Error.Message}
+	}
+
+	res := smodel.MiniMaxVideoQueryRes{Task: item}
+	data, err := json.Marshal(res)
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil
 	}
 
 	return data
+}
+
+func miniMaxProgress(task *entity.TaskVideo, status string) *float64 {
+
+	switch status {
+	case "succeeded", "failed", "cancelled":
+		p := 1.0
+		return &p
+	case "running":
+		p := float64(task.Progress) / 100
+		if p < 0 {
+			p = 0
+		}
+		if p > 1 {
+			p = 1
+		}
+		return &p
+	default:
+		return nil
+	}
+}
+
+func miniMaxUsageFromTask(task *entity.TaskVideo, status string) *smodel.MiniMaxVideoUsage {
+
+	usage := miniMaxUsageFromResponse(task.ResponseData)
+	if usage == nil {
+		usage = &smodel.MiniMaxVideoUsage{
+			InputImageCount: miniMaxInputImageCount(task.RequestData),
+		}
+	}
+
+	if status == "succeeded" && task.Seconds > 0 {
+		if usage.OutputSeconds == 0 {
+			usage.OutputSeconds = task.Seconds
+		}
+		if usage.TotalSeconds == 0 {
+			usage.TotalSeconds = task.Seconds
+		}
+	}
+
+	return usage
+}
+
+func miniMaxUsageFromResponse(data map[string]any) *smodel.MiniMaxVideoUsage {
+
+	if data == nil {
+		return nil
+	}
+
+	raw := data["usage"]
+	if task, ok := data["task"].(map[string]any); ok {
+		if u, exists := task["usage"]; exists {
+			raw = u
+		}
+	}
+
+	if raw == nil {
+		return nil
+	}
+
+	usage := &smodel.MiniMaxVideoUsage{}
+	if err := json.Unmarshal(gjson.MustEncode(raw), usage); err != nil {
+		return nil
+	}
+
+	return usage
+}
+
+func miniMaxInputImageCount(req map[string]any) int {
+
+	if req == nil {
+		return 0
+	}
+
+	content, ok := req["content"].([]any)
+	if !ok {
+		return 0
+	}
+
+	n := 0
+	for _, item := range content {
+		m, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		if gconv.String(m["type"]) == "image_url" {
+			n++
+		}
+	}
+
+	return n
+}
+
+func miniMaxMapString(m map[string]any, key, def string) string {
+
+	if m != nil {
+		if v, ok := m[key]; ok {
+			if s := gconv.String(v); s != "" {
+				return s
+			}
+		}
+	}
+
+	return def
 }

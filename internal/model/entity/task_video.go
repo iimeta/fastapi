@@ -10,6 +10,7 @@ type TaskVideo struct {
 	Model              string             `bson:"model,omitempty"`                 // 模型
 	Action             string             `bson:"action,omitempty"`                // 接口
 	VideoId            string             `bson:"video_id,omitempty"`              // 视频ID
+	JobId              string             `bson:"job_id,omitempty"`                // 上游任务ID
 	Width              int                `bson:"width,omitempty"`                 // 宽度
 	Height             int                `bson:"height,omitempty"`                // 高度
 	Seconds            int                `bson:"seconds,omitempty"`               // 秒数
@@ -22,6 +23,7 @@ type TaskVideo struct {
 	VideoUrl           string             `bson:"video_url,omitempty"`             // 视频地址
 	FileName           string             `bson:"file_name,omitempty"`             // 文件名
 	FilePath           string             `bson:"file_path,omitempty"`             // 文件路径
+	InputFilePaths     []string           `bson:"input_file_paths,omitempty"`      // 输入文件路径列表
 	RequestData        map[string]any     `bson:"request_data,omitempty"`          // 请求数据
 	ResponseData       map[string]any     `bson:"response_data,omitempty"`         // 响应数据
 	Error              *smodel.VideoError `bson:"error,omitempty"`                 // 错误信息

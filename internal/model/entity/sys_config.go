@@ -18,6 +18,7 @@ type SysConfig struct {
 	ImageTask                 *common.ImageTask                 `bson:"image_task,omitempty"`                    // 绘图任务
 	ImageStorage              *common.ImageStorage              `bson:"image_storage,omitempty"`                 // 绘图转储
 	ImageUrl                  *common.ImageUrl                  `bson:"image_url,omitempty"`                     // 图像URL
+	VideoUrl                  *common.VideoUrl                  `bson:"video_url,omitempty"`                     // 视频URL
 	VideoTask                 *common.VideoTask                 `bson:"video_task,omitempty"`                    // 视频任务
 	FileTask                  *common.FileTask                  `bson:"file_task,omitempty"`                     // 文件任务
 	ModelAgentHealthCheckTask *common.ModelAgentHealthCheckTask `bson:"model_agent_health_check_task,omitempty"` // 模型代理健康检查任务

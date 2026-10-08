@@ -3,10 +3,12 @@ package video
 import (
 	"context"
 	"fmt"
-	"slices"
 	"time"
 
+	"io"
+
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/os/grpool"
@@ -57,7 +59,10 @@ func (s *sVideo) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo *mcommon.Retry
+		retryInfo      *mcommon.Retry
+		videoId        string
+		requestData    map[string]any
+		inputFilePaths []string
 	)
 
 	defer func() {
@@ -69,18 +74,20 @@ func (s *sVideo) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				afterHandler := &mcommon.AfterHandler{
-					Action:       consts.ACTION_CREATE,
-					VideoId:      response.Id,
-					Prompt:       params.Prompt,
-					Seconds:      gconv.Int(params.Seconds),
-					Size:         params.Size,
-					RequestData:  util.ConvToMap(params.VideoCreateRequest),
-					ResponseData: util.ConvToMap(response),
-					Error:        err,
-					RetryInfo:    retryInfo,
-					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
+					Action:         consts.ACTION_CREATE,
+					IsAsync:        true,
+					VideoId:        videoId,
+					Prompt:         params.Prompt,
+					Seconds:        gconv.Int(params.Seconds),
+					Size:           params.Size,
+					RequestData:    requestData,
+					InputFilePaths: inputFilePaths,
+					ResponseData:   util.ConvToMap(response),
+					Error:          err,
+					RetryInfo:      retryInfo,
+					TotalTime:      response.TotalTime,
+					InternalTime:   internalTime,
+					EnterTime:      enterTime,
 				}
 
 				if params.InputReference != nil {
@@ -102,86 +109,24 @@ func (s *sVideo) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 		return response, err
 	}
 
-	request := *params
+	videoId = "video_" + gtrace.GetTraceID(ctx)
 
-	if mak.ModelAgent != nil && mak.ModelAgent.IsEnableModelReplace {
-		for i, replaceModel := range mak.ModelAgent.ReplaceModels {
-			if replaceModel == request.Model {
-				logger.Infof(ctx, "sVideo Create request.Model: %s replaced %s", request.Model, mak.ModelAgent.TargetModels[i])
-				request.Model = mak.ModelAgent.TargetModels[i]
-				mak.RealModel.Model = request.Model
-				break
-			}
-		}
-	}
-
-	response, err = common.NewAdapter(ctx, mak, false).VideoCreate(ctx, request.VideoCreateRequest)
+	requestData, inputFilePaths, err = persistVideoCreateInput(ctx, params)
 	if err != nil {
 		logger.Error(ctx, err)
-
-		// 记录错误次数和禁用
-		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
-
-		isRetry, isDisabled := common.IsNeedRetry(err)
-
-		if isDisabled {
-			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-				service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
-
-			}, nil); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
-
-		if isRetry {
-
-			if common.IsMaxRetry(mak.AgentTotal, len(retry)) {
-
-				if service.Session().GetModelAgentBillingMethod(ctx) == 2 && slices.Contains(mak.RealModel.Pricing.BillingMethods, 1) {
-					service.Session().SaveModelAgentBillingMethod(ctx, 1)
-					retry = []int{}
-				} else {
-
-					if mak.RealModel.IsEnableFallback {
-
-						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id && fallbackModelAgent == nil {
-							if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
-								retryInfo = &mcommon.Retry{
-									IsRetry:    true,
-									RetryCount: len(retry),
-									ErrMsg:     err.Error(),
-								}
-								return s.Create(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
-							}
-						}
-
-						if mak.RealModel.FallbackConfig.Model != "" && fallbackModel == nil {
-							if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
-								retryInfo = &mcommon.Retry{
-									IsRetry:    true,
-									RetryCount: len(retry),
-									ErrMsg:     err.Error(),
-								}
-								return s.Create(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
-							}
-						}
-					}
-
-					return response, err
-				}
-			}
-
-			retryInfo = &mcommon.Retry{
-				IsRetry:    true,
-				RetryCount: len(retry),
-				ErrMsg:     err.Error(),
-			}
-
-			return s.Create(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
-		}
-
 		return response, err
+	}
+
+	response = smodel.VideoJobResponse{
+		Id:        videoId,
+		Object:    "video",
+		Model:     mak.ReqModel.Name,
+		Status:    "queued",
+		Progress:  0,
+		CreatedAt: time.Now().Unix(),
+		Prompt:    params.Prompt,
+		Seconds:   params.Seconds,
+		Size:      params.Size,
 	}
 
 	return response, nil
@@ -201,7 +146,9 @@ func (s *sVideo) Remix(ctx context.Context, params *v1.RemixReq, fallbackModelAg
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		retryInfo *mcommon.Retry
+		retryInfo   *mcommon.Retry
+		videoId     string
+		requestData map[string]any
 	)
 
 	defer func() {
@@ -213,15 +160,17 @@ func (s *sVideo) Remix(ctx context.Context, params *v1.RemixReq, fallbackModelAg
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				afterHandler := &mcommon.AfterHandler{
-					Action:       consts.ACTION_REMIX,
-					VideoId:      response.Id,
-					RequestData:  util.ConvToMap(params.VideoRemixRequest),
-					ResponseData: util.ConvToMap(response),
-					Error:        err,
-					RetryInfo:    retryInfo,
-					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
+					Action:             consts.ACTION_REMIX,
+					IsAsync:            true,
+					VideoId:            videoId,
+					RemixedFromVideoId: params.VideoId,
+					RequestData:        requestData,
+					ResponseData:       util.ConvToMap(response),
+					Error:              err,
+					RetryInfo:          retryInfo,
+					TotalTime:          response.TotalTime,
+					InternalTime:       internalTime,
+					EnterTime:          enterTime,
 				}
 
 				common.AfterHandler(ctx, mak, afterHandler)
@@ -232,7 +181,7 @@ func (s *sVideo) Remix(ctx context.Context, params *v1.RemixReq, fallbackModelAg
 		}
 	}()
 
-	taskVideo, err := dao.TaskVideo.FindOne(ctx, bson.M{"video_id": params.VideoId, "creator": service.Session().GetSecretKey(ctx)})
+	origin, err := dao.TaskVideo.FindOne(ctx, bson.M{"video_id": params.VideoId, "creator": service.Session().GetSecretKey(ctx)})
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			err = errors.NewError(404, "invalid_request_error", "Video with id '"+params.VideoId+"' not found.", "invalid_request_error", nil)
@@ -241,80 +190,34 @@ func (s *sVideo) Remix(ctx context.Context, params *v1.RemixReq, fallbackModelAg
 		return response, err
 	}
 
-	mak.Model = taskVideo.Model
+	mak.Model = origin.Model
 
 	if err = mak.InitMAK(ctx); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
-	response, err = common.NewAdapter(ctx, mak, false).VideoRemix(ctx, params.VideoRemixRequest)
-	if err != nil {
-		logger.Error(ctx, err)
+	videoId = "video_" + gtrace.GetTraceID(ctx)
+	requestData = util.ConvToMap(g.RequestFromCtx(ctx).GetBody())
+	if requestData == nil {
+		requestData = map[string]any{}
+	}
 
-		// 记录错误次数和禁用
-		service.Common().RecordError(ctx, mak.RealModel, mak.Key, mak.ModelAgent)
+	if origin.JobId != "" && origin.JobId != "-" {
+		requestData["upstream_video_id"] = origin.JobId
+	} else {
+		requestData["upstream_video_id"] = origin.VideoId
+	}
 
-		isRetry, isDisabled := common.IsNeedRetry(err)
-
-		if isDisabled {
-			if err := grpool.AddWithRecover(gctx.NeverDone(ctx), func(ctx context.Context) {
-
-				service.ModelAgent().DisabledKey(ctx, mak.Key, err.Error())
-
-			}, nil); err != nil {
-				logger.Error(ctx, err)
-			}
-		}
-
-		if isRetry {
-
-			if common.IsMaxRetry(mak.AgentTotal, len(retry)) {
-
-				if service.Session().GetModelAgentBillingMethod(ctx) == 2 && slices.Contains(mak.RealModel.Pricing.BillingMethods, 1) {
-					service.Session().SaveModelAgentBillingMethod(ctx, 1)
-					retry = []int{}
-				} else {
-
-					if mak.RealModel.IsEnableFallback {
-
-						if mak.RealModel.FallbackConfig.ModelAgent != "" && mak.RealModel.FallbackConfig.ModelAgent != mak.ModelAgent.Id && fallbackModelAgent == nil {
-							if fallbackModelAgent, _ = service.ModelAgent().GetFallback(ctx, mak.RealModel); fallbackModelAgent != nil {
-								retryInfo = &mcommon.Retry{
-									IsRetry:    true,
-									RetryCount: len(retry),
-									ErrMsg:     err.Error(),
-								}
-								return s.Remix(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
-							}
-						}
-
-						if mak.RealModel.FallbackConfig.Model != "" && fallbackModel == nil {
-							if fallbackModel, _ = service.Model().GetFallbackModel(ctx, mak.RealModel); fallbackModel != nil {
-								retryInfo = &mcommon.Retry{
-									IsRetry:    true,
-									RetryCount: len(retry),
-									ErrMsg:     err.Error(),
-								}
-								return s.Remix(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
-							}
-						}
-					}
-
-					return response, err
-				}
-			}
-
-			retryInfo = &mcommon.Retry{
-				IsRetry:    true,
-				RetryCount: len(retry),
-				ErrMsg:     err.Error(),
-			}
-
-			return s.Remix(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
-		}
-
-		return response, err
+	response = smodel.VideoJobResponse{
+		Id:                 videoId,
+		Object:             "video",
+		Model:              mak.ReqModel.Name,
+		Status:             "queued",
+		Progress:           0,
+		CreatedAt:          time.Now().Unix(),
+		Prompt:             params.Prompt,
+		RemixedFromVideoId: &params.VideoId,
 	}
 
 	return response, nil
@@ -466,17 +369,8 @@ func (s *sVideo) List(ctx context.Context, params *v1.ListReq) (response smodel.
 			videoJobResponse.RemixedFromVideoId = &result.RemixedFromVideoId
 		}
 
-		if config.Cfg.VideoTask.IsEnableStorage && result.VideoUrl != "" {
-
-			if config.Cfg.VideoTask.StorageBaseUrl != "" {
-				if gstr.HasSuffix(config.Cfg.VideoTask.StorageBaseUrl, "/") {
-					result.VideoUrl = gstr.TrimLeftStr(result.VideoUrl, "/")
-				} else if !gstr.HasPrefix(result.VideoUrl, "/") {
-					result.VideoUrl = "/" + result.VideoUrl
-				}
-			}
-
-			videoJobResponse.VideoUrl = config.Cfg.VideoTask.StorageBaseUrl + result.VideoUrl
+		if result.VideoUrl != "" {
+			videoJobResponse.VideoUrl = resolveVideoUrl(result.VideoUrl)
 		}
 
 		response.Data = append(response.Data, videoJobResponse)
@@ -573,17 +467,8 @@ func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 		response.RemixedFromVideoId = &taskVideo.RemixedFromVideoId
 	}
 
-	if config.Cfg.VideoTask.IsEnableStorage && taskVideo.VideoUrl != "" {
-
-		if config.Cfg.VideoTask.StorageBaseUrl != "" {
-			if gstr.HasSuffix(config.Cfg.VideoTask.StorageBaseUrl, "/") {
-				taskVideo.VideoUrl = gstr.TrimLeftStr(taskVideo.VideoUrl, "/")
-			} else if !gstr.HasPrefix(taskVideo.VideoUrl, "/") {
-				taskVideo.VideoUrl = "/" + taskVideo.VideoUrl
-			}
-		}
-
-		response.VideoUrl = config.Cfg.VideoTask.StorageBaseUrl + taskVideo.VideoUrl
+	if taskVideo.VideoUrl != "" {
+		response.VideoUrl = resolveVideoUrl(taskVideo.VideoUrl)
 	}
 
 	return response, nil
@@ -773,10 +658,102 @@ func (s *sVideo) Content(ctx context.Context, params *v1.ContentReq) (response s
 		ProxyUrl: config.Cfg.Http.ProxyUrl,
 	})
 
-	if response, err = adapter.VideoContent(ctx, smodel.VideoContentRequest{VideoId: taskVideo.VideoId}); err != nil {
+	if response, err = adapter.VideoContent(ctx, smodel.VideoContentRequest{VideoId: pollContentVideoId(taskVideo.VideoId, taskVideo.JobId)}); err != nil {
 		logger.Error(ctx, err)
 		return response, err
 	}
 
 	return response, nil
+}
+
+func pollContentVideoId(videoId, jobId string) string {
+	if jobId != "" && jobId != "-" {
+		return jobId
+	}
+	return videoId
+}
+
+func persistVideoCreateInput(ctx context.Context, params *v1.CreateReq) (requestData map[string]any, inputFilePaths []string, err error) {
+
+	requestData = util.ConvToMap(g.RequestFromCtx(ctx).GetBody())
+	if requestData == nil {
+		requestData = map[string]any{}
+	}
+	delete(requestData, "input_reference")
+
+	if params.InputReference == nil {
+		return requestData, nil, nil
+	}
+
+	storageDir := "./resource/public/video/input/"
+	if config.Cfg.VideoTask != nil && config.Cfg.VideoTask.StorageDir != "" {
+		storageDir = config.Cfg.VideoTask.StorageDir
+		if !gstr.HasSuffix(storageDir, "/") {
+			storageDir += "/"
+		}
+		storageDir += "input/"
+	}
+
+	if err = gfile.Mkdir(storageDir); err != nil {
+		return nil, nil, err
+	}
+
+	src, err := params.InputReference.Open()
+	if err != nil {
+		return nil, nil, err
+	}
+	defer src.Close()
+
+	content, err := io.ReadAll(src)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	filename := gtrace.GetTraceID(ctx) + "_" + gfile.Basename(params.InputReference.Filename)
+	filePath := storageDir + filename
+	if err = gfile.PutBytes(filePath, content); err != nil {
+		return nil, nil, err
+	}
+
+	publicUrl := filename
+	if gstr.HasPrefix(storageDir, "./resource/public/") {
+		publicUrl = "/public/" + gstr.TrimLeftStr(storageDir, "./resource/public/") + filename
+	}
+
+	if config.Cfg.VideoTask != nil && config.Cfg.VideoTask.StorageBaseUrl != "" {
+		base := config.Cfg.VideoTask.StorageBaseUrl
+		if gstr.HasSuffix(base, "/") {
+			publicUrl = base + gstr.TrimLeftStr(publicUrl, "/")
+		} else if !gstr.HasPrefix(publicUrl, "/") {
+			publicUrl = base + "/" + publicUrl
+		} else {
+			publicUrl = base + publicUrl
+		}
+	}
+
+	if _, ok := requestData["input_reference"]; !ok {
+		requestData["input_reference"] = publicUrl
+	}
+
+	return requestData, []string{filePath}, nil
+}
+
+func resolveVideoUrl(videoUrl string) string {
+
+	if videoUrl == "" {
+		return ""
+	}
+
+	if config.Cfg.VideoTask != nil && config.Cfg.VideoTask.IsEnableStorage {
+		if config.Cfg.VideoTask.StorageBaseUrl != "" {
+			if gstr.HasSuffix(config.Cfg.VideoTask.StorageBaseUrl, "/") {
+				videoUrl = gstr.TrimLeftStr(videoUrl, "/")
+			} else if !gstr.HasPrefix(videoUrl, "/") {
+				videoUrl = "/" + videoUrl
+			}
+			videoUrl = config.Cfg.VideoTask.StorageBaseUrl + videoUrl
+		}
+	}
+
+	return common.ReplaceVideoUrl(videoUrl)
 }
