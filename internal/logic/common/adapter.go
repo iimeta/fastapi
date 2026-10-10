@@ -117,13 +117,25 @@ func NewAdapterOfficial(ctx context.Context, mak *MAK, isLong bool) (adapter sdk
 	}
 
 	officialPassthrough := &EffectivePassthrough{ResParams: []string{"res_data"}}
+
 	if mak.Passthrough != nil {
+
 		if slices.Contains(mak.Passthrough.ResParams, "res_header") {
 			officialPassthrough.ResParams = append(officialPassthrough.ResParams, "res_header")
 			officialPassthrough.ResHeaderMode = mak.Passthrough.ResHeaderMode
 			officialPassthrough.ResHeaderList = mak.Passthrough.ResHeaderList
 		}
+
+		if slices.Contains(mak.Passthrough.ReqParams, "req_path") {
+			options.Path = g.RequestFromCtx(ctx).URL.Path
+			if gstr.HasSuffix(options.BaseUrl, "/v1beta") && gstr.HasPrefix(options.Path, "/v1beta") {
+				options.Path = options.Path[7:]
+			} else if gstr.HasSuffix(options.BaseUrl, "/v1") && gstr.HasPrefix(options.Path, "/v1") {
+				options.Path = options.Path[3:]
+			}
+		}
 	}
+
 	g.RequestFromCtx(ctx).SetCtxVar("passthrough", officialPassthrough)
 
 	return sdk.NewAdapterOfficial(ctx, options)
@@ -155,13 +167,25 @@ func NewAdapterOpenAI(ctx context.Context, mak *MAK, isLong bool) *openai.OpenAI
 	}
 
 	openaiPassthrough := &EffectivePassthrough{ResParams: []string{"res_data"}}
+
 	if mak.Passthrough != nil {
+
 		if slices.Contains(mak.Passthrough.ResParams, "res_header") {
 			openaiPassthrough.ResParams = append(openaiPassthrough.ResParams, "res_header")
 			openaiPassthrough.ResHeaderMode = mak.Passthrough.ResHeaderMode
 			openaiPassthrough.ResHeaderList = mak.Passthrough.ResHeaderList
 		}
+
+		if slices.Contains(mak.Passthrough.ReqParams, "req_path") {
+			options.Path = g.RequestFromCtx(ctx).URL.Path
+			if gstr.HasSuffix(options.BaseUrl, "/v1beta") && gstr.HasPrefix(options.Path, "/v1beta") {
+				options.Path = options.Path[7:]
+			} else if gstr.HasSuffix(options.BaseUrl, "/v1") && gstr.HasPrefix(options.Path, "/v1") {
+				options.Path = options.Path[3:]
+			}
+		}
 	}
+
 	g.RequestFromCtx(ctx).SetCtxVar("passthrough", openaiPassthrough)
 
 	return openai.NewAdapter(ctx, options)
@@ -216,13 +240,18 @@ func getResPassthroughParams(pt *EffectivePassthrough) []string {
 }
 
 func getPassthroughHeaders(ctx context.Context, pt *EffectivePassthrough) map[string]string {
+
 	if pt == nil || !slices.Contains(pt.ReqParams, "req_header") {
 		return nil
 	}
+
 	headers := make(map[string]string)
 	request := g.RequestFromCtx(ctx)
+
 	for k, v := range request.Header {
+
 		key := strings.ToLower(k)
+
 		if pt.ReqHeaderMode == 1 {
 			if !slices.Contains(ReqReservedHeaders, key) {
 				headers[k] = v[0]
@@ -236,5 +265,6 @@ func getPassthroughHeaders(ctx context.Context, pt *EffectivePassthrough) map[st
 			}
 		}
 	}
+
 	return headers
 }
