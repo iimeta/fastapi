@@ -685,7 +685,7 @@ func convToChatCompletionRequest(request *ghttp.Request) smodel.ChatCompletionRe
 		}}, messages...)
 	}
 
-	return smodel.ChatCompletionRequest{
+	chatCompletionRequest := smodel.ChatCompletionRequest{
 		Model:       anthropicChatCompletionReq.Model,
 		Messages:    messages,
 		MaxTokens:   anthropicChatCompletionReq.MaxTokens,
@@ -696,4 +696,21 @@ func convToChatCompletionRequest(request *ghttp.Request) smodel.ChatCompletionRe
 		TopK:        anthropicChatCompletionReq.TopK,
 		TopP:        anthropicChatCompletionReq.TopP,
 	}
+
+	if anthropicChatCompletionReq.OutputConfig != nil {
+		chatCompletionRequest.ReasoningEffort = anthropicChatCompletionReq.OutputConfig.Effort
+	}
+
+	if anthropicChatCompletionReq.Thinking != nil {
+		switch anthropicChatCompletionReq.Thinking.Type {
+		case "enabled", "adaptive":
+			enableThinking := true
+			chatCompletionRequest.EnableThinking = &enableThinking
+		case "disabled":
+			enableThinking := false
+			chatCompletionRequest.EnableThinking = &enableThinking
+		}
+	}
+
+	return chatCompletionRequest
 }

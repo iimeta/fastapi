@@ -812,13 +812,28 @@ func convToChatCompletionRequest(request *ghttp.Request) smodel.ChatCompletionRe
 		})
 	}
 
-	return smodel.ChatCompletionRequest{
+	chatCompletionRequest := smodel.ChatCompletionRequest{
 		Model:       request.GetRouterMap()["model"],
 		Messages:    messages,
 		MaxTokens:   googleChatCompletionReq.GenerationConfig.MaxOutputTokens,
 		Temperature: googleChatCompletionReq.GenerationConfig.Temperature,
 		TopP:        googleChatCompletionReq.GenerationConfig.TopP,
 	}
+
+	if thinking := googleChatCompletionReq.GenerationConfig.ThinkingConfig; thinking != nil {
+
+		chatCompletionRequest.ReasoningEffort = thinking.ThinkingLevel
+
+		if thinking.ThinkingBudget != nil {
+			enableThinking := *thinking.ThinkingBudget != 0
+			chatCompletionRequest.EnableThinking = &enableThinking
+		} else if thinking.ThinkingLevel != "" {
+			enableThinking := true
+			chatCompletionRequest.EnableThinking = &enableThinking
+		}
+	}
+
+	return chatCompletionRequest
 }
 
 // 从请求路径中提取冒号后的接口动作, 如 models/gemini-pro:generateContent => generateContent
