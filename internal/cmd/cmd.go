@@ -227,12 +227,16 @@ func beforeServeHook(r *ghttp.Request) {
 
 	if traceId := r.Header.Get(consts.TRACE_ID); traceId != "" {
 		ctx, _ = gtrace.WithTraceID(ctx, traceId)
+	} else if requestId := r.Header.Get(consts.FASTAPI_REQUEST_ID); requestId != "" {
+		ctx, _ = gtrace.WithTraceID(ctx, requestId)
 	}
 
 	r.SetCtx(ctx)
 	r.SetCtxVar(consts.HOST_KEY, r.GetHost())
 
 	logger.Infof(r.GetCtx(), "beforeServeHook ClientIp: %s, RemoteIp: %s, IsFile: %t, URI: %s", util.GetClientIp(r), r.GetRemoteIp(), r.IsFileRequest(), r.RequestURI)
+
+	r.Response.Header().Set(consts.FASTAPI_REQUEST_ID, gtrace.GetTraceID(ctx))
 
 	r.Response.CORSDefault()
 }

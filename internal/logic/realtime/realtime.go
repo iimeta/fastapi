@@ -56,7 +56,8 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 	}()
 
 	header := http.Header{
-		consts.TRACE_ID: {gtrace.GetTraceID(ctx)},
+		consts.TRACE_ID:           {gtrace.GetTraceID(ctx)},
+		consts.FASTAPI_REQUEST_ID: {gtrace.GetTraceID(ctx)},
 	}
 
 	if swp := r.Header.Values("Sec-Websocket-Protocol"); len(swp) > 0 && gstr.Contains(swp[0], "realtime") {

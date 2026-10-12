@@ -69,6 +69,7 @@ func SSEServer(ctx context.Context, data string, event ...string) error {
 	}
 
 	r.Response.Header().Set(consts.TRACE_ID, gtrace.GetTraceID(ctx))
+	r.Response.Header().Set(consts.FASTAPI_REQUEST_ID, gtrace.GetTraceID(ctx))
 	r.Response.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
 	r.Response.Header().Set("Cache-Control", "no-cache")
 	r.Response.Header().Set("Connection", "keep-alive")

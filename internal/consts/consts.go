@@ -2,6 +2,7 @@ package consts
 
 const (
 	TRACE_ID               = "Trace-Id"
+	FASTAPI_REQUEST_ID     = "X-Fastapi-Request-Id"
 	HOST_KEY               = "host"
 	RECEIVE_TIME_KEY       = "receive_time"
 	RID_KEY                = "rid"

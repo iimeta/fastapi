@@ -26,13 +26,14 @@ type EffectivePassthrough struct {
 var ReqReservedHeaders = []string{
 	"authorization", "x-api-key", "api-key", "x-goog-api-key",
 	"host", "connection", "keep-alive", "transfer-encoding", "upgrade",
-	"content-length", "content-type", "trace-id",
+	"content-length", "content-type", "trace-id", "x-fastapi-request-id",
 }
 
 // 响应保留头(不透传)
 var ResReservedHeaders = []string{
 	"transfer-encoding", "connection", "keep-alive",
 	"content-length", "content-encoding", "set-cookie", "strict-transport-security",
+	"x-fastapi-request-id",
 }
 
 // 计算有效的透传配置, 无ModelAgent时使用Model配置, 有ModelAgent时取交集
