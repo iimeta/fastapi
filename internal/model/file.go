@@ -11,6 +11,7 @@ type FileReq struct {
 
 type FileRes struct {
 	FileId       string         // 文件ID
+	MsgId        string         // 消息ID
 	ResponseData map[string]any // 响应数据
 	Error        error          // 错误信息
 	TotalTime    int64          // 总时间

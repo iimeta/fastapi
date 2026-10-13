@@ -117,6 +117,7 @@ func textHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 	completionsRes := &model.CompletionsRes{
 		Completion:   after.Completion,
+		MsgId:        resolveTextMsgId(after),
 		Error:        after.Error,
 		ConnTime:     after.ConnTime,
 		Duration:     after.Duration,
@@ -269,6 +270,7 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 	imageRes := &model.ImageRes{
 		Data:         after.ImageResponse.Data,
+		MsgId:        resolveImageMsgId(after),
 		ConnTime:     after.ConnTime,
 		Duration:     after.Duration,
 		TotalTime:    after.TotalTime,
@@ -334,6 +336,7 @@ func audioHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 	audioRes := &model.AudioRes{
 		Text:         after.AudioText,
+		MsgId:        resolveAudioMsgId(after),
 		Minute:       after.AudioMinute,
 		Error:        after.Error,
 		TotalTime:    after.TotalTime,
@@ -447,6 +450,7 @@ func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 	videoRes := &model.VideoRes{
 		VideoId:      after.VideoId,
+		MsgId:        resolveVideoMsgId(after),
 		ResponseData: after.ResponseData,
 		Error:        after.Error,
 		TotalTime:    after.TotalTime,
@@ -531,6 +535,7 @@ func fileHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 	fileRes := &model.FileRes{
 		FileId:       after.FileId,
+		MsgId:        resolveFileMsgId(after),
 		ResponseData: after.ResponseData,
 		Error:        after.Error,
 		TotalTime:    after.TotalTime,
@@ -611,6 +616,7 @@ func batchHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 	batchRes := &model.BatchRes{
 		BatchId:      after.BatchId,
+		MsgId:        resolveBatchMsgId(after),
 		ResponseData: after.ResponseData,
 		Error:        after.Error,
 		TotalTime:    after.TotalTime,
@@ -690,6 +696,7 @@ func generalHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) 
 	generalRes := &model.GeneralRes{
 		ResponseData: after.ResponseData,
 		Completion:   after.Completion,
+		MsgId:        resolveGeneralMsgId(after),
 		Error:        after.Error,
 		ConnTime:     after.ConnTime,
 		Duration:     after.Duration,

@@ -6,6 +6,7 @@ import (
 
 type ImageRes struct {
 	Data         []smodel.ImageResponseData // 图像数据
+	MsgId        string                     // 消息ID
 	Error        error                      // 错误信息
 	ConnTime     int64                      // 连接时间
 	Duration     int64                      // 持续时间

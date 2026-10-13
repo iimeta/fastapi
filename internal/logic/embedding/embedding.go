@@ -70,6 +70,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 				afterHandler := &mcommon.AfterHandler{
 					EmbeddingReq: params,
 					Action:       consts.ACTION_EMBEDDINGS,
+					MsgId:        common.ExtractMsgId(response.ResponseBytes),
 					Usage:        response.Usage,
 					Error:        err,
 					RetryInfo:    retryInfo,

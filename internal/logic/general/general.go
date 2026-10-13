@@ -199,6 +199,7 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 			FallbackModel:      fallbackModel,
 		}
 		completion  string
+		msgId       string
 		serviceTier string
 		connTime    int64
 		duration    int64
@@ -219,6 +220,7 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 					RequestData:       request.GetRequestMap(),
 					ChatCompletionReq: params,
 					Completion:        completion,
+					MsgId:             msgId,
 					ServiceTier:       serviceTier,
 					Action:            generalAction(request.URL.Path),
 					Usage:             usage,
@@ -325,6 +327,10 @@ func (s *sGeneral) GeneralStream(ctx context.Context, request *ghttp.Request, fa
 	for {
 
 		response := <-response
+
+		if msgId == "" {
+			msgId = common.ResolveMsgId(response.Id, response.ResponseBytes)
+		}
 
 		connTime = response.ConnTime
 		duration = response.Duration

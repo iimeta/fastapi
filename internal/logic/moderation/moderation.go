@@ -63,6 +63,7 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 				afterHandler := &mcommon.AfterHandler{
 					ModerationReq: params,
 					Action:        consts.ACTION_MODERATIONS,
+					MsgId:         common.ResolveMsgId(response.Id, response.ResponseBytes),
 					Usage:         response.Usage,
 					Error:         err,
 					RetryInfo:     retryInfo,

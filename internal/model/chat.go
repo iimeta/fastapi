@@ -2,6 +2,7 @@ package model
 
 type CompletionsRes struct {
 	Completion   string // 补全(回答)
+	MsgId        string // 消息ID
 	Error        error  // 错误信息
 	ConnTime     int64  // 连接时间
 	Duration     int64  // 持续时间

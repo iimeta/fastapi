@@ -19,6 +19,7 @@ type AfterHandler struct {
 	ModerationReq          smodel.ModerationRequest
 	ChatCompletionRes      smodel.ChatCompletionResponse
 	Completion             string
+	MsgId                  string
 	ServiceTier            string
 	Action                 string
 	IsAsync                bool

@@ -7,6 +7,7 @@ type AudioReq struct {
 
 type AudioRes struct {
 	Text         string  // 输出文本
+	MsgId        string  // 消息ID
 	Characters   int     // 字符数
 	Minute       float64 // 分钟数
 	Error        error   // 错误信息

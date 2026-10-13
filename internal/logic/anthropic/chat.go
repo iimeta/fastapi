@@ -285,6 +285,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 			FallbackModel:      fallbackModel,
 		}
 		completion string
+		msgId      string
 		connTime   int64
 		duration   int64
 		totalTime  int64
@@ -303,6 +304,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					Completion:        completion,
+					MsgId:             msgId,
 					Action:            consts.ACTION_MESSAGES,
 					Usage:             usage,
 					Error:             err,
@@ -504,6 +506,10 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 				logger.Error(ctx, err)
 				return err
 			}
+		}
+
+		if msgId == "" {
+			msgId = common.ExtractMsgId(response.ResponseBytes)
 		}
 
 		connTime = response.ConnTime

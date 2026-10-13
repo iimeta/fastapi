@@ -357,6 +357,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 			FallbackModel:      fallbackModel,
 		}
 		completion      string
+		msgId           string
 		connTime        int64
 		duration        int64
 		totalTime       int64
@@ -380,6 +381,7 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 				after := &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					Completion:        completion,
+					MsgId:             msgId,
 					Action:            googleAction(request.URL.Path),
 					Usage:             usage,
 					Error:             err,
@@ -607,6 +609,10 @@ func (s *sGoogle) CompletionsStream(ctx context.Context, request *ghttp.Request,
 				logger.Error(ctx, err)
 				return err
 			}
+		}
+
+		if msgId == "" {
+			msgId = common.ResolveMsgId(response.Id, response.ResponseBytes)
 		}
 
 		connTime = response.ConnTime

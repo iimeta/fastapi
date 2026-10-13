@@ -220,6 +220,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 			FallbackModel:      fallbackModel,
 		}
 		completion  string
+		msgId       string
 		serviceTier string
 		connTime    int64
 		duration    int64
@@ -239,6 +240,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					Completion:        completion,
+					MsgId:             msgId,
 					ServiceTier:       serviceTier,
 					Action:            consts.ACTION_RESPONSES,
 					Usage:             usage,
@@ -542,6 +544,13 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 
 		if response.Id != "" {
 			streamResponseId = response.Id
+		}
+		if msgId == "" {
+			if isChatCompletions {
+				msgId = common.ResolveMsgId(response.Id, res.ResponseBytes)
+			} else {
+				msgId = common.ExtractMsgId(res.ResponseBytes)
+			}
 		}
 
 		if response.Model != "" {

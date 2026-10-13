@@ -80,6 +80,7 @@ func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 		Method:       g.RequestFromCtx(ctx).Method,
 		Path:         g.RequestFromCtx(ctx).URL.Path,
 		RequestIds:   service.Session().GetUpstreamRequestIds(ctx),
+		MsgId:        textLog.CompletionsRes.MsgId,
 		Rid:          service.Session().GetRid(ctx),
 	}
 
@@ -485,6 +486,7 @@ func (s *sLog) Image(ctx context.Context, imageLog model.LogImage, retry ...int)
 		Method:         g.RequestFromCtx(ctx).Method,
 		Path:           g.RequestFromCtx(ctx).URL.Path,
 		RequestIds:     service.Session().GetUpstreamRequestIds(ctx),
+		MsgId:          imageLog.ImageRes.MsgId,
 		Rid:            service.Session().GetRid(ctx),
 		ExpiresAt:      imageLog.ImageExpiresAt,
 	}
@@ -659,6 +661,7 @@ func (s *sLog) Audio(ctx context.Context, audioLog model.LogAudio, retry ...int)
 		Method:       g.RequestFromCtx(ctx).Method,
 		Path:         g.RequestFromCtx(ctx).URL.Path,
 		RequestIds:   service.Session().GetUpstreamRequestIds(ctx),
+		MsgId:        audioLog.AudioRes.MsgId,
 		Rid:          service.Session().GetRid(ctx),
 	}
 
@@ -810,6 +813,7 @@ func (s *sLog) Video(ctx context.Context, videoLog model.LogVideo, retry ...int)
 		Method:       g.RequestFromCtx(ctx).Method,
 		Path:         g.RequestFromCtx(ctx).URL.Path,
 		RequestIds:   service.Session().GetUpstreamRequestIds(ctx),
+		MsgId:        videoLog.VideoRes.MsgId,
 		Rid:          service.Session().GetRid(ctx),
 	}
 
@@ -961,6 +965,7 @@ func (s *sLog) File(ctx context.Context, fileLog model.LogFile, retry ...int) {
 		Method:       g.RequestFromCtx(ctx).Method,
 		Path:         g.RequestFromCtx(ctx).URL.Path,
 		RequestIds:   service.Session().GetUpstreamRequestIds(ctx),
+		MsgId:        fileLog.FileRes.MsgId,
 		Rid:          service.Session().GetRid(ctx),
 	}
 
@@ -1112,6 +1117,7 @@ func (s *sLog) Batch(ctx context.Context, batchLog model.LogBatch, retry ...int)
 		Method:       g.RequestFromCtx(ctx).Method,
 		Path:         g.RequestFromCtx(ctx).URL.Path,
 		RequestIds:   service.Session().GetUpstreamRequestIds(ctx),
+		MsgId:        batchLog.BatchRes.MsgId,
 		Rid:          service.Session().GetRid(ctx),
 	}
 
@@ -1266,6 +1272,7 @@ func (s *sLog) General(ctx context.Context, generalLog model.LogGeneral, retry .
 		Method:       g.RequestFromCtx(ctx).Method,
 		Path:         g.RequestFromCtx(ctx).URL.Path,
 		RequestIds:   service.Session().GetUpstreamRequestIds(ctx),
+		MsgId:        generalLog.GeneralRes.MsgId,
 		Rid:          service.Session().GetRid(ctx),
 	}
 

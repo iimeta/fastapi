@@ -227,6 +227,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 			FallbackModel:      fallbackModel,
 		}
 		completion  string
+		msgId       string
 		serviceTier string
 		connTime    int64
 		duration    int64
@@ -246,6 +247,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					Completion:        completion,
+					MsgId:             msgId,
 					ServiceTier:       serviceTier,
 					Action:            consts.ACTION_COMPLETIONS,
 					Usage:             usage,
@@ -388,6 +390,10 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 	for {
 
 		response := <-response
+
+		if msgId == "" {
+			msgId = common.ResolveMsgId(response.Id, response.ResponseBytes)
+		}
 
 		connTime = response.ConnTime
 		duration = response.Duration

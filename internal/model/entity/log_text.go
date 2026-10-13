@@ -55,6 +55,7 @@ type LogText struct {
 	Path                 string                 `bson:"path,omitempty"`                    // Path
 	Privacy              *common.UserPrivacy    `bson:"privacy,omitempty"`                 // 隐私设置
 	RequestIds           map[string]string      `bson:"request_ids,omitempty"`             // 上游请求ID
+	MsgId                string                 `bson:"msg_id,omitempty"`                  // 消息ID
 	Rid                  int                    `bson:"rid,omitempty"`                     // 代理商ID
 	Creator              string                 `bson:"creator,omitempty"`                 // 创建人
 	Updater              string                 `bson:"updater,omitempty"`                 // 更新人
