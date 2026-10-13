@@ -64,7 +64,7 @@ func applyImagePrivacy(image *do.LogImage, privacy *common.UserPrivacy) {
 
 	image.Privacy = privacy
 
-	if !allowRequestField(privacy, "prompt") {
+	if !allowRequestField(privacy, "image_prompt") {
 		image.Prompt = ""
 	}
 
