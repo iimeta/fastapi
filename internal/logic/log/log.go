@@ -53,7 +53,7 @@ func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 		return
 	}
 
-	receiveTime, internalTime := splitLogTime(ctx, textLog.CompletionsRes.InternalTime)
+	receiveTime, internalTime := logTimes(ctx, textLog.CompletionsRes.InternalTime)
 
 	text := do.LogText{
 		TraceId:      gtrace.GetTraceID(ctx),
@@ -79,7 +79,7 @@ func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 		Host:         g.RequestFromCtx(ctx).GetHost(),
 		Method:       g.RequestFromCtx(ctx).Method,
 		Path:         g.RequestFromCtx(ctx).URL.Path,
-		RequestIds:   service.Session().GetUpstreamRequestIds(ctx),
+		RequestIds:   requestIds(ctx, textLog.CompletionsRes.RequestIds),
 		MsgId:        textLog.CompletionsRes.MsgId,
 		Rid:          service.Session().GetRid(ctx),
 	}
@@ -456,7 +456,7 @@ func (s *sLog) Image(ctx context.Context, imageLog model.LogImage, retry ...int)
 		return
 	}
 
-	receiveTime, internalTime := splitLogTime(ctx, imageLog.ImageRes.InternalTime)
+	receiveTime, internalTime := logTimes(ctx, imageLog.ImageRes.InternalTime)
 
 	image := do.LogImage{
 		TraceId:        gtrace.GetTraceID(ctx),
@@ -485,7 +485,7 @@ func (s *sLog) Image(ctx context.Context, imageLog model.LogImage, retry ...int)
 		Host:           g.RequestFromCtx(ctx).GetHost(),
 		Method:         g.RequestFromCtx(ctx).Method,
 		Path:           g.RequestFromCtx(ctx).URL.Path,
-		RequestIds:     service.Session().GetUpstreamRequestIds(ctx),
+		RequestIds:     requestIds(ctx, imageLog.ImageRes.RequestIds),
 		MsgId:          imageLog.ImageRes.MsgId,
 		Rid:            service.Session().GetRid(ctx),
 		ExpiresAt:      imageLog.ImageExpiresAt,
@@ -638,7 +638,7 @@ func (s *sLog) Audio(ctx context.Context, audioLog model.LogAudio, retry ...int)
 		return
 	}
 
-	receiveTime, internalTime := splitLogTime(ctx, audioLog.AudioRes.InternalTime)
+	receiveTime, internalTime := logTimes(ctx, audioLog.AudioRes.InternalTime)
 
 	audio := do.LogAudio{
 		TraceId:      gtrace.GetTraceID(ctx),
@@ -660,7 +660,7 @@ func (s *sLog) Audio(ctx context.Context, audioLog model.LogAudio, retry ...int)
 		Host:         g.RequestFromCtx(ctx).GetHost(),
 		Method:       g.RequestFromCtx(ctx).Method,
 		Path:         g.RequestFromCtx(ctx).URL.Path,
-		RequestIds:   service.Session().GetUpstreamRequestIds(ctx),
+		RequestIds:   requestIds(ctx, audioLog.AudioRes.RequestIds),
 		MsgId:        audioLog.AudioRes.MsgId,
 		Rid:          service.Session().GetRid(ctx),
 	}
@@ -789,7 +789,7 @@ func (s *sLog) Video(ctx context.Context, videoLog model.LogVideo, retry ...int)
 		return
 	}
 
-	receiveTime, internalTime := splitLogTime(ctx, videoLog.VideoRes.InternalTime)
+	receiveTime, internalTime := logTimes(ctx, videoLog.VideoRes.InternalTime)
 
 	video := do.LogVideo{
 		TraceId:      gtrace.GetTraceID(ctx),
@@ -812,7 +812,7 @@ func (s *sLog) Video(ctx context.Context, videoLog model.LogVideo, retry ...int)
 		Host:         g.RequestFromCtx(ctx).GetHost(),
 		Method:       g.RequestFromCtx(ctx).Method,
 		Path:         g.RequestFromCtx(ctx).URL.Path,
-		RequestIds:   service.Session().GetUpstreamRequestIds(ctx),
+		RequestIds:   requestIds(ctx, videoLog.VideoRes.RequestIds),
 		MsgId:        videoLog.VideoRes.MsgId,
 		Rid:          service.Session().GetRid(ctx),
 	}
@@ -941,7 +941,7 @@ func (s *sLog) File(ctx context.Context, fileLog model.LogFile, retry ...int) {
 		return
 	}
 
-	receiveTime, internalTime := splitLogTime(ctx, fileLog.FileRes.InternalTime)
+	receiveTime, internalTime := logTimes(ctx, fileLog.FileRes.InternalTime)
 
 	file := do.LogFile{
 		TraceId:      gtrace.GetTraceID(ctx),
@@ -964,7 +964,7 @@ func (s *sLog) File(ctx context.Context, fileLog model.LogFile, retry ...int) {
 		Host:         g.RequestFromCtx(ctx).GetHost(),
 		Method:       g.RequestFromCtx(ctx).Method,
 		Path:         g.RequestFromCtx(ctx).URL.Path,
-		RequestIds:   service.Session().GetUpstreamRequestIds(ctx),
+		RequestIds:   requestIds(ctx, fileLog.FileRes.RequestIds),
 		MsgId:        fileLog.FileRes.MsgId,
 		Rid:          service.Session().GetRid(ctx),
 	}
@@ -1093,7 +1093,7 @@ func (s *sLog) Batch(ctx context.Context, batchLog model.LogBatch, retry ...int)
 		return
 	}
 
-	receiveTime, internalTime := splitLogTime(ctx, batchLog.BatchRes.InternalTime)
+	receiveTime, internalTime := logTimes(ctx, batchLog.BatchRes.InternalTime)
 
 	batch := do.LogBatch{
 		TraceId:      gtrace.GetTraceID(ctx),
@@ -1116,7 +1116,7 @@ func (s *sLog) Batch(ctx context.Context, batchLog model.LogBatch, retry ...int)
 		Host:         g.RequestFromCtx(ctx).GetHost(),
 		Method:       g.RequestFromCtx(ctx).Method,
 		Path:         g.RequestFromCtx(ctx).URL.Path,
-		RequestIds:   service.Session().GetUpstreamRequestIds(ctx),
+		RequestIds:   requestIds(ctx, batchLog.BatchRes.RequestIds),
 		MsgId:        batchLog.BatchRes.MsgId,
 		Rid:          service.Session().GetRid(ctx),
 	}
@@ -1245,7 +1245,7 @@ func (s *sLog) General(ctx context.Context, generalLog model.LogGeneral, retry .
 		return
 	}
 
-	receiveTime, internalTime := splitLogTime(ctx, generalLog.GeneralRes.InternalTime)
+	receiveTime, internalTime := logTimes(ctx, generalLog.GeneralRes.InternalTime)
 
 	general := do.LogGeneral{
 		TraceId:      gtrace.GetTraceID(ctx),
@@ -1271,7 +1271,7 @@ func (s *sLog) General(ctx context.Context, generalLog model.LogGeneral, retry .
 		Host:         g.RequestFromCtx(ctx).GetHost(),
 		Method:       g.RequestFromCtx(ctx).Method,
 		Path:         g.RequestFromCtx(ctx).URL.Path,
-		RequestIds:   service.Session().GetUpstreamRequestIds(ctx),
+		RequestIds:   requestIds(ctx, generalLog.GeneralRes.RequestIds),
 		MsgId:        generalLog.GeneralRes.MsgId,
 		Rid:          service.Session().GetRid(ctx),
 	}
@@ -1436,12 +1436,21 @@ func isTooLarge(err error) bool {
 	return false
 }
 
-func splitLogTime(ctx context.Context, internalTime int64) (int64, int64) {
+func logTimes(ctx context.Context, internalTime int64) (int64, int64) {
 
 	receiveTime := g.RequestFromCtx(ctx).GetCtxVar(consts.RECEIVE_TIME_KEY).Int64()
-	if internalTime > receiveTime {
-		return receiveTime, internalTime - receiveTime
+	if internalTime < 0 {
+		internalTime = 0
 	}
 
-	return receiveTime, 0
+	return receiveTime, internalTime
+}
+
+func requestIds(ctx context.Context, ids map[string]string) map[string]string {
+
+	if len(ids) > 0 {
+		return ids
+	}
+
+	return service.Session().GetUpstreamRequestIds(ctx)
 }

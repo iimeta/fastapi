@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 
 	"github.com/gogf/gf/v2/encoding/gjson"
-	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/gogf/gf/v2/os/gctx"
@@ -55,6 +54,7 @@ func (s *sMiniMax) VideoCreate(ctx context.Context, request *ghttp.Request, fall
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
+		attempt   *common.AttemptLog
 		totalTime int64
 		videoId   string
 	)
@@ -62,8 +62,6 @@ func (s *sMiniMax) VideoCreate(ctx context.Context, request *ghttp.Request, fall
 	defer func() {
 
 		totalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -81,10 +79,9 @@ func (s *sMiniMax) VideoCreate(ctx context.Context, request *ghttp.Request, fall
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    totalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
 				}
 
+				common.FinishAttempt(ctx, now, attempt, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
@@ -119,19 +116,18 @@ func (s *sMiniMax) VideoRetrieve(ctx context.Context, request *ghttp.Request, ta
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
+		attempt   *common.AttemptLog
 		totalTime int64
 	)
 
 	defer func() {
 
 		totalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					Action:       consts.ACTION_RETRIEVE,
 					VideoId:      taskId,
 					RequestData:  map[string]any{"task_id": taskId},
@@ -139,9 +135,9 @@ func (s *sMiniMax) VideoRetrieve(ctx context.Context, request *ghttp.Request, ta
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    totalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)

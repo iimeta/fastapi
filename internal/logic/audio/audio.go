@@ -52,25 +52,23 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
+		attempt   *common.AttemptLog
 	)
 
 	defer func() {
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
-					AudioInput:   params.Input,
-					Action:       consts.ACTION_SPEECH,
-					Error:        err,
-					RetryInfo:    retryInfo,
-					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
-				})
+				after := &mcommon.AfterHandler{
+					AudioInput: params.Input,
+					Action:     consts.ACTION_SPEECH,
+					Error:      err,
+					RetryInfo:  retryInfo,
+					TotalTime:  response.TotalTime,
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -132,6 +130,8 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Speech(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -143,6 +143,8 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Speech(g.RequestFromCtx(ctx).GetCtx(), data, nil, fallbackModel)
 							}
 						}
@@ -158,6 +160,7 @@ func (s *sAudio) Speech(ctx context.Context, data []byte, fallbackModelAgent *mo
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 			return s.Speech(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -183,24 +186,20 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
+		attempt   *common.AttemptLog
 	)
 
 	defer func() {
-
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				afterHandler := &mcommon.AfterHandler{
-					AudioText:    response.Text,
-					Action:       consts.ACTION_TRANSCRIPTIONS,
-					Error:        err,
-					RetryInfo:    retryInfo,
-					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
+					AudioText: response.Text,
+					Action:    consts.ACTION_TRANSCRIPTIONS,
+					Error:     err,
+					RetryInfo: retryInfo,
+					TotalTime: response.TotalTime,
 				}
 
 				if response.Duration != 0 {
@@ -209,6 +208,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 					afterHandler.AudioMinute = util.Round(params.Duration/60, 2)
 				}
 
+				common.FinishAttempt(ctx, now, attempt, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
@@ -272,6 +272,8 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Transcriptions(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -283,6 +285,8 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Transcriptions(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
 							}
 						}
@@ -298,6 +302,7 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 			return s.Transcriptions(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 

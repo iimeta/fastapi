@@ -124,6 +124,7 @@ func textHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		TotalTime:    after.TotalTime,
 		InternalTime: after.InternalTime,
 		EnterTime:    after.EnterTime,
+		RequestIds:   after.RequestIds,
 	}
 
 	if completionsRes.Completion == "" && after.RetryInfo == nil && len(after.ChatCompletionRes.Choices) > 0 && after.ChatCompletionRes.Choices[0].Message != nil {
@@ -277,6 +278,7 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		Error:        after.Error,
 		InternalTime: after.InternalTime,
 		EnterTime:    after.EnterTime,
+		RequestIds:   after.RequestIds,
 	}
 
 	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
@@ -342,6 +344,7 @@ func audioHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		TotalTime:    after.TotalTime,
 		InternalTime: after.InternalTime,
 		EnterTime:    after.EnterTime,
+		RequestIds:   after.RequestIds,
 	}
 
 	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
@@ -456,6 +459,7 @@ func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		TotalTime:    after.TotalTime,
 		InternalTime: after.InternalTime,
 		EnterTime:    after.EnterTime,
+		RequestIds:   after.RequestIds,
 	}
 
 	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
@@ -541,6 +545,7 @@ func fileHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		TotalTime:    after.TotalTime,
 		InternalTime: after.InternalTime,
 		EnterTime:    after.EnterTime,
+		RequestIds:   after.RequestIds,
 	}
 
 	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
@@ -622,6 +627,7 @@ func batchHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		TotalTime:    after.TotalTime,
 		InternalTime: after.InternalTime,
 		EnterTime:    after.EnterTime,
+		RequestIds:   after.RequestIds,
 	}
 
 	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {
@@ -703,6 +709,7 @@ func generalHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) 
 		TotalTime:    after.TotalTime,
 		InternalTime: after.InternalTime,
 		EnterTime:    after.EnterTime,
+		RequestIds:   after.RequestIds,
 	}
 
 	if after.Spend.ModelTimeRule == nil && mak.ReqModel != nil {

@@ -52,12 +52,10 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
+		attempt   *common.AttemptLog
 	)
 
 	defer func() {
-
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 
@@ -68,7 +66,7 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					ChatCompletionRes: response,
 					Action:            consts.ACTION_COMPLETIONS,
@@ -78,9 +76,9 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 					ConnTime:          response.ConnTime,
 					Duration:          response.Duration,
 					TotalTime:         response.TotalTime,
-					InternalTime:      internalTime,
-					EnterTime:         enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -175,6 +173,7 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Completions(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -186,6 +185,7 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Completions(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
 							}
 						}
@@ -201,6 +201,7 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 			return s.Completions(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -234,17 +235,15 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 		totalTime   int64
 		usage       *smodel.Usage
 		retryInfo   *mcommon.Retry
+		attempt     *common.AttemptLog
 	)
 
 	defer func() {
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - totalTime
-
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					Completion:        completion,
 					MsgId:             msgId,
@@ -256,9 +255,9 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 					ConnTime:          connTime,
 					Duration:          duration,
 					TotalTime:         totalTime,
-					InternalTime:      internalTime,
-					EnterTime:         enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -353,6 +352,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+								attempt = common.CaptureAttempt(ctx, now, totalTime)
 								return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -364,6 +364,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+								attempt = common.CaptureAttempt(ctx, now, totalTime)
 								return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
 							}
 						}
@@ -379,6 +380,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, totalTime)
 			return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 

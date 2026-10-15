@@ -55,12 +55,10 @@ func (s *sFile) Upload(ctx context.Context, params *v1.UploadReq, fallbackModelA
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
+		attempt   *common.AttemptLog
 	)
 
 	defer func() {
-
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -75,10 +73,9 @@ func (s *sFile) Upload(ctx context.Context, params *v1.UploadReq, fallbackModelA
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
 				}
 
+				common.FinishAttempt(ctx, now, attempt, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
@@ -142,6 +139,8 @@ func (s *sFile) Upload(ctx context.Context, params *v1.UploadReq, fallbackModelA
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Upload(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -153,6 +152,8 @@ func (s *sFile) Upload(ctx context.Context, params *v1.UploadReq, fallbackModelA
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Upload(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
 							}
 						}
@@ -168,6 +169,7 @@ func (s *sFile) Upload(ctx context.Context, params *v1.UploadReq, fallbackModelA
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 			return s.Upload(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -193,8 +195,6 @@ func (s *sFile) List(ctx context.Context, params *v1.ListReq) (response smodel.F
 	defer func() {
 
 		response.TotalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -207,8 +207,6 @@ func (s *sFile) List(ctx context.Context, params *v1.ListReq) (response smodel.F
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
 				}
 
 				common.AfterHandler(ctx, mak, afterHandler)
@@ -341,8 +339,6 @@ func (s *sFile) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response 
 	defer func() {
 
 		response.TotalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -356,8 +352,6 @@ func (s *sFile) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response 
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
 				}
 
 				common.AfterHandler(ctx, mak, afterHandler)
@@ -415,8 +409,6 @@ func (s *sFile) Delete(ctx context.Context, params *v1.DeleteReq) (response smod
 	defer func() {
 
 		response.TotalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -430,8 +422,6 @@ func (s *sFile) Delete(ctx context.Context, params *v1.DeleteReq) (response smod
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
 				}
 
 				common.AfterHandler(ctx, mak, afterHandler)
@@ -496,22 +486,17 @@ func (s *sFile) Content(ctx context.Context, params *v1.ContentReq) (response sm
 			response.TotalTime = gtime.TimestampMilli() - now
 		}
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				afterHandler := &mcommon.AfterHandler{
-					Action:       consts.ACTION_CONTENT,
-					IsFile:       true,
-					FileId:       params.FileId,
-					RequestData:  util.ConvToMap(params.FileContentRequest),
-					Error:        err,
-					RetryInfo:    retryInfo,
-					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
+					Action:      consts.ACTION_CONTENT,
+					IsFile:      true,
+					FileId:      params.FileId,
+					RequestData: util.ConvToMap(params.FileContentRequest),
+					Error:       err,
+					RetryInfo:   retryInfo,
+					TotalTime:   response.TotalTime,
 				}
 
 				common.AfterHandler(ctx, mak, afterHandler)

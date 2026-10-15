@@ -6,12 +6,13 @@ type AudioReq struct {
 }
 
 type AudioRes struct {
-	Text         string  // 输出文本
-	MsgId        string  // 消息ID
-	Characters   int     // 字符数
-	Minute       float64 // 分钟数
-	Error        error   // 错误信息
-	TotalTime    int64   // 总时间
-	InternalTime int64   // 内耗时间
-	EnterTime    int64   // 进入时间
+	Text         string            // 输出文本
+	MsgId        string            // 消息ID
+	Characters   int               // 字符数
+	Minute       float64           // 分钟数
+	Error        error             // 错误信息
+	TotalTime    int64             // 总时间
+	InternalTime int64             // 内耗时间
+	EnterTime    int64             // 进入时间
+	RequestIds   map[string]string // 上游请求ID
 }

@@ -48,20 +48,19 @@ func (s *sVolcEngine) ImageGenerations(ctx context.Context, data []byte, fallbac
 		}
 		imageResponse  smodel.ImageResponse
 		retryInfo      *mcommon.Retry
+		attempt        *common.AttemptLog
 		responseHeader http.Header
 		totalTime      int64
 	)
 
 	defer func() {
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 		usage := imageResponse.Usage
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ImageGenerationRequest: params,
 					ImageResponse:          imageResponse,
 					Action:                 consts.ACTION_GENERATIONS,
@@ -69,9 +68,9 @@ func (s *sVolcEngine) ImageGenerations(ctx context.Context, data []byte, fallbac
 					Error:                  err,
 					RetryInfo:              retryInfo,
 					TotalTime:              totalTime,
-					InternalTime:           internalTime,
-					EnterTime:              enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -143,6 +142,8 @@ func (s *sVolcEngine) ImageGenerations(ctx context.Context, data []byte, fallbac
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
 								return s.ImageGenerations(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -154,6 +155,8 @@ func (s *sVolcEngine) ImageGenerations(ctx context.Context, data []byte, fallbac
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
 								return s.ImageGenerations(g.RequestFromCtx(ctx).GetCtx(), data, nil, fallbackModel)
 							}
 						}
@@ -169,6 +172,7 @@ func (s *sVolcEngine) ImageGenerations(ctx context.Context, data []byte, fallbac
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
 			return s.ImageGenerations(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -216,12 +220,11 @@ func (s *sVolcEngine) ImageGenerationsStream(ctx context.Context, data []byte, f
 		duration      int64
 		totalTime     int64
 		retryInfo     *mcommon.Retry
+		attempt       *common.AttemptLog
 	)
 
 	defer func() {
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 		if usage == nil {
 			usage = new(imageResponse.Usage)
 		}
@@ -231,7 +234,7 @@ func (s *sVolcEngine) ImageGenerationsStream(ctx context.Context, data []byte, f
 
 				imageResponse.TotalTime = totalTime
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ImageGenerationRequest: params,
 					ImageResponse:          imageResponse,
 					Action:                 consts.ACTION_GENERATIONS,
@@ -241,9 +244,9 @@ func (s *sVolcEngine) ImageGenerationsStream(ctx context.Context, data []byte, f
 					ConnTime:               connTime,
 					Duration:               duration,
 					TotalTime:              totalTime,
-					InternalTime:           internalTime,
-					EnterTime:              enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -312,6 +315,8 @@ func (s *sVolcEngine) ImageGenerationsStream(ctx context.Context, data []byte, f
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, totalTime)
 								return s.ImageGenerationsStream(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -323,6 +328,8 @@ func (s *sVolcEngine) ImageGenerationsStream(ctx context.Context, data []byte, f
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, totalTime)
 								return s.ImageGenerationsStream(g.RequestFromCtx(ctx).GetCtx(), data, nil, fallbackModel)
 							}
 						}
@@ -338,6 +345,7 @@ func (s *sVolcEngine) ImageGenerationsStream(ctx context.Context, data []byte, f
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, totalTime)
 			return s.ImageGenerationsStream(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 

@@ -43,6 +43,7 @@ func (s *sGoogle) Interactions(ctx context.Context, request *ghttp.Request, fall
 		params          = convInteractionsToChatCompletionRequest(request)
 		mak             = newInteractionsMAK(params, fallbackModelAgent, fallbackModel)
 		retryInfo       *mcommon.Retry
+		attempt         *common.AttemptLog
 		imageFilePaths  []string
 		imageExpiresAt  int64
 		storedImageData []smodel.ImageResponseData
@@ -50,9 +51,6 @@ func (s *sGoogle) Interactions(ctx context.Context, request *ghttp.Request, fall
 	)
 
 	defer func() {
-
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 
@@ -72,8 +70,6 @@ func (s *sGoogle) Interactions(ctx context.Context, request *ghttp.Request, fall
 					ConnTime:          response.ConnTime,
 					Duration:          response.Duration,
 					TotalTime:         response.TotalTime,
-					InternalTime:      internalTime,
-					EnterTime:         enterTime,
 				}
 
 				if mak.ReqModel.Type == 8 {
@@ -112,6 +108,7 @@ func (s *sGoogle) Interactions(ctx context.Context, request *ghttp.Request, fall
 					after.ImageExpiresAt = imageExpiresAt
 				}
 
+				common.FinishAttempt(ctx, now, attempt, after)
 				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
@@ -200,6 +197,8 @@ func (s *sGoogle) Interactions(ctx context.Context, request *ghttp.Request, fall
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Interactions(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -211,6 +210,8 @@ func (s *sGoogle) Interactions(ctx context.Context, request *ghttp.Request, fall
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Interactions(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
 							}
 						}
@@ -226,6 +227,7 @@ func (s *sGoogle) Interactions(ctx context.Context, request *ghttp.Request, fall
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 			return s.Interactions(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -255,6 +257,8 @@ func (s *sGoogle) Interactions(ctx context.Context, request *ghttp.Request, fall
 						RetryCount: retryCount,
 						ErrMsg:     err.Error(),
 					}
+
+					attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 					return s.Interactions(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, retry...)
 				}
 
@@ -287,6 +291,7 @@ func (s *sGoogle) InteractionsStream(ctx context.Context, request *ghttp.Request
 		totalTime       int64
 		usage           *smodel.Usage
 		retryInfo       *mcommon.Retry
+		attempt         *common.AttemptLog
 		imageFilePaths  []string
 		imageExpiresAt  int64
 		storedImageData []smodel.ImageResponseData
@@ -296,9 +301,6 @@ func (s *sGoogle) InteractionsStream(ctx context.Context, request *ghttp.Request
 	params.Stream = true
 
 	defer func() {
-
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -314,8 +316,6 @@ func (s *sGoogle) InteractionsStream(ctx context.Context, request *ghttp.Request
 					ConnTime:          connTime,
 					Duration:          duration,
 					TotalTime:         totalTime,
-					InternalTime:      internalTime,
-					EnterTime:         enterTime,
 				}
 
 				if mak.ReqModel.Type == 8 {
@@ -347,6 +347,7 @@ func (s *sGoogle) InteractionsStream(ctx context.Context, request *ghttp.Request
 					after.ImageExpiresAt = imageExpiresAt
 				}
 
+				common.FinishAttempt(ctx, now, attempt, after)
 				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
@@ -445,6 +446,8 @@ func (s *sGoogle) InteractionsStream(ctx context.Context, request *ghttp.Request
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, totalTime)
 								return s.InteractionsStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -456,6 +459,8 @@ func (s *sGoogle) InteractionsStream(ctx context.Context, request *ghttp.Request
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, totalTime)
 								return s.InteractionsStream(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
 							}
 						}
@@ -471,6 +476,7 @@ func (s *sGoogle) InteractionsStream(ctx context.Context, request *ghttp.Request
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, totalTime)
 			return s.InteractionsStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -531,6 +537,8 @@ func (s *sGoogle) InteractionsStream(ctx context.Context, request *ghttp.Request
 										RetryCount: len(retry),
 										ErrMsg:     err.Error(),
 									}
+
+									attempt = common.CaptureAttempt(ctx, now, totalTime)
 									return s.InteractionsStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
 								}
 							}
@@ -542,6 +550,8 @@ func (s *sGoogle) InteractionsStream(ctx context.Context, request *ghttp.Request
 										RetryCount: len(retry),
 										ErrMsg:     err.Error(),
 									}
+
+									attempt = common.CaptureAttempt(ctx, now, totalTime)
 									return s.InteractionsStream(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
 								}
 							}
@@ -560,6 +570,7 @@ func (s *sGoogle) InteractionsStream(ctx context.Context, request *ghttp.Request
 					ErrMsg:     err.Error(),
 				}
 
+				attempt = common.CaptureAttempt(ctx, now, totalTime)
 				return s.InteractionsStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 			}
 
@@ -651,17 +662,16 @@ func (s *sGoogle) InteractionsRetrieve(ctx context.Context, id string, fallbackM
 	var (
 		mak       = &common.MAK{Endpoint: consts.ENDPOINT_INTERACTIONS, FallbackModelAgent: fallbackModelAgent, FallbackModel: fallbackModel}
 		retryInfo *mcommon.Retry
+		attempt   *common.AttemptLog
 	)
 
 	defer func() {
 
 		response.TotalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					Action:       consts.ACTION_RETRIEVE,
 					IsAsync:      true,
 					VideoId:      id,
@@ -670,9 +680,9 @@ func (s *sGoogle) InteractionsRetrieve(ctx context.Context, id string, fallbackM
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 			}); err != nil {
 				logger.Error(ctx, err)
 			}

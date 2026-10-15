@@ -78,6 +78,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 		}
 		imageResponse  smodel.ImageResponse
 		retryInfo      *mcommon.Retry
+		attempt        *common.AttemptLog
 		imageFilePaths []string
 		imageExpiresAt int64
 	)
@@ -88,14 +89,12 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 			imageResponse.TotalTime = response.TotalTime
 		}
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - imageResponse.TotalTime
 		usage := imageResponse.Usage
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ImageGenerationRequest: params,
 					ImageResponse:          imageResponse,
 					Action:                 consts.ACTION_GENERATIONS,
@@ -105,9 +104,9 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 					Error:                  err,
 					RetryInfo:              retryInfo,
 					TotalTime:              imageResponse.TotalTime,
-					InternalTime:           internalTime,
-					EnterTime:              enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -212,6 +211,8 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
 								return s.Generations(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -223,6 +224,8 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
 								return s.Generations(g.RequestFromCtx(ctx).GetCtx(), data, nil, fallbackModel)
 							}
 						}
@@ -238,6 +241,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
 			return s.Generations(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -257,6 +261,8 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 						RetryCount: retryCount,
 						ErrMsg:     err.Error(),
 					}
+
+					attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
 					return s.Generations(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel, retry...)
 				}
 
@@ -301,21 +307,19 @@ func (s *sImage) GenerationsStream(ctx context.Context, data []byte, fallbackMod
 		duration       int64
 		totalTime      int64
 		retryInfo      *mcommon.Retry
+		attempt        *common.AttemptLog
 		imageFilePaths []string
 		imageExpiresAt int64
 	)
 
 	defer func() {
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - totalTime
-
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				imageResponse.TotalTime = totalTime
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ImageGenerationRequest: params,
 					ImageResponse:          imageResponse,
 					Action:                 consts.ACTION_GENERATIONS,
@@ -327,9 +331,9 @@ func (s *sImage) GenerationsStream(ctx context.Context, data []byte, fallbackMod
 					ConnTime:               connTime,
 					Duration:               duration,
 					TotalTime:              totalTime,
-					InternalTime:           internalTime,
-					EnterTime:              enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -430,6 +434,8 @@ func (s *sImage) GenerationsStream(ctx context.Context, data []byte, fallbackMod
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, totalTime)
 								return s.GenerationsStream(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -441,6 +447,8 @@ func (s *sImage) GenerationsStream(ctx context.Context, data []byte, fallbackMod
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, totalTime)
 								return s.GenerationsStream(g.RequestFromCtx(ctx).GetCtx(), data, nil, fallbackModel)
 							}
 						}
@@ -456,6 +464,7 @@ func (s *sImage) GenerationsStream(ctx context.Context, data []byte, fallbackMod
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, totalTime)
 			return s.GenerationsStream(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -538,6 +547,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 		}
 		imageResponse  smodel.ImageResponse
 		retryInfo      *mcommon.Retry
+		attempt        *common.AttemptLog
 		imageFilePaths []string
 		imageExpiresAt int64
 	)
@@ -560,8 +570,6 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 			imageResponse.TotalTime = response.TotalTime
 		}
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - imageResponse.TotalTime
 		usage := imageResponse.Usage
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
@@ -579,7 +587,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 					Stream:         params.Stream,
 				}
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ImageGenerationRequest: imageReq,
 					ImageResponse:          imageResponse,
 					Action:                 consts.ACTION_EDITS,
@@ -589,9 +597,9 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 					Error:                  err,
 					RetryInfo:              retryInfo,
 					TotalTime:              imageResponse.TotalTime,
-					InternalTime:           internalTime,
-					EnterTime:              enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -696,6 +704,8 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
 								return s.Edits(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -707,6 +717,8 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
 								return s.Edits(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
 							}
 						}
@@ -722,6 +734,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
 			return s.Edits(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -758,6 +771,7 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 		duration       int64
 		totalTime      int64
 		retryInfo      *mcommon.Retry
+		attempt        *common.AttemptLog
 		imageFilePaths []string
 		imageExpiresAt int64
 	)
@@ -776,9 +790,6 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 
 	defer func() {
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - totalTime
-
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
@@ -796,7 +807,7 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 					Stream:         params.Stream,
 				}
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ImageGenerationRequest: imageReq,
 					ImageResponse:          imageResponse,
 					Action:                 consts.ACTION_EDITS,
@@ -808,9 +819,9 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 					ConnTime:               connTime,
 					Duration:               duration,
 					TotalTime:              totalTime,
-					InternalTime:           internalTime,
-					EnterTime:              enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -911,6 +922,8 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, totalTime)
 								return s.EditsStream(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -922,6 +935,8 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, totalTime)
 								return s.EditsStream(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
 							}
 						}
@@ -937,6 +952,7 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, totalTime)
 			return s.EditsStream(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -1024,6 +1040,7 @@ func (s *sImage) GenerationsAsync(ctx context.Context, data []byte, fallbackMode
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo      *mcommon.Retry
+		attempt        *common.AttemptLog
 		inputFilePaths []string
 	)
 
@@ -1049,14 +1066,12 @@ func (s *sImage) GenerationsAsync(ctx context.Context, data []byte, fallbackMode
 	defer func() {
 
 		response.TotalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := smodel.Usage{}
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ImageGenerationRequest: params,
 					Action:                 action,
 					IsAsync:                true,
@@ -1067,9 +1082,9 @@ func (s *sImage) GenerationsAsync(ctx context.Context, data []byte, fallbackMode
 					Error:                  err,
 					RetryInfo:              retryInfo,
 					TotalTime:              response.TotalTime,
-					InternalTime:           internalTime,
-					EnterTime:              enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -1132,6 +1147,7 @@ func (s *sImage) EditsAsync(ctx context.Context, params smodel.ImageEditRequest,
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
+		attempt   *common.AttemptLog
 	)
 
 	imageId := "image_" + gtrace.GetTraceID(ctx)
@@ -1139,8 +1155,6 @@ func (s *sImage) EditsAsync(ctx context.Context, params smodel.ImageEditRequest,
 	defer func() {
 
 		response.TotalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := smodel.Usage{}
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
@@ -1157,7 +1171,7 @@ func (s *sImage) EditsAsync(ctx context.Context, params smodel.ImageEditRequest,
 					User:           params.User,
 				}
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ImageGenerationRequest: imageReq,
 					Action:                 consts.ACTION_EDITS,
 					IsAsync:                true,
@@ -1168,9 +1182,9 @@ func (s *sImage) EditsAsync(ctx context.Context, params smodel.ImageEditRequest,
 					Error:                  err,
 					RetryInfo:              retryInfo,
 					TotalTime:              response.TotalTime,
-					InternalTime:           internalTime,
-					EnterTime:              enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -1333,8 +1347,6 @@ func (s *sImage) List(ctx context.Context, params *v1.ListReq) (response smodel.
 	defer func() {
 
 		response.TotalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -1346,8 +1358,6 @@ func (s *sImage) List(ctx context.Context, params *v1.ListReq) (response smodel.
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
 				}
 
 				common.AfterHandler(ctx, mak, afterHandler)
@@ -1493,8 +1503,6 @@ func (s *sImage) Retrieve(ctx context.Context, params smodel.ImageRetrieveReques
 	defer func() {
 
 		response.TotalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -1507,8 +1515,6 @@ func (s *sImage) Retrieve(ctx context.Context, params smodel.ImageRetrieveReques
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
 				}
 
 				common.AfterHandler(ctx, mak, afterHandler)
@@ -1596,8 +1602,6 @@ func (s *sImage) Delete(ctx context.Context, params *v1.DeleteReq) (response smo
 	defer func() {
 
 		response.TotalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -1610,8 +1614,6 @@ func (s *sImage) Delete(ctx context.Context, params *v1.DeleteReq) (response smo
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
 				}
 
 				common.AfterHandler(ctx, mak, afterHandler)
@@ -1738,23 +1740,19 @@ func (s *sImage) Content(ctx context.Context, params *v1.ContentReq) (response s
 			response.TotalTime = gtime.TimestampMilli() - now
 		}
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				afterHandler := &mcommon.AfterHandler{
-					Action:       consts.ACTION_CONTENT,
-					ImageId:      params.ImageId,
-					RequestData:  util.ConvToMap(params.ImageContentRequest),
-					Error:        err,
-					RetryInfo:    retryInfo,
-					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
+					Action:      consts.ACTION_CONTENT,
+					ImageId:     params.ImageId,
+					RequestData: util.ConvToMap(params.ImageContentRequest),
+					Error:       err,
+					RetryInfo:   retryInfo,
+					TotalTime:   response.TotalTime,
 				}
 
+				common.FinishAttempt(ctx, now, nil, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {

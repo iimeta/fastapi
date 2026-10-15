@@ -53,12 +53,11 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
+		attempt   *common.AttemptLog
 	)
 
 	defer func() {
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		chatCompletionResponse := common.ConvResponsesToChatCompletionsResponse(ctx, response)
 
 		if isChatCompletions {
@@ -74,7 +73,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					ChatCompletionRes: chatCompletionResponse,
 					Action:            consts.ACTION_RESPONSES,
@@ -84,9 +83,9 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 					ConnTime:          chatCompletionResponse.ConnTime,
 					Duration:          chatCompletionResponse.Duration,
 					TotalTime:         chatCompletionResponse.TotalTime,
-					InternalTime:      internalTime,
-					EnterTime:         enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -167,6 +166,8 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Responses(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -178,6 +179,8 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Responses(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, nil, fallbackModel)
 							}
 						}
@@ -193,6 +196,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 			return s.Responses(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -227,17 +231,15 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 		totalTime   int64
 		usage       *smodel.Usage
 		retryInfo   *mcommon.Retry
+		attempt     *common.AttemptLog
 	)
 
 	defer func() {
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - totalTime
-
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					Completion:        completion,
 					MsgId:             msgId,
@@ -249,9 +251,9 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 					ConnTime:          connTime,
 					Duration:          duration,
 					TotalTime:         totalTime,
-					InternalTime:      internalTime,
-					EnterTime:         enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -378,6 +380,8 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, totalTime)
 								return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -389,6 +393,8 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, totalTime)
 								return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, nil, fallbackModel)
 							}
 						}
@@ -404,6 +410,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, totalTime)
 			return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -500,6 +507,8 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 										RetryCount: len(retry),
 										ErrMsg:     err.Error(),
 									}
+
+									attempt = common.CaptureAttempt(ctx, now, totalTime)
 									return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel)
 								}
 							}
@@ -511,6 +520,8 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 										RetryCount: len(retry),
 										ErrMsg:     err.Error(),
 									}
+
+									attempt = common.CaptureAttempt(ctx, now, totalTime)
 									return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, nil, fallbackModel)
 								}
 							}
@@ -531,6 +542,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 					ErrMsg:     err.Error(),
 				}
 
+				attempt = common.CaptureAttempt(ctx, now, totalTime)
 				return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 			}
 
@@ -638,12 +650,11 @@ func (s *sOpenAI) ResponsesCompact(ctx context.Context, request *ghttp.Request, 
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
+		attempt   *common.AttemptLog
 	)
 
 	defer func() {
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		chatCompletionResponse := common.ConvResponsesToChatCompletionsResponse(ctx, response)
 
 		if isChatCompletions {
@@ -659,7 +670,7 @@ func (s *sOpenAI) ResponsesCompact(ctx context.Context, request *ghttp.Request, 
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					ChatCompletionRes: chatCompletionResponse,
 					Action:            consts.ACTION_COMPACT,
@@ -669,9 +680,9 @@ func (s *sOpenAI) ResponsesCompact(ctx context.Context, request *ghttp.Request, 
 					ConnTime:          chatCompletionResponse.ConnTime,
 					Duration:          chatCompletionResponse.Duration,
 					TotalTime:         chatCompletionResponse.TotalTime,
-					InternalTime:      internalTime,
-					EnterTime:         enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -752,6 +763,8 @@ func (s *sOpenAI) ResponsesCompact(ctx context.Context, request *ghttp.Request, 
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.ResponsesCompact(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -763,6 +776,8 @@ func (s *sOpenAI) ResponsesCompact(ctx context.Context, request *ghttp.Request, 
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.ResponsesCompact(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, nil, fallbackModel)
 							}
 						}
@@ -778,6 +793,7 @@ func (s *sOpenAI) ResponsesCompact(ctx context.Context, request *ghttp.Request, 
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 			return s.ResponsesCompact(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 

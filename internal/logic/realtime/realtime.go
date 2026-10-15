@@ -89,17 +89,15 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 		duration  int64
 		totalTime int64
 		retryInfo *mcommon.Retry
+		attempt   *common.AttemptLog
 	)
 
 	defer func() {
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - totalTime
-
 		if err != nil && mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ChatCompletionReq: smodel.ChatCompletionRequest{Stream: true},
 					Action:            consts.ACTION_REALTIME,
 					Error:             err,
@@ -107,9 +105,9 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 					ConnTime:          connTime,
 					Duration:          duration,
 					TotalTime:         totalTime,
-					InternalTime:      internalTime,
-					EnterTime:         enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -161,6 +159,8 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, totalTime)
 								return s.Realtime(g.RequestFromCtx(ctx).GetCtx(), r, params, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -172,6 +172,8 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, totalTime)
 								return s.Realtime(g.RequestFromCtx(ctx).GetCtx(), r, params, nil, fallbackModel)
 							}
 						}
@@ -187,6 +189,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, totalTime)
 			return s.Realtime(g.RequestFromCtx(ctx).GetCtx(), r, params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -226,10 +229,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 
 				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-					enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-					internalTime := gtime.TimestampMilli() - enterTime - totalTime
-
-					common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+					after := &mcommon.AfterHandler{
 						ChatCompletionReq: smodel.ChatCompletionRequest{Stream: true},
 						Action:            consts.ACTION_REALTIME,
 						Error:             response.Error,
@@ -237,9 +237,9 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 						ConnTime:          connTime,
 						Duration:          duration,
 						TotalTime:         totalTime,
-						InternalTime:      internalTime,
-						EnterTime:         enterTime,
-					})
+					}
+					common.FinishAttempt(ctx, now, attempt, after)
+					common.AfterHandler(ctx, mak, after)
 
 				}); err != nil {
 					logger.Error(ctx, err)
@@ -317,10 +317,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 
 				if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-					enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-					internalTime := gtime.TimestampMilli() - enterTime - totalTime
-
-					common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+					after := &mcommon.AfterHandler{
 						ChatCompletionReq: smodel.ChatCompletionRequest{Stream: true, Messages: []smodel.ChatCompletionMessage{{Content: message}}},
 						Completion:        completion,
 						Action:            consts.ACTION_REALTIME,
@@ -330,9 +327,9 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 						ConnTime:          response.ConnTime,
 						Duration:          response.Duration,
 						TotalTime:         response.TotalTime,
-						InternalTime:      internalTime,
-						EnterTime:         enterTime,
-					})
+					}
+					common.FinishAttempt(ctx, now, attempt, after)
+					common.AfterHandler(ctx, mak, after)
 
 				}); err != nil {
 					logger.Error(ctx, err)

@@ -44,12 +44,10 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
+		attempt   *common.AttemptLog
 	)
 
 	defer func() {
-
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 
@@ -68,14 +66,13 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 					Error:         err,
 					RetryInfo:     retryInfo,
 					TotalTime:     response.TotalTime,
-					InternalTime:  internalTime,
-					EnterTime:     enterTime,
 				}
 
 				if response.Results != nil {
 					afterHandler.Completion = gconv.String(response.Results)
 				}
 
+				common.FinishAttempt(ctx, now, attempt, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
@@ -139,6 +136,8 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Moderations(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -150,6 +149,8 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Moderations(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
 							}
 						}
@@ -165,6 +166,7 @@ func (s *sModeration) Moderations(ctx context.Context, params smodel.ModerationR
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 			return s.Moderations(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 

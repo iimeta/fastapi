@@ -58,20 +58,19 @@ func (s *sBailian) ImageGenerations(ctx context.Context, data []byte, fallbackMo
 		}
 		imageResponse  smodel.ImageResponse
 		retryInfo      *mcommon.Retry
+		attempt        *common.AttemptLog
 		responseHeader http.Header
 		totalTime      int64
 	)
 
 	defer func() {
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 		usage := imageResponse.Usage
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ImageGenerationRequest: params,
 					ImageResponse:          imageResponse,
 					Action:                 consts.ACTION_GENERATIONS,
@@ -79,9 +78,9 @@ func (s *sBailian) ImageGenerations(ctx context.Context, data []byte, fallbackMo
 					Error:                  err,
 					RetryInfo:              retryInfo,
 					TotalTime:              totalTime,
-					InternalTime:           internalTime,
-					EnterTime:              enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -148,6 +147,8 @@ func (s *sBailian) ImageGenerations(ctx context.Context, data []byte, fallbackMo
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
 								return s.ImageGenerations(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -159,6 +160,8 @@ func (s *sBailian) ImageGenerations(ctx context.Context, data []byte, fallbackMo
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
 								return s.ImageGenerations(g.RequestFromCtx(ctx).GetCtx(), data, nil, fallbackModel)
 							}
 						}
@@ -174,6 +177,7 @@ func (s *sBailian) ImageGenerations(ctx context.Context, data []byte, fallbackMo
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
 			return s.ImageGenerations(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -220,6 +224,7 @@ func (s *sBailian) ImageGenerationsAsync(ctx context.Context, data []byte, fallb
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo   *mcommon.Retry
+		attempt     *common.AttemptLog
 		requestData map[string]any
 	)
 
@@ -228,14 +233,12 @@ func (s *sBailian) ImageGenerationsAsync(ctx context.Context, data []byte, fallb
 	defer func() {
 
 		response.TotalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 		usage := smodel.Usage{}
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ImageGenerationRequest: params,
 					Action:                 consts.ACTION_GENERATIONS,
 					IsAsync:                true,
@@ -245,9 +248,9 @@ func (s *sBailian) ImageGenerationsAsync(ctx context.Context, data []byte, fallb
 					Error:                  err,
 					RetryInfo:              retryInfo,
 					TotalTime:              response.TotalTime,
-					InternalTime:           internalTime,
-					EnterTime:              enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)

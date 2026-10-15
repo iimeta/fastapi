@@ -55,12 +55,10 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
+		attempt   *common.AttemptLog
 	)
 
 	defer func() {
-
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 
@@ -71,7 +69,7 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					ChatCompletionRes: response,
 					Action:            consts.ACTION_MESSAGES,
@@ -81,9 +79,9 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 					ConnTime:          response.ConnTime,
 					Duration:          response.Duration,
 					TotalTime:         response.TotalTime,
-					InternalTime:      internalTime,
-					EnterTime:         enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -194,6 +192,8 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Completions(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -205,6 +205,8 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Completions(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
 							}
 						}
@@ -220,6 +222,7 @@ func (s *sAnthropic) Completions(ctx context.Context, request *ghttp.Request, fa
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 			return s.Completions(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -291,17 +294,15 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 		totalTime  int64
 		usage      *smodel.Usage
 		retryInfo  *mcommon.Retry
+		attempt    *common.AttemptLog
 	)
 
 	defer func() {
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - totalTime
-
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					Completion:        completion,
 					MsgId:             msgId,
@@ -312,9 +313,9 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 					ConnTime:          connTime,
 					Duration:          duration,
 					TotalTime:         totalTime,
-					InternalTime:      internalTime,
-					EnterTime:         enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -425,6 +426,8 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, totalTime)
 								return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -436,6 +439,8 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, totalTime)
 								return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
 							}
 						}
@@ -451,6 +456,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, totalTime)
 			return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -557,6 +563,8 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 										RetryCount: len(retry),
 										ErrMsg:     err.Error(),
 									}
+
+									attempt = common.CaptureAttempt(ctx, now, totalTime)
 									return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
 								}
 							}
@@ -568,6 +576,8 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 										RetryCount: len(retry),
 										ErrMsg:     err.Error(),
 									}
+
+									attempt = common.CaptureAttempt(ctx, now, totalTime)
 									return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
 								}
 							}
@@ -583,6 +593,7 @@ func (s *sAnthropic) CompletionsStream(ctx context.Context, request *ghttp.Reque
 					ErrMsg:     err.Error(),
 				}
 
+				attempt = common.CaptureAttempt(ctx, now, totalTime)
 				return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 			}
 

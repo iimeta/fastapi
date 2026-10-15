@@ -5,6 +5,8 @@ const (
 	FASTAPI_REQUEST_ID     = "X-Fastapi-Request-Id"
 	HOST_KEY               = "host"
 	RECEIVE_TIME_KEY       = "receive_time"
+	ATTEMPT_START_KEY      = "attempt_start"
+	ATTEMPT_INDEX_KEY      = "attempt_index"
 	RID_KEY                = "rid"
 	USER_ID_KEY            = "user_id"
 	APP_ID_KEY             = "app_id"

@@ -60,15 +60,13 @@ func (s *sVideo) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo      *mcommon.Retry
+		attempt        *common.AttemptLog
 		videoId        string
 		requestData    map[string]any
 		inputFilePaths []string
 	)
 
 	defer func() {
-
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -86,8 +84,6 @@ func (s *sVideo) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 					Error:          err,
 					RetryInfo:      retryInfo,
 					TotalTime:      response.TotalTime,
-					InternalTime:   internalTime,
-					EnterTime:      enterTime,
 				}
 
 				if params.InputReference != nil {
@@ -96,6 +92,7 @@ func (s *sVideo) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 					afterHandler.VideoMode = "no_video_input"
 				}
 
+				common.FinishAttempt(ctx, now, attempt, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
@@ -147,14 +144,12 @@ func (s *sVideo) Remix(ctx context.Context, params *v1.RemixReq, fallbackModelAg
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo   *mcommon.Retry
+		attempt     *common.AttemptLog
 		videoId     string
 		requestData map[string]any
 	)
 
 	defer func() {
-
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -169,10 +164,9 @@ func (s *sVideo) Remix(ctx context.Context, params *v1.RemixReq, fallbackModelAg
 					Error:              err,
 					RetryInfo:          retryInfo,
 					TotalTime:          response.TotalTime,
-					InternalTime:       internalTime,
-					EnterTime:          enterTime,
 				}
 
+				common.FinishAttempt(ctx, now, attempt, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
@@ -239,8 +233,6 @@ func (s *sVideo) List(ctx context.Context, params *v1.ListReq) (response smodel.
 	defer func() {
 
 		response.TotalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -252,8 +244,6 @@ func (s *sVideo) List(ctx context.Context, params *v1.ListReq) (response smodel.
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
 				}
 
 				common.AfterHandler(ctx, mak, afterHandler)
@@ -395,8 +385,6 @@ func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 	defer func() {
 
 		response.TotalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -409,8 +397,6 @@ func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
 				}
 
 				common.AfterHandler(ctx, mak, afterHandler)
@@ -490,8 +476,6 @@ func (s *sVideo) Delete(ctx context.Context, params *v1.DeleteReq) (response smo
 	defer func() {
 
 		response.TotalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -504,8 +488,6 @@ func (s *sVideo) Delete(ctx context.Context, params *v1.DeleteReq) (response smo
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
 				}
 
 				common.AfterHandler(ctx, mak, afterHandler)
@@ -589,21 +571,16 @@ func (s *sVideo) Content(ctx context.Context, params *v1.ContentReq) (response s
 			response.TotalTime = gtime.TimestampMilli() - now
 		}
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
 				afterHandler := &mcommon.AfterHandler{
-					Action:       consts.ACTION_CONTENT,
-					VideoId:      params.VideoId,
-					RequestData:  util.ConvToMap(params.VideoContentRequest),
-					Error:        err,
-					RetryInfo:    retryInfo,
-					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
+					Action:      consts.ACTION_CONTENT,
+					VideoId:     params.VideoId,
+					RequestData: util.ConvToMap(params.VideoContentRequest),
+					Error:       err,
+					RetryInfo:   retryInfo,
+					TotalTime:   response.TotalTime,
 				}
 
 				common.AfterHandler(ctx, mak, afterHandler)

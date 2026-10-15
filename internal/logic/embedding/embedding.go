@@ -51,12 +51,10 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
+		attempt   *common.AttemptLog
 	)
 
 	defer func() {
-
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 
@@ -75,14 +73,13 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
 				}
 
 				if retryInfo == nil && len(response.Data) > 0 {
 					afterHandler.Completion = gconv.String(response.Data[0])
 				}
 
+				common.FinishAttempt(ctx, now, attempt, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
@@ -145,6 +142,8 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Embeddings(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -156,6 +155,8 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Embeddings(g.RequestFromCtx(ctx).GetCtx(), data, nil, fallbackModel)
 							}
 						}
@@ -171,6 +172,7 @@ func (s *sEmbedding) Embeddings(ctx context.Context, data []byte, fallbackModelA
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 			return s.Embeddings(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 

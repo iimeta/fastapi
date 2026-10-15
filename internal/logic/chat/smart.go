@@ -36,17 +36,15 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
+		attempt   *common.AttemptLog
 	)
 
 	defer func() {
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					ChatCompletionReq: params,
 					ChatCompletionRes: response,
 					Action:            consts.ACTION_COMPLETIONS,
@@ -56,10 +54,10 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 					ConnTime:          response.ConnTime,
 					Duration:          response.Duration,
 					TotalTime:         response.TotalTime,
-					InternalTime:      internalTime,
-					EnterTime:         enterTime,
 					IsSmartMatch:      true,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -146,6 +144,8 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.SmartCompletions(g.RequestFromCtx(ctx).GetCtx(), params, reqModel, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -157,6 +157,8 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.SmartCompletions(g.RequestFromCtx(ctx).GetCtx(), params, reqModel, nil, fallbackModel)
 							}
 						}
@@ -172,6 +174,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 			return s.SmartCompletions(g.RequestFromCtx(ctx).GetCtx(), params, reqModel, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 

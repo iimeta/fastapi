@@ -59,6 +59,7 @@ func (s *sVolcEngine) VideoCreate(ctx context.Context, request *ghttp.Request, f
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
+		attempt   *common.AttemptLog
 		totalTime int64
 		videoId   string
 	)
@@ -66,8 +67,6 @@ func (s *sVolcEngine) VideoCreate(ctx context.Context, request *ghttp.Request, f
 	defer func() {
 
 		totalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -84,8 +83,6 @@ func (s *sVolcEngine) VideoCreate(ctx context.Context, request *ghttp.Request, f
 					Error:              err,
 					RetryInfo:          retryInfo,
 					TotalTime:          totalTime,
-					InternalTime:       internalTime,
-					EnterTime:          enterTime,
 				}
 
 				if params.Frames != nil && *params.Frames > 0 {
@@ -94,6 +91,7 @@ func (s *sVolcEngine) VideoCreate(ctx context.Context, request *ghttp.Request, f
 					afterHandler.Seconds = *params.Duration
 				}
 
+				common.FinishAttempt(ctx, now, attempt, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
@@ -130,28 +128,27 @@ func (s *sVolcEngine) VideoList(ctx context.Context, request *ghttp.Request, fal
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
+		attempt   *common.AttemptLog
 		totalTime int64
 	)
 
 	defer func() {
 
 		totalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					Action:       consts.ACTION_LIST,
 					RequestData:  map[string]any{"model": modelName},
 					ResponseData: util.ConvToMap(responseBytes),
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    totalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -252,6 +249,7 @@ func (s *sVolcEngine) VideoRetrieve(ctx context.Context, request *ghttp.Request,
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo      *mcommon.Retry
+		attempt        *common.AttemptLog
 		totalTime      int64
 		responseHeader http.Header
 	)
@@ -259,13 +257,11 @@ func (s *sVolcEngine) VideoRetrieve(ctx context.Context, request *ghttp.Request,
 	defer func() {
 
 		totalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
+				after := &mcommon.AfterHandler{
 					Action:       consts.ACTION_RETRIEVE,
 					VideoId:      taskId,
 					RequestData:  map[string]any{"task_id": taskId},
@@ -273,9 +269,9 @@ func (s *sVolcEngine) VideoRetrieve(ctx context.Context, request *ghttp.Request,
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    totalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
-				})
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)
@@ -339,6 +335,8 @@ func (s *sVolcEngine) VideoRetrieve(ctx context.Context, request *ghttp.Request,
 										RetryCount: len(retry),
 										ErrMsg:     err.Error(),
 									}
+
+									attempt = common.CaptureAttempt(ctx, now, totalTime)
 									return s.VideoRetrieve(g.RequestFromCtx(ctx).GetCtx(), request, taskId, fallbackModelAgent, fallbackModel)
 								}
 							}
@@ -350,6 +348,8 @@ func (s *sVolcEngine) VideoRetrieve(ctx context.Context, request *ghttp.Request,
 										RetryCount: len(retry),
 										ErrMsg:     err.Error(),
 									}
+
+									attempt = common.CaptureAttempt(ctx, now, totalTime)
 									return s.VideoRetrieve(g.RequestFromCtx(ctx).GetCtx(), request, taskId, nil, fallbackModel)
 								}
 							}
@@ -365,6 +365,7 @@ func (s *sVolcEngine) VideoRetrieve(ctx context.Context, request *ghttp.Request,
 					ErrMsg:     err.Error(),
 				}
 
+				attempt = common.CaptureAttempt(ctx, now, totalTime)
 				return s.VideoRetrieve(g.RequestFromCtx(ctx).GetCtx(), request, taskId, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 			}
 
@@ -405,28 +406,27 @@ func (s *sVolcEngine) VideoDelete(ctx context.Context, request *ghttp.Request, t
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
+		attempt   *common.AttemptLog
 		totalTime int64
 	)
 
 	defer func() {
 
 		totalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - totalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
-				common.AfterHandler(ctx, mak, &mcommon.AfterHandler{
-					Action:       consts.ACTION_DELETE,
-					VideoId:      taskId,
-					RequestData:  map[string]any{"task_id": taskId},
-					Error:        err,
-					RetryInfo:    retryInfo,
-					TotalTime:    totalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
-				})
+				after := &mcommon.AfterHandler{
+					Action:      consts.ACTION_DELETE,
+					VideoId:     taskId,
+					RequestData: map[string]any{"task_id": taskId},
+					Error:       err,
+					RetryInfo:   retryInfo,
+					TotalTime:   totalTime,
+				}
+				common.FinishAttempt(ctx, now, attempt, after)
+				common.AfterHandler(ctx, mak, after)
 
 			}); err != nil {
 				logger.Error(ctx, err)

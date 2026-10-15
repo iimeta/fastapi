@@ -52,4 +52,5 @@ type AfterHandler struct {
 	TotalTime              int64
 	InternalTime           int64
 	EnterTime              int64
+	RequestIds             map[string]string
 }

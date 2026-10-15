@@ -11,7 +11,9 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 	sconsts "github.com/iimeta/fastapi-sdk/v2/consts"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
+	sutil "github.com/iimeta/fastapi-sdk/v2/util"
 	"github.com/iimeta/fastapi/v2/internal/config"
+	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/errors"
 	"github.com/iimeta/fastapi/v2/internal/model"
 	"github.com/iimeta/fastapi/v2/internal/service"
@@ -47,6 +49,12 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 	defer func() {
 		logger.Debugf(ctx, "MAK InitMAK time: %d", gtime.TimestampMilli()-now)
 	}()
+
+	sutil.ResetUpstreamRequestIds(ctx)
+	if r := g.RequestFromCtx(ctx); r != nil {
+		r.SetCtxVar(consts.ATTEMPT_START_KEY, now)
+		r.SetCtxVar(consts.ATTEMPT_INDEX_KEY, r.GetCtxVar(consts.ATTEMPT_INDEX_KEY).Int()+1)
+	}
 
 	if mak.RealModel == nil {
 		mak.RealModel = new(model.Model)

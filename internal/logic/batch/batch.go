@@ -57,12 +57,10 @@ func (s *sBatch) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 			FallbackModel:      fallbackModel,
 		}
 		retryInfo *mcommon.Retry
+		attempt   *common.AttemptLog
 	)
 
 	defer func() {
-
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -77,10 +75,9 @@ func (s *sBatch) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
 				}
 
+				common.FinishAttempt(ctx, now, attempt, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
@@ -140,6 +137,8 @@ func (s *sBatch) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Create(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -151,6 +150,8 @@ func (s *sBatch) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
+
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Create(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
 							}
 						}
@@ -166,6 +167,7 @@ func (s *sBatch) Create(ctx context.Context, params *v1.CreateReq, fallbackModel
 				ErrMsg:     err.Error(),
 			}
 
+			attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 			return s.Create(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -191,8 +193,6 @@ func (s *sBatch) List(ctx context.Context, params *v1.ListReq) (response smodel.
 	defer func() {
 
 		response.TotalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -205,8 +205,6 @@ func (s *sBatch) List(ctx context.Context, params *v1.ListReq) (response smodel.
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
 				}
 
 				common.AfterHandler(ctx, mak, afterHandler)
@@ -306,8 +304,6 @@ func (s *sBatch) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 	defer func() {
 
 		response.TotalTime = gtime.TimestampMilli() - now
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -321,8 +317,6 @@ func (s *sBatch) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
 				}
 
 				common.AfterHandler(ctx, mak, afterHandler)
@@ -373,9 +367,6 @@ func (s *sBatch) Cancel(ctx context.Context, params *v1.CancelReq) (response smo
 			response.TotalTime = gtime.TimestampMilli() - now
 		}
 
-		enterTime := g.RequestFromCtx(ctx).EnterTime.TimestampMilli()
-		internalTime := gtime.TimestampMilli() - enterTime - response.TotalTime
-
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
 
@@ -388,8 +379,6 @@ func (s *sBatch) Cancel(ctx context.Context, params *v1.CancelReq) (response smo
 					Error:        err,
 					RetryInfo:    retryInfo,
 					TotalTime:    response.TotalTime,
-					InternalTime: internalTime,
-					EnterTime:    enterTime,
 				}
 
 				common.AfterHandler(ctx, mak, afterHandler)
