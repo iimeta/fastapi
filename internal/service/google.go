@@ -19,6 +19,12 @@ type (
 		Completions(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.ChatCompletionResponse, err error)
 		// CompletionsStream
 		CompletionsStream(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (err error)
+		// Interactions
+		Interactions(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.GoogleInteractionRes, err error)
+		// InteractionsStream
+		InteractionsStream(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (err error)
+		// InteractionsRetrieve
+		InteractionsRetrieve(ctx context.Context, id string, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.GoogleInteractionRes, err error)
 	}
 )
 

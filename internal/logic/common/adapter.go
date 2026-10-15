@@ -11,6 +11,7 @@ import (
 	"github.com/iimeta/fastapi-sdk/v2"
 	sconsts "github.com/iimeta/fastapi-sdk/v2/consts"
 	"github.com/iimeta/fastapi-sdk/v2/general"
+	"github.com/iimeta/fastapi-sdk/v2/google"
 	"github.com/iimeta/fastapi-sdk/v2/openai"
 	"github.com/iimeta/fastapi-sdk/v2/options"
 	"github.com/iimeta/fastapi/v2/internal/config"
@@ -189,6 +190,61 @@ func NewAdapterOpenAI(ctx context.Context, mak *MAK, isLong bool) *openai.OpenAI
 	g.RequestFromCtx(ctx).SetCtxVar("passthrough", openaiPassthrough)
 
 	return openai.NewAdapter(ctx, options)
+}
+
+func NewAdapterGoogle(ctx context.Context, mak *MAK, isLong bool) *google.Google {
+
+	provider := GetProviderCode(ctx, mak.Provider)
+
+	options := &options.AdapterOptions{
+		Provider:             provider,
+		Model:                mak.RealModel.Model,
+		Key:                  mak.RealKey,
+		BaseUrl:              mak.BaseUrl,
+		Path:                 mak.Path,
+		Stream:               isLong,
+		Timeout:              config.Cfg.Base.ShortTimeout * time.Second,
+		ProxyUrl:             config.Cfg.Http.ProxyUrl,
+		ReqPassthroughParams: []string{"req_data"},
+		PassthroughHeader:    getPassthroughHeaders(ctx, mak.Passthrough),
+	}
+
+	if isLong {
+		options.Timeout = config.Cfg.Base.LongTimeout * time.Second
+	}
+
+	if mak.RealModel.IsEnablePresetConfig {
+		options.IsSupportSystemRole = &mak.RealModel.PresetConfig.IsSupportSystemRole
+		options.IsSupportStream = &mak.RealModel.PresetConfig.IsSupportStream
+	}
+
+	googlePassthrough := &EffectivePassthrough{ResParams: []string{"res_data"}}
+
+	if mak.Passthrough != nil {
+
+		if slices.Contains(mak.Passthrough.ResParams, "res_header") {
+			googlePassthrough.ResParams = append(googlePassthrough.ResParams, "res_header")
+			googlePassthrough.ResHeaderMode = mak.Passthrough.ResHeaderMode
+			googlePassthrough.ResHeaderList = mak.Passthrough.ResHeaderList
+		}
+
+		if slices.Contains(mak.Passthrough.ReqParams, "req_path") {
+			options.Path = g.RequestFromCtx(ctx).URL.Path
+			if gstr.HasSuffix(options.BaseUrl, "/v1beta") && gstr.HasPrefix(options.Path, "/v1beta") {
+				options.Path = options.Path[7:]
+			} else if gstr.HasSuffix(options.BaseUrl, "/v1") && gstr.HasPrefix(options.Path, "/v1") {
+				options.Path = options.Path[3:]
+			}
+		}
+	}
+
+	g.RequestFromCtx(ctx).SetCtxVar("passthrough", googlePassthrough)
+
+	if provider == sconsts.PROVIDER_GCP_GEMINI {
+		return google.NewGcpAdapter(ctx, options)
+	}
+
+	return google.NewAdapter(ctx, options)
 }
 
 func NewRealtimeClient(ctx context.Context, model *model.Model, key, baseUrl, path string) *sdk.RealtimeClient {

@@ -113,6 +113,7 @@ const (
 	ENDPOINT_EMBEDDINGS           = "/v1/embeddings"
 	ENDPOINT_MODERATIONS          = "/v1/moderations"
 	ENDPOINT_REALTIME             = "/v1/realtime"
+	ENDPOINT_INTERACTIONS         = "interactions"
 )
 
 var RESOLUTION_ASPECT_RATIO = map[string]string{
