@@ -160,7 +160,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, totalTime)
+								attempt = common.CaptureAttempt(ctx, now, totalTime, connTime, duration)
 								return s.Realtime(g.RequestFromCtx(ctx).GetCtx(), r, params, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -173,7 +173,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, totalTime)
+								attempt = common.CaptureAttempt(ctx, now, totalTime, connTime, duration)
 								return s.Realtime(g.RequestFromCtx(ctx).GetCtx(), r, params, nil, fallbackModel)
 							}
 						}
@@ -189,7 +189,7 @@ func (s *sRealtime) Realtime(ctx context.Context, r *ghttp.Request, params model
 				ErrMsg:     err.Error(),
 			}
 
-			attempt = common.CaptureAttempt(ctx, now, totalTime)
+			attempt = common.CaptureAttempt(ctx, now, totalTime, connTime, duration)
 			return s.Realtime(g.RequestFromCtx(ctx).GetCtx(), r, params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 

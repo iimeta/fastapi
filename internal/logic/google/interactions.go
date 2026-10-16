@@ -198,7 +198,7 @@ func (s *sGoogle) Interactions(ctx context.Context, request *ghttp.Request, fall
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime, response.ConnTime, response.Duration)
 								return s.Interactions(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -211,7 +211,7 @@ func (s *sGoogle) Interactions(ctx context.Context, request *ghttp.Request, fall
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime, response.ConnTime, response.Duration)
 								return s.Interactions(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
 							}
 						}
@@ -227,7 +227,7 @@ func (s *sGoogle) Interactions(ctx context.Context, request *ghttp.Request, fall
 				ErrMsg:     err.Error(),
 			}
 
-			attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
+			attempt = common.CaptureAttempt(ctx, now, response.TotalTime, response.ConnTime, response.Duration)
 			return s.Interactions(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -258,7 +258,7 @@ func (s *sGoogle) Interactions(ctx context.Context, request *ghttp.Request, fall
 						ErrMsg:     err.Error(),
 					}
 
-					attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
+					attempt = common.CaptureAttempt(ctx, now, response.TotalTime, response.ConnTime, response.Duration)
 					return s.Interactions(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, retry...)
 				}
 
@@ -447,7 +447,7 @@ func (s *sGoogle) InteractionsStream(ctx context.Context, request *ghttp.Request
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, totalTime)
+								attempt = common.CaptureAttempt(ctx, now, totalTime, connTime, duration)
 								return s.InteractionsStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -460,7 +460,7 @@ func (s *sGoogle) InteractionsStream(ctx context.Context, request *ghttp.Request
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, totalTime)
+								attempt = common.CaptureAttempt(ctx, now, totalTime, connTime, duration)
 								return s.InteractionsStream(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
 							}
 						}
@@ -476,7 +476,7 @@ func (s *sGoogle) InteractionsStream(ctx context.Context, request *ghttp.Request
 				ErrMsg:     err.Error(),
 			}
 
-			attempt = common.CaptureAttempt(ctx, now, totalTime)
+			attempt = common.CaptureAttempt(ctx, now, totalTime, connTime, duration)
 			return s.InteractionsStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -538,7 +538,7 @@ func (s *sGoogle) InteractionsStream(ctx context.Context, request *ghttp.Request
 										ErrMsg:     err.Error(),
 									}
 
-									attempt = common.CaptureAttempt(ctx, now, totalTime)
+									attempt = common.CaptureAttempt(ctx, now, totalTime, connTime, duration)
 									return s.InteractionsStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel)
 								}
 							}
@@ -551,7 +551,7 @@ func (s *sGoogle) InteractionsStream(ctx context.Context, request *ghttp.Request
 										ErrMsg:     err.Error(),
 									}
 
-									attempt = common.CaptureAttempt(ctx, now, totalTime)
+									attempt = common.CaptureAttempt(ctx, now, totalTime, connTime, duration)
 									return s.InteractionsStream(g.RequestFromCtx(ctx).GetCtx(), request, nil, fallbackModel)
 								}
 							}
@@ -570,7 +570,7 @@ func (s *sGoogle) InteractionsStream(ctx context.Context, request *ghttp.Request
 					ErrMsg:     err.Error(),
 				}
 
-				attempt = common.CaptureAttempt(ctx, now, totalTime)
+				attempt = common.CaptureAttempt(ctx, now, totalTime, connTime, duration)
 				return s.InteractionsStream(g.RequestFromCtx(ctx).GetCtx(), request, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 			}
 

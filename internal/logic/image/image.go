@@ -212,7 +212,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Generations(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -225,7 +225,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Generations(g.RequestFromCtx(ctx).GetCtx(), data, nil, fallbackModel)
 							}
 						}
@@ -241,7 +241,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 				ErrMsg:     err.Error(),
 			}
 
-			attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
+			attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 			return s.Generations(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -262,7 +262,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 						ErrMsg:     err.Error(),
 					}
 
-					attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
+					attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 					return s.Generations(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel, retry...)
 				}
 
@@ -705,7 +705,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Edits(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -718,7 +718,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 								return s.Edits(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
 							}
 						}
@@ -734,7 +734,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 				ErrMsg:     err.Error(),
 			}
 
-			attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
+			attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
 			return s.Edits(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 

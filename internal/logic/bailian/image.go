@@ -148,7 +148,7 @@ func (s *sBailian) ImageGenerations(ctx context.Context, data []byte, fallbackMo
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
+								attempt = common.CaptureAttempt(ctx, now, 0)
 								return s.ImageGenerations(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -161,7 +161,7 @@ func (s *sBailian) ImageGenerations(ctx context.Context, data []byte, fallbackMo
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
+								attempt = common.CaptureAttempt(ctx, now, 0)
 								return s.ImageGenerations(g.RequestFromCtx(ctx).GetCtx(), data, nil, fallbackModel)
 							}
 						}
@@ -177,7 +177,7 @@ func (s *sBailian) ImageGenerations(ctx context.Context, data []byte, fallbackMo
 				ErrMsg:     err.Error(),
 			}
 
-			attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
+			attempt = common.CaptureAttempt(ctx, now, 0)
 			return s.ImageGenerations(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 

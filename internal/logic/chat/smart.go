@@ -145,7 +145,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime, response.ConnTime, response.Duration)
 								return s.SmartCompletions(g.RequestFromCtx(ctx).GetCtx(), params, reqModel, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -158,7 +158,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime, response.ConnTime, response.Duration)
 								return s.SmartCompletions(g.RequestFromCtx(ctx).GetCtx(), params, reqModel, nil, fallbackModel)
 							}
 						}
@@ -174,7 +174,7 @@ func (s *sChat) SmartCompletions(ctx context.Context, params smodel.ChatCompleti
 				ErrMsg:     err.Error(),
 			}
 
-			attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
+			attempt = common.CaptureAttempt(ctx, now, response.TotalTime, response.ConnTime, response.Duration)
 			return s.SmartCompletions(g.RequestFromCtx(ctx).GetCtx(), params, reqModel, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 

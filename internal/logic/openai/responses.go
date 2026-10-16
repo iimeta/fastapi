@@ -167,7 +167,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime, response.ConnTime, response.Duration)
 								return s.Responses(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -180,7 +180,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime, response.ConnTime, response.Duration)
 								return s.Responses(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, nil, fallbackModel)
 							}
 						}
@@ -196,7 +196,7 @@ func (s *sOpenAI) Responses(ctx context.Context, request *ghttp.Request, isChatC
 				ErrMsg:     err.Error(),
 			}
 
-			attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
+			attempt = common.CaptureAttempt(ctx, now, response.TotalTime, response.ConnTime, response.Duration)
 			return s.Responses(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -381,7 +381,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, totalTime)
+								attempt = common.CaptureAttempt(ctx, now, totalTime, connTime, duration)
 								return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -394,7 +394,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, totalTime)
+								attempt = common.CaptureAttempt(ctx, now, totalTime, connTime, duration)
 								return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, nil, fallbackModel)
 							}
 						}
@@ -410,7 +410,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 				ErrMsg:     err.Error(),
 			}
 
-			attempt = common.CaptureAttempt(ctx, now, totalTime)
+			attempt = common.CaptureAttempt(ctx, now, totalTime, connTime, duration)
 			return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -508,7 +508,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 										ErrMsg:     err.Error(),
 									}
 
-									attempt = common.CaptureAttempt(ctx, now, totalTime)
+									attempt = common.CaptureAttempt(ctx, now, totalTime, connTime, duration)
 									return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel)
 								}
 							}
@@ -521,7 +521,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 										ErrMsg:     err.Error(),
 									}
 
-									attempt = common.CaptureAttempt(ctx, now, totalTime)
+									attempt = common.CaptureAttempt(ctx, now, totalTime, connTime, duration)
 									return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, nil, fallbackModel)
 								}
 							}
@@ -542,7 +542,7 @@ func (s *sOpenAI) ResponsesStream(ctx context.Context, request *ghttp.Request, i
 					ErrMsg:     err.Error(),
 				}
 
-				attempt = common.CaptureAttempt(ctx, now, totalTime)
+				attempt = common.CaptureAttempt(ctx, now, totalTime, connTime, duration)
 				return s.ResponsesStream(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 			}
 
@@ -764,7 +764,7 @@ func (s *sOpenAI) ResponsesCompact(ctx context.Context, request *ghttp.Request, 
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime, response.ConnTime, response.Duration)
 								return s.ResponsesCompact(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -777,7 +777,7 @@ func (s *sOpenAI) ResponsesCompact(ctx context.Context, request *ghttp.Request, 
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime, response.ConnTime, response.Duration)
 								return s.ResponsesCompact(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, nil, fallbackModel)
 							}
 						}
@@ -793,7 +793,7 @@ func (s *sOpenAI) ResponsesCompact(ctx context.Context, request *ghttp.Request, 
 				ErrMsg:     err.Error(),
 			}
 
-			attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
+			attempt = common.CaptureAttempt(ctx, now, response.TotalTime, response.ConnTime, response.Duration)
 			return s.ResponsesCompact(g.RequestFromCtx(ctx).GetCtx(), request, isChatCompletions, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 

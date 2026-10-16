@@ -173,7 +173,7 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
-								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime, response.ConnTime, response.Duration)
 								return s.Completions(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -185,7 +185,7 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
-								attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
+								attempt = common.CaptureAttempt(ctx, now, response.TotalTime, response.ConnTime, response.Duration)
 								return s.Completions(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
 							}
 						}
@@ -201,7 +201,7 @@ func (s *sChat) Completions(ctx context.Context, params smodel.ChatCompletionReq
 				ErrMsg:     err.Error(),
 			}
 
-			attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
+			attempt = common.CaptureAttempt(ctx, now, response.TotalTime, response.ConnTime, response.Duration)
 			return s.Completions(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
@@ -352,7 +352,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
-								attempt = common.CaptureAttempt(ctx, now, totalTime)
+								attempt = common.CaptureAttempt(ctx, now, totalTime, connTime, duration)
 								return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -364,7 +364,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 									RetryCount: len(retry),
 									ErrMsg:     err.Error(),
 								}
-								attempt = common.CaptureAttempt(ctx, now, totalTime)
+								attempt = common.CaptureAttempt(ctx, now, totalTime, connTime, duration)
 								return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), params, nil, fallbackModel)
 							}
 						}
@@ -380,7 +380,7 @@ func (s *sChat) CompletionsStream(ctx context.Context, params smodel.ChatComplet
 				ErrMsg:     err.Error(),
 			}
 
-			attempt = common.CaptureAttempt(ctx, now, totalTime)
+			attempt = common.CaptureAttempt(ctx, now, totalTime, connTime, duration)
 			return s.CompletionsStream(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 

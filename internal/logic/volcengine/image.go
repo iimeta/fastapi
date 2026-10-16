@@ -143,7 +143,7 @@ func (s *sVolcEngine) ImageGenerations(ctx context.Context, data []byte, fallbac
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
+								attempt = common.CaptureAttempt(ctx, now, 0)
 								return s.ImageGenerations(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel)
 							}
 						}
@@ -156,7 +156,7 @@ func (s *sVolcEngine) ImageGenerations(ctx context.Context, data []byte, fallbac
 									ErrMsg:     err.Error(),
 								}
 
-								attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
+								attempt = common.CaptureAttempt(ctx, now, 0)
 								return s.ImageGenerations(g.RequestFromCtx(ctx).GetCtx(), data, nil, fallbackModel)
 							}
 						}
@@ -172,7 +172,7 @@ func (s *sVolcEngine) ImageGenerations(ctx context.Context, data []byte, fallbac
 				ErrMsg:     err.Error(),
 			}
 
-			attempt = common.CaptureAttempt(ctx, now, imageResponse.TotalTime)
+			attempt = common.CaptureAttempt(ctx, now, 0)
 			return s.ImageGenerations(g.RequestFromCtx(ctx).GetCtx(), data, fallbackModelAgent, fallbackModel, append(retry, 1)...)
 		}
 
