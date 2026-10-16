@@ -63,8 +63,9 @@ func GetClientIpFromCtx(ctx context.Context) string {
 }
 
 // 获取真实客户端 IP.
-// nginx 与服务同机时 RemoteIp 为本机, 此时才信任 X-Forwarded-For / X-Real-IP.
-// X-Forwarded-For 左侧 hop 由客户端可控(代理/内网/伪造), nginx $proxy_add_x_forwarded_for 追加在最右侧, 只取最后一个合法 IP.
+// RemoteIp 是 TCP 对端(末级反代/直连), 与反代是否同机无关.
+// X-Forwarded-For 左侧 hop 由客户端可控(伪造如 9.9.9.9), 代理追加在右侧;
+// 从右往左取第一个非本机、非 RemoteIp 的合法 IP, 避免取到伪造值或反代自身.
 func GetClientIp(r *ghttp.Request) string {
 	if r == nil {
 		return ""
@@ -90,10 +91,12 @@ func IsLocalIp(ipStr string) bool {
 	}
 
 	for _, addr := range addrs {
+
 		ipnet, ok := addr.(*net.IPNet)
 		if !ok || ipnet.IP.IsLoopback() {
 			continue
 		}
+
 		if ipnet.IP.Equal(ip) {
 			return true
 		}
@@ -106,23 +109,18 @@ func resolveClientIp(remoteIp, xForwardedFor, xRealIP string) string {
 
 	remoteIp = formatIP(parseForwardedIP(remoteIp))
 
-	// 直连(未经过本机反代)时不信任任何转发头, 避免伪造 X-Forwarded-For / X-Real-IP.
-	if remoteIp == "" || !IsLocalIp(remoteIp) {
-		return remoteIp
-	}
-
-	if ip := lastForwardedIP(xForwardedFor); ip != "" {
+	if ip := clientIPFromForwarded(xForwardedFor, remoteIp); ip != "" {
 		return ip
 	}
 
-	if ip := formatIP(parseForwardedIP(xRealIP)); ip != "" {
+	if ip := formatIP(parseForwardedIP(xRealIP)); ip != "" && !isForwardedHop(ip, remoteIp) {
 		return ip
 	}
 
 	return remoteIp
 }
 
-func lastForwardedIP(xForwardedFor string) string {
+func clientIPFromForwarded(xForwardedFor, remoteIp string) string {
 
 	xForwardedFor = strings.TrimSpace(xForwardedFor)
 	if xForwardedFor == "" || strings.EqualFold(xForwardedFor, "unknown") {
@@ -131,12 +129,39 @@ func lastForwardedIP(xForwardedFor string) string {
 
 	parts := strings.Split(xForwardedFor, ",")
 	for i := len(parts) - 1; i >= 0; i-- {
-		if ip := formatIP(parseForwardedIP(parts[i])); ip != "" {
-			return ip
+
+		ip := formatIP(parseForwardedIP(parts[i]))
+		if ip == "" || isForwardedHop(ip, remoteIp) {
+			continue
 		}
+
+		return ip
 	}
 
 	return ""
+}
+
+// 本机反代、回环、以及 TCP 对端自身, 都不是客户端.
+func isForwardedHop(ip, remoteIp string) bool {
+
+	if ip == "" {
+		return true
+	}
+
+	if remoteIp != "" && ip == remoteIp {
+		return true
+	}
+
+	parsed := parseForwardedIP(ip)
+	if parsed == nil {
+		return true
+	}
+
+	if parsed.IsLoopback() || parsed.IsUnspecified() || parsed.IsLinkLocalUnicast() {
+		return true
+	}
+
+	return IsLocalIp(ip)
 }
 
 func parseForwardedIP(s string) net.IP {
