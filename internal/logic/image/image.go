@@ -538,6 +538,9 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 
 	compatImageEditRequest(ctx, &params)
 
+	// 计费可能改写 params.Size, 尺寸校验始终以用户原始传入为准; 未传则跳过
+	userSize := params.Size
+
 	var (
 		mak = &common.MAK{
 			Model:              params.Model,
@@ -739,6 +742,29 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 		}
 
 		return response, err
+	}
+
+	imageResponse = response
+
+	if common.ShouldCheckImageSize(mak) {
+		if expectedW, expectedH, ok := common.ExpectedImageSize(userSize); ok {
+			if err = common.CheckGeneratedImageSize(ctx, expectedW, expectedH, response.Data); err != nil {
+				logger.Error(ctx, err)
+
+				if shouldRetry, retryCount := common.ExcludeAgentForImageSizeRetry(ctx, mak); shouldRetry {
+					retryInfo = &mcommon.Retry{
+						IsRetry:    true,
+						RetryCount: retryCount,
+						ErrMsg:     err.Error(),
+					}
+
+					attempt = common.CaptureAttempt(ctx, now, response.TotalTime)
+					return s.Edits(g.RequestFromCtx(ctx).GetCtx(), params, fallbackModelAgent, fallbackModel, retry...)
+				}
+
+				return response, err
+			}
+		}
 	}
 
 	imageFilePaths, imageExpiresAt = saveImageStorage(ctx, &response, params.OutputFormat, originalResponseFormat)
