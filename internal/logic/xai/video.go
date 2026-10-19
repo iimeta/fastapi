@@ -14,7 +14,6 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
-	"github.com/gogf/gf/v2/util/gconv"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
 	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/dao"
@@ -170,7 +169,12 @@ func (s *sXAI) VideoRetrieve(ctx context.Context, request *ghttp.Request, reques
 		return errors.ShieldErrorJson(ctx, responseBytes), nil
 	}
 
-	responseBytes, responseHeader, err = common.NewAdapterOfficial(ctx, mak, false).VideoRetrieveOfficial(ctx, requestId)
+	pollId := requestId
+	if taskVideo.JobId != "" && taskVideo.JobId != "-" {
+		pollId = taskVideo.JobId
+	}
+
+	responseBytes, responseHeader, err = common.NewAdapterOfficial(ctx, mak, false).VideoRetrieveOfficial(ctx, pollId)
 	if err != nil {
 		logger.Error(ctx, err)
 
@@ -308,7 +312,7 @@ func videoSize(req *smodel.XAIVideoCreateReq) string {
 }
 
 func detectVideoMode(req *smodel.XAIVideoCreateReq) string {
-	if req.Video != nil && (req.Video.Url != "" || req.Video.FileId != "") {
+	if req.Video != nil || req.Image != nil || req.LastFrame != nil || req.Keyframes != nil {
 		return "has_video_input"
 	}
 	return "no_video_input"
@@ -318,31 +322,19 @@ func convTaskVideoToXAIRes(ctx context.Context, task *entity.TaskVideo) []byte {
 
 	status := "pending"
 	switch task.Status {
-	case "queued":
+	case "queued", "in_progress":
 		status = "pending"
-	case "in_progress":
-		status = "in_progress"
 	case "completed":
-		status = "completed"
-	case "failed":
+		status = "done"
+	case "failed", "expired", "deleted":
 		status = "failed"
-	case "expired":
-		status = "expired"
-	case "deleted":
-		status = "cancelled"
 	}
 
 	res := &smodel.XAIVideoJobRes{
-		RequestId:   task.VideoId,
-		Id:          task.VideoId,
-		Object:      "video",
-		Model:       task.Model,
-		Status:      status,
-		Prompt:      task.Prompt,
-		Duration:    task.Seconds,
-		AspectRatio: xaiReqString(task.RequestData, "aspect_ratio"),
-		Resolution:  xaiReqString(task.RequestData, "resolution"),
-		Usage:       xaiUsageFromResponse(task.ResponseData),
+		RequestId: task.VideoId,
+		Status:    status,
+		Model:     task.Model,
+		Usage:     xaiUsageFromResponse(task.ResponseData),
 	}
 
 	if task.VideoUrl != "" {
@@ -363,13 +355,6 @@ func convTaskVideoToXAIRes(ctx context.Context, task *entity.TaskVideo) []byte {
 	}
 
 	return data
-}
-
-func xaiReqString(m map[string]any, key string) string {
-	if m == nil {
-		return ""
-	}
-	return gconv.String(m[key])
 }
 
 func xaiUsageFromResponse(data map[string]any) *smodel.XAIUsage {
