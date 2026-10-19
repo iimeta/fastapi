@@ -70,7 +70,7 @@ func ExpectedGoogleImageSize(imageSize, aspectRatio string) (width, height int, 
 	return 0, 0, false
 }
 
-// 校验上游返回的图片宽高是否与期望一致(允许宽高对调).
+// 校验上游返回的图片尺寸: 宽高一致(允许对调)通过; 否则像素数 >= 期望也通过.
 // data 中每张图的 Url(http/https 或 data URI) 与 B64Json(原始 base64 或 data URI) 均支持.
 func CheckGeneratedImageSize(ctx context.Context, expectedW, expectedH int, data []smodel.ImageResponseData) error {
 
@@ -150,7 +150,10 @@ func imageSizeCheckMaxRetry(mak *MAK) int {
 }
 
 func imageSizeMatches(expectedW, expectedH, actualW, actualH int) bool {
-	return (actualW == expectedW && actualH == expectedH) || (actualW == expectedH && actualH == expectedW)
+	if (actualW == expectedW && actualH == expectedH) || (actualW == expectedH && actualH == expectedW) {
+		return true
+	}
+	return int64(actualW)*int64(actualH) >= int64(expectedW)*int64(expectedH)
 }
 
 func imageSizeRetryCount(ctx context.Context) int {
