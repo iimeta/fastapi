@@ -320,41 +320,52 @@ func detectVideoMode(req *smodel.XAIVideoCreateReq) string {
 
 func convTaskVideoToXAIRes(ctx context.Context, task *entity.TaskVideo) []byte {
 
-	status := "pending"
-	switch task.Status {
-	case "queued", "in_progress":
-		status = "pending"
-	case "completed":
-		status = "done"
-	case "failed", "expired", "deleted":
-		status = "failed"
-	}
-
-	res := &smodel.XAIVideoJobRes{
-		RequestId: task.VideoId,
-		Status:    status,
-		Model:     task.Model,
-		Usage:     xaiUsageFromResponse(task.ResponseData),
-	}
-
-	if task.VideoUrl != "" {
-		res.Video = &smodel.XAIVideoGenerated{
-			Url:      common.ResolveVideoUrl(task.VideoUrl),
-			Duration: task.Seconds,
-		}
-	}
-
-	if task.Error != nil {
-		res.Error = &smodel.XAIVideoError{Code: task.Error.Code, Message: task.Error.Message}
-	}
-
-	data, err := json.Marshal(res)
+	data, err := json.Marshal(convTaskVideoToXAIJob(task))
 	if err != nil {
 		logger.Error(ctx, err)
 		return nil
 	}
 
 	return data
+}
+
+func convTaskVideoToXAIJob(task *entity.TaskVideo) smodel.XAIVideoJobRes {
+
+	status := "pending"
+	progress := task.Progress
+	switch task.Status {
+	case "queued", "in_progress":
+		status = "pending"
+	case "completed":
+		status = "done"
+		progress = 100
+	case "failed", "expired", "deleted":
+		status = "failed"
+	}
+
+	res := smodel.XAIVideoJobRes{
+		RequestId: task.VideoId,
+		Status:    status,
+		Model:     task.Model,
+		Progress:  progress,
+		Usage:     xaiUsageFromResponse(task.ResponseData),
+	}
+
+	if task.VideoUrl != "" {
+		respect := true
+		res.Video = &smodel.XAIVideoGenerated{
+			Url:               common.ResolveVideoUrl(task.VideoUrl),
+			Duration:          task.Seconds,
+			RespectModeration: &respect,
+		}
+	}
+
+	if task.Error != nil {
+		res.Code = task.Error.Code
+		res.Error = &smodel.XAIVideoError{Code: task.Error.Code, Message: task.Error.Message}
+	}
+
+	return res
 }
 
 func xaiUsageFromResponse(data map[string]any) *smodel.XAIUsage {

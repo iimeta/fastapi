@@ -2,11 +2,13 @@ package video
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"io"
 
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/gogf/gf/v2/os/gctx"
@@ -16,6 +18,7 @@ import (
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	sdk "github.com/iimeta/fastapi-sdk/v2"
+	sconsts "github.com/iimeta/fastapi-sdk/v2/consts"
 	smodel "github.com/iimeta/fastapi-sdk/v2/model"
 	"github.com/iimeta/fastapi-sdk/v2/options"
 	v1 "github.com/iimeta/fastapi/v2/api/video/v1"
@@ -26,6 +29,7 @@ import (
 	"github.com/iimeta/fastapi/v2/internal/logic/common"
 	"github.com/iimeta/fastapi/v2/internal/model"
 	mcommon "github.com/iimeta/fastapi/v2/internal/model/common"
+	"github.com/iimeta/fastapi/v2/internal/model/entity"
 	"github.com/iimeta/fastapi/v2/internal/service"
 	"github.com/iimeta/fastapi/v2/utility/db"
 	"github.com/iimeta/fastapi/v2/utility/logger"
@@ -370,7 +374,7 @@ func (s *sVideo) List(ctx context.Context, params *v1.ListReq) (response smodel.
 }
 
 // Retrieve
-func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response smodel.VideoJobResponse, err error) {
+func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response any, err error) {
 
 	now := gtime.TimestampMilli()
 	defer func() {
@@ -384,7 +388,7 @@ func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 
 	defer func() {
 
-		response.TotalTime = gtime.TimestampMilli() - now
+		totalTime := gtime.TimestampMilli() - now
 
 		if mak.ReqModel != nil && mak.RealModel != nil {
 			if err := grpool.Add(gctx.NeverDone(ctx), func(ctx context.Context) {
@@ -396,7 +400,7 @@ func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 					ResponseData: util.ConvToMap(response),
 					Error:        err,
 					RetryInfo:    retryInfo,
-					TotalTime:    response.TotalTime,
+					TotalTime:    totalTime,
 				}
 
 				common.AfterHandler(ctx, mak, afterHandler)
@@ -428,7 +432,12 @@ func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 		taskVideo.Error.Code, taskVideo.Error.Message = errors.ShieldError(ctx, taskVideo.Error.Code, taskVideo.Error.Message)
 	}
 
-	response = smodel.VideoJobResponse{
+	if isXAIVideoProvider(ctx, mak) {
+		response = convTaskVideoToXAIJob(taskVideo)
+		return response, nil
+	}
+
+	job := smodel.VideoJobResponse{
 		Id:        taskVideo.VideoId,
 		Object:    "video",
 		Model:     taskVideo.Model,
@@ -442,22 +451,22 @@ func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 	}
 
 	if taskVideo.CompletedAt != 0 {
-		response.CompletedAt = &taskVideo.CompletedAt
+		job.CompletedAt = &taskVideo.CompletedAt
 	}
 
 	if taskVideo.ExpiresAt != 0 {
-		response.ExpiresAt = &taskVideo.ExpiresAt
+		job.ExpiresAt = &taskVideo.ExpiresAt
 	}
 
 	if taskVideo.RemixedFromVideoId != "" {
-		response.RemixedFromVideoId = &taskVideo.RemixedFromVideoId
+		job.RemixedFromVideoId = &taskVideo.RemixedFromVideoId
 	}
 
 	if taskVideo.VideoUrl != "" {
-		response.VideoUrl = common.ResolveVideoUrl(taskVideo.VideoUrl)
+		job.VideoUrl = common.ResolveVideoUrl(taskVideo.VideoUrl)
 	}
 
-	return response, nil
+	return job, nil
 }
 
 // Delete
@@ -713,4 +722,88 @@ func persistVideoCreateInput(ctx context.Context, params *v1.CreateReq) (request
 	}
 
 	return requestData, []string{filePath}, nil
+}
+
+func isXAIVideoProvider(ctx context.Context, mak *common.MAK) bool {
+
+	if mak == nil {
+		return false
+	}
+
+	if mak.Provider != "" && common.GetProviderCode(ctx, mak.Provider) == sconsts.PROVIDER_X {
+		return true
+	}
+
+	if mak.RealModel != nil && common.GetProviderCode(ctx, mak.RealModel.ProviderId) == sconsts.PROVIDER_X {
+		return true
+	}
+
+	if mak.ReqModel != nil && common.GetProviderCode(ctx, mak.ReqModel.ProviderId) == sconsts.PROVIDER_X {
+		return true
+	}
+
+	if mak.ModelAgent != nil && common.GetProviderCode(ctx, mak.ModelAgent.ProviderId) == sconsts.PROVIDER_X {
+		return true
+	}
+
+	return false
+}
+
+func convTaskVideoToXAIJob(task *entity.TaskVideo) smodel.XAIVideoJobRes {
+
+	status := "pending"
+	progress := task.Progress
+
+	switch task.Status {
+	case "queued", "in_progress":
+		status = "pending"
+	case "completed":
+		status = "done"
+		progress = 100
+	case "failed", "expired", "deleted":
+		status = "failed"
+	}
+
+	res := smodel.XAIVideoJobRes{
+		RequestId: task.VideoId,
+		Status:    status,
+		Model:     task.Model,
+		Progress:  progress,
+		Usage:     xaiUsageFromTask(task),
+	}
+
+	if task.VideoUrl != "" {
+		respect := true
+		res.Video = &smodel.XAIVideoGenerated{
+			Url:               common.ResolveVideoUrl(task.VideoUrl),
+			Duration:          task.Seconds,
+			RespectModeration: &respect,
+		}
+	}
+
+	if task.Error != nil {
+		res.Code = task.Error.Code
+		res.Error = &smodel.XAIVideoError{Code: task.Error.Code, Message: task.Error.Message}
+	}
+
+	return res
+}
+
+func xaiUsageFromTask(task *entity.TaskVideo) *smodel.XAIUsage {
+
+	if task == nil || task.ResponseData == nil {
+		return nil
+	}
+
+	raw := task.ResponseData["usage"]
+	if raw == nil {
+		return nil
+	}
+
+	usage := &smodel.XAIUsage{}
+	if err := json.Unmarshal(gjson.MustEncode(raw), usage); err != nil {
+		return nil
+	}
+
+	return usage
 }

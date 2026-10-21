@@ -22,7 +22,7 @@ type (
 		// List
 		List(ctx context.Context, params *v1.ListReq) (response smodel.VideoListResponse, err error)
 		// Retrieve
-		Retrieve(ctx context.Context, params *v1.RetrieveReq) (response smodel.VideoJobResponse, err error)
+		Retrieve(ctx context.Context, params *v1.RetrieveReq) (response any, err error)
 		// Delete
 		Delete(ctx context.Context, params *v1.DeleteReq) (response smodel.VideoJobResponse, err error)
 		// Content
