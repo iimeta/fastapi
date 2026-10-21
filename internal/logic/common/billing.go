@@ -1165,17 +1165,31 @@ func videoGeneration(ctx context.Context, mak *MAK, billingData *common.BillingD
 		}
 	}
 
-	for _, videoGeneration := range mak.ReqModel.Pricing.VideoGeneration {
+	var reqRes = normalizeVideoResolution(billingData.Resolution)
 
-		if videoGeneration.Width == width && videoGeneration.Height == height {
-			if mode == "" || videoGeneration.Mode == "" || videoGeneration.Mode == mode {
-				spend.VideoGeneration.Pricing = videoGeneration
-				break
-			}
-		}
+	if reqRes == "" && billingData.IsVolcEngine && billingData.VolcVideoCreateReq != nil {
+		reqRes = normalizeVideoResolution(billingData.VolcVideoCreateReq.Resolution)
+	}
+
+	for _, videoGeneration := range mak.ReqModel.Pricing.VideoGeneration {
 
 		if videoGeneration.IsDefault {
 			spend.VideoGeneration.Pricing = videoGeneration
+		}
+
+		if isVideoResolutionPricing(videoGeneration) {
+			if reqRes != "" && normalizeVideoResolution(videoGeneration.Resolution) == reqRes {
+				spend.VideoGeneration.Pricing = videoGeneration
+				break
+			}
+			continue
+		}
+
+		if videoGeneration.Width == width && videoGeneration.Height == height {
+			if mode == "" || videoGeneration.Mode == "" || videoGeneration.Mode == "all" || videoGeneration.Mode == mode {
+				spend.VideoGeneration.Pricing = videoGeneration
+				break
+			}
 		}
 	}
 
@@ -1576,4 +1590,23 @@ func clearEmptyTokenSpend(spend *common.Spend) {
 	if spend.Vision != nil && spend.Vision.SpendTokens == 0 {
 		spend.Vision = nil
 	}
+}
+
+func isVideoResolutionPricing(p *common.VideoGenerationPricing) bool {
+
+	if p == nil {
+		return false
+	}
+
+	return p.Mode == "resolution" || p.Resolution != ""
+}
+
+func normalizeVideoResolution(v string) string {
+
+	v = gstr.ToLower(gstr.Trim(v))
+	if v == "" {
+		return ""
+	}
+
+	return v
 }

@@ -379,6 +379,7 @@ func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 		billingData := &mcommon.BillingData{
 			Seconds:            after.Seconds,
 			Size:               after.Size,
+			Resolution:         after.Resolution,
 			VideoMode:          after.VideoMode,
 			IsAborted:          IsAborted(after.Error),
 			IsVolcEngine:       after.IsVolcEngine,

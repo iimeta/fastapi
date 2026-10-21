@@ -104,11 +104,12 @@ type VideoPricing struct {
 }
 
 type VideoGenerationPricing struct {
-	Mode      string  `bson:"mode,omitempty"       json:"mode,omitempty"`       // 模式[all:全部, no_video_input:不含视频, has_video_input:包含视频]
-	Width     int     `bson:"width,omitempty"      json:"width,omitempty"`      // 宽度
-	Height    int     `bson:"height,omitempty"     json:"height,omitempty"`     // 高度
-	OnceRatio float64 `bson:"once_ratio"           json:"once_ratio,omitempty"` // 一次倍率
-	IsDefault bool    `bson:"is_default,omitempty" json:"is_default,omitempty"` // 是否默认选项
+	Mode       string  `bson:"mode,omitempty"       json:"mode,omitempty"`       // 模式[all:全部, no_video_input:不含视频, has_video_input:包含视频, resolution:按分辨率]
+	Width      int     `bson:"width,omitempty"      json:"width,omitempty"`      // 宽度
+	Height     int     `bson:"height,omitempty"     json:"height,omitempty"`     // 高度
+	Resolution string  `bson:"resolution,omitempty" json:"resolution,omitempty"` // 分辨率
+	OnceRatio  float64 `bson:"once_ratio"           json:"once_ratio,omitempty"` // 一次倍率
+	IsDefault  bool    `bson:"is_default,omitempty" json:"is_default,omitempty"` // 是否默认选项
 }
 
 type SearchPricing struct {
@@ -135,6 +136,7 @@ type BillingData struct {
 	ModerationRequest      smodel.ModerationRequest
 	Seconds                int
 	Size                   string
+	Resolution             string
 	VideoMode              string
 	Usage                  *smodel.Usage
 	IsAborted              bool

@@ -40,6 +40,7 @@ type AfterHandler struct {
 	Prompt                 string
 	Seconds                int
 	Size                   string
+	Resolution             string
 	RequestData            map[string]any
 	ResponseData           map[string]any
 	Usage                  *smodel.Usage

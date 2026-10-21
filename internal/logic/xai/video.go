@@ -75,6 +75,7 @@ func (s *sXAI) VideoCreate(ctx context.Context, request *ghttp.Request, fallback
 					Prompt:       params.Prompt,
 					Seconds:      videoSeconds(params),
 					Size:         videoSize(params),
+					Resolution:   videoResolution(params),
 					VideoMode:    detectVideoMode(params),
 					RequestData:  util.ConvToMap(request.GetBody()),
 					ResponseData: util.ConvToMap(responseBytes),
@@ -293,13 +294,19 @@ func videoSeconds(req *smodel.XAIVideoCreateReq) int {
 	return 8
 }
 
+func videoResolution(req *smodel.XAIVideoCreateReq) string {
+
+	if req != nil && req.Resolution != "" {
+		return gstr.ToLower(req.Resolution)
+	}
+
+	return "480p"
+}
+
 func videoSize(req *smodel.XAIVideoCreateReq) string {
 
-	resolution, ratio := "480p", "16:9"
+	resolution, ratio := videoResolution(req), "16:9"
 
-	if req.Resolution != "" {
-		resolution = gstr.ToLower(req.Resolution)
-	}
 	if req.AspectRatio != "" {
 		ratio = req.AspectRatio
 	}
@@ -312,9 +319,11 @@ func videoSize(req *smodel.XAIVideoCreateReq) string {
 }
 
 func detectVideoMode(req *smodel.XAIVideoCreateReq) string {
+
 	if req.Video != nil || req.Image != nil || req.LastFrame != nil || req.Keyframes != nil {
 		return "has_video_input"
 	}
+
 	return "no_video_input"
 }
 
