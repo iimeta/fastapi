@@ -2,14 +2,12 @@ module github.com/iimeta/fastapi/v2
 
 go 1.27
 
-replace github.com/iimeta/fastapi-sdk/v2 => ../fastapi-sdk
-
 require (
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/gogf/gf/contrib/nosql/redis/v2 v2.10.3
 	github.com/gogf/gf/v2 v2.10.3
 	github.com/gorilla/websocket v1.5.3
-	github.com/iimeta/fastapi-sdk/v2 v2.4.0
+	github.com/iimeta/fastapi-sdk/v2 v2.5.0
 	github.com/redis/go-redis/v9 v9.23.0
 	github.com/tjfoc/gmsm v1.4.1
 	go.mongodb.org/mongo-driver/v2 v2.9.2
@@ -19,7 +17,7 @@ require (
 	cloud.google.com/go/auth v0.24.1-0.20261001053825-dbc26066f70a // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.3.0 // indirect
 	cloud.google.com/go/compute/metadata v0.10.0 // indirect
-	cloud.google.com/go/iam v1.14.0 // indirect
+	cloud.google.com/go/iam v1.15.0 // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect
@@ -65,9 +63,9 @@ require (
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/time v0.16.0 // indirect
-	google.golang.org/api v0.303.0 // indirect
+	google.golang.org/api v0.308.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260715232425-e75dac1f907d // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20261005182115-fad411399dd8 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20261019180522-ce908d29299b // indirect
 	google.golang.org/grpc v1.84.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
