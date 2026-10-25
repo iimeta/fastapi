@@ -36,7 +36,7 @@ func CaptureAttempt(ctx context.Context, now, totalTime int64, extra ...int64) *
 	enterTime, internalTime, totalTime := AttemptTimes(ctx, now, totalTime)
 
 	return &AttemptLog{
-		RequestIds:   sutil.UpstreamRequestIds(ctx),
+		RequestIds:   cloneRequestIds(sutil.UpstreamRequestIds(ctx)),
 		ConnTime:     connTime,
 		Duration:     duration,
 		TotalTime:    totalTime,
@@ -109,7 +109,7 @@ func FinishAttempt(ctx context.Context, now int64, attempt *AttemptLog, after *m
 	}
 
 	if attempt != nil {
-		after.RequestIds = attempt.RequestIds
+		after.RequestIds = cloneRequestIds(attempt.RequestIds)
 		after.EnterTime = attempt.EnterTime
 		after.InternalTime = attempt.InternalTime
 		after.TotalTime = attempt.TotalTime
@@ -130,4 +130,18 @@ func FinishAttempt(ctx context.Context, now int64, attempt *AttemptLog, after *m
 	if after.RequestIds == nil {
 		after.RequestIds = sutil.UpstreamRequestIds(ctx)
 	}
+}
+
+func cloneRequestIds(ids map[string]string) map[string]string {
+
+	if ids == nil {
+		return map[string]string{}
+	}
+
+	out := make(map[string]string, len(ids))
+	for key, value := range ids {
+		out[key] = value
+	}
+
+	return out
 }

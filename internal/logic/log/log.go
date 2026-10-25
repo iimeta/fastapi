@@ -1448,7 +1448,9 @@ func logTimes(ctx context.Context, internalTime int64) (int64, int64) {
 
 func requestIds(ctx context.Context, ids map[string]string) map[string]string {
 
-	if len(ids) > 0 {
+	// 必须用 ids != nil 而不是 len(ids) > 0: 日志是异步写的, 重试后 live session
+	// 里已经是下一次尝试的 RequestIds. 空快照也要原样落下, 不能回落到当前 session.
+	if ids != nil {
 		return ids
 	}
 
