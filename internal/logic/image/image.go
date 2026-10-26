@@ -2300,6 +2300,9 @@ func convertImageField(ctx context.Context, image *any, sf storeFuncsT) ([]strin
 // 通过URL下载图像字节数据, 下载失败或内容为空时按配置重试
 func downloadImage(ctx context.Context, imageUrl string, timeout time.Duration, retry ...int) ([]byte, http.Header, error) {
 
+	restore := sutil.PreserveUpstreamRequestIds(ctx)
+	defer restore()
+
 	body, respHeader, err := sutil.HttpGet(ctx, imageUrl, nil, nil, nil, timeout, config.Cfg.Http.ProxyUrl, nil)
 	if err == nil && len(body) > 0 {
 		return body, respHeader, nil

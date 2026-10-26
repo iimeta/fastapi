@@ -242,6 +242,9 @@ func isHTTPURL(s string) bool {
 
 func downloadImageBytes(ctx context.Context, imageUrl string) ([]byte, error) {
 
+	restore := sutil.PreserveUpstreamRequestIds(ctx)
+	defer restore()
+
 	timeout := 60 * time.Second
 	if config.Cfg != nil && config.Cfg.ImageStorage != nil && config.Cfg.ImageStorage.DownloadTimeout > 0 {
 		timeout = config.Cfg.ImageStorage.DownloadTimeout * time.Second
