@@ -252,6 +252,10 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 
 	if common.ShouldCheckImageSize(mak) {
 		if expectedW, expectedH, ok := common.ExpectedImageSize(userSize); ok {
+
+			// 先统一替换图像 URL, 再进行尺寸校验
+			common.ReplaceImageResponseUrls(&response)
+
 			if err = common.CheckGeneratedImageSize(ctx, expectedW, expectedH, response.Data); err != nil {
 				logger.Error(ctx, err)
 
@@ -748,6 +752,10 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 
 	if common.ShouldCheckImageSize(mak) {
 		if expectedW, expectedH, ok := common.ExpectedImageSize(userSize); ok {
+
+			// 先统一替换图像 URL, 再进行尺寸校验
+			common.ReplaceImageResponseUrls(&response)
+
 			if err = common.CheckGeneratedImageSize(ctx, expectedW, expectedH, response.Data); err != nil {
 				logger.Error(ctx, err)
 

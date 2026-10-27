@@ -315,6 +315,10 @@ func (s *sGoogle) Completions(ctx context.Context, request *ghttp.Request, fallb
 		if imgReq, convErr := converter.ConvImageGenerationsRequest(ctx, request.GetBody()); convErr != nil {
 			logger.Error(ctx, convErr)
 		} else if expectedW, expectedH, ok := common.ExpectedGoogleImageSize(imgReq.Quality, imgReq.AspectRatio); ok {
+
+			// 先统一替换图像 URL, 再进行尺寸校验
+			response.ResponseBytes = common.ReplaceImageUrlsInJSON(response.ResponseBytes)
+
 			if err = common.CheckGeneratedImageSize(ctx, expectedW, expectedH, extractGoogleImageDataForLog(response.ResponseBytes)); err != nil {
 				logger.Error(ctx, err)
 

@@ -32,6 +32,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
+// Interactions
 func (s *sGoogle) Interactions(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.GoogleInteractionRes, err error) {
 
 	now := gtime.TimestampMilli()
@@ -248,6 +249,10 @@ func (s *sGoogle) Interactions(ctx context.Context, request *ghttp.Request, fall
 		if imgReq, convErr := common.NewConverter(ctx, sconsts.PROVIDER_GOOGLE).ConvImageGenerationsRequest(ctx, request.GetBody()); convErr != nil {
 			logger.Error(ctx, convErr)
 		} else if expectedW, expectedH, ok := common.ExpectedGoogleImageSize(imgReq.Quality, imgReq.AspectRatio); ok {
+
+			// 先统一替换图像 URL, 再进行尺寸校验
+			response.ResponseBytes = common.ReplaceImageUrlsInJSON(response.ResponseBytes)
+
 			if err = common.CheckGeneratedImageSize(ctx, expectedW, expectedH, extractGoogleInteractionImageDataForLog(response.ResponseBytes)); err != nil {
 				logger.Error(ctx, err)
 
@@ -274,6 +279,7 @@ func (s *sGoogle) Interactions(ctx context.Context, request *ghttp.Request, fall
 	return response, nil
 }
 
+// InteractionsStream
 func (s *sGoogle) InteractionsStream(ctx context.Context, request *ghttp.Request, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (err error) {
 
 	now := gtime.TimestampMilli()
@@ -652,6 +658,7 @@ func (s *sGoogle) InteractionsStream(ctx context.Context, request *ghttp.Request
 	}
 }
 
+// InteractionsRetrieve
 func (s *sGoogle) InteractionsRetrieve(ctx context.Context, id string, fallbackModelAgent *model.ModelAgent, fallbackModel *model.Model, retry ...int) (response smodel.GoogleInteractionRes, err error) {
 
 	now := gtime.TimestampMilli()
