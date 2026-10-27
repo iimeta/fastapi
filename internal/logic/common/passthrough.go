@@ -27,6 +27,7 @@ var ReqReservedHeaders = []string{
 	"authorization", "x-api-key", "api-key", "x-goog-api-key",
 	"host", "connection", "keep-alive", "transfer-encoding", "upgrade",
 	"content-length", "content-type", "trace-id", "x-fastapi-request-id",
+	"forwarded", "x-forwarded-for", "x-real-ip",
 }
 
 // 响应保留头(不透传)

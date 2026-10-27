@@ -308,10 +308,12 @@ func getPassthroughHeaders(ctx context.Context, pt *EffectivePassthrough) map[st
 
 		key := strings.ToLower(k)
 
+		if slices.Contains(ReqReservedHeaders, key) {
+			continue
+		}
+
 		if pt.ReqHeaderMode == 1 {
-			if !slices.Contains(ReqReservedHeaders, key) {
-				headers[k] = v[0]
-			}
+			headers[k] = v[0]
 		} else if pt.ReqHeaderMode == 2 {
 			for _, allowed := range pt.ReqHeaderList {
 				if strings.EqualFold(k, allowed) {
