@@ -209,6 +209,7 @@ func (s *sFile) List(ctx context.Context, params *v1.ListReq) (response smodel.F
 					TotalTime:    response.TotalTime,
 				}
 
+				common.FinishAttempt(ctx, now, nil, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
@@ -354,6 +355,7 @@ func (s *sFile) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response 
 					TotalTime:    response.TotalTime,
 				}
 
+				common.FinishAttempt(ctx, now, nil, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
@@ -424,6 +426,7 @@ func (s *sFile) Delete(ctx context.Context, params *v1.DeleteReq) (response smod
 					TotalTime:    response.TotalTime,
 				}
 
+				common.FinishAttempt(ctx, now, nil, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
@@ -499,6 +502,7 @@ func (s *sFile) Content(ctx context.Context, params *v1.ContentReq) (response sm
 					TotalTime:   response.TotalTime,
 				}
 
+				common.FinishAttempt(ctx, now, nil, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {

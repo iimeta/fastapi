@@ -207,6 +207,7 @@ func (s *sBatch) List(ctx context.Context, params *v1.ListReq) (response smodel.
 					TotalTime:    response.TotalTime,
 				}
 
+				common.FinishAttempt(ctx, now, nil, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
@@ -319,6 +320,7 @@ func (s *sBatch) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 					TotalTime:    response.TotalTime,
 				}
 
+				common.FinishAttempt(ctx, now, nil, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
@@ -381,6 +383,7 @@ func (s *sBatch) Cancel(ctx context.Context, params *v1.CancelReq) (response smo
 					TotalTime:    response.TotalTime,
 				}
 
+				common.FinishAttempt(ctx, now, nil, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {

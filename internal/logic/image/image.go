@@ -1394,6 +1394,7 @@ func (s *sImage) List(ctx context.Context, params *v1.ListReq) (response smodel.
 					TotalTime:    response.TotalTime,
 				}
 
+				common.FinishAttempt(ctx, now, nil, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
@@ -1551,6 +1552,7 @@ func (s *sImage) Retrieve(ctx context.Context, params smodel.ImageRetrieveReques
 					TotalTime:    response.TotalTime,
 				}
 
+				common.FinishAttempt(ctx, now, nil, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
@@ -1650,6 +1652,7 @@ func (s *sImage) Delete(ctx context.Context, params *v1.DeleteReq) (response smo
 					TotalTime:    response.TotalTime,
 				}
 
+				common.FinishAttempt(ctx, now, nil, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {

@@ -250,6 +250,7 @@ func (s *sVideo) List(ctx context.Context, params *v1.ListReq) (response smodel.
 					TotalTime:    response.TotalTime,
 				}
 
+				common.FinishAttempt(ctx, now, nil, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
@@ -403,6 +404,7 @@ func (s *sVideo) Retrieve(ctx context.Context, params *v1.RetrieveReq) (response
 					TotalTime:    totalTime,
 				}
 
+				common.FinishAttempt(ctx, now, nil, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
@@ -499,6 +501,7 @@ func (s *sVideo) Delete(ctx context.Context, params *v1.DeleteReq) (response smo
 					TotalTime:    response.TotalTime,
 				}
 
+				common.FinishAttempt(ctx, now, nil, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
@@ -592,6 +595,7 @@ func (s *sVideo) Content(ctx context.Context, params *v1.ContentReq) (response s
 					TotalTime:   response.TotalTime,
 				}
 
+				common.FinishAttempt(ctx, now, nil, afterHandler)
 				common.AfterHandler(ctx, mak, afterHandler)
 
 			}); err != nil {
