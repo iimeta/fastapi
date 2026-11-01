@@ -254,3 +254,15 @@ type GeneralApi struct {
 type Debug struct {
 	Open bool `bson:"open" json:"open"` // 开关
 }
+
+type Logger struct {
+	Admin *LoggerConfig `bson:"admin,omitempty" json:"admin,omitempty"` // 管理端
+	Api   *LoggerConfig `bson:"api,omitempty"   json:"api,omitempty"`   // API端
+}
+
+type LoggerConfig struct {
+	Path   string `bson:"path"   json:"path"`   // 日志文件路径
+	File   string `bson:"file"   json:"file"`   // 日志文件格式
+	Level  string `bson:"level"  json:"level"`  // 日志输出级别
+	Stdout bool   `bson:"stdout" json:"stdout"` // 是否同时输出到终端
+}

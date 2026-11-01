@@ -31,9 +31,16 @@ func init() {
 		if data, err := gcfg.Instance().Data(ctx); err != nil {
 			logger.Errorf(ctx, "热加载 获取配置文件 %s 数据错误: %v", path, err)
 		} else {
+			loggerConfig := Cfg.Logger
 			if err = gjson.Unmarshal(gjson.MustEncode(data), &Cfg); err != nil {
 				logger.Errorf(ctx, "热加载 解析配置文件 %s 错误: %v", path, err)
 			} else {
+				if loggerConfig != nil {
+					Cfg.Logger = loggerConfig
+					if Cfg.Logger.Api != nil {
+						logger.Apply(ctx, Cfg.Logger.Api)
+					}
+				}
 				logger.Infof(ctx, "热加载 配置文件 %s 成功 当前配置信息: %s", path, gjson.MustEncodeString(Cfg))
 			}
 		}
@@ -57,6 +64,7 @@ func Reload(ctx context.Context, sysConfig *entity.SysConfig) {
 		sysConfig.Core.ChannelPrefix = Cfg.SysConfig.Core.ChannelPrefix
 	}
 
+	loggerConfig := sysConfig.Logger
 	Cfg.SysConfig = sysConfig
 
 	// 重新加载配置文件的配置进行覆盖, 配置文件的配置优先级最高
@@ -65,6 +73,13 @@ func Reload(ctx context.Context, sysConfig *entity.SysConfig) {
 	} else {
 		if err = gjson.Unmarshal(gjson.MustEncode(data), &Cfg); err != nil {
 			logger.Error(ctx, err)
+		}
+	}
+
+	if loggerConfig != nil {
+		Cfg.Logger = loggerConfig
+		if Cfg.Logger.Api != nil {
+			logger.Apply(ctx, Cfg.Logger.Api)
 		}
 	}
 

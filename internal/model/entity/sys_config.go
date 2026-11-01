@@ -26,6 +26,7 @@ type SysConfig struct {
 	ServiceUnavailable        *common.ServiceUnavailable        `bson:"service_unavailable,omitempty"`           // 暂停服务
 	GeneralApi                *common.GeneralApi                `bson:"general_api,omitempty"`                   // 通用API
 	Debug                     *common.Debug                     `bson:"debug,omitempty"`                         // 调试
+	Logger                    *common.Logger                    `bson:"logger,omitempty"`                        // 日志组件
 	Creator                   string                            `bson:"creator,omitempty"`                       // 创建人
 	Updater                   string                            `bson:"updater,omitempty"`                       // 更新人
 	CreatedAt                 int64                             `bson:"created_at,omitempty"`                    // 创建时间
