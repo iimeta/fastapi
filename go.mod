@@ -6,7 +6,7 @@ replace github.com/iimeta/fastapi-sdk/v2 => ../fastapi-sdk
 
 require (
 	github.com/bwmarrin/snowflake v0.3.0
-	github.com/gogf/gf/contrib/nosql/redis/v2 v2.10.3
+	github.com/gogf/gf/contrib/nosql/redis/v2 v2.10.4
 	github.com/gogf/gf/v2 v2.10.4
 	github.com/gorilla/websocket v1.5.3
 	github.com/iimeta/fastapi-sdk/v2 v2.5.0
