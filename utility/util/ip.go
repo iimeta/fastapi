@@ -65,7 +65,7 @@ func GetClientIpFromCtx(ctx context.Context) string {
 // 获取真实客户端 IP.
 // RemoteIp 是 TCP 对端(末级反代/直连), 与反代是否同机无关.
 // X-Forwarded-For 左侧 hop 由客户端可控(伪造如 9.9.9.9), 代理追加在右侧;
-// 从右往左取第一个非本机、非 RemoteIp 的合法 IP, 避免取到伪造值或反代自身.
+// 从右往左取第一个非本机、非 RemoteIp、非占位 IP(如 6.6.6.6/6.6.6.7) 的合法 IP.
 func GetClientIp(r *ghttp.Request) string {
 	if r == nil {
 		return ""
@@ -141,7 +141,7 @@ func clientIPFromForwarded(xForwardedFor, remoteIp string) string {
 	return ""
 }
 
-// 本机反代、回环、以及 TCP 对端自身, 都不是客户端.
+// 本机反代、回环、占位 IP、以及 TCP 对端自身, 都不是客户端.
 func isForwardedHop(ip, remoteIp string) bool {
 
 	if ip == "" {
@@ -158,6 +158,10 @@ func isForwardedHop(ip, remoteIp string) bool {
 	}
 
 	if parsed.IsLoopback() || parsed.IsUnspecified() || parsed.IsLinkLocalUnicast() {
+		return true
+	}
+
+	if isPlaceholderClientIP(parsed) {
 		return true
 	}
 
@@ -197,3 +201,13 @@ func formatIP(ip net.IP) string {
 
 	return ip.String()
 }
+
+func isPlaceholderClientIP(ip net.IP) bool {
+	return ip != nil && placeholderClientNet.Contains(ip)
+}
+
+// 常见伪造/占位客户端 IP, 出现在转发头里时不当作真实客户端.
+var placeholderClientNet = func() *net.IPNet {
+	_, ipNet, _ := net.ParseCIDR("6.6.6.0/24")
+	return ipNet
+}()
