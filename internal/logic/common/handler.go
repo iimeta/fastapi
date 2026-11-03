@@ -244,6 +244,9 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 			if after.Spend.ImageGeneration != nil && after.Spend.ImageGeneration.Pricing != nil {
 				taskImage.Width = after.Spend.ImageGeneration.Pricing.Width
 				taskImage.Height = after.Spend.ImageGeneration.Pricing.Height
+			} else if w, h := parseSizeWH(after.ImageGenerationRequest.Size); w > 0 && h > 0 {
+				taskImage.Width = w
+				taskImage.Height = h
 			}
 
 			if after.Spend.LayerDecomp != nil && after.Spend.LayerDecomp.Pricing != nil {

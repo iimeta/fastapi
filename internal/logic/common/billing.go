@@ -27,6 +27,18 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 	spend.BillingMethods = mak.ReqModel.Pricing.BillingMethods
 	spend.BillingItems = billingItems
 	spend.CurrencySymbol = mak.ReqModel.Pricing.CurrencySymbol
+	if mak.Group != nil {
+		spend.GroupBillingMethods = mak.Group.BillingMethods
+	}
+	if mak.AppKey != nil {
+		spend.AppKeyBillingMethods = mak.AppKey.BillingMethods
+	}
+
+	billOnce := useOnceBilling(spend.GroupBillingMethods, spend.AppKeyBillingMethods, spend.BillingMethods)
+	if !billOnce {
+		billingItems = filterOnceBillingItems(billingItems)
+		spend.BillingItems = billingItems
+	}
 
 	for _, billingItem := range billingItems {
 		switch billingItem {
@@ -85,7 +97,7 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 		spend.TotalSpendTokens += spend.ImageCache.SpendTokens
 	}
 
-	if spend.ImageGeneration != nil {
+	if spend.ImageGeneration != nil && billOnce {
 		spend.TotalSpendTokens = spend.ImageGeneration.SpendTokens
 	}
 
@@ -121,7 +133,7 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 		spend.TotalSpendTokens += spend.Search.SpendTokens
 	}
 
-	if spend.Once != nil && (spend.TotalSpendTokens == 0 || mak.AppKey == nil || slices.Contains(mak.AppKey.BillingMethods, 2)) {
+	if spend.Once != nil && billOnce {
 		spend.TotalSpendTokens = spend.Once.SpendTokens
 	}
 
@@ -147,6 +159,10 @@ func Billing(ctx context.Context, mak *MAK, billingData *common.BillingData, bil
 
 	if billingData.Usage != nil {
 		alignTicksOnlySpend(&spend, billingData.Usage)
+	}
+
+	if !billOnce {
+		dropOnceSpend(&spend)
 	}
 
 	return spend
@@ -1609,4 +1625,63 @@ func normalizeVideoResolution(v string) string {
 	}
 
 	return v
+}
+
+// 最终是否按次扣费: 分组 ∩ 密钥 ∩ 模型, 交集含按次则按次; 空配置视为两种都支持.
+func useOnceBilling(groupMethods, appKeyMethods, modelMethods []int) bool {
+	return slices.Contains(intersectBillingMethods(groupMethods, appKeyMethods, modelMethods), 2)
+}
+
+func intersectBillingMethods(methods ...[]int) []int {
+
+	result := []int{1, 2}
+
+	for _, m := range methods {
+
+		if len(m) == 0 {
+			continue
+		}
+
+		next := make([]int, 0, len(result))
+		for _, v := range result {
+			if slices.Contains(m, v) {
+				next = append(next, v)
+			}
+		}
+
+		result = next
+		if len(result) == 0 {
+			return result
+		}
+	}
+
+	return result
+}
+
+func dropOnceSpend(spend *common.Spend) {
+
+	if spend == nil {
+		return
+	}
+
+	spend.Once = nil
+	spend.ImageGeneration = nil
+	spend.BillingItems = filterOnceBillingItems(spend.BillingItems)
+}
+
+func filterOnceBillingItems(items []string) []string {
+
+	if len(items) == 0 {
+		return items
+	}
+
+	result := make([]string, 0, len(items))
+	for _, item := range items {
+		if item == "once" || item == "image_generation" {
+			continue
+		}
+		result = append(result, item)
+	}
+
+	return result
 }
