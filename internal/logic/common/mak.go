@@ -217,7 +217,7 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 	if mak.Group != nil && mak.Group.IsEnableModelAgent {
 
 		if service.Session().GetModelAgentBillingMethod(ctx) == 0 {
-			if mak.useOnceBilling() {
+			if useOnceBillingFromMAK(mak) {
 				service.Session().SaveModelAgentBillingMethod(ctx, 2)
 			} else {
 				service.Session().SaveModelAgentBillingMethod(ctx, 1)
@@ -245,7 +245,7 @@ func (mak *MAK) InitMAK(ctx context.Context, retry ...int) (err error) {
 		} else {
 
 			if service.Session().GetModelAgentBillingMethod(ctx) == 0 {
-				if mak.useOnceBilling() {
+				if useOnceBillingFromMAK(mak) {
 					service.Session().SaveModelAgentBillingMethod(ctx, 2)
 				} else {
 					service.Session().SaveModelAgentBillingMethod(ctx, 1)
@@ -416,9 +416,16 @@ func getRealKey(ctx context.Context, mak *MAK) error {
 	return nil
 }
 
-func (mak *MAK) useOnceBilling() bool {
+func useOnceBillingFromMAK(mak *MAK) bool {
 
-	var groupMethods, appKeyMethods, modelMethods []int
+	var (
+		billingItems                []string
+		groupMethods, appKeyMethods []int
+	)
+
+	if mak.ReqModel != nil {
+		billingItems = mak.ReqModel.Pricing.BillingItems
+	}
 
 	if mak.Group != nil {
 		groupMethods = mak.Group.BillingMethods
@@ -428,11 +435,7 @@ func (mak *MAK) useOnceBilling() bool {
 		appKeyMethods = mak.AppKey.BillingMethods
 	}
 
-	if mak.RealModel != nil {
-		modelMethods = mak.RealModel.Pricing.BillingMethods
-	} else if mak.ReqModel != nil {
-		modelMethods = mak.ReqModel.Pricing.BillingMethods
-	}
+	_, billOnce := onceBillingFlags(billingItems, groupMethods, appKeyMethods)
 
-	return useOnceBilling(groupMethods, appKeyMethods, modelMethods)
+	return billOnce
 }

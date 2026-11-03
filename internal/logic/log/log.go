@@ -53,6 +53,8 @@ func (s *sLog) Text(ctx context.Context, textLog model.LogText, retry ...int) {
 		return
 	}
 
+	common.SanitizeSpendForStore(&textLog.Spend)
+
 	receiveTime, internalTime := logTimes(ctx, textLog.CompletionsRes.InternalTime)
 
 	text := do.LogText{
@@ -456,6 +458,8 @@ func (s *sLog) Image(ctx context.Context, imageLog model.LogImage, retry ...int)
 		return
 	}
 
+	common.SanitizeSpendForStore(&imageLog.Spend)
+
 	receiveTime, internalTime := logTimes(ctx, imageLog.ImageRes.InternalTime)
 
 	image := do.LogImage{
@@ -638,6 +642,8 @@ func (s *sLog) Audio(ctx context.Context, audioLog model.LogAudio, retry ...int)
 		return
 	}
 
+	common.SanitizeSpendForStore(&audioLog.Spend)
+
 	receiveTime, internalTime := logTimes(ctx, audioLog.AudioRes.InternalTime)
 
 	audio := do.LogAudio{
@@ -788,6 +794,8 @@ func (s *sLog) Video(ctx context.Context, videoLog model.LogVideo, retry ...int)
 	if videoLog.VideoRes.Error != nil && checkError(videoLog.VideoRes.Error) {
 		return
 	}
+
+	common.SanitizeSpendForStore(&videoLog.Spend)
 
 	receiveTime, internalTime := logTimes(ctx, videoLog.VideoRes.InternalTime)
 
@@ -941,6 +949,8 @@ func (s *sLog) File(ctx context.Context, fileLog model.LogFile, retry ...int) {
 		return
 	}
 
+	common.SanitizeSpendForStore(&fileLog.Spend)
+
 	receiveTime, internalTime := logTimes(ctx, fileLog.FileRes.InternalTime)
 
 	file := do.LogFile{
@@ -1093,6 +1103,8 @@ func (s *sLog) Batch(ctx context.Context, batchLog model.LogBatch, retry ...int)
 		return
 	}
 
+	common.SanitizeSpendForStore(&batchLog.Spend)
+
 	receiveTime, internalTime := logTimes(ctx, batchLog.BatchRes.InternalTime)
 
 	batch := do.LogBatch{
@@ -1244,6 +1256,8 @@ func (s *sLog) General(ctx context.Context, generalLog model.LogGeneral, retry .
 	if generalLog.GeneralRes.Error != nil && checkError(generalLog.GeneralRes.Error) {
 		return
 	}
+
+	common.SanitizeSpendForStore(&generalLog.Spend)
 
 	receiveTime, internalTime := logTimes(ctx, generalLog.GeneralRes.InternalTime)
 
