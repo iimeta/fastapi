@@ -12,7 +12,7 @@ require (
 	github.com/iimeta/fastapi-sdk/v2 v2.5.0
 	github.com/redis/go-redis/v9 v9.23.0
 	github.com/tjfoc/gmsm v1.4.1
-	go.mongodb.org/mongo-driver/v2 v2.9.2
+	go.mongodb.org/mongo-driver/v2 v2.9.3
 )
 
 require (
