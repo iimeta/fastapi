@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/url"
 	"slices"
 	"strings"
 
@@ -83,11 +84,22 @@ func (s *sCommon) RecordError(ctx context.Context, model *model.Model, key *mode
 }
 
 func IsAborted(err error) bool {
+
 	if err == nil {
 		return false
 	}
-	return errors.Is(err, context.Canceled) ||
-		gstr.Contains(err.Error(), "context deadline exceeded") ||
+
+	if errors.Is(err, context.Canceled) {
+		return true
+	}
+
+	// 上游请求错误(*url.Error), 如 broken pipe/connection reset 等是上游连接问题, 不属于客户端中止
+	var urlErr *url.Error
+	if errors.As(err, &urlErr) {
+		return errors.Is(err, context.DeadlineExceeded) || gstr.Contains(err.Error(), "context deadline exceeded")
+	}
+
+	return gstr.Contains(err.Error(), "context deadline exceeded") ||
 		gstr.Contains(err.Error(), "broken pipe") ||
 		gstr.Contains(err.Error(), "aborted")
 }
