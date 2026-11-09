@@ -104,6 +104,30 @@ func IsAborted(err error) bool {
 		gstr.Contains(err.Error(), "aborted")
 }
 
+// 是否为客户端原因导致的中止(仅此情况才按已产生的内容计费)
+// 上游原因(连接断开/错误)或请求超时导致的中止不属于客户端中止
+func IsClientAborted(err error) bool {
+
+	if err == nil {
+		return false
+	}
+
+	// 客户端断开导致写响应失败
+	if errors.Is(err, errors.ERR_CLIENT_ABORTED) {
+		return true
+	}
+
+	// 超时(上游请求超时/Client.Timeout)属于系统原因, 不计费
+	if errors.Is(err, context.DeadlineExceeded) ||
+		gstr.Contains(err.Error(), "deadline exceeded") ||
+		gstr.Contains(err.Error(), "Client.Timeout") {
+		return false
+	}
+
+	// 请求上下文被取消(客户端断开连接/主动取消请求)
+	return errors.Is(err, context.Canceled)
+}
+
 func IsNeedRetry(err error) (isRetry bool, isDisabled bool) {
 
 	if IsAborted(err) {

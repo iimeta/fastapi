@@ -28,6 +28,11 @@ type FastApiError struct {
 }
 
 var (
+	// 客户端中止标记(如客户端断开连接导致写响应失败), 用于区分客户端中止与上游/超时中止
+	ERR_CLIENT_ABORTED = errors.New("client aborted")
+)
+
+var (
 	ERR_NIL                               = NewError(500, -1, "", "fastapi_error", nil)
 	ERR_UNKNOWN                           = NewError(500, -1, "Unknown Error.", "fastapi_error", nil)
 	ERR_INTERNAL_ERROR                    = NewError(500, 500, "Internal Error.", "fastapi_error", nil)

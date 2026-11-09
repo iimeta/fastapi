@@ -69,7 +69,7 @@ func AfterHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 func textHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
-	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
+	if after.RetryInfo == nil && (after.Error == nil || IsClientAborted(after.Error)) {
 
 		if after.ServiceTier == "" {
 			after.ServiceTier = after.ChatCompletionRes.ServiceTier
@@ -85,7 +85,7 @@ func textHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 			Completion:            after.Completion,
 			ServiceTier:           after.ServiceTier,
 			Usage:                 after.Usage,
-			IsAborted:             IsAborted(after.Error),
+			IsAborted:             IsClientAborted(after.Error),
 		}
 
 		if billingData.Completion == "" && len(after.ChatCompletionRes.Choices) > 0 && after.ChatCompletionRes.Choices[0].Message != nil {
@@ -185,13 +185,13 @@ func textHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
-	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
+	if after.RetryInfo == nil && (after.Error == nil || IsClientAborted(after.Error)) {
 
 		billingData := &mcommon.BillingData{
 			ImageGenerationRequest: after.ImageGenerationRequest,
 			ImageResponse:          &after.ImageResponse,
 			Usage:                  after.Usage,
-			IsAborted:              IsAborted(after.Error),
+			IsAborted:              IsClientAborted(after.Error),
 			IsAsync:                after.IsAsync,
 		}
 
@@ -313,12 +313,12 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 func audioHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
-	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
+	if after.RetryInfo == nil && (after.Error == nil || IsClientAborted(after.Error)) {
 
 		billingData := &mcommon.BillingData{
 			AudioInput:  after.AudioInput,
 			AudioMinute: after.AudioMinute,
-			IsAborted:   IsAborted(after.Error),
+			IsAborted:   IsClientAborted(after.Error),
 		}
 
 		// 计算花费
@@ -377,14 +377,14 @@ func audioHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
-	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
+	if after.RetryInfo == nil && (after.Error == nil || IsClientAborted(after.Error)) {
 
 		billingData := &mcommon.BillingData{
 			Seconds:            after.Seconds,
 			Size:               after.Size,
 			Resolution:         after.Resolution,
 			VideoMode:          after.VideoMode,
-			IsAborted:          IsAborted(after.Error),
+			IsAborted:          IsClientAborted(after.Error),
 			IsVolcEngine:       after.IsVolcEngine,
 			VolcVideoCreateReq: after.VolcVideoCreateReq,
 		}
@@ -492,11 +492,11 @@ func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 func fileHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
-	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
+	if after.RetryInfo == nil && (after.Error == nil || IsClientAborted(after.Error)) {
 
 		billingData := &mcommon.BillingData{
 			Usage:     after.Usage,
-			IsAborted: IsAborted(after.Error),
+			IsAborted: IsClientAborted(after.Error),
 		}
 
 		// 计算花费
@@ -578,11 +578,11 @@ func fileHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 func batchHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
-	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
+	if after.RetryInfo == nil && (after.Error == nil || IsClientAborted(after.Error)) {
 
 		billingData := &mcommon.BillingData{
 			Usage:     after.Usage,
-			IsAborted: IsAborted(after.Error),
+			IsAborted: IsClientAborted(after.Error),
 		}
 
 		// 计算花费
@@ -660,7 +660,7 @@ func batchHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 func generalHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
-	if after.RetryInfo == nil && (after.Error == nil || IsAborted(after.Error)) {
+	if after.RetryInfo == nil && (after.Error == nil || IsClientAborted(after.Error)) {
 
 		if after.ServiceTier == "" {
 			after.ServiceTier = after.ChatCompletionRes.ServiceTier
@@ -681,7 +681,7 @@ func generalHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) 
 			Seconds:                after.Seconds,
 			Size:                   after.Size,
 			Usage:                  after.Usage,
-			IsAborted:              IsAborted(after.Error),
+			IsAborted:              IsClientAborted(after.Error),
 		}
 
 		// 计算花费

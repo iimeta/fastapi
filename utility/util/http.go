@@ -2,6 +2,7 @@ package util
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -51,7 +52,8 @@ func SSEServer(ctx context.Context, data string, event ...string) error {
 			return nil
 		}
 		logger.Errorf(ctx, "SSEServer data: %s, error: %v", builder.String(), err)
-		return err
+		// 向客户端写数据失败, 说明客户端已断开, 标记为客户端中止
+		return fmt.Errorf("%w: %w", errors.ERR_CLIENT_ABORTED, err)
 	}
 
 	flusher.Flush()
