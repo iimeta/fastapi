@@ -128,6 +128,7 @@ type BillingData struct {
 	ImageGenerationRequest smodel.ImageGenerationRequest
 	ImageEditRequest       smodel.ImageEditRequest
 	ImageResponse          *smodel.ImageResponse
+	ImageOutputCount       int // 流式生图已返回的最终图像数量(不含中间预览图), 中止计费时按此数量计费
 	Completion             string
 	ServiceTier            string
 	AudioInput             string

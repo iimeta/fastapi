@@ -56,11 +56,12 @@ func (s *sBailian) ImageGenerations(ctx context.Context, data []byte, fallbackMo
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		imageResponse  smodel.ImageResponse
-		retryInfo      *mcommon.Retry
-		attempt        *common.AttemptLog
-		responseHeader http.Header
-		totalTime      int64
+		imageResponse    smodel.ImageResponse
+		retryInfo        *mcommon.Retry
+		attempt          *common.AttemptLog
+		imageOutputCount int
+		responseHeader   http.Header
+		totalTime        int64
 	)
 
 	defer func() {
@@ -74,6 +75,7 @@ func (s *sBailian) ImageGenerations(ctx context.Context, data []byte, fallbackMo
 					ImageGenerationRequest: params,
 					ImageResponse:          imageResponse,
 					Action:                 consts.ACTION_GENERATIONS,
+					ImageOutputCount:       imageOutputCount,
 					Usage:                  &usage,
 					Error:                  err,
 					RetryInfo:              retryInfo,
@@ -191,6 +193,7 @@ func (s *sBailian) ImageGenerations(ctx context.Context, data []byte, fallbackMo
 		logger.Errorf(ctx, "sBailian ImageGenerations ConvImageGenerationsResponse error: %v", e)
 	} else {
 		imageResponse = response
+		imageOutputCount = common.CountImages(response.Data)
 	}
 
 	imageResponse.TotalTime = totalTime

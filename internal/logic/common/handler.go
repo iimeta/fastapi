@@ -69,7 +69,7 @@ func AfterHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 func textHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
-	if after.RetryInfo == nil && (after.Error == nil || IsClientAborted(after.Error)) {
+	if after.RetryInfo == nil && (after.Error == nil || IsBillableAborted(after.Error, after.Usage)) {
 
 		if after.ServiceTier == "" {
 			after.ServiceTier = after.ChatCompletionRes.ServiceTier
@@ -85,7 +85,7 @@ func textHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 			Completion:            after.Completion,
 			ServiceTier:           after.ServiceTier,
 			Usage:                 after.Usage,
-			IsAborted:             IsClientAborted(after.Error),
+			IsAborted:             IsBillableAborted(after.Error, after.Usage),
 		}
 
 		if billingData.Completion == "" && len(after.ChatCompletionRes.Choices) > 0 && after.ChatCompletionRes.Choices[0].Message != nil {
@@ -185,13 +185,17 @@ func textHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
-	if after.RetryInfo == nil && (after.Error == nil || IsClientAborted(after.Error)) {
+	// 流式生图已返回最终图像, 超时中止也需计费
+	isBillableAborted := IsBillableAborted(after.Error, after.Usage, after.ImageOutputCount > 0)
+
+	if after.RetryInfo == nil && (after.Error == nil || isBillableAborted) {
 
 		billingData := &mcommon.BillingData{
 			ImageGenerationRequest: after.ImageGenerationRequest,
 			ImageResponse:          &after.ImageResponse,
+			ImageOutputCount:       after.ImageOutputCount,
 			Usage:                  after.Usage,
-			IsAborted:              IsClientAborted(after.Error),
+			IsAborted:              isBillableAborted,
 			IsAsync:                after.IsAsync,
 		}
 
@@ -199,6 +203,13 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 		// 计算花费
 		after.Spend = Billing(ctx, mak, billingData, billingItems...)
+
+		// 同步生图按实际返回张数计费, 同步修正传入的n, 使日志显示与计费一致
+		if !after.IsAsync {
+			if n := billedImageCount(after.Spend); n > 0 {
+				after.ImageGenerationRequest.N = n
+			}
+		}
 
 		if (after.IsAsync && (after.Action == consts.ACTION_GENERATIONS || after.Action == consts.ACTION_EDITS)) ||
 			(after.Action != "" && (after.Action == consts.ACTION_LIST || after.Action == consts.ACTION_RETRIEVE || after.Action == consts.ACTION_CONTENT || after.Action == consts.ACTION_DELETE)) {
@@ -313,12 +324,12 @@ func imageHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 func audioHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
-	if after.RetryInfo == nil && (after.Error == nil || IsClientAborted(after.Error)) {
+	if after.RetryInfo == nil && (after.Error == nil || IsBillableAborted(after.Error, after.Usage)) {
 
 		billingData := &mcommon.BillingData{
 			AudioInput:  after.AudioInput,
 			AudioMinute: after.AudioMinute,
-			IsAborted:   IsClientAborted(after.Error),
+			IsAborted:   IsBillableAborted(after.Error, after.Usage),
 		}
 
 		// 计算花费
@@ -377,14 +388,14 @@ func audioHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
-	if after.RetryInfo == nil && (after.Error == nil || IsClientAborted(after.Error)) {
+	if after.RetryInfo == nil && (after.Error == nil || IsBillableAborted(after.Error, after.Usage)) {
 
 		billingData := &mcommon.BillingData{
 			Seconds:            after.Seconds,
 			Size:               after.Size,
 			Resolution:         after.Resolution,
 			VideoMode:          after.VideoMode,
-			IsAborted:          IsClientAborted(after.Error),
+			IsAborted:          IsBillableAborted(after.Error, after.Usage),
 			IsVolcEngine:       after.IsVolcEngine,
 			VolcVideoCreateReq: after.VolcVideoCreateReq,
 		}
@@ -492,11 +503,11 @@ func videoHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 func fileHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
-	if after.RetryInfo == nil && (after.Error == nil || IsClientAborted(after.Error)) {
+	if after.RetryInfo == nil && (after.Error == nil || IsBillableAborted(after.Error, after.Usage)) {
 
 		billingData := &mcommon.BillingData{
 			Usage:     after.Usage,
-			IsAborted: IsClientAborted(after.Error),
+			IsAborted: IsBillableAborted(after.Error, after.Usage),
 		}
 
 		// 计算花费
@@ -578,11 +589,11 @@ func fileHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 func batchHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
-	if after.RetryInfo == nil && (after.Error == nil || IsClientAborted(after.Error)) {
+	if after.RetryInfo == nil && (after.Error == nil || IsBillableAborted(after.Error, after.Usage)) {
 
 		billingData := &mcommon.BillingData{
 			Usage:     after.Usage,
-			IsAborted: IsClientAborted(after.Error),
+			IsAborted: IsBillableAborted(after.Error, after.Usage),
 		}
 
 		// 计算花费
@@ -660,7 +671,7 @@ func batchHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
 func generalHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) {
 
-	if after.RetryInfo == nil && (after.Error == nil || IsClientAborted(after.Error)) {
+	if after.RetryInfo == nil && (after.Error == nil || IsBillableAborted(after.Error, after.Usage)) {
 
 		if after.ServiceTier == "" {
 			after.ServiceTier = after.ChatCompletionRes.ServiceTier
@@ -681,7 +692,7 @@ func generalHandler(ctx context.Context, mak *MAK, after *mcommon.AfterHandler) 
 			Seconds:                after.Seconds,
 			Size:                   after.Size,
 			Usage:                  after.Usage,
-			IsAborted:              IsClientAborted(after.Error),
+			IsAborted:              IsBillableAborted(after.Error, after.Usage),
 		}
 
 		// 计算花费
@@ -841,4 +852,18 @@ func filterImageBillingItems(items []string, layerDecomp bool) []string {
 	}
 
 	return filtered
+}
+
+// 计费的图像张数(图像生成优先, 其次图层拆分), 未计费返回 0
+func billedImageCount(spend mcommon.Spend) int {
+
+	if spend.ImageGeneration != nil && spend.ImageGeneration.N > 0 {
+		return spend.ImageGeneration.N
+	}
+
+	if spend.LayerDecomp != nil && spend.LayerDecomp.N > 0 {
+		return spend.LayerDecomp.N
+	}
+
+	return 0
 }

@@ -863,6 +863,13 @@ func imageGeneration(ctx context.Context, mak *MAK, billingData *common.BillingD
 		return
 	}
 
+	// 按上游实际返回的图像数量计费(含流式中止时已返回的), 未统计到时再按传入的n计费
+	if !billingData.IsAsync && billingData.ImageOutputCount > 0 {
+		spend.ImageGeneration.N = billingData.ImageOutputCount
+		spend.ImageGeneration.SpendTokens = int(math.Ceil(consts.QUOTA_DEFAULT_UNIT*spend.ImageGeneration.Pricing.OnceRatio)) * spend.ImageGeneration.N
+		return
+	}
+
 	spend.ImageGeneration.N = billingData.ImageGenerationRequest.N
 	if spend.ImageGeneration.N == 0 {
 		spend.ImageGeneration.N = billingData.ImageEditRequest.N
@@ -985,6 +992,11 @@ func layerDecomp(ctx context.Context, mak *MAK, billingData *common.BillingData,
 		if spend.LayerDecomp.N == 0 {
 			spend.LayerDecomp.N = 1
 		}
+	}
+
+	// 按上游实际返回的图像数量计费(含流式中止时已返回的), 未统计到时再按传入的n计费
+	if !billingData.IsAsync && billingData.ImageOutputCount > 0 {
+		spend.LayerDecomp.N = billingData.ImageOutputCount
 	}
 
 	if spend.LayerDecomp.Pricing != nil {
@@ -1544,21 +1556,48 @@ func alignTicksOnlySpend(spend *common.Spend, usage *smodel.Usage) {
 	}
 }
 
+// usage 是否包含任一 token 计数(总量/缓存/搜索/各类明细), 不含官方价格 cost_in_usd_ticks
 func usageHasTokenBreakdown(usage *smodel.Usage) bool {
+
 	if usage == nil {
 		return false
 	}
-	return usage.PromptTokens > 0 || usage.CompletionTokens > 0 ||
-		usage.InputTokens > 0 || usage.OutputTokens > 0 || usage.TotalTokens > 0 ||
-		usage.PromptTokensDetails.TextTokens > 0 || usage.PromptTokensDetails.ImageTokens > 0 ||
-		usage.PromptTokensDetails.CachedTokens > 0 || usage.PromptTokensDetails.AudioTokens > 0 ||
-		usage.InputTokensDetails.TextTokens > 0 || usage.InputTokensDetails.ImageTokens > 0 ||
-		usage.InputTokensDetails.CachedTokens > 0 ||
-		usage.CompletionTokensDetails.TextTokens > 0 || usage.CompletionTokensDetails.ImageTokens > 0 ||
-		usage.CompletionTokensDetails.ReasoningTokens > 0 || usage.CompletionTokensDetails.AudioTokens > 0 ||
-		usage.OutputTokensDetails.TextTokens > 0 || usage.OutputTokensDetails.ImageTokens > 0 ||
-		usage.OutputTokensDetails.ReasoningTokens > 0 ||
-		usage.CacheReadInputTokens > 0
+
+	// 总量
+	if usage.PromptTokens > 0 || usage.CompletionTokens > 0 || usage.TotalTokens > 0 ||
+		usage.InputTokens > 0 || usage.OutputTokens > 0 || usage.SearchTokens > 0 {
+		return true
+	}
+
+	// 缓存
+	if usage.CacheCreationInputTokens > 0 || usage.CacheReadInputTokens > 0 ||
+		usage.CacheCreation5MInputTokens > 0 || usage.CacheCreation1HInputTokens > 0 {
+		return true
+	}
+
+	// 提示词明细
+	if p := usage.PromptTokensDetails; p.TextTokens > 0 || p.ImageTokens > 0 || p.AudioTokens > 0 ||
+		p.ReasoningTokens > 0 || p.CachedTokens > 0 || p.CacheWriteTokens > 0 {
+		return true
+	}
+
+	// 补全明细
+	if c := usage.CompletionTokensDetails; c.TextTokens > 0 || c.ImageTokens > 0 || c.AudioTokens > 0 ||
+		c.ReasoningTokens > 0 || c.CachedTokens > 0 || c.CachedTokensInternal > 0 || c.CacheWriteTokens > 0 ||
+		c.AcceptedPredictionTokens > 0 || c.RejectedPredictionTokens > 0 {
+		return true
+	}
+
+	// 输入明细
+	if i := usage.InputTokensDetails; i.TextTokens > 0 || i.ImageTokens > 0 ||
+		i.CachedTokens > 0 || i.CacheWriteTokens > 0 {
+		return true
+	}
+
+	// 输出明细
+	o := usage.OutputTokensDetails
+
+	return o.TextTokens > 0 || o.ImageTokens > 0 || o.ReasoningTokens > 0
 }
 
 func clearEmptyTokenSpend(spend *common.Spend) {

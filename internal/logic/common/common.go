@@ -9,11 +9,13 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/grpool"
 	"github.com/gogf/gf/v2/text/gregex"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
+	smodel "github.com/iimeta/fastapi-sdk/v2/model"
 	"github.com/iimeta/fastapi/v2/internal/config"
 	"github.com/iimeta/fastapi/v2/internal/errors"
 	"github.com/iimeta/fastapi/v2/internal/model"
@@ -104,7 +106,7 @@ func IsAborted(err error) bool {
 		gstr.Contains(err.Error(), "aborted")
 }
 
-// 是否为客户端原因导致的中止(仅此情况才按已产生的内容计费)
+// 是否为客户端原因导致的中止
 // 上游原因(连接断开/错误)或请求超时导致的中止不属于客户端中止
 func IsClientAborted(err error) bool {
 
@@ -117,15 +119,57 @@ func IsClientAborted(err error) bool {
 		return true
 	}
 
-	// 超时(上游请求超时/Client.Timeout)属于系统原因, 不计费
-	if errors.Is(err, context.DeadlineExceeded) ||
-		gstr.Contains(err.Error(), "deadline exceeded") ||
-		gstr.Contains(err.Error(), "Client.Timeout") {
+	// 超时(上游请求超时/Client.Timeout)属于系统原因
+	if isTimeout(err) {
 		return false
 	}
 
 	// 请求上下文被取消(客户端断开连接/主动取消请求)
 	return errors.Is(err, context.Canceled)
+}
+
+// 中止的请求是否需要计费
+//  1. 客户端原因中止: 计费
+//  2. 超时中止, 但上游已正常响应并返回了usage(如流式响应过久直到长连接超时): 计费
+//  3. 超时中止, 但上游已返回了生成结果(如流式生图已返回完成的图像): 计费
+//  4. 其它上游原因中止, 或超时但上游未返回任何usage/结果: 不计费
+func IsBillableAborted(err error, usage *smodel.Usage, hasOutput ...bool) bool {
+
+	if IsClientAborted(err) {
+		return true
+	}
+
+	if !isTimeout(err) {
+		return false
+	}
+
+	return hasUsage(usage) || (len(hasOutput) > 0 && hasOutput[0])
+}
+
+// 是否为超时错误
+func isTimeout(err error) bool {
+
+	if err == nil {
+		return false
+	}
+
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		return true
+	}
+
+	return gstr.Contains(err.Error(), "deadline exceeded") ||
+		gstr.Contains(err.Error(), "Client.Timeout") ||
+		gstr.Contains(err.Error(), "i/o timeout")
+}
+
+// 上游是否返回了有效usage(任一token计数或官方价格)
+func hasUsage(usage *smodel.Usage) bool {
+	return usage != nil && (usage.CostInUsdTicks > 0 || usageHasTokenBreakdown(usage))
 }
 
 func IsNeedRetry(err error) (isRetry bool, isDisabled bool) {
@@ -382,4 +426,41 @@ func parsePixelSize(size string) int {
 	}
 
 	return gconv.Int(size)
+}
+
+// 是否为流式生图的中间预览图事件(如 image_generation.partial_image / image_edit.partial_image), 预览图不属于最终生成结果
+func IsPartialImageEvent(event string, responseBytes []byte) bool {
+
+	if gstr.Contains(event, "partial_image") {
+		return true
+	}
+
+	if len(responseBytes) == 0 || !bytes.Contains(responseBytes, []byte("partial_image")) {
+		return false
+	}
+
+	return gstr.Contains(gjson.New(responseBytes).Get("type").String(), "partial_image")
+}
+
+// 统计流式生图本次事件返回的最终图像数量(排除中间预览图和无图像内容的数据, 如失败项)
+func CountImageOutputs(event string, responseBytes []byte, data []smodel.ImageResponseData) (n int) {
+
+	if IsPartialImageEvent(event, responseBytes) {
+		return 0
+	}
+
+	return CountImages(data)
+}
+
+// 统计上游实际返回的图像数量(仅统计有图像内容的数据, 排除失败项)
+func CountImages(data []smodel.ImageResponseData) (n int) {
+
+	for _, item := range data {
+		if item.Url != "" || item.B64Json != "" ||
+			(item.FileOutput != nil && (item.FileOutput.PublicUrl != "" || item.FileOutput.FileId != "")) {
+			n++
+		}
+	}
+
+	return n
 }

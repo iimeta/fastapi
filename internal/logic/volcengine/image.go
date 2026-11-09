@@ -46,11 +46,12 @@ func (s *sVolcEngine) ImageGenerations(ctx context.Context, data []byte, fallbac
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		imageResponse  smodel.ImageResponse
-		retryInfo      *mcommon.Retry
-		attempt        *common.AttemptLog
-		responseHeader http.Header
-		totalTime      int64
+		imageResponse    smodel.ImageResponse
+		retryInfo        *mcommon.Retry
+		attempt          *common.AttemptLog
+		imageOutputCount int
+		responseHeader   http.Header
+		totalTime        int64
 	)
 
 	defer func() {
@@ -64,6 +65,7 @@ func (s *sVolcEngine) ImageGenerations(ctx context.Context, data []byte, fallbac
 					ImageGenerationRequest: params,
 					ImageResponse:          imageResponse,
 					Action:                 consts.ACTION_GENERATIONS,
+					ImageOutputCount:       imageOutputCount,
 					Usage:                  &usage,
 					Error:                  err,
 					RetryInfo:              retryInfo,
@@ -188,6 +190,8 @@ func (s *sVolcEngine) ImageGenerations(ctx context.Context, data []byte, fallbac
 		logger.Errorf(ctx, "sVolcEngine ImageGenerations unmarshal response error: %v", e)
 	}
 
+	imageOutputCount = common.CountImages(imageResponse.Data)
+
 	common.WritePassthroughHeaders(ctx, mak.Passthrough, responseHeader)
 
 	return responseBytes, nil
@@ -214,13 +218,14 @@ func (s *sVolcEngine) ImageGenerationsStream(ctx context.Context, data []byte, f
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		imageResponse smodel.ImageResponse
-		usage         *smodel.Usage
-		connTime      int64
-		duration      int64
-		totalTime     int64
-		retryInfo     *mcommon.Retry
-		attempt       *common.AttemptLog
+		imageResponse    smodel.ImageResponse
+		usage            *smodel.Usage
+		connTime         int64
+		duration         int64
+		totalTime        int64
+		retryInfo        *mcommon.Retry
+		attempt          *common.AttemptLog
+		imageOutputCount int
 	)
 
 	defer func() {
@@ -238,6 +243,7 @@ func (s *sVolcEngine) ImageGenerationsStream(ctx context.Context, data []byte, f
 					ImageGenerationRequest: params,
 					ImageResponse:          imageResponse,
 					Action:                 consts.ACTION_GENERATIONS,
+					ImageOutputCount:       imageOutputCount,
 					Usage:                  usage,
 					Error:                  err,
 					RetryInfo:              retryInfo,
@@ -388,6 +394,7 @@ func (s *sVolcEngine) ImageGenerationsStream(ctx context.Context, data []byte, f
 
 		if len(item.Data) > 0 {
 			imageResponse.Data = append(imageResponse.Data, item.Data...)
+			imageOutputCount += common.CountImageOutputs(item.Event, item.ResponseBytes, item.Data)
 		}
 
 		if item.Usage.TotalTokens != 0 || item.Usage.InputTokens != 0 || item.Usage.OutputTokens != 0 {

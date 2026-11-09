@@ -12,6 +12,7 @@ type AfterHandler struct {
 	ImageGenerationRequest smodel.ImageGenerationRequest
 	ImageEditRequest       smodel.ImageEditRequest
 	ImageResponse          smodel.ImageResponse
+	ImageOutputCount       int // 流式生图已返回的最终图像数量(不含中间预览图)
 	AudioInput             string
 	AudioMinute            float64
 	AudioText              string

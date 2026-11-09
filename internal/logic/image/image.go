@@ -76,11 +76,12 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		imageResponse  smodel.ImageResponse
-		retryInfo      *mcommon.Retry
-		attempt        *common.AttemptLog
-		imageFilePaths []string
-		imageExpiresAt int64
+		imageResponse    smodel.ImageResponse
+		retryInfo        *mcommon.Retry
+		attempt          *common.AttemptLog
+		imageFilePaths   []string
+		imageOutputCount int
+		imageExpiresAt   int64
 	)
 
 	defer func() {
@@ -99,6 +100,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 					ImageResponse:          imageResponse,
 					Action:                 consts.ACTION_GENERATIONS,
 					ImageFilePaths:         imageFilePaths,
+					ImageOutputCount:       imageOutputCount,
 					ImageExpiresAt:         imageExpiresAt,
 					Usage:                  &usage,
 					Error:                  err,
@@ -249,6 +251,7 @@ func (s *sImage) Generations(ctx context.Context, data []byte, fallbackModelAgen
 	}
 
 	imageResponse = response
+	imageOutputCount = common.CountImages(response.Data)
 
 	if common.ShouldCheckImageSize(mak) {
 		if expectedW, expectedH, ok := common.ExpectedImageSize(userSize); ok {
@@ -305,15 +308,16 @@ func (s *sImage) GenerationsStream(ctx context.Context, data []byte, fallbackMod
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		imageResponse  smodel.ImageResponse
-		usage          *smodel.Usage
-		connTime       int64
-		duration       int64
-		totalTime      int64
-		retryInfo      *mcommon.Retry
-		attempt        *common.AttemptLog
-		imageFilePaths []string
-		imageExpiresAt int64
+		imageResponse    smodel.ImageResponse
+		usage            *smodel.Usage
+		connTime         int64
+		duration         int64
+		totalTime        int64
+		retryInfo        *mcommon.Retry
+		attempt          *common.AttemptLog
+		imageFilePaths   []string
+		imageOutputCount int
+		imageExpiresAt   int64
 	)
 
 	defer func() {
@@ -328,6 +332,7 @@ func (s *sImage) GenerationsStream(ctx context.Context, data []byte, fallbackMod
 					ImageResponse:          imageResponse,
 					Action:                 consts.ACTION_GENERATIONS,
 					ImageFilePaths:         imageFilePaths,
+					ImageOutputCount:       imageOutputCount,
 					ImageExpiresAt:         imageExpiresAt,
 					Usage:                  usage,
 					Error:                  err,
@@ -517,6 +522,7 @@ func (s *sImage) GenerationsStream(ctx context.Context, data []byte, fallbackMod
 
 		if len(response.Data) > 0 {
 			imageResponse.Data = response.Data
+			imageOutputCount += common.CountImageOutputs(response.Event, response.ResponseBytes, response.Data)
 		}
 
 		if response.Usage.TotalTokens != 0 || response.Usage.InputTokens != 0 || response.Usage.OutputTokens != 0 {
@@ -552,11 +558,12 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		imageResponse  smodel.ImageResponse
-		retryInfo      *mcommon.Retry
-		attempt        *common.AttemptLog
-		imageFilePaths []string
-		imageExpiresAt int64
+		imageResponse    smodel.ImageResponse
+		retryInfo        *mcommon.Retry
+		attempt          *common.AttemptLog
+		imageFilePaths   []string
+		imageOutputCount int
+		imageExpiresAt   int64
 	)
 
 	if gstr.Contains(g.RequestFromCtx(ctx).Header.Get("Content-Type"), "multipart/form-data") {
@@ -599,6 +606,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 					ImageResponse:          imageResponse,
 					Action:                 consts.ACTION_EDITS,
 					ImageFilePaths:         imageFilePaths,
+					ImageOutputCount:       imageOutputCount,
 					ImageExpiresAt:         imageExpiresAt,
 					Usage:                  &usage,
 					Error:                  err,
@@ -749,6 +757,7 @@ func (s *sImage) Edits(ctx context.Context, params smodel.ImageEditRequest, fall
 	}
 
 	imageResponse = response
+	imageOutputCount = common.CountImages(response.Data)
 
 	if common.ShouldCheckImageSize(mak) {
 		if expectedW, expectedH, ok := common.ExpectedImageSize(userSize); ok {
@@ -799,15 +808,16 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 			FallbackModelAgent: fallbackModelAgent,
 			FallbackModel:      fallbackModel,
 		}
-		imageResponse  smodel.ImageResponse
-		usage          *smodel.Usage
-		connTime       int64
-		duration       int64
-		totalTime      int64
-		retryInfo      *mcommon.Retry
-		attempt        *common.AttemptLog
-		imageFilePaths []string
-		imageExpiresAt int64
+		imageResponse    smodel.ImageResponse
+		usage            *smodel.Usage
+		connTime         int64
+		duration         int64
+		totalTime        int64
+		retryInfo        *mcommon.Retry
+		attempt          *common.AttemptLog
+		imageFilePaths   []string
+		imageOutputCount int
+		imageExpiresAt   int64
 	)
 
 	if gstr.Contains(g.RequestFromCtx(ctx).Header.Get("Content-Type"), "multipart/form-data") {
@@ -846,6 +856,7 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 					ImageResponse:          imageResponse,
 					Action:                 consts.ACTION_EDITS,
 					ImageFilePaths:         imageFilePaths,
+					ImageOutputCount:       imageOutputCount,
 					ImageExpiresAt:         imageExpiresAt,
 					Usage:                  usage,
 					Error:                  err,
@@ -1035,6 +1046,7 @@ func (s *sImage) EditsStream(ctx context.Context, params smodel.ImageEditRequest
 
 		if len(response.Data) > 0 {
 			imageResponse.Data = response.Data
+			imageOutputCount += common.CountImageOutputs(response.Event, response.ResponseBytes, response.Data)
 		}
 
 		if response.Usage.TotalTokens != 0 || response.Usage.InputTokens != 0 || response.Usage.OutputTokens != 0 {
