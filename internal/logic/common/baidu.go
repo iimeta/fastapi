@@ -46,7 +46,6 @@ func getBaiduToken(ctx context.Context, key, baseUrl, proxyUrl string) string {
 
 	result := gstr.Split(key, "|")
 
-	// 与原 gf 客户端行为保持一致, 以表单形式提交
 	data := url.Values{
 		"client_id":     {result[0]},
 		"client_secret": {result[1]},
