@@ -6,15 +6,15 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
+	sutil "github.com/iimeta/fastapi-sdk/v2/util"
+	"github.com/iimeta/fastapi/v2/internal/config"
 	"github.com/iimeta/fastapi/v2/internal/consts"
 	"github.com/iimeta/fastapi/v2/internal/model"
 	"github.com/iimeta/fastapi/v2/utility/cache"
 	"github.com/iimeta/fastapi/v2/utility/logger"
 	"github.com/iimeta/fastapi/v2/utility/redis"
-	"github.com/iimeta/fastapi/v2/utility/util"
 )
 
 var baiduCache = cache.New() // [key]AccessToken
@@ -46,10 +46,15 @@ func getBaiduToken(ctx context.Context, key, baseUrl, proxyUrl string) string {
 
 	result := gstr.Split(key, "|")
 
-	data := g.Map{
-		"client_id":     result[0],
-		"client_secret": result[1],
-		"grant_type":    "client_credentials",
+	// 与原 gf 客户端行为保持一致, 以表单形式提交
+	data := url.Values{
+		"client_id":     {result[0]},
+		"client_secret": {result[1]},
+		"grant_type":    {"client_credentials"},
+	}
+
+	header := map[string]string{
+		"Content-Type": "application/x-www-form-urlencoded",
 	}
 
 	parse, err := url.Parse(baseUrl)
@@ -58,10 +63,10 @@ func getBaiduToken(ctx context.Context, key, baseUrl, proxyUrl string) string {
 		return ""
 	}
 
-	url := fmt.Sprintf("%s://%s/oauth/2.0/token", parse.Scheme, parse.Host)
+	tokenUrl := fmt.Sprintf("%s://%s/oauth/2.0/token", parse.Scheme, parse.Host)
 
 	getBaiduTokenRes := new(model.GetBaiduTokenRes)
-	if err = util.HttpPost(ctx, url, nil, data, &getBaiduTokenRes, proxyUrl); err != nil {
+	if _, _, err = sutil.HttpPost(ctx, tokenUrl, header, []byte(data.Encode()), getBaiduTokenRes, config.Cfg.Http.Timeout*time.Second, proxyUrl, nil); err != nil {
 		logger.Errorf(ctx, "getBaiduToken key: %s, error: %v", key, err)
 		return ""
 	}
