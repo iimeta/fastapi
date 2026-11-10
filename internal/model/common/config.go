@@ -103,8 +103,10 @@ type NotRetryError struct {
 }
 
 type NotShieldError struct {
-	Open   bool     `bson:"open"   json:"open"`   // 开关
-	Errors []string `bson:"errors" json:"errors"` // 错误
+	Open             bool     `bson:"open"               json:"open"`                         // 开关
+	Errors           []string `bson:"errors"             json:"errors"`                       // 错误
+	WhitelistUserIds []int    `bson:"whitelist_user_ids" json:"whitelist_user_ids,omitempty"` // 白名单用户ID
+	WhitelistKeys    []string `bson:"whitelist_keys"     json:"whitelist_keys,omitempty"`     // 白名单用户请求密钥
 }
 
 type Quota struct {

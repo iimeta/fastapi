@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/net/gtrace"
@@ -12,6 +13,7 @@ import (
 	"github.com/gogf/gf/v2/util/gconv"
 	serrors "github.com/iimeta/fastapi-sdk/v2/errors"
 	"github.com/iimeta/fastapi/v2/internal/config"
+	"github.com/iimeta/fastapi/v2/internal/consts"
 )
 
 type IFastApiError interface {
@@ -139,25 +141,21 @@ func Error(ctx context.Context, err error) (iFastApiError IFastApiError) {
 	}
 
 	// 不屏蔽错误
-	if config.Cfg.NotShieldError.Open && len(config.Cfg.NotShieldError.Errors) > 0 {
-		for _, notShieldError := range config.Cfg.NotShieldError.Errors {
-			if gstr.Contains(err.Error(), notShieldError) {
+	if isNotShieldError(ctx, err.Error()) {
 
-				e := ERR_UNKNOWN.(IFastApiError)
+		e := ERR_UNKNOWN.(IFastApiError)
 
-				requestError := &serrors.RequestError{}
-				if As(err, &requestError) {
-					return NewErrorf(requestError.HttpStatusCode, e.ErrCode(), gstr.Split(gstr.Split(requestError.Err.Error(), " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", e.ErrType(), e.ErrParam(), gtrace.GetTraceID(ctx), gtime.TimestampMilli()).(IFastApiError)
-				}
-
-				apiError := &serrors.ApiError{}
-				if As(err, &apiError) {
-					return NewErrorf(apiError.HttpStatusCode, apiError.Code, gstr.Split(gstr.Split(apiError.Message, " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", apiError.Type, apiError.Param, gtrace.GetTraceID(ctx), gtime.TimestampMilli()).(IFastApiError)
-				}
-
-				return NewErrorf(e.Status(), e.ErrCode(), gstr.Split(gstr.Split(err.Error(), " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", e.ErrType(), e.ErrParam(), gtrace.GetTraceID(ctx), gtime.TimestampMilli()).(IFastApiError)
-			}
+		requestError := &serrors.RequestError{}
+		if As(err, &requestError) {
+			return NewErrorf(requestError.HttpStatusCode, e.ErrCode(), gstr.Split(gstr.Split(requestError.Err.Error(), " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", e.ErrType(), e.ErrParam(), gtrace.GetTraceID(ctx), gtime.TimestampMilli()).(IFastApiError)
 		}
+
+		apiError := &serrors.ApiError{}
+		if As(err, &apiError) {
+			return NewErrorf(apiError.HttpStatusCode, apiError.Code, gstr.Split(gstr.Split(apiError.Message, " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", apiError.Type, apiError.Param, gtrace.GetTraceID(ctx), gtime.TimestampMilli()).(IFastApiError)
+		}
+
+		return NewErrorf(e.Status(), e.ErrCode(), gstr.Split(gstr.Split(err.Error(), " TraceId")[0], " (request id:")[0]+" TraceId: %s Timestamp: %d", e.ErrType(), e.ErrParam(), gtrace.GetTraceID(ctx), gtime.TimestampMilli()).(IFastApiError)
 	}
 
 	// 未知的错误, 用统一描述处理
@@ -166,18 +164,58 @@ func Error(ctx context.Context, err error) (iFastApiError IFastApiError) {
 	return NewErrorf(e.Status(), e.ErrCode(), e.ErrMessage()+" TraceId: %s Timestamp: %d", e.ErrType(), e.ErrParam(), gtrace.GetTraceID(ctx), gtime.TimestampMilli()).(IFastApiError)
 }
 
+// 判断错误信息是否不屏蔽(需开启"不屏蔽错误"开关):
+// 命中白名单(用户ID/用户请求密钥)时不判断 Errors 名单, 所有错误直接返回;
+// 否则错误信息包含 Errors 名单中的内容才返回
+func isNotShieldError(ctx context.Context, message string) bool {
+
+	if config.Cfg.NotShieldError == nil || !config.Cfg.NotShieldError.Open {
+		return false
+	}
+
+	if isNotShieldWhitelist(ctx) {
+		return true
+	}
+
+	for _, notShieldError := range config.Cfg.NotShieldError.Errors {
+		if gstr.Contains(message, notShieldError) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// 判断当前请求是否命中"不屏蔽错误"白名单(按用户ID或用户请求密钥 sk- 匹配).
+// 用户ID和密钥直接从 ctx 读取(与 Session 写入的 key 一致): errors 包不能依赖 service,
+// 且鉴权前的报错 ctx 中尚无用户信息, 视为未命中
+func isNotShieldWhitelist(ctx context.Context) bool {
+
+	// 按用户ID匹配
+	if len(config.Cfg.NotShieldError.WhitelistUserIds) > 0 {
+		if userId, ok := ctx.Value(consts.USER_ID_KEY).(int); ok && slices.Contains(config.Cfg.NotShieldError.WhitelistUserIds, userId) {
+			return true
+		}
+	}
+
+	// 按用户请求密钥(sk-)匹配
+	if len(config.Cfg.NotShieldError.WhitelistKeys) > 0 {
+		if secretKey, ok := ctx.Value(consts.SECRET_KEY).(string); ok && secretKey != "" && slices.Contains(config.Cfg.NotShieldError.WhitelistKeys, secretKey) {
+			return true
+		}
+	}
+
+	return false
+}
+
 // 按"不屏蔽错误"配置处理需对外暴露的任务错误信息(如异步任务失败原因):
-// 命中不屏蔽名单时保留原始 code, message 清理已有 TraceId/request id 后追加新的 TraceId/Timestamp 返回;
+// 命中白名单或不屏蔽名单时保留原始 code, message 清理已有 TraceId/request id 后追加新的 TraceId/Timestamp 返回;
 // 否则视为屏蔽错误, 统一返回未知错误(ERR_UNKNOWN)
 func ShieldError(ctx context.Context, code, message string) (string, string) {
 
 	// 不屏蔽错误
-	if config.Cfg.NotShieldError.Open && len(config.Cfg.NotShieldError.Errors) > 0 {
-		for _, notShieldError := range config.Cfg.NotShieldError.Errors {
-			if gstr.Contains(message, notShieldError) {
-				return code, fmt.Sprintf("%s TraceId: %s Timestamp: %d", gstr.Split(gstr.Split(message, " TraceId")[0], " (request id:")[0], gtrace.GetTraceID(ctx), gtime.TimestampMilli())
-			}
-		}
+	if isNotShieldError(ctx, message) {
+		return code, fmt.Sprintf("%s TraceId: %s Timestamp: %d", gstr.Split(gstr.Split(message, " TraceId")[0], " (request id:")[0], gtrace.GetTraceID(ctx), gtime.TimestampMilli())
 	}
 
 	// 屏蔽的错误, 用统一描述处理
