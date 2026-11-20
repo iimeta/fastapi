@@ -239,6 +239,14 @@ func beforeServeHook(r *ghttp.Request) {
 	r.Response.Header().Set(consts.FASTAPI_REQUEST_ID, gtrace.GetTraceID(ctx))
 
 	r.Response.CORSDefault()
+
+	// GoFrame会把请求头X-Url-Path当作路由路径, 但不会修改r.URL.Path, 带上它可以让实际执行的接口
+	// 与按r.URL.Path所做的校验(如额度检查)、所取的上游路径不一致, 因此带该请求头的请求一律拒绝
+	if r.Header.Get(ghttp.HeaderXUrlPath) != "" {
+		logger.Errorf(r.GetCtx(), "beforeServeHook reject request with header %s: %s, URI: %s", ghttp.HeaderXUrlPath, r.Header.Get(ghttp.HeaderXUrlPath), r.RequestURI)
+		r.Response.WriteStatus(http.StatusBadRequest)
+		r.ExitAll()
+	}
 }
 
 func middleware(r *ghttp.Request) {
