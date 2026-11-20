@@ -32,9 +32,11 @@ func (c *ControllerV1) Transcriptions(ctx context.Context, req *v1.Transcription
 
 	req.File = fileHeader
 
+	// 本地解析的时长作为上游未返回时长时的计费依据
+	duration, err := util.GetAudioDuration(file, fileHeader.Filename, fileHeader.Size)
+
 	if req.ResponseFormat != "verbose_json" {
 
-		duration, err := util.GetAudioDuration(file, fileHeader.Filename)
 		if err != nil {
 			logger.Error(ctx, err)
 			return nil, err
@@ -47,6 +49,10 @@ func (c *ControllerV1) Transcriptions(ctx context.Context, req *v1.Transcription
 		} else if req.Duration < 1 {
 			req.Duration = 1
 		}
+
+	} else if err == nil {
+		// verbose_json正常由上游返回时长, 本地解析失败不影响请求, 仅在上游未返回时长时兜底
+		req.Duration = duration.Seconds()
 	}
 
 	response, err := service.Audio().Transcriptions(ctx, req, nil, nil)

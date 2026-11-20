@@ -202,8 +202,11 @@ func (s *sAudio) Transcriptions(ctx context.Context, params *v1.TranscriptionsRe
 					TotalTime: response.TotalTime,
 				}
 
+				// 计费时长优先采用上游返回的时长, 上游未返回时才采用本地从文件解析的时长
 				if response.Duration != 0 {
 					afterHandler.AudioMinute = util.Round(response.Duration/60, 2)
+				} else if response.Usage.Type == "duration" && response.Usage.Seconds > 0 {
+					afterHandler.AudioMinute = util.Round(float64(response.Usage.Seconds)/60, 2)
 				} else {
 					afterHandler.AudioMinute = util.Round(params.Duration/60, 2)
 				}

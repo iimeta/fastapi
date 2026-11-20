@@ -248,7 +248,7 @@ func text(ctx context.Context, mak *MAK, billingData *common.BillingData, spend 
 		spend.Text = new(common.TextSpend)
 	}
 
-	if mak.ReqModel.Pricing.BillingRule == 2 || billingData.IsAborted {
+	if mak.ReqModel.Pricing.BillingRule == 2 || billingData.IsAborted || isUsageMissing(billingData) {
 
 		var (
 			promptTokens     int
@@ -479,7 +479,7 @@ func tieredText(ctx context.Context, mak *MAK, billingData *common.BillingData, 
 		billingData.Usage = new(smodel.Usage)
 	}
 
-	if mak.ReqModel.Pricing.BillingRule == 2 || billingData.IsAborted {
+	if mak.ReqModel.Pricing.BillingRule == 2 || billingData.IsAborted || isUsageMissing(billingData) {
 
 		var (
 			promptTokens     int
@@ -1554,6 +1554,17 @@ func alignTicksOnlySpend(spend *common.Spend, usage *smodel.Usage) {
 	default:
 		spend.Once = &common.OnceSpend{SpendTokens: total}
 	}
+}
+
+// 上游成功响应却没有返回任何用量(既无 token 计数也无官方价格)时, 需按系统估算, 避免计费为 0。
+// 常见于流式请求上游未回传 usage; 没有可估算的内容时不处理。
+func isUsageMissing(billingData *common.BillingData) bool {
+
+	if usageHasTokenBreakdown(billingData.Usage) || (billingData.Usage != nil && billingData.Usage.CostInUsdTicks > 0) {
+		return false
+	}
+
+	return len(billingData.ChatCompletionRequest.Messages) > 0 || billingData.Completion != ""
 }
 
 // usage 是否包含任一 token 计数(总量/缓存/搜索/各类明细), 不含官方价格 cost_in_usd_ticks

@@ -11,27 +11,71 @@ import (
 	"github.com/gogf/gf/v2/text/gstr"
 )
 
-func GetAudioDuration(file multipart.File, fileName string) (time.Duration, error) {
+// 获取音频时长, size为文件实际大小(字节), 传入后会按文件大小校正时长下限
+func GetAudioDuration(file multipart.File, fileName string, size ...int64) (time.Duration, error) {
 
-	switch gstr.ToLower(gfile.Ext(fileName)) {
-	case ".wav":
-		return getWavDuration(file)
-	case ".mp3", ".mpga", ".mpeg":
-		return getMp3Duration(file)
-	case ".webm":
-		return getWebmDuration(file)
-	case ".ogg":
-		return getOggDuration(file)
-	case ".flac":
-		return getFlacDuration(file)
-	case ".mp4", ".m4a":
-		return getMp4Duration(file)
+	var fileSize int64
+	if len(size) > 0 {
+		fileSize = size[0]
 	}
 
-	return time.Duration(0), nil
+	var (
+		ext      = gstr.ToLower(gfile.Ext(fileName))
+		duration time.Duration
+		err      error
+	)
+
+	switch ext {
+	case ".wav":
+		duration, err = getWavDuration(file, fileSize)
+	case ".mp3", ".mpga", ".mpeg":
+		duration, err = getMp3Duration(file)
+	case ".webm":
+		duration, err = getWebmDuration(file)
+	case ".ogg":
+		duration, err = getOggDuration(file)
+	case ".flac":
+		duration, err = getFlacDuration(file)
+	case ".mp4", ".m4a":
+		duration, err = getMp4Duration(file)
+	}
+
+	if err != nil || duration <= 0 {
+		return duration, err
+	}
+
+	// 文件头里声明的时长可以被伪造, 实际时长不会短于「文件大小 / 该格式可能的最高码率」
+	if minDuration := minAudioDuration(ext, fileSize); duration < minDuration {
+		duration = minDuration
+	}
+
+	return duration, nil
 }
 
-func getWavDuration(file multipart.File) (time.Duration, error) {
+// 各格式可能出现的最高码率(bit/s), 取值偏宽松, 只用于拦截明显伪造的时长, 不会抬高正常文件的时长
+var audioMaxBitrates = map[string]int64{
+	".mp3":  640 * 1000,
+	".mpga": 640 * 1000,
+	".ogg":  640 * 1000,
+	".m4a":  5 * 1000 * 1000,
+	".flac": 10 * 1000 * 1000,
+	".mp4":  20 * 1000 * 1000, // 可能带视频轨
+	".webm": 20 * 1000 * 1000, // 可能带视频轨
+	".mpeg": 20 * 1000 * 1000, // 可能带视频轨
+}
+
+// 按文件大小和格式最高码率计算时长下限
+func minAudioDuration(ext string, fileSize int64) time.Duration {
+
+	maxBitrate, ok := audioMaxBitrates[ext]
+	if !ok || fileSize <= 0 {
+		return 0
+	}
+
+	return time.Duration(float64(fileSize) * 8 / float64(maxBitrate) * float64(time.Second))
+}
+
+func getWavDuration(file multipart.File, size int64) (time.Duration, error) {
 
 	defer func() {
 		_ = file.Close()
@@ -61,9 +105,38 @@ func getWavDuration(file multipart.File) (time.Duration, error) {
 	_ = binary.Read(file, binary.LittleEndian, &blockAlign)
 	_ = binary.Read(file, binary.LittleEndian, &bitsPerSample)
 
-	dataSize := fileSize - 36
+	// 数据长度以文件实际大小为准, 不采用文件头里声明的大小
+	dataSize := float64(fileSize) - 36
+	if size > 44 {
+		dataSize = float64(size - 44)
+	}
 
-	duration := time.Duration(float64(dataSize) / float64(byteRate) * float64(time.Second))
+	// 每秒字节数: 文件头里的byteRate解码时不参与, 可以随意填写, 不能直接采用
+	bytesPerSec := float64(byteRate)
+
+	switch audioFormat {
+	case 1, 3, 6, 7, 0xFFFE: // PCM / IEEE浮点 / A-law / μ-law / 扩展格式, 按解码实际使用的采样参数计算
+
+		frameSize := float64(blockAlign)
+		if n := float64(numChannels) * float64(bitsPerSample/8); n > 0 && (frameSize <= 0 || n < frameSize) {
+			frameSize = n
+		}
+
+		if n := float64(sampleRate) * frameSize; n > 0 {
+			bytesPerSec = n
+		}
+
+	default: // 压缩格式只能采用byteRate, 限制在压缩音频可能的最高码率(2Mbps)以内
+		if bytesPerSec > 250*1000 {
+			bytesPerSec = 250 * 1000
+		}
+	}
+
+	if dataSize <= 0 || bytesPerSec <= 0 {
+		return 0, nil
+	}
+
+	duration := time.Duration(dataSize / bytesPerSec * float64(time.Second))
 
 	return duration, nil
 }
