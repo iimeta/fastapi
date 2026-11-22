@@ -558,6 +558,12 @@ func tieredText(ctx context.Context, mak *MAK, billingData *common.BillingData, 
 		promptTokens = billingData.Usage.OutputTokensDetails.ReasoningTokens
 	}
 
+	if mode != "all" && !slices.ContainsFunc(mak.ReqModel.Pricing.TieredText, func(tieredText *common.TextPricing) bool {
+		return mode == tieredText.Mode && promptTokens > tieredText.Gt && promptTokens <= tieredText.Lte
+	}) {
+		mode = "all"
+	}
+
 	var allTieredText *common.TextPricing
 
 	for i, tieredText := range mak.ReqModel.Pricing.TieredText {
@@ -683,6 +689,12 @@ func tieredTextCache(ctx context.Context, mak *MAK, billingData *common.BillingD
 
 	if billingData.Usage.PromptTokens > readTokens {
 		readTokens = billingData.Usage.PromptTokens
+	}
+
+	if mode != "all" && !slices.ContainsFunc(mak.ReqModel.Pricing.TieredTextCache, func(tieredTextCache *common.CachePricing) bool {
+		return mode == tieredTextCache.Mode && readTokens > tieredTextCache.Gt && readTokens <= tieredTextCache.Lte
+	}) {
+		mode = "all"
 	}
 
 	var allTieredTextCache *common.CachePricing
