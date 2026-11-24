@@ -51,7 +51,7 @@ func RecordSpend(ctx context.Context, spend common.Spend, mak *MAK) error {
 		logger.Error(ctx, err)
 	}
 
-	if currentQuota <= config.Cfg.Quota.Threshold {
+	if currentQuota <= maxQuotaThreshold(config.Cfg.Quota.Thresholds) {
 		if _, err = redis.Publish(ctx, consts.CHANGE_CHANNEL_USER, model.PubMessage{
 			Action: consts.ACTION_CACHE,
 			NewData: &model.UserQuota{
@@ -261,4 +261,14 @@ func getAppTotalTokensField(ctx context.Context) string {
 
 func getAppKeyTotalTokensField(ctx context.Context) string {
 	return fmt.Sprintf(consts.APP_KEY_QUOTA_FIELD, service.Session().GetAppId(ctx), service.Session().GetSecretKey(ctx))
+}
+
+func maxQuotaThreshold(thresholds []int) int {
+	max := 0
+	for _, threshold := range thresholds {
+		if threshold > max {
+			max = threshold
+		}
+	}
+	return max
 }

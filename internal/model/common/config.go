@@ -111,9 +111,9 @@ type NotShieldError struct {
 
 type Quota struct {
 	Warning           bool          `bson:"warning"             json:"warning"`             // 额度预警开关
-	Threshold         int           `bson:"threshold"           json:"threshold"`           // 额度预警阈值, 单位: $
+	Thresholds        []int         `bson:"thresholds"          json:"thresholds"`          // 额度预警档位, 单位: $
 	ExpiredWarning    bool          `bson:"expired_warning"     json:"expired_warning"`     // 额度过期预警开关
-	ExpiredThreshold  time.Duration `bson:"expired_threshold"   json:"expired_threshold"`   // 额度过期预警阈值, 单位: 天
+	ExpiredThresholds []int         `bson:"expired_thresholds"  json:"expired_thresholds"`  // 额度过期预警档位, 单位: 天
 	ExhaustedNotice   bool          `bson:"exhausted_notice"    json:"exhausted_notice"`    // 额度耗尽通知开关
 	ExpiredNotice     bool          `bson:"expired_notice"      json:"expired_notice"`      // 额度过期通知开关
 	ExpiredClear      bool          `bson:"expired_clear"       json:"expired_clear"`       // 额度过期清零开关
